@@ -1,5 +1,5 @@
 [package]
-name = "snips-queries"
+name = "snips-queries-core"
 version = "0.1.0"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>", "Kevin Lefevre <kevin.lefevre@snips.ai>"]
 repository = "https://github.com/snipsco/snips-queries-rust/"
