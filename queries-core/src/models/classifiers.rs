@@ -1,6 +1,6 @@
 use ndarray::prelude::*;
 
-pub trait Regression {
+pub trait Classifier {
     fn new(weights: Array2<f64>) -> Self;
     fn run(&self, features: &Array2<f64>) -> Array2<f64>;
 }
@@ -13,7 +13,7 @@ fn sigmoid(d: f64) -> f64 {
     1.0 / (1.0 + (-d).exp())
 }
 
-impl Regression for LogisticRegression {
+impl Classifier for LogisticRegression {
     fn new(weights: Array2<f64>) -> LogisticRegression {
         LogisticRegression { weights: weights }
     }
@@ -31,7 +31,7 @@ pub struct MulticlassLogisticRegression {
     weights: Array2<f64>,
 }
 
-impl Regression for MulticlassLogisticRegression {
+impl Classifier for MulticlassLogisticRegression {
     fn new(weights: Array2<f64>) -> MulticlassLogisticRegression {
         MulticlassLogisticRegression { weights: weights }
     }
@@ -49,7 +49,7 @@ impl Regression for MulticlassLogisticRegression {
 
 #[cfg(test)]
 mod tests {
-    use super::Regression;
+    use super::Classifier;
     use super::LogisticRegression;
     use super::MulticlassLogisticRegression;
     use ndarray::prelude::*;
@@ -88,7 +88,7 @@ mod tests {
         do_test::<MulticlassLogisticRegression>("../data/snips-sdk-tests/models/multi_class_logistic_regression_predictions.json");
     }
 
-    fn do_test<T: Regression>(file_name: &str) {
+    fn do_test<T: Classifier>(file_name: &str) {
         let descs: Vec<TestDescription> = parse_json(file_name);
         assert!(descs.len() != 0);
         for desc in descs {
