@@ -13,7 +13,7 @@ pub struct HashSetGazetteer {
 }
 
 impl Gazetteer for HashSetGazetteer {
-    // TODO: To be improve
+    // TODO: To be improved
     fn new(json_filename: &str) -> Option<HashSetGazetteer> {
         let mut f = File::open(format!("../data/snips-sdk-gazetteers/gazetteers/{}.json",
                                        json_filename))
