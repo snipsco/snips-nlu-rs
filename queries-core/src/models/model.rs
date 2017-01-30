@@ -9,6 +9,7 @@
 
 #![allow(box_pointers)]
 #![allow(dead_code)]
+#![allow(missing_docs)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
@@ -214,7 +215,7 @@ impl ::protobuf::Message for Model {
         if self.field_type != Model_Type::INTENT_CLASSIFIER {
             my_size += ::protobuf::rt::enum_size(1, self.field_type);
         };
-        if self.classifier_type != ::std::string::String::new() {
+        if !self.classifier_type.is_empty() {
             my_size += ::protobuf::rt::string_size(2, &self.classifier_type);
         };
         for value in &self.arguments {
@@ -234,7 +235,7 @@ impl ::protobuf::Message for Model {
         if self.field_type != Model_Type::INTENT_CLASSIFIER {
             os.write_enum(1, self.field_type.value())?;
         };
-        if self.classifier_type != ::std::string::String::new() {
+        if !self.classifier_type.is_empty() {
             os.write_string(2, &self.classifier_type)?;
         };
         for v in &self.arguments {
@@ -265,6 +266,12 @@ impl ::protobuf::Message for Model {
 
     fn as_any(&self) -> &::std::any::Any {
         self as &::std::any::Any
+    }
+    fn as_any_mut(&mut self) -> &mut ::std::any::Any {
+        self as &mut ::std::any::Any
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<::std::any::Any> {
+        self
     }
 
     fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
@@ -553,10 +560,10 @@ impl ::protobuf::Message for Feature {
     #[allow(unused_variables)]
     fn compute_size(&self) -> u32 {
         let mut my_size = 0;
-        if self.function_name != ::std::string::String::new() {
+        if !self.function_name.is_empty() {
             my_size += ::protobuf::rt::string_size(1, &self.function_name);
         };
-        if self.domain_name != ::std::string::String::new() {
+        if !self.domain_name.is_empty() {
             my_size += ::protobuf::rt::string_size(2, &self.domain_name);
         };
         for value in &self.arguments {
@@ -569,10 +576,10 @@ impl ::protobuf::Message for Feature {
     }
 
     fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream) -> ::protobuf::ProtobufResult<()> {
-        if self.function_name != ::std::string::String::new() {
+        if !self.function_name.is_empty() {
             os.write_string(1, &self.function_name)?;
         };
-        if self.domain_name != ::std::string::String::new() {
+        if !self.domain_name.is_empty() {
             os.write_string(2, &self.domain_name)?;
         };
         for v in &self.arguments {
@@ -598,6 +605,12 @@ impl ::protobuf::Message for Feature {
 
     fn as_any(&self) -> &::std::any::Any {
         self as &::std::any::Any
+    }
+    fn as_any_mut(&mut self) -> &mut ::std::any::Any {
+        self as &mut ::std::any::Any
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<::std::any::Any> {
+        self
     }
 
     fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
@@ -977,6 +990,12 @@ impl ::protobuf::Message for Argument {
     fn as_any(&self) -> &::std::any::Any {
         self as &::std::any::Any
     }
+    fn as_any_mut(&mut self) -> &mut ::std::any::Any {
+        self as &mut ::std::any::Any
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<::std::any::Any> {
+        self
+    }
 
     fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
         ::protobuf::MessageStatic::descriptor_static(None::<Self>)
@@ -1242,6 +1261,12 @@ impl ::protobuf::Message for Matrix {
 
     fn as_any(&self) -> &::std::any::Any {
         self as &::std::any::Any
+    }
+    fn as_any_mut(&mut self) -> &mut ::std::any::Any {
+        self as &mut ::std::any::Any
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<::std::any::Any> {
+        self
     }
 
     fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
