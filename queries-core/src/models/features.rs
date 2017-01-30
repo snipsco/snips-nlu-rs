@@ -19,17 +19,17 @@ pub fn ngram_matcher(preprocessed_result: &PreprocessorResult, ngram_to_check: &
 
 #[cfg(test)]
 mod test {
-    use rustc_serialize::Decodable;
-    use rustc_serialize::Decoder;
+    use std::ops::Range;
+    use rustc_serialize::{Decodable, Decoder};
     use super::has_gazetteer_hits;
     use super::ngram_matcher;
-    use preprocessing::preprocess;
-    use preprocessing::PreprocessorResult;
-    use models::gazetteer::Gazetteer;
-    use models::gazetteer::HashSetGazetteer;
+    use preprocessing::{NormalizedToken, PreprocessorResult};
+    use preprocessing::convert_byte_index;
+    use models::gazetteer::{Gazetteer, HashSetGazetteer};
     use testutils::parse_json;
 
     #[derive(RustcDecodable)]
+    #[allow(dead_code)] // TODO: Remove this
     struct TestDescription {
         description: String,
         input: Input,
@@ -44,13 +44,17 @@ mod test {
     }
 
     #[derive(RustcDecodable)]
+    #[allow(non_snake_case)] // TODO remove this
+    #[allow(dead_code)] // TODO: Remove this
     struct Token {
-        startIndex: i32,
-        endIndex: i32,
+        startIndex: usize,
+        endIndex: usize,
         normalized: String,
         value: String,
+        entity: Option<String>,
     }
 
+    #[allow(dead_code)] // TODO: Remove this
     struct Arg {
         kind: String,
         name: String,
@@ -72,13 +76,39 @@ mod test {
         }
     }
 
+    impl Token {
+        fn to_normalized_token(&self, base_string: &str) -> NormalizedToken {
+            NormalizedToken {
+                value: self.value.clone(),
+                normalized_value: self.normalized.clone(),
+                range: Range {
+                    start: convert_byte_index(base_string, self.startIndex),
+                    end: convert_byte_index(base_string, self.endIndex),
+                },
+                char_range: Range {
+                    start: self.startIndex,
+                    end: self.endIndex,
+                },
+                entity: self.entity.clone(),
+            }
+        }
+    }
+
     #[test]
     fn has_gazetteer_hits_works() {
         let tests: Vec<TestDescription> = parse_json("../data/snips-sdk-tests/feature_extraction/SharedScalar/hasGazetteerHits.json");
         assert!(tests.len() != 0);
+
         for test in &tests {
+            let normalized_tokens = &test.input
+                .tokens
+                .iter()
+                .map(|test_token| test_token.to_normalized_token(&test.input.text))
+                .collect();
+
             let gazetteer = HashSetGazetteer::new(&test.args[0].value).unwrap();
-            let preprocessor_result = preprocess(&test.input.text);
+            let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+
             let result = has_gazetteer_hits(&preprocessor_result, gazetteer);
             assert_eq!(result, vec![test.output])
         }
@@ -89,7 +119,13 @@ mod test {
         let tests: Vec<TestDescription> = parse_json("../data/snips-sdk-tests/feature_extraction/SharedScalar/ngramMatcher.json");
         assert!(tests.len() != 0);
         for test in &tests {
-            let preprocessor_result = preprocess(&test.input.text);
+            let normalized_tokens = &test.input
+                .tokens
+                .iter()
+                .map(|test_token| test_token.to_normalized_token(&test.input.text))
+                .collect();
+
+            let preprocessor_result = PreprocessorResult::new(normalized_tokens);
             let result = ngram_matcher(&preprocessor_result, &test.args[0].value);
             assert_eq!(result, vec![test.output])
         }
