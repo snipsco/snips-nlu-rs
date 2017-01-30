@@ -1,0 +1,17 @@
+[package]
+name = "snips-queries"
+version = "0.1.0"
+authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>", "Kevin Lefevre <kevin.lefevre@snips.ai>"]
+repository = "https://github.com/snipsco/snips-queries-rust/"
+description = """
+Rust implementation of the Queries SDK
+"""
+
+[dependencies]
+itertools = "0.5"
+rustc-serialize = "0.3"
+ndarray = "0.7.2"
+unicode-normalization = "0.1.0"
+regex = "0.1"
+lazy_static = "0.2.2"
+protobuf = "1.2.1"
