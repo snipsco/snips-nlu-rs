@@ -1,6 +1,6 @@
 use preprocessing::PreprocessorResult;
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
-use models::model::Feature;
+use models::model::{Feature, Feature_Type};
 use models::features::{has_gazetteer_hits, ngram_matcher};
 
 type FeatureFunction = Fn(&PreprocessorResult) -> Vec<f64>;
@@ -19,26 +19,25 @@ impl<'a> ProtobufVectorFeatureProcessor<'a> {
     }
 }
 
-impl Feature {
-    fn compute(&self, input: &PreprocessorResult) -> Vec<f64> {
-        match &*self.function_name {
-            "hasGazetteerHits" => {
-                has_gazetteer_hits(input,
-                                   HashSetGazetteer::new(self.get_arguments()[0].get_gazetteer())
-                                       .unwrap())
-            }
-            "ngramMatcher" => ngram_matcher(input, self.get_arguments()[0].get_str()),
-            _ => panic!("method name not found"),
-        }
-    }
-}
-
 impl<'a> VectorFeatureProcessor for ProtobufVectorFeatureProcessor<'a> {
     fn compute_features(&self, input: &PreprocessorResult) -> Vec<f64> {
         return self.feature_functions
             .iter()
             .flat_map(|a_feature_function| a_feature_function.compute(input))
             .collect();
+    }
+}
+
+impl Feature {
+    fn compute(&self, input: &PreprocessorResult) -> Vec<f64> {
+        match self.field_type {
+            Feature_Type::HAS_GAZETTEER_HITS => {
+                has_gazetteer_hits(input,
+                                   HashSetGazetteer::new(self.get_arguments()[0].get_gazetteer())
+                                       .unwrap())
+            }
+            Feature_Type::NGRAM_MATCHER => ngram_matcher(input, self.get_arguments()[0].get_str()),
+        }
     }
 }
 
