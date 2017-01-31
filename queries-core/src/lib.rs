@@ -1,6 +1,12 @@
 extern crate itertools;
 
-extern crate rustc_serialize;
+extern crate serde;
+
+#[macro_use]
+extern crate serde_derive;
+
+extern crate serde_json;
+
 #[macro_use(stack)]
 extern crate ndarray;
 

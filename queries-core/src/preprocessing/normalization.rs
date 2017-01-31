@@ -16,7 +16,7 @@ mod tests {
     use testutils::parse_json;
     use super::normalize;
 
-    #[derive(RustcDecodable)]
+    #[derive(Deserialize)]
     struct TestDescription {
         input: String,
         output: String,

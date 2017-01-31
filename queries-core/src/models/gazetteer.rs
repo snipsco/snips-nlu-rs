@@ -1,7 +1,7 @@
 use std::io::prelude::*;
 use std::collections::HashSet;
 use std::fs::File;
-use rustc_serialize::json;
+use serde_json::from_str;
 
 pub trait Gazetteer: Sized {
     fn contains(&self, value: &str) -> bool;
@@ -20,7 +20,7 @@ impl Gazetteer for HashSetGazetteer {
             .unwrap();
         let mut s = String::new();
         assert!(f.read_to_string(&mut s).is_ok());
-        let vec: Vec<String> = json::decode(&s).unwrap();
+        let vec: Vec<String> = from_str(&s).unwrap();
         Some(HashSetGazetteer { values: vec.iter().cloned().collect() })
     }
 

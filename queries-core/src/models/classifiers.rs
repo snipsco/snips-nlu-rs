@@ -56,14 +56,14 @@ mod tests {
     use testutils::assert_epsilon_eq;
     use testutils::parse_json;
 
-    #[derive(RustcDecodable)]
+    #[derive(Deserialize)]
     struct TestDescription {
         //description: String,
         input: InputDescription,
         output: Vec<Vec<f64>>,
     }
 
-    #[derive(RustcDecodable)]
+    #[derive(Deserialize)]
     struct InputDescription {
         weights: Vec<Vec<f64>>,
         features: Vec<Vec<f64>>,

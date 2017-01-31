@@ -20,7 +20,6 @@ pub fn ngram_matcher(preprocessed_result: &PreprocessorResult, ngram_to_check: &
 #[cfg(test)]
 mod test {
     use std::ops::Range;
-    use rustc_serialize::{Decodable, Decoder};
     use super::has_gazetteer_hits;
     use super::ngram_matcher;
     use preprocessing::{NormalizedToken, PreprocessorResult};
@@ -28,7 +27,7 @@ mod test {
     use models::gazetteer::{Gazetteer, HashSetGazetteer};
     use testutils::parse_json;
 
-    #[derive(RustcDecodable)]
+    #[derive(Deserialize)]
     #[allow(dead_code)] // TODO: Remove this
     struct TestDescription {
         description: String,
@@ -37,43 +36,31 @@ mod test {
         output: f64,
     }
 
-    #[derive(RustcDecodable)]
+    #[derive(Deserialize)]
     struct Input {
         text: String,
         tokens: Vec<Token>,
     }
 
-    #[derive(RustcDecodable)]
-    #[allow(non_snake_case)] // TODO remove this
+    #[derive(Deserialize)]
     #[allow(dead_code)] // TODO: Remove this
     struct Token {
-        startIndex: usize,
-        endIndex: usize,
+        #[serde(rename = "startIndex")]
+        start_index: usize,
+        #[serde(rename = "endIndex")]
+        end_index: usize,
         normalized: String,
         value: String,
         entity: Option<String>,
     }
 
+    #[derive(Deserialize)]
     #[allow(dead_code)] // TODO: Remove this
     struct Arg {
+        #[serde(rename = "type")]
         kind: String,
         name: String,
         value: String,
-    }
-
-    impl Decodable for Arg {
-        fn decode<D: Decoder>(d: &mut D) -> Result<Arg, D::Error> {
-            d.read_struct("Arg", 2, |d| {
-                let kind = try!(d.read_struct_field("type", 0, |d| d.read_str()));
-                let name = try!(d.read_struct_field("name", 1, |d| d.read_str()));
-                let value = try!(d.read_struct_field("value", 2, |d| d.read_str()));
-                Ok(Arg {
-                    kind: kind,
-                    name: name,
-                    value: value,
-                })
-            })
-        }
     }
 
     impl Token {
@@ -82,12 +69,12 @@ mod test {
                 value: self.value.clone(),
                 normalized_value: self.normalized.clone(),
                 range: Range {
-                    start: convert_byte_index(base_string, self.startIndex),
-                    end: convert_byte_index(base_string, self.endIndex),
+                    start: convert_byte_index(base_string, self.start_index),
+                    end: convert_byte_index(base_string, self.end_index),
                 },
                 char_range: Range {
-                    start: self.startIndex,
-                    end: self.endIndex,
+                    start: self.start_index,
+                    end: self.end_index,
                 },
                 entity: self.entity.clone(),
             }
