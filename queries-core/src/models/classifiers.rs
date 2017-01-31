@@ -52,9 +52,10 @@ mod tests {
     use super::Classifier;
     use super::LogisticRegression;
     use super::MulticlassLogisticRegression;
-    use ndarray::prelude::*;
     use testutils::assert_epsilon_eq;
     use testutils::parse_json;
+    use testutils::create_array;
+    use testutils::create_transposed_array;
 
     #[derive(Deserialize)]
     struct TestDescription {
@@ -67,14 +68,6 @@ mod tests {
     struct InputDescription {
         weights: Vec<Vec<f64>>,
         features: Vec<Vec<f64>>,
-    }
-
-    fn create_array(input: &Vec<Vec<f64>>) -> Array2<f64> {
-        Array::from_shape_fn((input.len(), input[0].len()), |x| input[x.0][x.1])
-    }
-
-    fn create_transposed_array(input: &Vec<Vec<f64>>) -> Array2<f64> {
-        Array::from_shape_fn((input[0].len(), input.len()), |x| input[x.1][x.0])
     }
 
     #[test]

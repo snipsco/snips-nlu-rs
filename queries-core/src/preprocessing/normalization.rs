@@ -2,13 +2,12 @@ use unicode_normalization::UnicodeNormalization;
 use std::ascii::AsciiExt;
 use regex::Regex;
 
-
 pub fn normalize(input: &str) -> String {
     lazy_static! {
         static ref COMBINING_DIACRITRICAL_MARKS: Regex = Regex::new("[\u{0300}-\u{036F}]+").unwrap();
     }
 
-    COMBINING_DIACRITRICAL_MARKS.replace(&input.nfd().collect::<String>(), "").to_ascii_lowercase()
+    COMBINING_DIACRITRICAL_MARKS.replace_all(&input.nfd().collect::<String>(), "").to_ascii_lowercase()
 }
 
 #[cfg(test)]

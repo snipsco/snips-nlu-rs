@@ -22,3 +22,11 @@ pub fn epsilon_eq(a: f64, b: f64, epsilon: f64) -> bool {
     let diff = a - b;
     diff < epsilon && diff > -epsilon
 }
+
+pub fn create_array(input: &Vec<Vec<f64>>) -> Array2<f64> {
+    Array::from_shape_fn((input.len(), input[0].len()), |x| input[x.0][x.1])
+}
+
+pub fn create_transposed_array(input: &Vec<Vec<f64>>) -> Array2<f64> {
+    Array::from_shape_fn((input[0].len(), input.len()), |x| input[x.1][x.0])
+}
