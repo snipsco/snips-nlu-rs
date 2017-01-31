@@ -28,9 +28,8 @@ mod test {
     use testutils::parse_json;
 
     #[derive(Deserialize)]
-    #[allow(dead_code)] // TODO: Remove this
     struct TestDescription {
-        description: String,
+        //description: String,
         input: Input,
         args: Vec<Arg>,
         output: f64,
@@ -43,7 +42,6 @@ mod test {
     }
 
     #[derive(Deserialize)]
-    #[allow(dead_code)] // TODO: Remove this
     struct Token {
         #[serde(rename = "startIndex")]
         start_index: usize,
@@ -55,11 +53,10 @@ mod test {
     }
 
     #[derive(Deserialize)]
-    #[allow(dead_code)] // TODO: Remove this
     struct Arg {
-        #[serde(rename = "type")]
-        kind: String,
-        name: String,
+        //#[serde(rename = "type")]
+        //kind: String,
+        //name: String,
         value: String,
     }
 
