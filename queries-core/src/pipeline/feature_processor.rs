@@ -1,28 +1,37 @@
+use ndarray::{Array, Array2};
 use preprocessing::PreprocessorResult;
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
 use models::model::{Feature, Feature_Type};
 use models::features::{has_gazetteer_hits, ngram_matcher};
 
-pub trait VectorFeatureProcessor {
-    fn compute_features(&self, input: &PreprocessorResult) -> Vec<f64>;
+pub trait MatrixFeatureProcessor {
+    fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64>;
 }
 
-pub struct ProtobufVectorFeatureProcessor<'a> {
+pub struct ProtobufMatrixFeatureProcessor<'a> {
     feature_functions: &'a [Feature],
 }
 
-impl<'a> ProtobufVectorFeatureProcessor<'a> {
-    pub fn new(features: &'a [Feature]) -> ProtobufVectorFeatureProcessor<'a> {
-        ProtobufVectorFeatureProcessor { feature_functions: features }
+impl<'a> ProtobufMatrixFeatureProcessor<'a> {
+    pub fn new(features: &'a [Feature]) -> ProtobufMatrixFeatureProcessor<'a> {
+        ProtobufMatrixFeatureProcessor { feature_functions: features }
     }
 }
 
-impl<'a> VectorFeatureProcessor for ProtobufVectorFeatureProcessor<'a> {
-    fn compute_features(&self, input: &PreprocessorResult) -> Vec<f64> {
-        return self.feature_functions
+impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
+    fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64> {
+        let computed_values = self.feature_functions
             .iter()
-            .flat_map(|a_feature_function| a_feature_function.compute(input))
-            .collect();
+            .flat_map(|feature_function| feature_function.compute(input))
+            .collect::<Vec<f64>>();
+
+        let len = self.feature_functions.len();
+        let feature_length = computed_values.len() / len;
+
+        match Array::from_vec(computed_values).into_shape((len, feature_length)) {
+            Ok(array) => array,
+            Err(_) => panic!("A feature function doesn't have the same len as the others.")
+        }
     }
 }
 
@@ -43,24 +52,43 @@ impl Feature {
 mod test {
     extern crate protobuf;
 
+    use std::fs;
     use std::fs::File;
     use std::path::Path;
     use models::model::Model;
-    use super::{VectorFeatureProcessor, ProtobufVectorFeatureProcessor};
     use preprocessing::preprocess;
+    use testutils::parse_json;
+    use testutils::create_transposed_array;
+    use super::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
+
+    #[derive(Deserialize)]
+    struct TestDescription {
+        text: String,
+        //output: Vec<Vec<f64>>,
+        features: Vec<Vec<f64>>,
+    }
 
     #[test]
-    // TODO: perform end-to-end tests
     fn feature_processor_works() {
-        let file_path = "../data/snips-sdk-models/protos/output/BookRestaurant.pbbin";
-        let mut is = File::open(&Path::new(file_path)).unwrap();
-        let model = protobuf::parse_from_reader::<Model>(&mut is).unwrap();
+        let model_directory = "../data/snips-sdk-models/protos/output/";
+        let paths = fs::read_dir("../data/snips-sdk-models/tests/intent_classification/").unwrap();
 
-        let preprocess_result = preprocess("Book me a restaurant to home");
-        let feature_processor = ProtobufVectorFeatureProcessor::new(&model.get_features());
+        for path in paths {
+            let path = path.unwrap().path();
+            let tests: Vec<TestDescription> = parse_json(path.to_str().unwrap());
 
-        let result = feature_processor.compute_features(&preprocess_result);
+            let model_path = Path::new(model_directory)
+                .join(path.file_stem().unwrap())
+                .with_extension("pbbin");
+            let mut model_file = File::open(model_path).unwrap();
+            let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
 
-        assert_eq!(result.len(), 431);
+            for test in tests {
+                let preprocess_result = preprocess(&test.text);
+                let feature_processor = ProtobufMatrixFeatureProcessor::new(&model.get_features());
+                let result = feature_processor.compute_features(&preprocess_result);
+                assert_eq!(result, create_transposed_array(&test.features), "for {:?}, input: {}", path.file_stem().unwrap(), &test.text);
+            }
+        }
     }
 }
