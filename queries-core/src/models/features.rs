@@ -84,7 +84,7 @@ mod test {
         assert!(tests.len() != 0);
 
         for test in &tests {
-            let normalized_tokens = &test.input
+            let normalized_tokens = test.input
                 .tokens
                 .iter()
                 .map(|test_token| test_token.to_normalized_token(&test.input.text))
@@ -103,7 +103,7 @@ mod test {
         let tests: Vec<TestDescription> = parse_json("../data/snips-sdk-tests/feature_extraction/SharedScalar/ngramMatcher.json");
         assert!(tests.len() != 0);
         for test in &tests {
-            let normalized_tokens = &test.input
+            let normalized_tokens = test.input
                 .tokens
                 .iter()
                 .map(|test_token| test_token.to_normalized_token(&test.input.text))
