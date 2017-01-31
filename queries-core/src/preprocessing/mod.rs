@@ -29,11 +29,11 @@ impl Token {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct NormalizedToken {
-    value: String,
-    normalized_value: String,
-    range: Range<usize>,
-    char_range: Range<usize>,
-    entity: Option<String>,
+    pub value: String,
+    pub normalized_value: String,
+    pub range: Range<usize>,
+    pub char_range: Range<usize>,
+    pub entity: Option<String>,
 }
 
 pub fn preprocess(input: &str) -> PreprocessorResult {
@@ -63,7 +63,7 @@ fn convert_char_index(string: &str, byte_index: usize) -> usize {
 
 
 #[cfg(test)]
-fn convert_byte_index(string: &str, char_index: usize) -> usize {
+pub fn convert_byte_index(string: &str, char_index: usize) -> usize {
     let mut result = 0;
     for (current_char_index, char) in string.chars().enumerate() {
         if current_char_index == char_index {
