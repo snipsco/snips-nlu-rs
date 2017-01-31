@@ -3,8 +3,6 @@ use models::gazetteer::{Gazetteer, HashSetGazetteer};
 use models::model::{Feature, Feature_Type};
 use models::features::{has_gazetteer_hits, ngram_matcher};
 
-type FeatureFunction = Fn(&PreprocessorResult) -> Vec<f64>;
-
 pub trait VectorFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Vec<f64>;
 }
@@ -14,7 +12,7 @@ pub struct ProtobufVectorFeatureProcessor<'a> {
 }
 
 impl<'a> ProtobufVectorFeatureProcessor<'a> {
-    fn new(features: &'a [Feature]) -> ProtobufVectorFeatureProcessor<'a> {
+    pub fn new(features: &'a [Feature]) -> ProtobufVectorFeatureProcessor<'a> {
         ProtobufVectorFeatureProcessor { feature_functions: features }
     }
 }
@@ -62,6 +60,7 @@ mod test {
         let feature_processor = ProtobufVectorFeatureProcessor::new(&model.get_features());
 
         let result = feature_processor.compute_features(&preprocess_result);
-        println!("{:?}", result)
+
+        assert_eq!(result.len(), 431);
     }
 }

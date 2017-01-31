@@ -193,21 +193,20 @@ mod test {
     use super::detect_entities;
     use preprocessing::Token;
 
-    #[derive(RustcDecodable, Debug)]
+    #[derive(Deserialize, Debug)]
     struct TestDescription {
         description: String,
         input: String,
         output: Vec<TestOutput>,
     }
 
-    #[derive(RustcDecodable, Debug)]
-    #[allow(non_snake_case)] // TODO remove this
+    #[derive(Deserialize, Debug)]
     struct TestOutput {
         entity: Option<String>,
-        //  TODO use serde an rename field
-        startIndex: usize,
-        //  TODO use serde an rename field
-        endIndex: usize,
+        #[serde(rename = "startIndex")]
+        start_index: usize,
+        #[serde(rename = "endIndex")]
+        end_index: usize,
         value: String,
     }
 
@@ -267,8 +266,8 @@ mod test {
             for (index, output) in desc.output.iter().enumerate() {
                 assert_eq!(result[index].value, output.value);
                 assert_eq!(result[index].entity, output.entity);
-                assert_eq!(result[index].char_range.start, output.startIndex);
-                assert_eq!(result[index].char_range.end, output.endIndex)
+                assert_eq!(result[index].char_range.start, output.start_index);
+                assert_eq!(result[index].char_range.end, output.end_index)
             }
         }
     }

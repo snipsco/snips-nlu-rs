@@ -99,7 +99,7 @@ mod test {
     use testutils::parse_json;
     use super::tokenize;
 
-    #[derive(RustcDecodable, Debug)]
+    #[derive(Deserialize, Debug)]
     struct TestDescription {
         description: String,
         base_input: String,
@@ -107,14 +107,13 @@ mod test {
         output: Vec<TestToken>,
     }
 
-    #[derive(RustcDecodable, Debug)]
-    #[allow(non_snake_case)] // TODO remove this
+    #[derive(Deserialize, Debug)]
     struct TestToken {
         value: String,
-        // TODO rename with serde
-        startIndex: usize,
-        // TODO rename with serde
-        endIndex: usize,
+        #[serde(rename = "startIndex")]
+        start_index: usize,
+        #[serde(rename = "endIndex")]
+        end_index: usize,
         entity: Option<String>,
     }
 
@@ -124,12 +123,12 @@ mod test {
                 value: self.value.clone(),
                 entity: self.entity.clone(),
                 char_range: Range {
-                    start: self.startIndex,
-                    end: self.endIndex,
+                    start: self.start_index,
+                    end: self.end_index,
                 },
                 range: Range {
-                    start: convert_byte_index(base_string, self.startIndex),
-                    end: convert_byte_index(base_string, self.endIndex),
+                    start: convert_byte_index(base_string, self.start_index),
+                    end: convert_byte_index(base_string, self.end_index),
                 },
             }
         }
