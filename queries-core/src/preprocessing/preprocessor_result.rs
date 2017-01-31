@@ -5,13 +5,14 @@ use itertools::Itertools;
 type Ngrams = (String, Vec<usize>);
 
 pub struct PreprocessorResult {
+    pub tokens: Vec<NormalizedToken>,
     pub ngrams: Vec<Ngrams>,
     pub normalized_ngrams: Vec<Ngrams>,
     pub formatted_ngrams: Vec<Ngrams>,
 }
 
 impl PreprocessorResult {
-    pub fn new(tokens: &Vec<NormalizedToken>) -> PreprocessorResult {
+    pub fn new(tokens: Vec<NormalizedToken>) -> PreprocessorResult {
         return PreprocessorResult {
             ngrams: compute_all_ngrams(&*tokens.iter().map(|token| &*token.value).collect_vec(),
                                        tokens.len()),
@@ -27,6 +28,7 @@ impl PreprocessorResult {
                                                      })
                                                      .collect_vec(),
                                                  tokens.len()),
+            tokens: tokens,
         };
     }
 }

@@ -42,7 +42,7 @@ pub fn preprocess(input: &str) -> PreprocessorResult {
         .map(|token| token.to_normalized())
         .collect();
 
-    PreprocessorResult::new(&normalized_tokens)
+    PreprocessorResult::new(normalized_tokens)
 }
 
 fn convert_char_index(string: &str, byte_index: usize) -> usize {
