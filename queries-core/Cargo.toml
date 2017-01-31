@@ -9,7 +9,9 @@ Rust implementation of the Queries SDK
 
 [dependencies]
 itertools = "0.5"
-rustc-serialize = "0.3"
+serde = "0.9"
+serde_derive = "0.9"
+serde_json = "0.9"
 ndarray = "0.7.2"
 unicode-normalization = "0.1.0"
 regex = "0.1"
