@@ -35,7 +35,7 @@ impl Matrix {
     fn to_array2(&self) -> Array2<f64> {
         let matrix_buffer = self.get_buffer();
 
-        match Array::from_vec(matrix_buffer.to_vec()).into_shape((self.cols as usize, self.rows as usize)) {
+        match Array::from_vec(matrix_buffer.to_vec()).into_shape((self.rows as usize, self.cols as usize)) {
             Ok(array) => array,
             Err(error) => panic!("Can't convert matrix into array2. Reason: {}", error),
         }
@@ -66,7 +66,7 @@ mod test {
 
     #[test]
     fn intent_classifier_works() {
-        let model_directory = "../data/snips-sdk-models/protos/output/";
+        let model_directory = "../data/snips-sdk-models-protobuf/intent_classification/";
         let paths = fs::read_dir("../data/snips-sdk-models/tests/intent_classification/").unwrap();
 
         for path in paths {
