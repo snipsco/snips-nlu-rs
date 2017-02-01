@@ -23,7 +23,7 @@ mod tests {
 
     #[test]
     fn normalization_works() {
-        let descs: Vec<TestDescription> = parse_json("../data/snips-sdk-tests/preprocessing/normalization/normalizer.json");
+        let descs: Vec<TestDescription> = parse_json("snips-sdk-tests/preprocessing/normalization/normalizer.json");
         assert!(descs.len() != 0);
 
         for desc in descs {
