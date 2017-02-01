@@ -70,7 +70,7 @@ mod test {
 
     #[test]
     fn feature_processor_works() {
-        let model_directory = "../data/snips-sdk-models/protos/output/";
+        let model_directory = "../data/snips-sdk-models-protobuf/intent_classification/";
         let paths = fs::read_dir("../data/snips-sdk-models/tests/intent_classification/").unwrap();
 
         for path in paths {
