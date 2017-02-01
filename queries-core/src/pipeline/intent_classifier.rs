@@ -2,25 +2,24 @@ use ndarray::prelude::*;
 use models::model::{Model, Matrix};
 use models::classifiers::{Classifier, LogisticRegression};
 use preprocessing::PreprocessorResult;
+use pipeline::Probability;
 use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
-
-type Probability = f64;
 
 pub trait IntentClassifier {
     fn classify(&self, preprocessor_result: &PreprocessorResult) -> Probability;
 }
 
-pub struct ProtobufIntentClassifier {
-    model: Model,
+pub struct ProtobufIntentClassifier<'a> {
+    model: &'a Model,
 }
 
-impl ProtobufIntentClassifier {
-    pub fn new(model: Model) -> ProtobufIntentClassifier {
+impl<'a> ProtobufIntentClassifier<'a> {
+    pub fn new(model: &'a Model) -> ProtobufIntentClassifier<'a> {
         ProtobufIntentClassifier { model: model }
     }
 }
 
-impl IntentClassifier for ProtobufIntentClassifier {
+impl<'a> IntentClassifier for ProtobufIntentClassifier<'a> {
     fn classify(&self, preprocessor_result: &PreprocessorResult) -> Probability {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
@@ -80,7 +79,7 @@ mod test {
             let mut model_file = File::open(model_path).unwrap();
             let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
 
-            let intent_classifier = ProtobufIntentClassifier::new(model);
+            let intent_classifier = ProtobufIntentClassifier::new(&model);
 
             for test in tests {
                 let preprocess_result = preprocess(&test.text);
