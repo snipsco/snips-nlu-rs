@@ -57,6 +57,7 @@ mod test {
     use std::path::Path;
     use models::model::Model;
     use preprocessing::preprocess;
+    use testutils::file_path;
     use testutils::parse_json;
     use testutils::create_transposed_array;
     use super::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
@@ -70,14 +71,14 @@ mod test {
 
     #[test]
     fn feature_processor_works() {
-        let model_directory = "../data/snips-sdk-models-protobuf/intent_classification/";
-        let paths = fs::read_dir("../data/snips-sdk-models/tests/intent_classification/").unwrap();
+        let model_directory = file_path("snips-sdk-models-protobuf/intent_classification/");
+        let paths = fs::read_dir(file_path("snips-sdk-models/tests/intent_classification/")).unwrap();
 
         for path in paths {
             let path = path.unwrap().path();
             let tests: Vec<TestDescription> = parse_json(path.to_str().unwrap());
 
-            let model_path = Path::new(model_directory)
+            let model_path = Path::new(&model_directory)
                 .join(path.file_stem().unwrap())
                 .with_extension("pbbin");
             let mut model_file = File::open(model_path).unwrap();
