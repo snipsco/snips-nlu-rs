@@ -2,25 +2,24 @@ use ndarray::prelude::*;
 use models::model::{Model, Matrix};
 use models::classifiers::{Classifier, LogisticRegression};
 use preprocessing::PreprocessorResult;
+use pipeline::Probability;
 use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
-
-type Probability = f64;
 
 pub trait IntentClassifier {
     fn classify(&self, preprocessor_result: &PreprocessorResult) -> Probability;
 }
 
-pub struct ProtobufIntentClassifier {
-    model: Model,
+pub struct ProtobufIntentClassifier<'a> {
+    model: &'a Model,
 }
 
-impl ProtobufIntentClassifier {
-    pub fn new(model: Model) -> ProtobufIntentClassifier {
+impl<'a> ProtobufIntentClassifier<'a> {
+    pub fn new(model: &'a Model) -> ProtobufIntentClassifier<'a> {
         ProtobufIntentClassifier { model: model }
     }
 }
 
-impl IntentClassifier for ProtobufIntentClassifier {
+impl<'a> IntentClassifier for ProtobufIntentClassifier<'a> {
     fn classify(&self, preprocessor_result: &PreprocessorResult) -> Probability {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
@@ -36,7 +35,7 @@ impl Matrix {
     fn to_array2(&self) -> Array2<f64> {
         let matrix_buffer = self.get_buffer();
 
-        match Array::from_vec(matrix_buffer.to_vec()).into_shape((self.cols as usize, self.rows as usize)) {
+        match Array::from_vec(matrix_buffer.to_vec()).into_shape((self.rows as usize, self.cols as usize)) {
             Ok(array) => array,
             Err(error) => panic!("Can't convert matrix into array2. Reason: {}", error),
         }
@@ -67,7 +66,7 @@ mod test {
 
     #[test]
     fn intent_classifier_works() {
-        let model_directory = "../data/snips-sdk-models/protos/output/";
+        let model_directory = "../data/snips-sdk-models-protobuf/intent_classification/";
         let paths = fs::read_dir("../data/snips-sdk-models/tests/intent_classification/").unwrap();
 
         for path in paths {
@@ -80,7 +79,7 @@ mod test {
             let mut model_file = File::open(model_path).unwrap();
             let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
 
-            let intent_classifier = ProtobufIntentClassifier::new(model);
+            let intent_classifier = ProtobufIntentClassifier::new(&model);
 
             for test in tests {
                 let preprocess_result = preprocess(&test.text);
