@@ -19,6 +19,8 @@ extern crate lazy_static;
 
 extern crate protobuf;
 
+extern crate rayon;
+
 pub mod models;
 pub mod preprocessing;
 pub mod pipeline;
