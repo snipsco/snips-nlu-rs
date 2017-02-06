@@ -255,7 +255,7 @@ mod test {
     }
 
     fn do_test(folder_name: &str, file_name: &str, tokenizer: &Fn(&str) -> Vec<Token>) {
-        let path = format!("../data/snips-sdk-tests/preprocessing/{}/{}",
+        let path = format!("snips-sdk-tests/preprocessing/{}/{}",
                            folder_name,
                            file_name);
         let descs: Vec<TestDescription> = parse_json(&path);

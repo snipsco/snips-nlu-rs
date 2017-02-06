@@ -80,7 +80,7 @@ mod test {
 
     #[test]
     fn has_gazetteer_hits_works() {
-        let tests: Vec<TestDescription> = parse_json("../data/snips-sdk-tests/feature_extraction/SharedScalar/hasGazetteerHits.json");
+        let tests: Vec<TestDescription> = parse_json("snips-sdk-tests/feature_extraction/SharedScalar/hasGazetteerHits.json");
         assert!(tests.len() != 0);
 
         for test in &tests {
@@ -100,7 +100,8 @@ mod test {
 
     #[test]
     fn ngram_matcher_works() {
-        let tests: Vec<TestDescription> = parse_json("../data/snips-sdk-tests/feature_extraction/SharedScalar/ngramMatcher.json");
+        let tests: Vec<TestDescription> = parse_json("snips-sdk-tests/feature_extraction/SharedScalar/ngramMatcher.json");
+
         assert!(tests.len() != 0);
         for test in &tests {
             let normalized_tokens = test.input
