@@ -21,6 +21,8 @@ extern crate protobuf;
 
 extern crate rayon;
 
+extern crate tensorflow;
+
 pub mod models;
 pub mod preprocessing;
 pub mod pipeline;
