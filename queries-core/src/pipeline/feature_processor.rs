@@ -30,7 +30,7 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 
         match Array::from_vec(computed_values).into_shape((len, feature_length)) {
             Ok(array) => array,
-            Err(_) => panic!("A feature function doesn't have the same len as the others.")
+            Err(_) => panic!("A feature function doesn't have the same len as the others."),
         }
     }
 }
@@ -72,7 +72,8 @@ mod test {
     #[test]
     fn feature_processor_works() {
         let model_directory = file_path("snips-sdk-models-protobuf/intent_classification/");
-        let paths = fs::read_dir(file_path("snips-sdk-models/tests/intent_classification/")).unwrap();
+        let paths = fs::read_dir(file_path("snips-sdk-models/tests/intent_classification/"))
+            .unwrap();
 
         for path in paths {
             let path = path.unwrap().path();
@@ -88,7 +89,11 @@ mod test {
                 let preprocess_result = preprocess(&test.text);
                 let feature_processor = ProtobufMatrixFeatureProcessor::new(&model.get_features());
                 let result = feature_processor.compute_features(&preprocess_result);
-                assert_eq!(result, create_transposed_array(&test.features), "for {:?}, input: {}", path.file_stem().unwrap(), &test.text);
+                assert_eq!(result,
+                           create_transposed_array(&test.features),
+                           "for {:?}, input: {}",
+                           path.file_stem().unwrap(),
+                           &test.text);
             }
         }
     }
