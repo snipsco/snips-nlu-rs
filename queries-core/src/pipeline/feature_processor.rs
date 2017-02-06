@@ -1,8 +1,7 @@
 use ndarray::{Array, Array2};
 use preprocessing::PreprocessorResult;
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
-use models::model::{Feature, Feature_Type};
-use models::features::{has_gazetteer_hits, ngram_matcher};
+use models::model::{Feature, Feature_Type, Feature_Domain, Argument};
 
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64>;
@@ -37,13 +36,47 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 
 impl Feature {
     fn compute(&self, input: &PreprocessorResult) -> Vec<f64> {
-        match self.field_type {
-            Feature_Type::HAS_GAZETTEER_HITS => {
-                has_gazetteer_hits(input,
-                                   HashSetGazetteer::new(self.get_arguments()[0].get_gazetteer())
-                                       .unwrap())
+        let known_domain = self.get_known_domain();
+        let feature_type = self.field_type;
+        let arguments = self.get_arguments();
+
+        match known_domain {
+            Feature_Domain::SHARED_SCALAR => {
+                Feature::get_shared_scalar(input, &feature_type, arguments)
             }
-            Feature_Type::NGRAM_MATCHER => ngram_matcher(input, self.get_arguments()[0].get_str()),
+            Feature_Domain::SHARED_VECTOR => {
+                Feature::get_shared_vector(input, &feature_type, arguments)
+            }
+        }
+    }
+
+    fn get_shared_scalar(input: &PreprocessorResult,
+                         feature_type: &Feature_Type,
+                         arguments: &[Argument])
+                         -> Vec<f64> {
+        match *feature_type {
+            Feature_Type::HAS_GAZETTEER_HITS => {
+                let gazetteer = HashSetGazetteer::new(arguments[0].get_gazetteer()).unwrap();
+                ::features::shared_scalar::has_gazetteer_hits(input, &gazetteer)
+            }
+            Feature_Type::NGRAM_MATCHER => {
+                ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
+            }
+        }
+    }
+
+    fn get_shared_vector(input: &PreprocessorResult,
+                         feature_type: &Feature_Type,
+                         arguments: &[Argument])
+                         -> Vec<f64> {
+        match *feature_type {
+            Feature_Type::HAS_GAZETTEER_HITS => {
+                let gazetteer = HashSetGazetteer::new(arguments[0].get_gazetteer()).unwrap();
+                ::features::shared_vector::has_gazetteer_hits(input, &gazetteer)
+            }
+            Feature_Type::NGRAM_MATCHER => {
+                ::features::shared_vector::ngram_matcher(input, arguments[0].get_str())
+            }
         }
     }
 }
@@ -86,9 +119,10 @@ mod test {
             let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
 
             for test in tests {
-                let preprocess_result = preprocess(&test.text);
+                let preprocessor_result = preprocess(&test.text);
                 let feature_processor = ProtobufMatrixFeatureProcessor::new(&model.get_features());
-                let result = feature_processor.compute_features(&preprocess_result);
+
+                let result = feature_processor.compute_features(&preprocessor_result);
                 assert_eq!(result,
                            create_transposed_array(&test.features),
                            "for {:?}, input: {}",

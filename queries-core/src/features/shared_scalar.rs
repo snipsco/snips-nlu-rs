@@ -1,8 +1,8 @@
 use preprocessing::PreprocessorResult;
-use super::gazetteer::Gazetteer;
+use models::gazetteer::Gazetteer;
 
 pub fn has_gazetteer_hits<T: Gazetteer>(preprocessed_result: &PreprocessorResult,
-                                        gazetteer: T)
+                                        gazetteer: &T)
                                         -> Vec<f64> {
     match preprocessed_result.normalized_ngrams.iter().find(|ngram| gazetteer.contains(&ngram.0)) {
         Some(_) => vec![1.0],
@@ -93,7 +93,7 @@ mod test {
             let gazetteer = HashSetGazetteer::new(&test.args[0].value).unwrap();
             let preprocessor_result = PreprocessorResult::new(normalized_tokens);
 
-            let result = has_gazetteer_hits(&preprocessor_result, gazetteer);
+            let result = has_gazetteer_hits(&preprocessor_result, &gazetteer);
             assert_eq!(result, vec![test.output])
         }
     }
