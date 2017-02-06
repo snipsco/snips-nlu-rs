@@ -36,12 +36,16 @@ pub struct NormalizedToken {
     pub entity: Option<String>,
 }
 
-pub fn preprocess(input: &str) -> PreprocessorResult {
-    let normalized_tokens = tokenization::tokenize(entity::detect_entities(input))
+pub fn create_normalized_tokens(input: &str) -> Vec<NormalizedToken> {
+    tokenization::tokenize(entity::detect_entities(input))
         .iter()
         .map(|token| token.to_normalized())
-        .collect();
+        .collect()
+}
 
+
+pub fn preprocess(input: &str) -> PreprocessorResult {
+    let normalized_tokens = create_normalized_tokens(input);
     PreprocessorResult::new(normalized_tokens)
 }
 

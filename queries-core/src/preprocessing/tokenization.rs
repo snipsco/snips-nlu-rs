@@ -136,7 +136,7 @@ mod test {
 
     #[test]
     fn tokenization_works() {
-        let tests: Vec<TestDescription> = parse_json("../data/snips-sdk-tests/preprocessing/tokenization/span_tokenization.json");
+        let tests: Vec<TestDescription> = parse_json("snips-sdk-tests/preprocessing/tokenization/span_tokenization.json");
         assert!(tests.len() != 0);
         for test in tests {
             let result =
