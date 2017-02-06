@@ -7,7 +7,8 @@ pub fn normalize(input: &str) -> String {
         static ref COMBINING_DIACRITRICAL_MARKS: Regex = Regex::new("[\u{0300}-\u{036F}]+").unwrap();
     }
 
-    COMBINING_DIACRITRICAL_MARKS.replace_all(&input.nfd().collect::<String>(), "").to_ascii_lowercase()
+    COMBINING_DIACRITRICAL_MARKS.replace_all(&input.nfd().collect::<String>(), "")
+        .to_ascii_lowercase()
 }
 
 #[cfg(test)]

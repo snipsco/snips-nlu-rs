@@ -24,7 +24,8 @@ impl<'a> IntentClassifier for ProtobufIntentClassifier<'a> {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
 
-        let classifier = LogisticRegression::new(self.model.get_arguments()[0].get_matrix().to_array2());
+        let classifier =
+            LogisticRegression::new(self.model.get_arguments()[0].get_matrix().to_array2());
         let probabilities = classifier.run(&computed_features);
 
         probabilities[[0, 0]]
@@ -35,7 +36,8 @@ impl Matrix {
     fn to_array2(&self) -> Array2<f64> {
         let matrix_buffer = self.get_buffer();
 
-        match Array::from_vec(matrix_buffer.to_vec()).into_shape((self.rows as usize, self.cols as usize)) {
+        match Array::from_vec(matrix_buffer.to_vec())
+            .into_shape((self.rows as usize, self.cols as usize)) {
             Ok(array) => array,
             Err(error) => panic!("Can't convert matrix into array2. Reason: {}", error),
         }
@@ -60,7 +62,7 @@ mod test {
     #[derive(Deserialize)]
     struct TestDescription {
         text: String,
-        output: Vec<Vec<f64>>,
+        output: Vec<Vec<f64>>, 
 //        features: Vec<Vec<f64>>,
     }
 

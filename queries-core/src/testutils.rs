@@ -13,11 +13,11 @@ pub fn parse_json<T: Deserialize>(file_name: &str) -> T {
 }
 
 #[cfg(not(target_os="android"))]
-pub fn file_path(file_name : &str) -> String {
+pub fn file_path(file_name: &str) -> String {
     format!("../data/{}", file_name)
 }
 #[cfg(target_os="android")]
-pub fn file_path(file_name : &str) -> String {
+pub fn file_path(file_name: &str) -> String {
     format!("/data/local/tmp/snips-queries-data/{}", file_name)
 }
 

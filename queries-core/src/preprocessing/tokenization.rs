@@ -139,7 +139,8 @@ mod test {
         let tests: Vec<TestDescription> = parse_json("snips-sdk-tests/preprocessing/tokenization/span_tokenization.json");
         assert!(tests.len() != 0);
         for test in tests {
-            let result = tokenize(test.input.iter().map(|x| x.to_token(&test.base_input)).collect());
+            let result =
+                tokenize(test.input.iter().map(|x| x.to_token(&test.base_input)).collect());
             for (index, expected_token) in
                 test.output.iter().map(|x| x.to_token(&test.base_input)).enumerate() {
                 assert_eq!(result[index], expected_token);

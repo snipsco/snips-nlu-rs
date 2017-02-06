@@ -30,7 +30,8 @@ impl Gazetteer for HashSetGazetteer {
 
 #[cfg(not(target_os = "android"))]
 pub fn gazetteer_file_path(gazetteer_name: &str) -> String {
-    format!("../data/snips-sdk-gazetteers/gazetteers/{}.json", gazetteer_name)
+    format!("../data/snips-sdk-gazetteers/gazetteers/{}.json",
+            gazetteer_name)
 }
 
 #[cfg(target_os = "android")]
