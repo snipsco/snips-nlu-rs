@@ -24,6 +24,7 @@ extern crate rayon;
 pub mod models;
 pub mod preprocessing;
 pub mod pipeline;
+pub mod features;
 
 #[cfg(test)]
 mod testutils;
