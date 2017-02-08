@@ -66,7 +66,8 @@ impl CNN for TensorflowCNN {
 
         let mut vec = Vec::with_capacity(tensor_res.data().len());
         vec.extend_from_slice(&tensor_res.data());
-        let vec: Vec<Probability> = unsafe { mem::transmute(vec) };
+        //let vec: Vec<Probability> = unsafe { mem::transmute(vec) };
+        let vec: Vec<Probability> = vec.iter().map(|value| *value as Probability).collect();
 
         Array::from_vec(vec)
             .into_shape((tensor_res.dims()[0] as usize, tensor_res.dims()[1] as usize))
