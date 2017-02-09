@@ -12,16 +12,13 @@ pub fn parse_json<T: Deserialize>(file_name: &str) -> T {
     from_str::<T>(&s).unwrap()
 }
 
-#[cfg(not(target_os="android"))]
 pub fn file_path(file_name: &str) -> String {
-    format!("../data/{}", file_name)
+    if cfg!(any(target_os = "ios", target_os = "android")) || ::std::env::var("DINGHY").is_ok() {
+        ::std::env::current_exe().unwrap().parent().unwrap().join("test_data/data").join(file_name).to_str().unwrap().to_string()
+    } else {
+        format!("../data/{}", file_name)
+    }
 }
-#[cfg(target_os="android")]
-pub fn file_path(file_name: &str) -> String {
-    format!("/data/local/tmp/snips-queries-data/{}", file_name)
-}
-
-
 
 pub fn assert_epsilon_eq(a: Array2<f64>, b: Array2<f64>, epsilon: f64) {
     for (index, elem_a) in a.indexed_iter() {
