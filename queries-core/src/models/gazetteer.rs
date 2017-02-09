@@ -5,23 +5,24 @@ use serde_json::from_str;
 
 pub trait Gazetteer: Sized {
     fn contains(&self, value: &str) -> bool;
-    fn new(json_filename: &str) -> Option<Self>;
 }
 
 pub struct HashSetGazetteer {
     values: HashSet<String>,
 }
 
-impl Gazetteer for HashSetGazetteer {
+impl HashSetGazetteer {
     // TODO: To be improved
-    fn new(json_filename: &str) -> Option<HashSetGazetteer> {
+    pub fn new(json_filename: &str) -> Option<HashSetGazetteer> {
         let mut f = File::open(gazetteer_file_path(json_filename)).unwrap();
         let mut s = String::new();
         assert!(f.read_to_string(&mut s).is_ok());
         let vec: Vec<String> = from_str(&s).unwrap();
         Some(HashSetGazetteer { values: vec.iter().cloned().collect() })
     }
+}
 
+impl Gazetteer for HashSetGazetteer {
     fn contains(&self, value: &str) -> bool {
         self.values.contains(value)
     }
