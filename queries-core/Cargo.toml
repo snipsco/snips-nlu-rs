@@ -25,3 +25,11 @@ bencher="*"
 [[bench]]
 name = "preprocess"
 harness = false
+
+[[bench]]
+name = "intent_classif"
+harness = false
+
+[[bench]]
+name = "tokens_classif"
+harness = false
