@@ -1,3 +1,7 @@
+use std::{fs, path};
+
+use protobuf;
+
 use ndarray::prelude::*;
 use models::model::{Model, Matrix};
 use models::classifiers::{Classifier, LogisticRegression};
@@ -9,17 +13,19 @@ pub trait IntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability;
 }
 
-pub struct ProtobufIntentClassifier<'a> {
-    model: &'a Model,
+pub struct ProtobufIntentClassifier {
+    model: Model,
 }
 
-impl<'a> ProtobufIntentClassifier<'a> {
-    pub fn new(model: &'a Model) -> ProtobufIntentClassifier<'a> {
+impl ProtobufIntentClassifier {
+    pub fn new<P: AsRef<path::Path>>(path: P) -> ProtobufIntentClassifier {
+        let mut model_file = fs::File::open(path).unwrap();
+        let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
         ProtobufIntentClassifier { model: model }
     }
 }
 
-impl<'a> IntentClassifier for ProtobufIntentClassifier<'a> {
+impl IntentClassifier for ProtobufIntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
@@ -46,8 +52,6 @@ impl Matrix {
 
 #[cfg(test)]
 mod test {
-    extern crate protobuf;
-
     use std::fs;
     use std::fs::File;
     use std::path::Path;
@@ -78,10 +82,8 @@ mod test {
             let model_path = Path::new(model_directory)
                 .join(path.file_stem().unwrap())
                 .with_extension("pbbin");
-            let mut model_file = File::open(model_path).unwrap();
-            let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
 
-            let intent_classifier = ProtobufIntentClassifier::new(&model);
+            let intent_classifier = ProtobufIntentClassifier::new(model_path);
 
             for test in tests {
                 let preprocess_result = preprocess(&test.text);
