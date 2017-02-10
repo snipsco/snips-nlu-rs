@@ -4,6 +4,7 @@ use itertools::Itertools;
 
 type Ngrams = (String, Vec<usize>);
 
+#[derive(Debug)]
 pub struct PreprocessorResult {
     pub tokens: Vec<NormalizedToken>,
     pub ngrams: Vec<Ngrams>,
