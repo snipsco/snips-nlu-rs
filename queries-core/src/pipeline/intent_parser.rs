@@ -25,7 +25,7 @@ impl IntentParser for ProtobufIntentParser {
 
         let probabilities = self.models
             .par_iter()
-            .map(|model| ProtobufIntentClassifier::new(&model).classify(&preprocessed_result))
+            .map(|model| ProtobufIntentClassifier::new(&model).run(&preprocessed_result))
             .collect();
 
         probabilities
