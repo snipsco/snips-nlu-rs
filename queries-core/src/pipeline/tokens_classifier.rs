@@ -58,7 +58,7 @@ mod test {
             .with_extension("pbbin");
         let preprocessor_result = preprocess("Book me a table for two people at Le Chalet Savoyard");
 
-        let tokens_classifier = ProtobufTokensClassifier::new(model_path, &mut cnn);
+        let mut tokens_classifier = ProtobufTokensClassifier::new(model_path, &mut cnn);
         let probabilities = tokens_classifier.run(&preprocessor_result);
 
         println!("probabilities: {}", probabilities);
