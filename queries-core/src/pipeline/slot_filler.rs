@@ -31,7 +31,7 @@ mod test {
                                                                [0.7, 0.8, 0.9],
                                                                [1.2, 1.1, 1.0]]);
 
-        let expected = vec!["Book", "two"];
+        let expected = vec!["me", "", "", "Book a"];
         let slots = compute_slots(&tokens, &tokens_probabilities);
 
         assert_eq!(slots, expected);
