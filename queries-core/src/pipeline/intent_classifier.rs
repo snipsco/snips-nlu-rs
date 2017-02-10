@@ -6,7 +6,7 @@ use pipeline::Probability;
 use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 
 pub trait IntentClassifier {
-    fn classify(&self, preprocessor_result: &PreprocessorResult) -> Probability;
+    fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability;
 }
 
 pub struct ProtobufIntentClassifier<'a> {
@@ -20,7 +20,7 @@ impl<'a> ProtobufIntentClassifier<'a> {
 }
 
 impl<'a> IntentClassifier for ProtobufIntentClassifier<'a> {
-    fn classify(&self, preprocessor_result: &PreprocessorResult) -> Probability {
+    fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
 
@@ -85,7 +85,7 @@ mod test {
 
             for test in tests {
                 let preprocess_result = preprocess(&test.text);
-                let result = intent_classifier.classify(&preprocess_result);
+                let result = intent_classifier.run(&preprocess_result);
                 assert_epsilon_eq(arr2(&[[result]]), create_array(&test.output), 1e-9);
             }
         }
