@@ -30,5 +30,7 @@ pub mod preprocessing;
 pub mod pipeline;
 pub mod features;
 
+pub use preprocessing::preprocess;
+
 #[cfg(test)]
 mod testutils;
