@@ -21,6 +21,8 @@ extern crate protobuf;
 
 extern crate rayon;
 
+extern crate rulinalg;
+
 extern crate tensorflow;
 
 pub mod models;
