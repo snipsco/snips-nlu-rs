@@ -3,7 +3,6 @@ use preprocessing::Token;
 use preprocessing::convert_char_index;
 use regex::Regex;
 
-
 pub fn tokenize(input: Vec<Token>) -> Vec<Token> {
     input.iter()
         .flat_map(extract_punctuation_on_simple_token)
