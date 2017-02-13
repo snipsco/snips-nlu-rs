@@ -13,7 +13,7 @@ use snips_queries_core::preprocess;
 
 fn load_classifier(bench: &mut Bencher) {
     let cnn_path = "../data/snips-sdk-models-protobuf/tokens_classification/cnn_model_quantized.pb";
-    let model_path = "../data/snips-sdk-models-protobuf/tokens_classification/";
+    let model_path = "../data/snips-sdk-models-protobuf/tokens_classification/BookRestaurant_CnnCrf.pbbin";
 
     bench.iter(|| {
         let mut tokens_classifier = ProtobufTokensClassifier::new(&model_path, &cnn_path);
@@ -22,7 +22,7 @@ fn load_classifier(bench: &mut Bencher) {
 
 fn run_intent_model(bench: &mut Bencher) {
     let cnn_path = "../data/snips-sdk-models-protobuf/tokens_classification/cnn_model_quantized.pb";
-    let model_path = "../data/snips-sdk-models-protobuf/tokens_classification/";
+    let model_path = "../data/snips-sdk-models-protobuf/tokens_classification/BookRestaurant_CnnCrf.pbbin";
 
     let mut tokens_classifier = ProtobufTokensClassifier::new(&model_path, &cnn_path);
 
