@@ -1,7 +1,5 @@
-use std::fs::File;
+use std::{fs, io, path};
 use std::io::Read;
-use std::path::Path;
-use std::mem;
 
 use ndarray::prelude::*;
 
@@ -24,10 +22,10 @@ pub struct TensorflowCNN {
 }
 
 impl TensorflowCNN {
-    pub fn new(model_path: &Path) -> TensorflowCNN {
+    pub fn new<P: AsRef<path::Path>>(model_path: P) -> TensorflowCNN {
         let mut graph = Graph::new();
         let mut proto = Vec::new();
-        File::open(model_path).unwrap().read_to_end(&mut proto);
+        fs::File::open(model_path).unwrap().read_to_end(&mut proto);
 
         graph.import_graph_def(&proto, &ImportGraphDefOptions::new());
         let session = Session::new(&SessionOptions::new(), &graph).unwrap();
