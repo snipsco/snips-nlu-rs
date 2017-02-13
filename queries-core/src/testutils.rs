@@ -1,8 +1,8 @@
 use std::io::prelude::*;
 use std::fs::File;
+
 use serde_json::from_str;
 use serde::de::Deserialize;
-
 use ndarray::prelude::*;
 
 pub fn parse_json<T: Deserialize>(file_name: &str) -> T {

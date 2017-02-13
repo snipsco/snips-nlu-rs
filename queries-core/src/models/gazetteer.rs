@@ -1,6 +1,7 @@
 use std::io::prelude::*;
 use std::collections::HashSet;
 use std::fs::File;
+
 use serde_json::from_str;
 
 pub trait Gazetteer: Sized {
