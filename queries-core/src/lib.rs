@@ -77,7 +77,7 @@ impl IntentParser {
         let preprocessor_result = preprocess(input);
 
         let mut probabilities: Vec<IntentClassifierResult> = self.classifiers
-        .iter() // FIXME par_iter
+        .par_iter()
         .map(|(name, intent_configuration)| {
             let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
             IntentClassifierResult { intent_name: name.to_string(), probability: probability }

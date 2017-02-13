@@ -1,4 +1,4 @@
-use std::{fs, io, path};
+use std::{fs, io, path, sync};
 use std::io::Read;
 
 use ndarray::prelude::*;
@@ -13,13 +13,12 @@ use tensorflow::Tensor;
 use pipeline::Probability;
 
 pub trait CNN {
-    fn run(&mut self, features: &Array2<f64>) -> Array2<f64>;
+    fn run(&self, features: &Array2<f64>) -> Array2<f64>;
 }
 
-pub struct TensorflowCNN {
-    session: Session,
-    graph: Graph,
-}
+pub struct TensorflowCNN(sync::Mutex<(Session,Graph)>);
+
+unsafe impl Sync for TensorflowCNN {}
 
 impl TensorflowCNN {
     pub fn new<P: AsRef<path::Path>>(model_path: P) -> TensorflowCNN {
@@ -30,15 +29,12 @@ impl TensorflowCNN {
         graph.import_graph_def(&proto, &ImportGraphDefOptions::new());
         let session = Session::new(&SessionOptions::new(), &graph).unwrap();
 
-        TensorflowCNN {
-            session: session,
-            graph: graph,
-        }
+        TensorflowCNN(sync::Mutex::new((session, graph)))
     }
 }
 
 impl CNN for TensorflowCNN {
-    fn run(&mut self, features: &Array2<f64>) -> Array2<Probability> {
+    fn run(&self, features: &Array2<f64>) -> Array2<Probability> {
         let transposed_array = features.t();
         let tokens_count = transposed_array.shape()[0];
         let features_count = transposed_array.shape()[1];
@@ -51,16 +47,20 @@ impl CNN for TensorflowCNN {
         }
 
         let mut step = StepWithGraph::new();
-        step.add_input(&self.graph.operation_by_name_required("input").unwrap(),
-                       0,
-                       &x);
-        let res =
-            step.request_output(&self.graph.operation_by_name_required("predictions").unwrap(),
-                                0);
+        let tensor_res: Tensor<f32> = {
+            let mut locked = self.0.lock().unwrap();
+            let (ref mut session, ref graph) = *locked;
+            step.add_input(&graph.operation_by_name_required("input").unwrap(),
+                           0,
+                           &x);
+            let res =
+                step.request_output(&graph.operation_by_name_required("predictions").unwrap(),
+                                    0);
 
-        self.session.run(&mut step);
+            session.run(&mut step);
 
-        let tensor_res: Tensor<f32> = step.take_output(res).unwrap();
+            step.take_output(res).unwrap()
+        };
 
         let mut vec = Vec::with_capacity(tensor_res.data().len());
         vec.extend_from_slice(&tensor_res.data());
