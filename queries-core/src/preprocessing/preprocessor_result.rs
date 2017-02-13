@@ -1,6 +1,8 @@
 use std::cmp::min;
-use preprocessing::NormalizedToken;
+
 use itertools::Itertools;
+
+use preprocessing::NormalizedToken;
 
 type Ngrams = (String, Vec<usize>);
 

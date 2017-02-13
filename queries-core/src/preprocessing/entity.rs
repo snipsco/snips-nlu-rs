@@ -1,8 +1,10 @@
 use std::ops::Range;
+use std::iter::Iterator;
+
+use regex::Regex;
+
 use preprocessing::Token;
 use preprocessing::convert_char_index;
-use regex::Regex;
-use std::iter::Iterator;
 
 struct EntityDetector {
     regex: &'static Regex,
