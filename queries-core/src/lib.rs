@@ -58,7 +58,7 @@ pub struct IntentParser {
 }
 
 impl IntentParser {
-    fn new(configurations: &[&str]) -> IntentParser {
+    pub fn new(configurations: &[&str]) -> IntentParser {
         let mut classifiers = HashMap::new();
 
         for c in configurations {
