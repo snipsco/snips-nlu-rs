@@ -53,10 +53,10 @@ impl Matrix {
 #[cfg(test)]
 mod test {
     use std::fs;
-    use std::fs::File;
     use std::path::Path;
+
     use ndarray::arr2;
-    use models::model::Model;
+
     use preprocessing::preprocess;
     use testutils::parse_json;
     use testutils::create_array;

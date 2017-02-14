@@ -37,15 +37,14 @@ mod testutils;
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::path;
 
 use itertools::Itertools;
 use rayon::prelude::*;
 
 use models::IntentConfiguration;
 use pipeline::Probability;
-use pipeline::intent_classifier::{IntentClassifier, ProtobufIntentClassifier};
-use pipeline::tokens_classifier::{TokensClassifier, ProtobufTokensClassifier};
+use pipeline::intent_classifier::IntentClassifier;
+use pipeline::tokens_classifier::TokensClassifier;
 use pipeline::slot_filler::compute_slots;
 
 pub struct IntentClassifierResult {
@@ -102,7 +101,7 @@ impl IntentParser {
 
         let mut result = HashMap::new();
         for (name, value) in slot_names.iter().zip(slot_values.iter()) {
-            result.insert(name.clone(), name.clone());
+            result.insert(name.clone(), value.clone());
         }
 
         result

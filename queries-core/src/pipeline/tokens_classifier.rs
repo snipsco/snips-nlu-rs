@@ -38,14 +38,10 @@ impl TokensClassifier for ProtobufTokensClassifier {
 
 #[cfg(test)]
 mod test {
-    extern crate protobuf;
-
-    use std::fs::File;
     use std::path::Path;
-    use models::model::Model;
+
     use preprocessing::preprocess;
-    use super::{TokensClassifier, ProtobufTokensClassifier};
-    use models::cnn::TensorflowCNN;
+    use super::{ TokensClassifier, ProtobufTokensClassifier };
 
     #[test]
     #[ignore]
@@ -58,7 +54,7 @@ mod test {
             .with_extension("pbbin");
         let preprocessor_result = preprocess("Book me a table for two people at Le Chalet Savoyard");
 
-        let mut tokens_classifier = ProtobufTokensClassifier::new(model_path, cnn_path);
+        let tokens_classifier = ProtobufTokensClassifier::new(model_path, cnn_path);
         let probabilities = tokens_classifier.run(&preprocessor_result);
 
         println!("probabilities: {}", probabilities);
