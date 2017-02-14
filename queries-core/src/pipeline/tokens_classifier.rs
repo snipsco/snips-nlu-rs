@@ -10,12 +10,12 @@ use models::model::Model;
 use models::cnn::{ CNN, TensorflowCNN };
 
 pub trait TokensClassifier {
-    fn run(&mut self, preprocessor_result: &PreprocessorResult) -> Array2<Probability>;
+    fn run(&self, preprocessor_result: &PreprocessorResult) -> Array2<Probability>;
 }
 
 pub struct ProtobufTokensClassifier {
     intent_model: Model,
-    classifier: TensorflowCNN,
+    cnn: TensorflowCNN,
 }
 
 impl ProtobufTokensClassifier {
@@ -23,16 +23,16 @@ impl ProtobufTokensClassifier {
             where P1: AsRef<path::Path>, P2: AsRef<path::Path> {
         let mut model_file = fs::File::open(intent_model_path).unwrap();
         let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
-        let classifier = TensorflowCNN::new(classifier_path.as_ref());
-        ProtobufTokensClassifier { intent_model: model, classifier: classifier }
+        let cnn = TensorflowCNN::new(classifier_path.as_ref());
+        ProtobufTokensClassifier { intent_model: model, cnn: cnn }
     }
 }
 
 impl TokensClassifier for ProtobufTokensClassifier {
-    fn run(&mut self, preprocessor_result: &PreprocessorResult) -> Array2<Probability> {
+    fn run(&self, preprocessor_result: &PreprocessorResult) -> Array2<Probability> {
         let feature_processor =  ProtobufMatrixFeatureProcessor::new(self.intent_model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
-        self.classifier.run(&computed_features)
+        self.cnn.run(&computed_features)
     }
 }
 
