@@ -84,7 +84,7 @@ mod test {
     #[test]
     #[ignore]
     fn cnn_works() {
-        let model_path = Path::new("../data/snips-sdk-models-protobuf/tokens_classification/cnn_model_quantized.pb");
+        let model_path = Path::new("../data/snips-sdk-models-protobuf/tokens_classification/Cnn_BookRestaurant_bookRestaurant.pb");
         let cnn = TensorflowCNN::new(model_path);
         let features = arr2(&[[1.0], [2.0]]);
 

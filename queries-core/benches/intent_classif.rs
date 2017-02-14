@@ -3,9 +3,8 @@ extern crate bencher;
 
 extern crate snips_queries_core;
 
-use std::{path};
-
 use bencher::Bencher;
+use snips_queries_core::FileConfiguration;
 use snips_queries_core::preprocess;
 use snips_queries_core::pipeline::intent_classifier::ProtobufIntentClassifier;
 use snips_queries_core::pipeline::intent_classifier::IntentClassifier;
@@ -13,11 +12,10 @@ use snips_queries_core::pipeline::intent_classifier::IntentClassifier;
 macro_rules! load_classifier {
     ($name:ident, $classifier:expr) => {
         fn $name(bench: &mut Bencher) {
-            let model_directory = path::Path::new("../data/snips-sdk-models-protobuf/intent_classification/");
-            let model_filename = model_directory.join($classifier).with_extension("pbbin");
+            let file_configuration = FileConfiguration::default();
 
             bench.iter(|| {
-                ProtobufIntentClassifier::new(&model_filename);
+                ProtobufIntentClassifier::new(&file_configuration, $classifier);
             });
         }
     }
@@ -26,11 +24,10 @@ macro_rules! load_classifier {
 macro_rules! run_classifier {
     ($name:ident, $classifier:expr, $input:expr) => {
         fn $name(bench: &mut Bencher) {
-            let model_directory = path::Path::new("../data/snips-sdk-models-protobuf/intent_classification/");
-            let model_filename = model_directory.join($classifier).with_extension("pbbin");
+            let file_configuration = FileConfiguration::default();
 
             let parsed_input = preprocess($input);
-            let classifier = ProtobufIntentClassifier::new(&model_filename);
+            let classifier = ProtobufIntentClassifier::new(&file_configuration, $classifier);
 
             bench.iter(|| {
                 classifier.run(&parsed_input);
