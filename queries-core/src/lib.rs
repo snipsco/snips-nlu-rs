@@ -66,9 +66,7 @@ impl IntentParser {
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
 
-        IntentParser {
-            classifiers: classifiers,
-        }
+        IntentParser { classifiers: classifiers }
     }
 
     pub fn run_intent_classifiers(&self, input: &str, probability_threshold: f64) -> Vec<IntentClassifierResult> {
@@ -77,13 +75,13 @@ impl IntentParser {
         let preprocessor_result = preprocess(input);
 
         let mut probabilities: Vec<IntentClassifierResult> = self.classifiers
-        .par_iter()
-        .map(|(name, intent_configuration)| {
-            let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
-            IntentClassifierResult { intent_name: name.to_string(), probability: probability }
-        })
-        .filter(|result| result.probability >= probability_threshold)
-        .collect();
+            .par_iter()
+            .map(|(name, intent_configuration)| {
+                let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
+                IntentClassifierResult { intent_name: name.to_string(), probability: probability }
+            })
+            .filter(|result| result.probability >= probability_threshold)
+            .collect();
 
         probabilities.sort_by(|a, b| {
             a.probability.partial_cmp(&b.probability).unwrap_or(Ordering::Equal).reverse()
