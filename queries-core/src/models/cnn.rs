@@ -1,4 +1,4 @@
-use std::{fs, io, path, sync};
+use std::{ fs, path, sync };
 use std::io::Read;
 
 use ndarray::prelude::*;
@@ -79,13 +79,13 @@ mod test {
 
     use ndarray::prelude::*;
 
-    use models::cnn::{CNN, TensorflowCNN};
+    use models::cnn::{ CNN, TensorflowCNN };
 
     #[test]
     #[ignore]
     fn cnn_works() {
         let model_path = Path::new("../data/snips-sdk-models-protobuf/tokens_classification/cnn_model_quantized.pb");
-        let mut cnn = TensorflowCNN::new(model_path);
+        let cnn = TensorflowCNN::new(model_path);
         let features = arr2(&[[1.0], [2.0]]);
 
         let probabilities = cnn.run(&features);

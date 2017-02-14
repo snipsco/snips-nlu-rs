@@ -24,7 +24,7 @@ mod test {
     use super::ngram_matcher;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
-    use models::gazetteer::{Gazetteer, HashSetGazetteer};
+    use models::gazetteer::{HashSetGazetteer};
     use testutils::parse_json;
 
     #[derive(Deserialize)]

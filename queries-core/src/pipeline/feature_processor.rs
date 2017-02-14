@@ -1,7 +1,8 @@
-use ndarray::{Array, Array2};
+use ndarray::{ Array, Array2 };
+
 use preprocessing::PreprocessorResult;
-use models::gazetteer::{Gazetteer, HashSetGazetteer};
-use models::model::{Feature, Feature_Type, Feature_Domain, Argument};
+use models::gazetteer::HashSetGazetteer;
+use models::model::{ Feature, Feature_Type, Feature_Domain, Argument };
 
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64>;

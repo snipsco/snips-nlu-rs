@@ -29,7 +29,6 @@ impl Gazetteer for HashSetGazetteer {
     }
 }
 
-
 #[cfg(not(target_os = "android"))]
 pub fn gazetteer_file_path(gazetteer_name: &str) -> String {
     format!("../data/snips-sdk-gazetteers/gazetteers/{}.json",
@@ -43,10 +42,8 @@ pub fn gazetteer_file_path(gazetteer_name: &str) -> String {
             gazetteer_name)
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::Gazetteer;
     use super::HashSetGazetteer;
 
     #[test]
