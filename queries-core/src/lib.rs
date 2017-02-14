@@ -92,10 +92,10 @@ impl IntentParser {
         probabilities
     }
 
-    pub fn run_tokens_classifier(&mut self, input: &str, intent_name: &str) -> HashMap<String, String> {
+    pub fn run_tokens_classifier(&self, input: &str, intent_name: &str) -> HashMap<String, String> {
         let preprocessor_result = preprocess(input);
 
-        let intent_configuration = self.classifiers.get_mut(intent_name).unwrap();
+        let intent_configuration = self.classifiers.get(intent_name).unwrap();
         let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result);
 
         let token_values = preprocessor_result.tokens.iter().map(|token| &*token.value).collect_vec();
