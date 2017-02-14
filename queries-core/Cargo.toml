@@ -33,3 +33,7 @@ harness = false
 [[bench]]
 name = "tokens_classif"
 harness = false
+
+[[bench]]
+name = "intent_parser"
+harness = false
