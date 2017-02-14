@@ -72,8 +72,7 @@ mod tests {
 
     #[test]
     fn logisitic_regression_works() {
-        do_test::<LogisticRegression>("snips-sdk-tests/models/logistic_regression_predictions.\
-                                       json");
+        do_test::<LogisticRegression>("snips-sdk-tests/models/logistic_regression_predictions.json");
     }
 
     #[test]

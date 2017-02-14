@@ -36,6 +36,7 @@ pub use preprocessing::preprocess;
 mod testutils;
 
 use std::cmp::Ordering;
+use std::path;
 use std::collections::HashMap;
 
 use itertools::Itertools;
@@ -47,9 +48,47 @@ use pipeline::intent_classifier::IntentClassifier;
 use pipeline::tokens_classifier::TokensClassifier;
 use pipeline::slot_filler::compute_slots;
 
+#[derive(Debug)]
 pub struct IntentClassifierResult {
     pub intent_name: String,
     pub probability: Probability,
+}
+
+#[derive(Debug, Clone)]
+pub struct FileConfiguration {
+    pub configurations_dir: String,
+    pub tokens_classifiers_dir: String,
+    pub intent_classifiers_dir: String,
+    pub cnn_classifiers_dir: String,
+    pub gazetteer_dir: String,
+}
+
+impl FileConfiguration {
+    pub fn configuration_path(&self, classifier_name: &str) -> ::path::PathBuf {
+        return ::path::Path::new(&self.configurations_dir).join(classifier_name).with_extension("pb");
+    }
+
+    pub fn intent_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
+        return ::path::Path::new(&self.intent_classifiers_dir).join(classifier_name).with_extension("pb");
+    }
+
+    pub fn tokens_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
+        return ::path::Path::new(&self.tokens_classifiers_dir).join(classifier_name).with_extension("pb");
+    }
+
+    pub fn gazetteer_path(&self, gazetteer_name: &str) -> ::path::PathBuf {
+        return ::path::Path::new(&self.gazetteer_dir).join(gazetteer_name).with_extension("json");
+    }
+
+    pub fn default() -> FileConfiguration {
+        return FileConfiguration {
+            configurations_dir: "../data/snips-sdk-models-protobuf/configuration/".to_string(),
+            intent_classifiers_dir: "../data/snips-sdk-models-protobuf/intent_classification/".to_string(),
+            tokens_classifiers_dir: "../data/snips-sdk-models-protobuf/tokens_classification/".to_string(),
+            cnn_classifiers_dir: "".to_string(),
+            gazetteer_dir: "../data/snips-sdk-gazetteers/gazetteers/".to_string(),
+        }
+    }
 }
 
 pub struct IntentParser {
@@ -57,11 +96,11 @@ pub struct IntentParser {
 }
 
 impl IntentParser {
-    pub fn new(configurations: &[&str]) -> IntentParser {
+    pub fn new(file_configuration: &FileConfiguration, configurations: &[&str]) -> IntentParser {
         let mut classifiers = HashMap::new();
 
         for c in configurations {
-            let intent = IntentConfiguration::new(c);
+            let intent = IntentConfiguration::new(file_configuration, c);
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
 
@@ -79,7 +118,7 @@ impl IntentParser {
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
                 IntentClassifierResult { intent_name: name.to_string(), probability: probability }
             })
-            .filter(|result| result.probability >= probability_threshold)
+        .filter(|result| result.probability >= probability_threshold)
             .collect();
 
         probabilities.sort_by(|a, b| {

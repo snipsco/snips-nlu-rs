@@ -20,12 +20,14 @@ pub fn ngram_matcher(preprocessed_result: &PreprocessorResult, ngram_to_check: &
 #[cfg(test)]
 mod test {
     use std::ops::Range;
+
     use super::has_gazetteer_hits;
     use super::ngram_matcher;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
     use models::gazetteer::{HashSetGazetteer};
     use testutils::parse_json;
+    use testutils::file_configuration;
 
     #[derive(Deserialize)]
     struct TestDescription {
@@ -83,6 +85,8 @@ mod test {
         let tests: Vec<TestDescription> = parse_json("snips-sdk-tests/feature_extraction/SharedScalar/hasGazetteerHits.json");
         assert!(tests.len() != 0);
 
+        let file_configuration = file_configuration();
+
         for test in &tests {
             let normalized_tokens = test.input
                 .tokens
@@ -90,7 +94,7 @@ mod test {
                 .map(|test_token| test_token.to_normalized_token(&test.input.text))
                 .collect();
 
-            let gazetteer = HashSetGazetteer::new(&test.args[0].value).unwrap();
+            let gazetteer = HashSetGazetteer::new(&file_configuration, &test.args[0].value).unwrap();
             let preprocessor_result = PreprocessorResult::new(normalized_tokens);
 
             let result = has_gazetteer_hits(&preprocessor_result, &gazetteer);

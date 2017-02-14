@@ -1,8 +1,9 @@
-use std::{fs, path};
+use std::fs;
 
 use protobuf;
-
 use ndarray::prelude::*;
+
+use ::FileConfiguration;
 use models::model::{Model, Matrix};
 use models::classifiers::{Classifier, LogisticRegression};
 use preprocessing::PreprocessorResult;
@@ -14,20 +15,23 @@ pub trait IntentClassifier {
 }
 
 pub struct ProtobufIntentClassifier {
+    file_configuration: FileConfiguration,
     model: Model,
 }
 
 impl ProtobufIntentClassifier {
-    pub fn new<P: AsRef<path::Path>>(path: P) -> ProtobufIntentClassifier {
-        let mut model_file = fs::File::open(path).unwrap();
+    pub fn new(file_configuration: &FileConfiguration, classifier_name: &str) -> ProtobufIntentClassifier {
+        let classifier_path = file_configuration.intent_classifier_path(classifier_name);
+
+        let mut model_file = fs::File::open(classifier_path).unwrap();
         let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
-        ProtobufIntentClassifier { model: model }
+        ProtobufIntentClassifier { file_configuration: file_configuration.clone(), model: model }
     }
 }
 
 impl IntentClassifier for ProtobufIntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability {
-        let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.model.get_features());
+        let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.file_configuration, &self.model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
 
         let classifier =
@@ -53,11 +57,11 @@ impl Matrix {
 #[cfg(test)]
 mod test {
     use std::fs;
-    use std::path::Path;
 
     use ndarray::arr2;
 
     use preprocessing::preprocess;
+    use testutils::file_configuration;
     use testutils::parse_json;
     use testutils::create_array;
     use testutils::assert_epsilon_eq;
@@ -66,24 +70,21 @@ mod test {
     #[derive(Deserialize)]
     struct TestDescription {
         text: String,
-        output: Vec<Vec<f64>>, 
+        output: Vec<Vec<f64>>,
 //        features: Vec<Vec<f64>>,
     }
 
     #[test]
     fn intent_classifier_works() {
-        let model_directory = "../data/snips-sdk-models-protobuf/intent_classification/";
+        let file_configuration = file_configuration();
         let paths = fs::read_dir("../data/snips-sdk-models/tests/intent_classification/").unwrap();
 
         for path in paths {
             let path = path.unwrap().path();
             let tests: Vec<TestDescription> = parse_json(path.to_str().unwrap());
 
-            let model_path = Path::new(model_directory)
-                .join(path.file_stem().unwrap())
-                .with_extension("pbbin");
-
-            let intent_classifier = ProtobufIntentClassifier::new(model_path);
+            let model_name = path.file_stem().unwrap().to_str().unwrap();
+            let intent_classifier = ProtobufIntentClassifier::new(&file_configuration, model_name);
 
             for test in tests {
                 let preprocess_result = preprocess(&test.text);

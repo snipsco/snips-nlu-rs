@@ -4,6 +4,8 @@ use std::fs::File;
 
 use serde_json::from_str;
 
+use ::FileConfiguration;
+
 pub trait Gazetteer: Sized {
     fn contains(&self, value: &str) -> bool;
 }
@@ -14,8 +16,10 @@ pub struct HashSetGazetteer {
 
 impl HashSetGazetteer {
     // TODO: To be improved
-    pub fn new(json_filename: &str) -> Option<HashSetGazetteer> {
-        let mut f = File::open(gazetteer_file_path(json_filename)).unwrap();
+    pub fn new(file_configuration: &FileConfiguration, gazetteer_name: &str) -> Option<HashSetGazetteer> {
+        let gazetteer_path = file_configuration.gazetteer_path(gazetteer_name);
+
+        let mut f = File::open(gazetteer_path).unwrap();
         let mut s = String::new();
         assert!(f.read_to_string(&mut s).is_ok());
         let vec: Vec<String> = from_str(&s).unwrap();
@@ -29,25 +33,16 @@ impl Gazetteer for HashSetGazetteer {
     }
 }
 
-#[cfg(not(target_os = "android"))]
-pub fn gazetteer_file_path(gazetteer_name: &str) -> String {
-    format!("../data/snips-sdk-gazetteers/gazetteers/{}.json",
-            gazetteer_name)
-}
-
-#[cfg(target_os = "android")]
-pub fn gazetteer_file_path(gazetteer_name: &str) -> String {
-    //TODO find a way to do that better
-    format!("/data/local/tmp/snips-queries-data/snips-sdk-gazetteers/gazetteers/{}.json",
-            gazetteer_name)
-}
-
 #[cfg(test)]
 mod tests {
     use super::HashSetGazetteer;
+    use testutils::file_configuration;
 
     #[test]
     fn gazetteer_work() {
-        assert!(HashSetGazetteer::new("action_verbs_infinitive").is_some())
+       let file_configuration = file_configuration();
+       let gazetteer_name = "action_verbs_infinitive";
+
+       assert!(HashSetGazetteer::new(&file_configuration, gazetteer_name).is_some())
     }
 }
