@@ -24,8 +24,8 @@ pub struct ProtobufTokensClassifier {
 impl ProtobufTokensClassifier {
     pub fn new(file_configuration: &FileConfiguration, intent_model_name: &str, cnn_model_name: &str) -> Result<ProtobufTokensClassifier> {
         let model_path = file_configuration.tokens_classifier_path(intent_model_name);
-        let mut model_file = fs::File::open(model_path).unwrap();
-        let intent_model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
+        let mut model_file = fs::File::open(model_path)?;
+        let intent_model = protobuf::parse_from_reader::<Model>(&mut model_file)?;
 
         let cnn_path = file_configuration.tokens_classifier_path(cnn_model_name);
         let cnn = TensorflowCNN::new(cnn_path);

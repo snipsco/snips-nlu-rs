@@ -1,5 +1,6 @@
 use std::fs;
 
+use errors::*;
 use protobuf;
 
 use ::FileConfiguration;
@@ -19,26 +20,27 @@ pub struct IntentConfiguration<'a> {
 }
 
 impl<'a> IntentConfiguration<'a> {
-    pub fn new(file_configuration: &'a FileConfiguration, intent_name: &str) -> IntentConfiguration<'a> {
-        let mut model_file = fs::File::open(file_configuration.configuration_path(intent_name)).unwrap();
-        let data = protobuf::parse_from_reader::<model::Configuration>(&mut model_file).unwrap();
+    pub fn new(file_configuration: &'a FileConfiguration, intent_name: &str) -> Result<IntentConfiguration<'a>> {
+        let mut model_file = fs::File::open(file_configuration.configuration_path(intent_name))?;
+        let data = protobuf::parse_from_reader::<model::Configuration>(&mut model_file)?;
         let slots = data.get_slots().iter().map(|s| s.get_name().to_string()).collect();
-        IntentConfiguration {
-            intent_classifier: Self::build_intent_classifier(file_configuration, &data),
-            tokens_classifier: Self::build_tokens_classifier(file_configuration, &data),
+
+        Ok(IntentConfiguration {
+            intent_classifier: Self::build_intent_classifier(file_configuration, &data)?,
+            tokens_classifier: Self::build_tokens_classifier(file_configuration, &data)?,
             intent_name: data.intent_name.clone(),
             slot_names: slots,
-        }
+        })
     }
 
-    fn build_intent_classifier(file_configuration: &'a FileConfiguration, data: &model::Configuration) -> ProtobufIntentClassifier<'a> {
+    fn build_intent_classifier(file_configuration: &'a FileConfiguration, data: &model::Configuration) -> Result<ProtobufIntentClassifier<'a>> {
         ProtobufIntentClassifier::new(file_configuration,
                                       data.get_intent_classifier_name())
     }
 
-    fn build_tokens_classifier(file_configuration: &FileConfiguration, data: &model::Configuration) -> ProtobufTokensClassifier {
+    fn build_tokens_classifier(file_configuration: &FileConfiguration, data: &model::Configuration) -> Result<ProtobufTokensClassifier> {
         ProtobufTokensClassifier::new(file_configuration,
                                       data.get_tokens_classifier_name(),
-                                      &format!("Cnn_{}", data.get_tokens_classifier_name())).unwrap()
+                                      &format!("Cnn_{}", data.get_tokens_classifier_name()))
     }
 }

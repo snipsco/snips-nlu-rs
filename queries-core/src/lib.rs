@@ -93,15 +93,15 @@ pub struct IntentParser<'a> {
 }
 
 impl<'a> IntentParser<'a> {
-    pub fn new(file_configuration: &'a FileConfiguration, configurations: &[&str]) -> IntentParser<'a> {
+    pub fn new(file_configuration: &'a FileConfiguration, configurations: &[&str]) -> Result<IntentParser<'a>> {
         let mut classifiers = HashMap::new();
 
         for c in configurations {
-            let intent = IntentConfiguration::new(file_configuration, c);
+            let intent = IntentConfiguration::new(file_configuration, c)?;
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
 
-        IntentParser { classifiers: classifiers }
+        Ok(IntentParser { classifiers: classifiers })
     }
 
     pub fn run_intent_classifiers(&self, input: &str, probability_threshold: f64) -> Vec<IntentClassifierResult> {
@@ -125,11 +125,11 @@ impl<'a> IntentParser<'a> {
         probabilities
     }
 
-    pub fn run_tokens_classifier(&self, input: &str, intent_name: &str) -> HashMap<String, String> {
+    pub fn run_tokens_classifier(&self, input: &str, intent_name: &str) -> Result<HashMap<String, String>> {
         let preprocessor_result = preprocess(input);
 
-        let intent_configuration = self.classifiers.get(intent_name).unwrap();
-        let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result).unwrap();
+        let intent_configuration = self.classifiers.get(intent_name).ok_or("intent not found")?; // TODO: Should be my own error set ?
+        let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
 
         let token_values = preprocessor_result.tokens.iter().map(|token| &*token.value).collect_vec();
         let slot_values = compute_slots(&*token_values, &probabilities);
@@ -140,6 +140,6 @@ impl<'a> IntentParser<'a> {
             result.insert(name.clone(), value.clone());
         }
 
-        result
+        Ok(result)
     }
 }

@@ -15,7 +15,7 @@ macro_rules! load_classifier {
             let file_configuration = FileConfiguration::default();
 
             bench.iter(|| {
-                ProtobufIntentClassifier::new(&file_configuration, $classifier);
+                ProtobufIntentClassifier::new(&file_configuration, $classifier).unwrap();
             });
         }
     }
@@ -27,7 +27,7 @@ macro_rules! run_classifier {
             let file_configuration = FileConfiguration::default();
 
             let parsed_input = preprocess($input);
-            let classifier = ProtobufIntentClassifier::new(&file_configuration, $classifier);
+            let classifier = ProtobufIntentClassifier::new(&file_configuration, $classifier).unwrap();
 
             bench.iter(|| {
                 classifier.run(&parsed_input);
