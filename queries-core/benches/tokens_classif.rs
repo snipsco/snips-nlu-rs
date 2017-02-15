@@ -24,7 +24,7 @@ fn run_intent_model(bench: &mut Bencher) {
     let model_name = "BookRestaurant_bookRestaurant";
     let cnn_name = "Cnn_BookRestaurant_bookRestaurant";
 
-    let tokens_classifier = ProtobufTokensClassifier::new(&file_configuration, &model_name, &cnn_name);
+    let tokens_classifier = ProtobufTokensClassifier::new(&file_configuration, &model_name, &cnn_name).unwrap();
 
     let preprocessor_result = preprocess("Book me a table for two people at Le Chalet Savoyard");
 

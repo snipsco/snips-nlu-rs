@@ -39,6 +39,6 @@ impl IntentConfiguration {
     fn build_tokens_classifier(file_configuration: &FileConfiguration, data: &model::Configuration) -> ProtobufTokensClassifier {
         ProtobufTokensClassifier::new(file_configuration,
                                       data.get_tokens_classifier_name(),
-                                      &format!("Cnn_{}", data.get_tokens_classifier_name()))
+                                      &format!("Cnn_{}", data.get_tokens_classifier_name())).unwrap()
     }
 }

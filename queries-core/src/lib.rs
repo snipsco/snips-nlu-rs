@@ -1,39 +1,20 @@
-extern crate itertools;
-
-extern crate serde;
-
 #[macro_use]
-extern crate serde_derive;
-
-extern crate serde_json;
-
-#[macro_use(stack)]
-extern crate ndarray;
-
-extern crate unicode_normalization;
-
-extern crate regex;
-
+extern crate error_chain;
+extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
-
+#[macro_use(stack)]
+extern crate ndarray;
 extern crate protobuf;
-
 extern crate rayon;
-
+extern crate regex;
 extern crate rulinalg;
-
+extern crate unicode_normalization;
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
 extern crate tensorflow;
-
-pub mod models;
-pub mod preprocessing;
-pub mod pipeline;
-pub mod features;
-
-pub use preprocessing::preprocess;
-
-#[cfg(test)]
-mod testutils;
 
 use std::cmp::Ordering;
 use std::path;
@@ -47,6 +28,18 @@ use pipeline::Probability;
 use pipeline::intent_classifier::IntentClassifier;
 use pipeline::tokens_classifier::TokensClassifier;
 use pipeline::slot_filler::compute_slots;
+
+pub use preprocessing::preprocess;
+pub use errors::*;
+
+#[cfg(test)]
+mod testutils;
+
+pub mod errors;
+pub mod features;
+pub mod models;
+pub mod pipeline;
+pub mod preprocessing;
 
 #[derive(Debug)]
 pub struct IntentClassifierResult {
@@ -132,7 +125,7 @@ impl IntentParser {
         let preprocessor_result = preprocess(input);
 
         let intent_configuration = self.classifiers.get(intent_name).unwrap();
-        let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result);
+        let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result).unwrap();
 
         let token_values = preprocessor_result.tokens.iter().map(|token| &*token.value).collect_vec();
         let slot_values = compute_slots(&*token_values, &probabilities);
