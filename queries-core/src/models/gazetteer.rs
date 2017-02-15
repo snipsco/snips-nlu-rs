@@ -27,18 +27,12 @@ impl Gazetteer for HashSetGazetteer {
     }
 }
 
-
-#[cfg(not(target_os = "android"))]
-pub fn gazetteer_file_path(gazetteer_name: &str) -> String {
-    format!("../data/snips-sdk-gazetteers/gazetteers/{}.json",
-            gazetteer_name)
-}
-
-#[cfg(target_os = "android")]
-pub fn gazetteer_file_path(gazetteer_name: &str) -> String {
-    //TODO find a way to do that better
-    format!("/data/local/tmp/snips-queries-data/snips-sdk-gazetteers/gazetteers/{}.json",
-            gazetteer_name)
+pub fn gazetteer_file_path(file_name: &str) -> String {
+    if cfg!(any(target_os = "ios", target_os = "android")) || ::std::env::var("DINGHY").is_ok() {
+        ::std::env::current_exe().unwrap().parent().unwrap().join(format!("test_data/data/snips-sdk-gazetteers/gazetteers/{}.json", file_name)).to_str().unwrap().to_string()
+    } else {
+        format!("../data/snips-sdk-gazetteers/gazetteers/{}.json", file_name)
+    }
 }
 
 
