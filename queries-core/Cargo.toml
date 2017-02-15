@@ -8,6 +8,7 @@ Rust implementation of the Queries SDK
 """
 
 [dependencies]
+error-chain = "0.9"
 itertools = "0.5"
 serde = "0.9"
 serde_derive = "0.9"
@@ -20,7 +21,7 @@ protobuf = "1.2"
 rayon = "0.6"
 tensorflow = "0.2"
 rulinalg = "0.4"
-bencher="*"
+bencher = "0.1"
 
 [[bench]]
 name = "preprocess"
