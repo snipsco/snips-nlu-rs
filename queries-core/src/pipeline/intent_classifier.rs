@@ -14,22 +14,22 @@ pub trait IntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability;
 }
 
-pub struct ProtobufIntentClassifier {
-    file_configuration: FileConfiguration,
+pub struct ProtobufIntentClassifier<'a> {
+    file_configuration: &'a FileConfiguration,
     model: Model,
 }
 
-impl ProtobufIntentClassifier {
-    pub fn new(file_configuration: &FileConfiguration, classifier_name: &str) -> ProtobufIntentClassifier {
+impl<'a> ProtobufIntentClassifier<'a> {
+    pub fn new(file_configuration: &'a FileConfiguration, classifier_name: &str) -> ProtobufIntentClassifier<'a> {
         let classifier_path = file_configuration.intent_classifier_path(classifier_name);
 
         let mut model_file = fs::File::open(classifier_path).unwrap();
         let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
-        ProtobufIntentClassifier { file_configuration: file_configuration.clone(), model: model }
+        ProtobufIntentClassifier { file_configuration: file_configuration, model: model }
     }
 }
 
-impl IntentClassifier for ProtobufIntentClassifier {
+impl<'a> IntentClassifier for ProtobufIntentClassifier<'a> {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.file_configuration, &self.model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);

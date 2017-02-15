@@ -84,12 +84,12 @@ impl FileConfiguration {
     }
 }
 
-pub struct IntentParser {
-    classifiers: HashMap<String, IntentConfiguration>
+pub struct IntentParser<'a> {
+    classifiers: HashMap<String, IntentConfiguration<'a>>
 }
 
-impl IntentParser {
-    pub fn new(file_configuration: &FileConfiguration, configurations: &[&str]) -> IntentParser {
+impl<'a> IntentParser<'a> {
+    pub fn new(file_configuration: &'a FileConfiguration, configurations: &[&str]) -> IntentParser<'a> {
         let mut classifiers = HashMap::new();
 
         for c in configurations {
