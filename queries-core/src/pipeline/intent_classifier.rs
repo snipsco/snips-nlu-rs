@@ -1,5 +1,6 @@
 use std::fs;
 
+use errors::*;
 use protobuf;
 use ndarray::prelude::*;
 
@@ -20,12 +21,12 @@ pub struct ProtobufIntentClassifier<'a> {
 }
 
 impl<'a> ProtobufIntentClassifier<'a> {
-    pub fn new(file_configuration: &'a FileConfiguration, classifier_name: &str) -> ProtobufIntentClassifier<'a> {
+    pub fn new(file_configuration: &'a FileConfiguration, classifier_name: &str) -> Result<ProtobufIntentClassifier<'a>> {
         let classifier_path = file_configuration.intent_classifier_path(classifier_name);
+        let mut model_file = fs::File::open(classifier_path)?;
+        let model = protobuf::parse_from_reader::<Model>(&mut model_file)?;
 
-        let mut model_file = fs::File::open(classifier_path).unwrap();
-        let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
-        ProtobufIntentClassifier { file_configuration: file_configuration, model: model }
+        Ok(ProtobufIntentClassifier { file_configuration: file_configuration, model: model })
     }
 }
 
@@ -84,7 +85,7 @@ mod test {
             let tests: Vec<TestDescription> = parse_json(path.to_str().unwrap());
 
             let model_name = path.file_stem().unwrap().to_str().unwrap();
-            let intent_classifier = ProtobufIntentClassifier::new(&file_configuration, model_name);
+            let intent_classifier = ProtobufIntentClassifier::new(&file_configuration, model_name).unwrap();
 
             for test in tests {
                 let preprocess_result = preprocess(&test.text);

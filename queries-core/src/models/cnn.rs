@@ -1,6 +1,7 @@
 use std::{ fs, path, sync };
 use std::io::Read;
 
+use errors::*;
 use ndarray::prelude::*;
 
 use tensorflow::Graph;
@@ -11,7 +12,6 @@ use tensorflow::StepWithGraph;
 use tensorflow::Tensor;
 
 use pipeline::Probability;
-use errors::*;
 
 pub trait CNN {
     fn run(&self, features: &Array2<f64>) -> Result<Array2<f64>>;
@@ -27,7 +27,8 @@ impl TensorflowCNN {
         let mut proto = Vec::new();
         fs::File::open(model_path)?.read_to_end(&mut proto)?;
 
-        graph.import_graph_def(&proto, &ImportGraphDefOptions::new());
+        graph.import_graph_def(&proto, &ImportGraphDefOptions::new())
+            .map_err(|e| format!("Error in tensorflow: {:?}", e))?;
         let session = Session::new(&SessionOptions::new(), &graph)
             .map_err(|e| format!("Error in tensorflow: {:?}", e))?;
 
@@ -44,7 +45,7 @@ impl CNN for TensorflowCNN {
         let mut x: Tensor<f32> = Tensor::new(&[tokens_count as u64, features_count as u64]);
         for row in 0..tokens_count {
             for col in 0..features_count {
-                x[row * features_count + col] = *transposed_array.get((row, col)).unwrap() as f32;
+                x[row * features_count + col] = *transposed_array.get((row, col)).unwrap() as f32; // TODO: Geometry is checked ?
             }
         }
 
@@ -52,26 +53,22 @@ impl CNN for TensorflowCNN {
         let tensor_res: Tensor<f32> = {
             let mut locked = self.0.lock().map_err(|_| "Can not take lock on Tensorflow. Mutex poisoned.")?;
             let (ref mut session, ref graph) = *locked;
-            step.add_input(&graph.operation_by_name_required("input").unwrap(),
+            step.add_input(&graph.operation_by_name_required("input").map_err(|e| format!("Error in tensorflow: {:?}", e))?,
                            0,
                            &x);
-            let res =
-                step.request_output(&graph.operation_by_name_required("predictions").unwrap(),
-                                    0);
+            let res = step.request_output(&graph.operation_by_name_required("predictions").map_err(|e| format!("Error in tensorflow: {:?}", e))?, 0);
 
-            session.run(&mut step);
+            session.run(&mut step).map_err(|e| format!("Error in tensorflow: {:?}", e))?;
 
-            step.take_output(res).unwrap()
-        };
+            step.take_output(res).map_err(|e| format!("Error in tensorflow: {:?}", e))
+        }?;
 
         let mut vec = Vec::with_capacity(tensor_res.data().len());
         vec.extend_from_slice(&tensor_res.data());
-        //let vec: Vec<Probability> = unsafe { mem::transmute(vec) };
         let vec: Vec<Probability> = vec.iter().map(|value| *value as Probability).collect();
 
-        Ok(Array::from_vec(vec)
-            .into_shape((tensor_res.dims()[0] as usize, tensor_res.dims()[1] as usize))
-            .unwrap())
+        let res_shape = (tensor_res.dims()[0] as usize, tensor_res.dims()[1] as usize);
+        Ok(Array::from_vec(vec).into_shape(res_shape)?)
     }
 }
 

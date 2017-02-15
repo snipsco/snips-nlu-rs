@@ -16,7 +16,7 @@ impl EntityDetector {
         self.regex
             .captures_iter(input)
             .map(|capture| {
-                let group = capture.pos(1).unwrap();
+                let group = capture.pos(1).unwrap(); // TODO: yolo?
                 Token {
                     value: capture.at(1).unwrap().to_string(),
                     range: Range {

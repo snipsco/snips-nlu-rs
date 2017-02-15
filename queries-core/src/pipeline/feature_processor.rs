@@ -1,3 +1,4 @@
+use errors::*;
 use ndarray::{ Array, Array2 };
 
 use ::FileConfiguration;
@@ -27,7 +28,7 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64> {
         let computed_values = self.feature_functions
             .iter()
-            .flat_map(|feature_function| feature_function.compute(self.file_configuration, input))
+            .flat_map(|feature_function| feature_function.compute(self.file_configuration, input).unwrap()) // TODO: Dunno how to kill this unwrap
             .collect::<Vec<f64>>();
 
         let len = self.feature_functions.len();
@@ -41,7 +42,7 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 }
 
 impl Feature {
-    fn compute(&self, file_configuration: &FileConfiguration, input: &PreprocessorResult) -> Vec<f64> {
+    fn compute(&self, file_configuration: &FileConfiguration, input: &PreprocessorResult) -> Result<Vec<f64>> {
         let known_domain = self.get_known_domain();
         let feature_type = self.field_type;
         let arguments = self.get_arguments();
@@ -60,34 +61,36 @@ impl Feature {
                          input: &PreprocessorResult,
                          feature_type: &Feature_Type,
                          arguments: &[Argument])
-                         -> Vec<f64> {
-        match *feature_type {
+                         -> Result<Vec<f64>> {
+        // TODO: this Result::Ok smells something bad
+        Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
-                let gazetteer = HashSetGazetteer::new(file_configuration, arguments[0].get_gazetteer()).unwrap();
+                let gazetteer = HashSetGazetteer::new(file_configuration, arguments[0].get_gazetteer())?;
                 ::features::shared_scalar::has_gazetteer_hits(input, &gazetteer)
             }
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
             _ => panic!("Feature function not implemented")
-        }
+        })
     }
 
     fn get_shared_vector(file_configuration: &FileConfiguration,
                          input: &PreprocessorResult,
                          feature_type: &Feature_Type,
                          arguments: &[Argument])
-                         -> Vec<f64> {
-        match *feature_type {
+                         -> Result<Vec<f64>> {
+        // TODO: Same as above
+        Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
-                let gazetteer = HashSetGazetteer::new(file_configuration, arguments[0].get_gazetteer()).unwrap();
+                let gazetteer = HashSetGazetteer::new(file_configuration, arguments[0].get_gazetteer())?;
                 ::features::shared_vector::has_gazetteer_hits(input, &gazetteer)
             }
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_vector::ngram_matcher(input, arguments[0].get_str())
             }
             _ => panic!("Feature functions not implemented")
-        }
+        })
     }
 }
 
