@@ -49,37 +49,41 @@ pub struct IntentClassifierResult {
 
 #[derive(Debug, Clone)]
 pub struct FileConfiguration {
-    pub configurations_dir: String,
-    pub tokens_classifiers_dir: String,
-    pub intent_classifiers_dir: String,
-    pub cnn_classifiers_dir: String,
-    pub gazetteer_dir: String,
+    root_dir: ::path::PathBuf,
 }
 
 impl FileConfiguration {
     pub fn configuration_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        return ::path::Path::new(&self.configurations_dir).join(classifier_name).with_extension("pb");
+        self.root_dir
+            .join("snips-sdk-models-protobuf/configuration")
+            .join(classifier_name)
+            .with_extension("pb")
     }
 
     pub fn intent_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        return ::path::Path::new(&self.intent_classifiers_dir).join(classifier_name).with_extension("pb");
+        self.root_dir
+            .join("snips-sdk-models-protobuf/intent_classification")
+            .join(classifier_name)
+            .with_extension("pb")
     }
 
     pub fn tokens_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        return ::path::Path::new(&self.tokens_classifiers_dir).join(classifier_name).with_extension("pb");
+        self.root_dir
+            .join("snips-sdk-models-protobuf/tokens_classification")
+            .join(classifier_name)
+            .with_extension("pb")
     }
 
     pub fn gazetteer_path(&self, gazetteer_name: &str) -> ::path::PathBuf {
-        return ::path::Path::new(&self.gazetteer_dir).join(gazetteer_name).with_extension("json");
+        self.root_dir
+            .join("snips-sdk-gazetteers/gazetteers")
+            .join(gazetteer_name)
+            .with_extension("json")
     }
 
     pub fn default() -> FileConfiguration {
-        return FileConfiguration {
-            configurations_dir: "../data/snips-sdk-models-protobuf/configuration/".to_string(),
-            intent_classifiers_dir: "../data/snips-sdk-models-protobuf/intent_classification/".to_string(),
-            tokens_classifiers_dir: "../data/snips-sdk-models-protobuf/tokens_classification/".to_string(),
-            cnn_classifiers_dir: "".to_string(),
-            gazetteer_dir: "../data/snips-sdk-gazetteers/gazetteers/".to_string(),
+        FileConfiguration {
+            root_dir: ::path::PathBuf::from("../data")
         }
     }
 }
