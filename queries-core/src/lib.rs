@@ -44,7 +44,7 @@ pub mod preprocessing;
 
 #[derive(Serialize, Debug)]
 pub struct IntentClassifierResult {
-    pub intent_name: String,
+    pub name: String,
     pub probability: Probability,
 }
 
@@ -133,7 +133,7 @@ impl IntentParser {
             .par_iter()
             .map(|(name, intent_configuration)| {
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
-                IntentClassifierResult { intent_name: name.to_string(), probability: probability }
+                IntentClassifierResult { name: name.to_string(), probability: probability }
             })
             .filter(|result| result.probability >= probability_threshold)
             .collect();
