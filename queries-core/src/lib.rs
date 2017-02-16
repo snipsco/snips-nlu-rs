@@ -41,7 +41,7 @@ pub mod models;
 pub mod pipeline;
 pub mod preprocessing;
 
-#[derive(Debug)]
+#[derive(Serialize, Debug)]
 pub struct IntentClassifierResult {
     pub intent_name: String,
     pub probability: Probability,
