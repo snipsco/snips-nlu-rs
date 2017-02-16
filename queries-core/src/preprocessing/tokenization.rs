@@ -1,8 +1,9 @@
 use std::ops::Range;
-use preprocessing::Token;
-use preprocessing::convert_char_index;
+
 use regex::Regex;
 
+use preprocessing::Token;
+use preprocessing::convert_char_index;
 
 pub fn tokenize(input: Vec<Token>) -> Vec<Token> {
     input.iter()

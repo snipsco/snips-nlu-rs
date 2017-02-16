@@ -1,5 +1,6 @@
-use unicode_normalization::UnicodeNormalization;
 use std::ascii::AsciiExt;
+
+use unicode_normalization::UnicodeNormalization;
 use regex::Regex;
 
 pub fn normalize(input: &str) -> String {
