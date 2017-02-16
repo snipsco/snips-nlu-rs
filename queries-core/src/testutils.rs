@@ -5,23 +5,11 @@ use serde_json::from_str;
 use serde::de::Deserialize;
 use ndarray::prelude::*;
 
-use ::FileConfiguration;
-
 pub fn parse_json<T: Deserialize>(file_name: &str) -> T {
     let mut f = File::open(file_path(file_name)).unwrap();
     let mut s = String::new();
     assert!(f.read_to_string(&mut s).is_ok());
     from_str::<T>(&s).unwrap()
-}
-
-pub fn file_configuration() -> FileConfiguration {
-    return FileConfiguration {
-        configurations_dir: "../data/snips-sdk-models-protobuf/configuration/".to_string(),
-        intent_classifiers_dir: "../data/snips-sdk-models-protobuf/intent_classification/".to_string(),
-        tokens_classifiers_dir: "../data/snips-sdk-models-protobuf/tokens_classification/".to_string(),
-        cnn_classifiers_dir: "".to_string(),
-        gazetteer_dir: "../data/snips-sdk-gazetteers/gazetteers/".to_string(),
-    }
 }
 
 #[cfg(not(target_os="android"))]

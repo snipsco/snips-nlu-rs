@@ -38,7 +38,7 @@ mod test {
     use preprocessing::convert_byte_index;
     use models::gazetteer::{HashSetGazetteer};
     use testutils::parse_json;
-    use testutils::file_configuration;
+    use FileConfiguration;
 
     #[derive(Deserialize)]
     struct TestDescription {
@@ -96,7 +96,7 @@ mod test {
         let tests: Vec<TestDescription> = parse_json("../data/snips-sdk-tests/feature_extraction/SharedVector/hasGazetteerHits.json");
         assert!(tests.len() != 0);
 
-        let file_configuration = file_configuration();
+        let file_configuration = FileConfiguration::default();
 
         for test in &tests {
             let normalized_tokens = test.input

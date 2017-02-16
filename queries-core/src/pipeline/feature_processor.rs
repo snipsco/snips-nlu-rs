@@ -103,7 +103,7 @@ mod test {
 
     use models::model::Model;
     use preprocessing::preprocess;
-    use testutils::file_configuration;
+    use FileConfiguration;
     use testutils::file_path;
     use testutils::parse_json;
     use testutils::create_transposed_array;
@@ -118,7 +118,7 @@ mod test {
 
     #[test]
     fn feature_processor_works() {
-        let file_configuration = file_configuration();
+        let file_configuration = FileConfiguration::default();
         let paths = fs::read_dir(file_path("snips-sdk-models/tests/intent_classification/")).unwrap();
 
         for path in paths {

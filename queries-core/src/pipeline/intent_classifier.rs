@@ -62,7 +62,7 @@ mod test {
     use ndarray::arr2;
 
     use preprocessing::preprocess;
-    use testutils::file_configuration;
+    use FileConfiguration;
     use testutils::parse_json;
     use testutils::create_array;
     use testutils::assert_epsilon_eq;
@@ -77,7 +77,7 @@ mod test {
 
     #[test]
     fn intent_classifier_works() {
-        let file_configuration = file_configuration();
+        let file_configuration = FileConfiguration::default();
         let paths = fs::read_dir("../data/snips-sdk-models/tests/intent_classification/").unwrap();
 
         for path in paths {

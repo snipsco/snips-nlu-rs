@@ -45,12 +45,12 @@ impl TokensClassifier for ProtobufTokensClassifier {
 #[cfg(test)]
 mod test {
     use preprocessing::preprocess;
-    use testutils::file_configuration;
+    use FileConfiguration;
     use super::{ TokensClassifier, ProtobufTokensClassifier };
 
     #[test]
     fn tokens_classifier_works() {
-        let file_configuration = file_configuration();
+        let file_configuration = FileConfiguration::default();
         let model_name = "BookRestaurant_bookRestaurant";
         let cnn_name = "Cnn_BookRestaurant_bookRestaurant";
 

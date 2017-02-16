@@ -3,6 +3,6 @@ error_chain! {
         Io(::std::io::Error);
         NdArray(::ndarray::ShapeError);
         Serde(::serde_json::Error);
-        Protobuf(::protobuf::ProtobufError); 
+        Protobuf(::protobuf::ProtobufError);
     }
 }
