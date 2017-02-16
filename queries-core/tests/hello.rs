@@ -1,4 +1,4 @@
-extern crate snips_queries_core;
+extern crate queries_core;
 
 #[test]
 fn hello_test() {

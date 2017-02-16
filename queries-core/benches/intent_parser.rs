@@ -1,11 +1,11 @@
 #[macro_use]
 extern crate bencher;
 
-extern crate snips_queries_core;
+extern crate queries_core;
 
 use bencher::Bencher;
-use snips_queries_core::FileConfiguration;
-use snips_queries_core::IntentParser;
+use queries_core::FileConfiguration;
+use queries_core::IntentParser;
 
 fn load_intent_parser(bench: &mut Bencher) {
     let file_configuration = FileConfiguration::default();

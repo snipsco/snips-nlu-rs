@@ -1,10 +1,10 @@
 #[macro_use]
 extern crate bencher;
 
-extern crate snips_queries_core;
+extern crate queries_core;
 
 use bencher::Bencher;
-use snips_queries_core::preprocess;
+use queries_core::preprocess;
 
 fn prep_short(bench: &mut Bencher) {
     bench.iter(|| {
