@@ -12,15 +12,15 @@ pub mod classifiers;
 pub mod model;
 pub mod cnn;
 
-pub struct IntentConfiguration<'a> {
-    pub intent_classifier: ProtobufIntentClassifier<'a>,
+pub struct IntentConfiguration {
+    pub intent_classifier: ProtobufIntentClassifier,
     pub tokens_classifier: ProtobufTokensClassifier,
     pub slot_names: Vec<String>,
     pub intent_name: String,
 }
 
-impl<'a> IntentConfiguration<'a> {
-    pub fn new(file_configuration: &'a FileConfiguration, intent_name: &str) -> Result<IntentConfiguration<'a>> {
+impl IntentConfiguration {
+    pub fn new(file_configuration: &FileConfiguration, intent_name: &str) -> Result<IntentConfiguration> {
         let mut model_file = fs::File::open(file_configuration.configuration_path(intent_name))?;
         let data = protobuf::parse_from_reader::<model::Configuration>(&mut model_file)?;
         let slots = data.get_slots().iter().map(|s| s.get_name().to_string()).collect();
@@ -33,7 +33,7 @@ impl<'a> IntentConfiguration<'a> {
         })
     }
 
-    fn build_intent_classifier(file_configuration: &'a FileConfiguration, data: &model::Configuration) -> Result<ProtobufIntentClassifier<'a>> {
+    fn build_intent_classifier(file_configuration: &FileConfiguration, data: &model::Configuration) -> Result<ProtobufIntentClassifier> {
         ProtobufIntentClassifier::new(file_configuration,
                                       data.get_intent_classifier_name())
     }
