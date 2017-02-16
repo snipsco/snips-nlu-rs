@@ -88,12 +88,12 @@ impl FileConfiguration {
     }
 }
 
-pub struct IntentParser<'a> {
-    classifiers: HashMap<String, IntentConfiguration<'a>>
+pub struct IntentParser {
+    classifiers: HashMap<String, IntentConfiguration>
 }
 
-impl<'a> IntentParser<'a> {
-    pub fn new(file_configuration: &'a FileConfiguration, configurations: &[&str]) -> Result<IntentParser<'a>> {
+impl IntentParser {
+    pub fn new(file_configuration: &FileConfiguration, configurations: &[&str]) -> Result<IntentParser> {
         let mut classifiers = HashMap::new();
 
         for c in configurations {
@@ -105,7 +105,7 @@ impl<'a> IntentParser<'a> {
     }
 
     pub fn run_intent_classifiers(&self, input: &str, probability_threshold: f64) -> Vec<IntentClassifierResult> {
-        assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "probability_treshold should be between 0.0 and 1.0");
+        assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "it's a developer error to pass a probability_threshold between 0.0 and 1.0");
 
         let preprocessor_result = preprocess(input);
 
@@ -115,7 +115,7 @@ impl<'a> IntentParser<'a> {
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
                 IntentClassifierResult { intent_name: name.to_string(), probability: probability }
             })
-        .filter(|result| result.probability >= probability_threshold)
+            .filter(|result| result.probability >= probability_threshold)
             .collect();
 
         probabilities.sort_by(|a, b| {
