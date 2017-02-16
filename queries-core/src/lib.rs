@@ -53,6 +53,14 @@ pub struct FileConfiguration {
 }
 
 impl FileConfiguration {
+    pub fn new<P: AsRef<path::Path>>(root_dir: P) -> FileConfiguration {
+        FileConfiguration { root_dir: ::path::PathBuf::from(root_dir.as_ref()) }
+    }
+
+    pub fn default() -> FileConfiguration {
+        FileConfiguration::new("../data")
+    }
+
     pub fn configuration_path(&self, classifier_name: &str) -> ::path::PathBuf {
         self.root_dir
             .join("snips-sdk-models-protobuf/configuration")
@@ -79,12 +87,6 @@ impl FileConfiguration {
             .join("snips-sdk-gazetteers/gazetteers")
             .join(gazetteer_name)
             .with_extension("json")
-    }
-
-    pub fn default() -> FileConfiguration {
-        FileConfiguration {
-            root_dir: ::path::PathBuf::from("../data")
-        }
     }
 }
 
