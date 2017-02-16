@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate bencher;
 
-extern crate snips_queries_core;
+extern crate queries_core;
 
 use bencher::Bencher;
-use snips_queries_core::FileConfiguration;
-use snips_queries_core::pipeline::tokens_classifier::ProtobufTokensClassifier;
-use snips_queries_core::pipeline::tokens_classifier::TokensClassifier;
-use snips_queries_core::preprocess;
+use queries_core::FileConfiguration;
+use queries_core::pipeline::tokens_classifier::ProtobufTokensClassifier;
+use queries_core::pipeline::tokens_classifier::TokensClassifier;
+use queries_core::preprocess;
 
 fn load_classifier(bench: &mut Bencher) {
     let file_configuration = FileConfiguration::default();

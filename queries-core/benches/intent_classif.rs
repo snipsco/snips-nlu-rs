@@ -1,13 +1,13 @@
 #[macro_use]
 extern crate bencher;
 
-extern crate snips_queries_core;
+extern crate queries_core;
 
 use bencher::Bencher;
-use snips_queries_core::FileConfiguration;
-use snips_queries_core::preprocess;
-use snips_queries_core::pipeline::intent_classifier::ProtobufIntentClassifier;
-use snips_queries_core::pipeline::intent_classifier::IntentClassifier;
+use queries_core::FileConfiguration;
+use queries_core::preprocess;
+use queries_core::pipeline::intent_classifier::ProtobufIntentClassifier;
+use queries_core::pipeline::intent_classifier::IntentClassifier;
 
 macro_rules! load_classifier {
     ($name:ident, $classifier:expr) => {
