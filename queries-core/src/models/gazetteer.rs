@@ -37,11 +37,11 @@ impl Gazetteer for HashSetGazetteer {
 #[cfg(test)]
 mod tests {
     use super::HashSetGazetteer;
-    use testutils::file_configuration;
+    use FileConfiguration;
 
     #[test]
     fn gazetteer_work() {
-       let file_configuration = file_configuration();
+       let file_configuration = FileConfiguration::default();
        let gazetteer_name = "action_verbs_infinitive";
 
        assert!(HashSetGazetteer::new(&file_configuration, gazetteer_name).is_ok())
