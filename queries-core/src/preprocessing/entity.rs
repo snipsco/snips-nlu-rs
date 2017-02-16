@@ -1,8 +1,10 @@
 use std::ops::Range;
+use std::iter::Iterator;
+
+use regex::Regex;
+
 use preprocessing::Token;
 use preprocessing::convert_char_index;
-use regex::Regex;
-use std::iter::Iterator;
 
 struct EntityDetector {
     regex: &'static Regex,
@@ -14,7 +16,7 @@ impl EntityDetector {
         self.regex
             .captures_iter(input)
             .map(|capture| {
-                let group = capture.pos(1).unwrap();
+                let group = capture.pos(1).unwrap(); // TODO: yolo?
                 Token {
                     value: capture.at(1).unwrap().to_string(),
                     range: Range {

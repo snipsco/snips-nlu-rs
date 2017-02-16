@@ -1,8 +1,8 @@
 use std::io::prelude::*;
 use std::fs::File;
+
 use serde_json::from_str;
 use serde::de::Deserialize;
-
 use ndarray::prelude::*;
 
 pub fn parse_json<T: Deserialize>(file_name: &str) -> T {
@@ -20,8 +20,6 @@ pub fn file_path(file_name: &str) -> String {
 pub fn file_path(file_name: &str) -> String {
     format!("/data/local/tmp/snips-queries-data/{}", file_name)
 }
-
-
 
 pub fn assert_epsilon_eq(a: Array2<f64>, b: Array2<f64>, epsilon: f64) {
     for (index, elem_a) in a.indexed_iter() {

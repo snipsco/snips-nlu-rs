@@ -1,20 +1,26 @@
-use ndarray::{Array, Array2};
+use errors::*;
+use ndarray::{ Array, Array2 };
+
+use ::FileConfiguration;
 use preprocessing::PreprocessorResult;
-use models::gazetteer::{Gazetteer, HashSetGazetteer};
-use models::model::{Feature, Feature_Type};
-use models::features::{has_gazetteer_hits, ngram_matcher};
+use models::gazetteer::HashSetGazetteer;
+use models::model::{ Feature, Feature_Type, Feature_Domain, Argument };
 
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64>;
 }
 
 pub struct ProtobufMatrixFeatureProcessor<'a> {
+    file_configuration: &'a FileConfiguration,
     feature_functions: &'a [Feature],
 }
 
 impl<'a> ProtobufMatrixFeatureProcessor<'a> {
-    pub fn new(features: &'a [Feature]) -> ProtobufMatrixFeatureProcessor<'a> {
-        ProtobufMatrixFeatureProcessor { feature_functions: features }
+    pub fn new(file_configuration: &'a FileConfiguration, features: &'a [Feature]) -> ProtobufMatrixFeatureProcessor<'a> {
+        ProtobufMatrixFeatureProcessor {
+            file_configuration: file_configuration,
+            feature_functions: features
+        }
     }
 }
 
@@ -22,7 +28,7 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64> {
         let computed_values = self.feature_functions
             .iter()
-            .flat_map(|feature_function| feature_function.compute(input))
+            .flat_map(|feature_function| feature_function.compute(self.file_configuration, input).unwrap()) // TODO: Dunno how to kill this unwrap
             .collect::<Vec<f64>>();
 
         let len = self.feature_functions.len();
@@ -36,27 +42,68 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 }
 
 impl Feature {
-    fn compute(&self, input: &PreprocessorResult) -> Vec<f64> {
-        match self.field_type {
-            Feature_Type::HAS_GAZETTEER_HITS => {
-                has_gazetteer_hits(input,
-                                   HashSetGazetteer::new(self.get_arguments()[0].get_gazetteer())
-                                       .unwrap())
+    fn compute(&self, file_configuration: &FileConfiguration, input: &PreprocessorResult) -> Result<Vec<f64>> {
+        let known_domain = self.get_known_domain();
+        let feature_type = self.field_type;
+        let arguments = self.get_arguments();
+
+        match known_domain {
+            Feature_Domain::SHARED_SCALAR => {
+                Self::get_shared_scalar(file_configuration, input, &feature_type, arguments)
             }
-            Feature_Type::NGRAM_MATCHER => ngram_matcher(input, self.get_arguments()[0].get_str()),
+            Feature_Domain::SHARED_VECTOR => {
+                Self::get_shared_vector(file_configuration, input, &feature_type, arguments)
+            }
         }
+    }
+
+    fn get_shared_scalar(file_configuration: &FileConfiguration,
+                         input: &PreprocessorResult,
+                         feature_type: &Feature_Type,
+                         arguments: &[Argument])
+                         -> Result<Vec<f64>> {
+        // TODO: this Result::Ok smells something bad
+        Ok(match *feature_type {
+            Feature_Type::HAS_GAZETTEER_HITS => {
+                let gazetteer = HashSetGazetteer::new(file_configuration, arguments[0].get_gazetteer())?;
+                ::features::shared_scalar::has_gazetteer_hits(input, &gazetteer)
+            }
+            Feature_Type::NGRAM_MATCHER => {
+                ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
+            }
+            _ => panic!("Feature function not implemented")
+        })
+    }
+
+    fn get_shared_vector(file_configuration: &FileConfiguration,
+                         input: &PreprocessorResult,
+                         feature_type: &Feature_Type,
+                         arguments: &[Argument])
+                         -> Result<Vec<f64>> {
+        // TODO: Same as above
+        Ok(match *feature_type {
+            Feature_Type::HAS_GAZETTEER_HITS => {
+                let gazetteer = HashSetGazetteer::new(file_configuration, arguments[0].get_gazetteer())?;
+                ::features::shared_vector::has_gazetteer_hits(input, &gazetteer)
+            }
+            Feature_Type::NGRAM_MATCHER => {
+                ::features::shared_vector::ngram_matcher(input, arguments[0].get_str())
+            }
+            _ => panic!("Feature functions not implemented")
+        })
     }
 }
 
 #[cfg(test)]
 mod test {
-    extern crate protobuf;
-
     use std::fs;
     use std::fs::File;
-    use std::path::Path;
+
+    use protobuf;
+
     use models::model::Model;
     use preprocessing::preprocess;
+    use FileConfiguration;
     use testutils::file_path;
     use testutils::parse_json;
     use testutils::create_transposed_array;
@@ -71,24 +118,22 @@ mod test {
 
     #[test]
     fn feature_processor_works() {
-        let model_directory = file_path("snips-sdk-models-protobuf/intent_classification/");
-        let paths = fs::read_dir(file_path("snips-sdk-models/tests/intent_classification/"))
-            .unwrap();
+        let file_configuration = FileConfiguration::default();
+        let paths = fs::read_dir(file_path("snips-sdk-models/tests/intent_classification/")).unwrap();
 
         for path in paths {
             let path = path.unwrap().path();
             let tests: Vec<TestDescription> = parse_json(path.to_str().unwrap());
 
-            let model_path = Path::new(&model_directory)
-                .join(path.file_stem().unwrap())
-                .with_extension("pbbin");
+            let model_path = file_configuration.intent_classifier_path(path.file_stem().unwrap().to_str().unwrap());
             let mut model_file = File::open(model_path).unwrap();
             let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
 
             for test in tests {
-                let preprocess_result = preprocess(&test.text);
-                let feature_processor = ProtobufMatrixFeatureProcessor::new(&model.get_features());
-                let result = feature_processor.compute_features(&preprocess_result);
+                let preprocessor_result = preprocess(&test.text);
+                let feature_processor = ProtobufMatrixFeatureProcessor::new(&file_configuration, &model.get_features());
+
+                let result = feature_processor.compute_features(&preprocessor_result);
                 assert_eq!(result,
                            create_transposed_array(&test.features),
                            "for {:?}, input: {}",
