@@ -56,7 +56,7 @@ impl CNN for TensorflowCNN {
             step.add_input(&graph.operation_by_name_required("input").map_err(|e| format!("Error in tensorflow: {:?}", e))?,
                            0,
                            &x);
-            let res = step.request_output(&graph.operation_by_name_required("predictions").map_err(|e| format!("Error in tensorflow: {:?}", e))?, 0);
+            let res = step.request_output(&graph.operation_by_name_required("logits").map_err(|e| format!("Error in tensorflow: {:?}", e))?, 0);
 
             session.run(&mut step).map_err(|e| format!("Error in tensorflow: {:?}", e))?;
 
