@@ -1,12 +1,12 @@
 use preprocessing::PreprocessorResult;
 use models::gazetteer::Gazetteer;
 
-pub fn has_gazetteer_hits<T: Gazetteer>(preprocessed_result: &PreprocessorResult,
+pub fn has_gazetteer_hits<T: Gazetteer>(preprocessor_result: &PreprocessorResult,
                                         gazetteer: &T)
                                         -> Vec<f64> {
-    let mut result = vec![0.0; preprocessed_result.tokens.len()];
+    let mut result = vec![0.0; preprocessor_result.tokens.len()];
 
-    for ref ngram in &preprocessed_result.normalized_ngrams {
+    for ref ngram in &preprocessor_result.normalized_ngrams {
         if gazetteer.contains(&ngram.0) {
             for index in &ngram.1 {
                 result[*index as usize] = 1.0;
@@ -16,10 +16,10 @@ pub fn has_gazetteer_hits<T: Gazetteer>(preprocessed_result: &PreprocessorResult
     result
 }
 
-pub fn ngram_matcher(preprocessed_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f64> {
-    let mut result = vec![0.0; preprocessed_result.tokens.len()];
+pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f64> {
+    let mut result = vec![0.0; preprocessor_result.tokens.len()];
 
-    for ref ngram in &preprocessed_result.formatted_ngrams {
+    for ref ngram in &preprocessor_result.formatted_ngrams {
         if &ngram.0 == ngram_to_check {
             for index in &ngram.1 {
                 result[*index as usize] = 1.0;
