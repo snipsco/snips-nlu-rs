@@ -119,7 +119,7 @@ mod test {
     #[test]
     fn feature_processor_works() {
         let file_configuration = FileConfiguration::default();
-        let paths = fs::read_dir(file_path("snips-sdk-models/tests/intent_classification/")).unwrap();
+        let paths = fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/")).unwrap();
 
         for path in paths {
             let path = path.unwrap().path();
