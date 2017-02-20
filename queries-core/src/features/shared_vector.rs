@@ -29,6 +29,19 @@ pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &
     result
 }
 
+pub fn is_capitalized(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
+    preprocessor_result.tokens
+        .iter()
+        .map(|token| {
+            if let Some(first_char) = token.value.chars().next() {
+               if first_char.is_uppercase() { 1.0 } else { 0.0 }
+            } else {
+               0.0
+            }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod test {
     use std::ops::Range;
@@ -36,6 +49,7 @@ mod test {
 
     use super::has_gazetteer_hits;
     use super::ngram_matcher;
+    use super::is_capitalized;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
     use models::gazetteer::{HashSetGazetteer};
@@ -100,6 +114,7 @@ mod test {
         let tests: Vec<(&str, Box<Fn(&FileConfiguration, &TestDescription, Vec<NormalizedToken>)>)> = vec![
             ("hasGazetteerHits", Box::new(has_gazetteer_hits_works)),
             ("ngramMatcher", Box::new(ngram_matcher_works)),
+            ("isCapitalized", Box::new(is_capitalized_works)),
         ];
 
         let path = path::PathBuf::from("snips-sdk-tests/feature_extraction/SharedVector");
@@ -135,5 +150,10 @@ mod test {
         let result = ngram_matcher(&preprocessor_result, &test.args[0].value);
         assert_eq!(result, test.output)
     }
+
+    fn is_capitalized_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
+        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+        let result = is_capitalized(&preprocessor_result);
+        assert_eq!(result, test.output)
     }
 }

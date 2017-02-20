@@ -71,7 +71,7 @@ impl Feature {
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
-            _ => panic!("Feature function not implemented")
+            feature_type => panic!("Feature function not implemented: {:?}", feature_type)
         })
     }
 
@@ -89,7 +89,10 @@ impl Feature {
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_vector::ngram_matcher(input, arguments[0].get_str())
             }
-            _ => panic!("Feature functions not implemented")
+            Feature_Type::IS_CAPITALIZED => {
+                ::features::shared_vector::is_capitalized(input)
+            }
+            feature_type => panic!("Feature functions not implemented: {:?}", feature_type)
         })
     }
 }
