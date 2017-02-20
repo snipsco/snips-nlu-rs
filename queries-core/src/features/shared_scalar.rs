@@ -1,17 +1,17 @@
 use preprocessing::PreprocessorResult;
 use models::gazetteer::Gazetteer;
 
-pub fn has_gazetteer_hits<T: Gazetteer>(preprocessed_result: &PreprocessorResult,
+pub fn has_gazetteer_hits<T: Gazetteer>(preprocessor_result: &PreprocessorResult,
                                         gazetteer: &T)
                                         -> Vec<f64> {
-    match preprocessed_result.normalized_ngrams.iter().find(|ngram| gazetteer.contains(&ngram.0)) {
+    match preprocessor_result.normalized_ngrams.iter().find(|ngram| gazetteer.contains(&ngram.0)) {
         Some(_) => vec![1.0],
         None => vec![0.0],
     }
 }
 
-pub fn ngram_matcher(preprocessed_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f64> {
-    match preprocessed_result.formatted_ngrams.iter().find(|ngram| ngram.0 == ngram_to_check) {
+pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f64> {
+    match preprocessor_result.formatted_ngrams.iter().find(|ngram| ngram.0 == ngram_to_check) {
         Some(_) => vec![1.0],
         None => vec![0.0],
     }
