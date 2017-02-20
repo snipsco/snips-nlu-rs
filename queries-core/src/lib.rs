@@ -71,7 +71,7 @@ impl FileConfiguration {
     }
 
     pub fn default() -> FileConfiguration {
-        FileConfiguration::new("../data")
+        FileConfiguration::new(file_path("."))
     }
 
     pub fn configuration_path(&self, classifier_name: &str) -> ::path::PathBuf {
@@ -105,6 +105,14 @@ impl FileConfiguration {
         }
 
         Ok(available_intents)
+    }
+}
+
+pub fn file_path(file_name: &str) -> ::path::PathBuf {
+    if ::std::env::var("DINGHY").is_ok() {
+        ::std::env::current_exe().unwrap().parent().unwrap().join("test_data/data").join(file_name)
+    } else {
+        ::path::PathBuf::from("../data").join(file_name)
     }
 }
 
