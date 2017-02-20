@@ -19,6 +19,7 @@ pub trait CNN {
 
 pub struct TensorflowCNN(sync::Mutex<(Session,Graph)>);
 
+unsafe impl Send for TensorflowCNN {}
 unsafe impl Sync for TensorflowCNN {}
 
 impl TensorflowCNN {
