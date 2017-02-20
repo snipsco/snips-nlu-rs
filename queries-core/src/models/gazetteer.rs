@@ -5,7 +5,7 @@ use std::fs::File;
 use errors::*;
 use serde_json::from_str;
 
-use ::FileConfiguration;
+use FileConfiguration;
 
 pub trait Gazetteer: Sized {
     fn contains(&self, value: &str) -> bool;

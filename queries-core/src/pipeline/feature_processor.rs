@@ -1,7 +1,7 @@
 use errors::*;
 use ndarray::{ Array, Array2 };
 
-use ::FileConfiguration;
+use FileConfiguration;
 use preprocessing::PreprocessorResult;
 use models::gazetteer::HashSetGazetteer;
 use models::model::{ Feature, Feature_Type, Feature_Domain, Argument };
