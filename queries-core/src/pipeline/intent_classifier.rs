@@ -4,7 +4,7 @@ use errors::*;
 use protobuf;
 use ndarray::prelude::*;
 
-use ::FileConfiguration;
+use FileConfiguration;
 use models::model::{Model, Matrix};
 use models::classifiers::{Classifier, LogisticRegression};
 use preprocessing::PreprocessorResult;

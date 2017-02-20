@@ -3,7 +3,7 @@ use std::fs;
 use errors::*;
 use protobuf;
 
-use ::FileConfiguration;
+use FileConfiguration;
 use ::pipeline::intent_classifier::ProtobufIntentClassifier;
 use ::pipeline::tokens_classifier::ProtobufTokensClassifier;
 
