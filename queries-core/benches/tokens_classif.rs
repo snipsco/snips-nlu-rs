@@ -11,8 +11,8 @@ use queries_core::preprocess;
 
 fn load_classifier(bench: &mut Bencher) {
     let file_configuration = FileConfiguration::default();
-    let model_name = "BookRestaurant_bookRestaurant";
-    let cnn_name = "Cnn_BookRestaurant_bookRestaurant";
+    let model_name = "BookRestaurant_features";
+    let cnn_name = "BookRestaurant_model";
 
     bench.iter(|| {
         let _ = ProtobufTokensClassifier::new(&file_configuration, &model_name, &cnn_name);
@@ -21,8 +21,8 @@ fn load_classifier(bench: &mut Bencher) {
 
 fn run_intent_model(bench: &mut Bencher) {
     let file_configuration = FileConfiguration::default();
-    let model_name = "BookRestaurant_bookRestaurant";
-    let cnn_name = "Cnn_BookRestaurant_bookRestaurant";
+    let model_name = "BookRestaurant_features";
+    let cnn_name = "BookRestaurant_model";
 
     let tokens_classifier = ProtobufTokensClassifier::new(&file_configuration, &model_name, &cnn_name).unwrap();
 

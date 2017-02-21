@@ -40,7 +40,7 @@ impl IntentConfiguration {
 
     fn build_tokens_classifier(file_configuration: &FileConfiguration, data: &model::Configuration) -> Result<ProtobufTokensClassifier> {
         ProtobufTokensClassifier::new(file_configuration,
-                                      data.get_tokens_classifier_name(),
-                                      &format!("Cnn_{}", data.get_tokens_classifier_name()))
+                                      &format!("{}_features", data.get_tokens_classifier_name()),
+                                      &format!("{}_model", data.get_tokens_classifier_name()))
     }
 }

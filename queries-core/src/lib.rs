@@ -17,6 +17,7 @@ extern crate serde_json;
 extern crate tensorflow;
 
 use std::cmp::Ordering;
+use std::fs;
 use std::path;
 use std::collections::HashMap;
 
@@ -43,18 +44,30 @@ pub mod preprocessing;
 
 #[derive(Serialize, Debug)]
 pub struct IntentClassifierResult {
-    pub intent_name: String,
+    pub name: String,
     pub probability: Probability,
 }
 
 #[derive(Debug, Clone)]
 pub struct FileConfiguration {
     root_dir: ::path::PathBuf,
+    configuration_dir: ::path::PathBuf,
+    intent_classifier_dir: ::path::PathBuf,
+    tokens_classifier_dir: ::path::PathBuf,
+    gazetteer_dir: ::path::PathBuf,
 }
 
 impl FileConfiguration {
     pub fn new<P: AsRef<path::Path>>(root_dir: P) -> FileConfiguration {
-        FileConfiguration { root_dir: ::path::PathBuf::from(root_dir.as_ref()) }
+        let root_dir = ::path::PathBuf::from(root_dir.as_ref());
+
+        FileConfiguration {
+            configuration_dir: root_dir.join("snips-sdk-models-protobuf/configurations"),
+            intent_classifier_dir: root_dir.join("snips-sdk-models-protobuf/models/intent_classification"),
+            tokens_classifier_dir: root_dir.join("snips-sdk-models-protobuf/models/tokens_classification"),
+            gazetteer_dir: root_dir.join("snips-sdk-gazetteers/gazetteers"),
+            root_dir: root_dir,
+        }
     }
 
     pub fn default() -> FileConfiguration {
@@ -62,31 +75,36 @@ impl FileConfiguration {
     }
 
     pub fn configuration_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        self.root_dir
-            .join("snips-sdk-models-protobuf/configuration")
-            .join(classifier_name)
-            .with_extension("pb")
+        self.configuration_dir.join(classifier_name).with_extension("pb")
     }
 
     pub fn intent_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        self.root_dir
-            .join("snips-sdk-models-protobuf/models/intent_classification")
-            .join(classifier_name)
-            .with_extension("pb")
+        self.intent_classifier_dir.join(classifier_name).with_extension("pb")
     }
 
     pub fn tokens_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        self.root_dir
-            .join("snips-sdk-models-protobuf/models/tokens_classification")
-            .join(classifier_name)
-            .with_extension("pb")
+        self.tokens_classifier_dir.join(classifier_name).with_extension("pb")
     }
 
     pub fn gazetteer_path(&self, gazetteer_name: &str) -> ::path::PathBuf {
-        self.root_dir
-            .join("snips-sdk-gazetteers/gazetteers")
-            .join(gazetteer_name)
-            .with_extension("json")
+        self.gazetteer_dir.join(gazetteer_name).with_extension("json")
+    }
+
+    pub fn available_intents(&self) -> Result<Vec<String>> {
+        let entries = fs::read_dir(&self.configuration_dir)?;
+
+        let mut available_intents = vec![];
+
+        // TODO: kill those unwrap
+        for entry in entries {
+            let entry = entry.unwrap();
+            let path = entry.path();
+            let stem = path.file_stem().unwrap();
+            let result = stem.to_str().unwrap();
+            available_intents.push(result.to_string());
+        }
+
+        Ok(available_intents)
     }
 }
 
@@ -95,10 +113,16 @@ pub struct IntentParser {
 }
 
 impl IntentParser {
-    pub fn new(file_configuration: &FileConfiguration, configurations: &[&str]) -> Result<IntentParser> {
+    pub fn new(file_configuration: &FileConfiguration, configurations: Option<&[&str]>) -> Result<IntentParser> {
         let mut classifiers = HashMap::new();
 
-        for c in configurations {
+        let configurations_to_load = if let Some(required_configurations) = configurations {
+            required_configurations.iter().map(|s| s.to_string()).collect_vec()
+        } else {
+            file_configuration.available_intents()?
+        };
+
+        for ref c in configurations_to_load {
             let intent = IntentConfiguration::new(file_configuration, c)?;
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
@@ -106,16 +130,17 @@ impl IntentParser {
         Ok(IntentParser { classifiers: classifiers })
     }
 
-    pub fn run_intent_classifiers(&self, input: &str, probability_threshold: f64) -> Vec<IntentClassifierResult> {
+    pub fn run_intent_classifiers(&self, input: &str, probability_threshold: f64, intent_filter: Option<&[&str]>) -> Vec<IntentClassifierResult> {
         assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "it's a developer error to pass a probability_threshold between 0.0 and 1.0");
 
         let preprocessor_result = preprocess(input);
 
         let mut probabilities: Vec<IntentClassifierResult> = self.classifiers
             .par_iter()
+            .filter(|&(name, _)| intent_filter.map(|f| f.contains(&&**name)).unwrap_or(true))
             .map(|(name, intent_configuration)| {
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
-                IntentClassifierResult { intent_name: name.to_string(), probability: probability }
+                IntentClassifierResult { name: name.to_string(), probability: probability }
             })
             .filter(|result| result.probability >= probability_threshold)
             .collect();
@@ -143,5 +168,19 @@ impl IntentParser {
         }
 
         Ok(result)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use FileConfiguration;
+
+    #[test]
+    #[ignore]
+    fn list_configurations() {
+        let file_configuration = FileConfiguration::default();
+
+        let available_intents = file_configuration.available_intents().unwrap();
+        println!("available_intents: {:?}", available_intents);
     }
 }
