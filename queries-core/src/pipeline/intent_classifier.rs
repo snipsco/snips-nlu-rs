@@ -4,7 +4,7 @@ use errors::*;
 use protobuf;
 use ndarray::prelude::*;
 
-use ::FileConfiguration;
+use FileConfiguration;
 use models::model::{Model, Matrix};
 use models::classifiers::{Classifier, LogisticRegression};
 use preprocessing::PreprocessorResult;
@@ -78,7 +78,7 @@ mod test {
     #[test]
     fn intent_classifier_works() {
         let file_configuration = FileConfiguration::default();
-        let paths = fs::read_dir("../data/snips-sdk-models/tests/intent_classification/").unwrap();
+        let paths = fs::read_dir("../data/snips-sdk-models-protobuf/tests/intent_classification/").unwrap();
 
         for path in paths {
             let path = path.unwrap().path();

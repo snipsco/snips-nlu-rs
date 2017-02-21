@@ -70,14 +70,14 @@ impl FileConfiguration {
 
     pub fn intent_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
         self.root_dir
-            .join("snips-sdk-models-protobuf/intent_classification")
+            .join("snips-sdk-models-protobuf/models/intent_classification")
             .join(classifier_name)
             .with_extension("pb")
     }
 
     pub fn tokens_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
         self.root_dir
-            .join("snips-sdk-models-protobuf/tokens_classification")
+            .join("snips-sdk-models-protobuf/models/tokens_classification")
             .join(classifier_name)
             .with_extension("pb")
     }

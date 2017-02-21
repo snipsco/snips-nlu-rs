@@ -1,7 +1,7 @@
 use errors::*;
 use ndarray::{ Array, Array2 };
 
-use ::FileConfiguration;
+use FileConfiguration;
 use preprocessing::PreprocessorResult;
 use models::gazetteer::HashSetGazetteer;
 use models::model::{ Feature, Feature_Type, Feature_Domain, Argument };
@@ -71,7 +71,7 @@ impl Feature {
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
-            _ => panic!("Feature function not implemented")
+            feature_type => panic!("Feature function not implemented: {:?}", feature_type)
         })
     }
 
@@ -89,7 +89,10 @@ impl Feature {
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_vector::ngram_matcher(input, arguments[0].get_str())
             }
-            _ => panic!("Feature functions not implemented")
+            Feature_Type::IS_CAPITALIZED => {
+                ::features::shared_vector::is_capitalized(input)
+            }
+            feature_type => panic!("Feature functions not implemented: {:?}", feature_type)
         })
     }
 }
@@ -119,7 +122,7 @@ mod test {
     #[test]
     fn feature_processor_works() {
         let file_configuration = FileConfiguration::default();
-        let paths = fs::read_dir(file_path("snips-sdk-models/tests/intent_classification/")).unwrap();
+        let paths = fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/")).unwrap();
 
         for path in paths {
             let path = path.unwrap().path();
