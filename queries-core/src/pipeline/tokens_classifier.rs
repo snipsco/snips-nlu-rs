@@ -51,8 +51,8 @@ mod test {
     #[test]
     fn tokens_classifier_works() {
         let file_configuration = FileConfiguration::default();
-        let model_name = "BookRestaurant_bookRestaurant";
-        let cnn_name = "Cnn_BookRestaurant_bookRestaurant";
+        let model_name = "BookRestaurant_features";
+        let cnn_name = "BookRestaurant_model";
 
         let preprocessor_result = preprocess("Book me a table for two people at Le Chalet Savoyard");
 
