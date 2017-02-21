@@ -64,6 +64,7 @@ mod test {
     use preprocessing::preprocess;
     use FileConfiguration;
     use testutils::parse_json;
+    use file_path;
     use testutils::create_array;
     use testutils::assert_epsilon_eq;
     use super::{IntentClassifier, ProtobufIntentClassifier};
@@ -78,7 +79,7 @@ mod test {
     #[test]
     fn intent_classifier_works() {
         let file_configuration = FileConfiguration::default();
-        let paths = fs::read_dir("../data/snips-sdk-models-protobuf/tests/intent_classification/").unwrap();
+        let paths = fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/")).unwrap();
 
         for path in paths {
             let path = path.unwrap().path();

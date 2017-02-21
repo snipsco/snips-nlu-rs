@@ -6,7 +6,7 @@ repository = "https://github.com/snipsco/snips-queries-rust/"
 description = "Rust implementation of the Queries SDK"
 
 [dependencies]
-error-chain = "0.9"
+error-chain = { version = "0.9", default-features=false }
 itertools = "0.5"
 serde = "0.9"
 serde_derive = "0.9"

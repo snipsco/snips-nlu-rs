@@ -107,7 +107,7 @@ mod test {
     use models::model::Model;
     use preprocessing::preprocess;
     use FileConfiguration;
-    use testutils::file_path;
+    use file_path;
     use testutils::parse_json;
     use testutils::create_transposed_array;
     use super::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
