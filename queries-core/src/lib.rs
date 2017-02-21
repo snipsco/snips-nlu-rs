@@ -113,10 +113,16 @@ pub struct IntentParser {
 }
 
 impl IntentParser {
-    pub fn new(file_configuration: &FileConfiguration, configurations: &[&str]) -> Result<IntentParser> {
+    pub fn new(file_configuration: &FileConfiguration, configurations: Option<&[&str]>) -> Result<IntentParser> {
         let mut classifiers = HashMap::new();
 
-        for c in configurations {
+        let configurations_to_load = if let Some(required_configurations) = configurations {
+            required_configurations.iter().map(|s| s.to_string()).collect_vec()
+        } else {
+            file_configuration.available_intents()?
+        };
+
+        for ref c in configurations_to_load {
             let intent = IntentConfiguration::new(file_configuration, c)?;
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
@@ -124,13 +130,14 @@ impl IntentParser {
         Ok(IntentParser { classifiers: classifiers })
     }
 
-    pub fn run_intent_classifiers(&self, input: &str, probability_threshold: f64) -> Vec<IntentClassifierResult> {
+    pub fn run_intent_classifiers(&self, input: &str, probability_threshold: f64, intent_filter: Option<&[&str]>) -> Vec<IntentClassifierResult> {
         assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "it's a developer error to pass a probability_threshold between 0.0 and 1.0");
 
         let preprocessor_result = preprocess(input);
 
         let mut probabilities: Vec<IntentClassifierResult> = self.classifiers
             .par_iter()
+            .filter(|&(name, _)| intent_filter.map(|f| f.contains(&&**name)).unwrap_or(true))
             .map(|(name, intent_configuration)| {
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
                 IntentClassifierResult { name: name.to_string(), probability: probability }
