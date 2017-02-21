@@ -37,12 +37,9 @@ macro_rules! run_classifier {
 }
 
 load_classifier!(load_book_restaurant, "BookRestaurant");
-load_classifier!(load_place_details, "GetPlaceDetails");
 run_classifier!(run_book_restaurant_coinstot, "BookRestaurant",
     "Book me a table at Coinsto Vino");
-run_classifier!(run_details_quiet_luxembourg, "GetPlaceDetails",
-    "What are the most quiet times to go to jardin du Luxembourg?");
 
-benchmark_group!(load, load_book_restaurant, load_place_details);
-benchmark_group!(run, run_book_restaurant_coinstot, run_details_quiet_luxembourg);
+benchmark_group!(load, load_book_restaurant);
+benchmark_group!(run, run_book_restaurant_coinstot);
 benchmark_main!(load,run);
