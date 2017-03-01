@@ -17,7 +17,7 @@ regex = "0.1"
 lazy_static = "0.2"
 protobuf = "1.2"
 rayon = "0.6"
-tensorflow = "0.2"
+tensorflow = { git = "https://github.com/tensorflow/rust" }
 rulinalg = "0.4"
 bencher = "0.1"
 
