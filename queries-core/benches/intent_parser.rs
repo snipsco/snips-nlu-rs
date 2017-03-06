@@ -24,6 +24,18 @@ fn run_intent_classifications(bench: &mut Bencher) {
     });
 }
 
+fn run_everything(bench: &mut Bencher) {
+    let file_configuration = FileConfiguration::default();
+    
+    bench.iter(|| {
+        let intent_parser = IntentParser::new(&file_configuration, Some(&["BookRestaurant"])).unwrap();
+        let text = "Book me a restaurant for two peoples at Le Chalet Savoyard";
+        let result = intent_parser.run_intent_classifiers(text, 0.4, None);
+        let intent = intent_parser.run_tokens_classifier(text, "BookRestaurant");
+    });
+}
+
 benchmark_group!(load, load_intent_parser);
 benchmark_group!(run, run_intent_classifications);
-benchmark_main!(load,run);
+benchmark_group!(everything, run_everything);
+benchmark_main!(load, run, everything);
