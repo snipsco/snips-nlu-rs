@@ -6,18 +6,18 @@ repository = "https://github.com/snipsco/snips-queries-rust/"
 description = "Rust implementation of the Queries SDK"
 
 [dependencies]
-error-chain = { version = "0.9", default-features=false }
+error-chain = { version = "0.10", default-features=false }
 itertools = "0.5"
 serde = "0.9"
 serde_derive = "0.9"
 serde_json = "0.9"
-ndarray = "0.7"
+ndarray = "0.8"
 unicode-normalization = "0.1"
 regex = "0.1"
 lazy_static = "0.2"
 protobuf = "1.2"
 rayon = "0.6"
-tensorflow = { git = "https://github.com/tensorflow/rust" }
+tensorflow = "0.3"
 rulinalg = "0.4"
 bencher = "0.1"
 
