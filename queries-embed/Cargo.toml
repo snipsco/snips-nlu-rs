@@ -1,0 +1,15 @@
+[package]
+name = "queries-embed"
+version = "0.1.0"
+authors = ["Kevin Lefèvre <kevin.lefevre@snips.ai>"]
+
+[dependencies]
+queries-core = { path = "../queries-core" }
+error-chain = { "0.10", default-features=false }
+libc = "0.2"
+
+[lib]
+crate-type = ["staticlib"]
+
+[build-dependencies]
+rusty-cheddar = "0.3"
