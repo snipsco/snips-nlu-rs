@@ -8,7 +8,7 @@ use FileConfiguration;
 use preprocessing::PreprocessorResult;
 use pipeline::Probability;
 use pipeline::feature_processor::{ MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor };
-use models::model::Model;
+use protos::model::Model;
 use models::cnn::{ CNN, TensorflowCNN };
 
 pub trait TokensClassifier {

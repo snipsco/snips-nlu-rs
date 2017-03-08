@@ -5,7 +5,7 @@ use protobuf;
 use ndarray::prelude::*;
 
 use FileConfiguration;
-use models::model::{Model, Matrix};
+use protos::model::{Model, Matrix};
 use models::classifiers::{Classifier, LogisticRegression};
 use preprocessing::PreprocessorResult;
 use pipeline::Probability;
