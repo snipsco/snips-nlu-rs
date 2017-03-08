@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>", "Kevin Lefevre <kevin.lefevre@snips.ai>"]
 repository = "https://github.com/snipsco/snips-queries-rust/"
 description = "Rust implementation of the Queries SDK"
+build = "build.rs"
 
 [dependencies]
 error-chain = { version = "0.10", default-features=false }
@@ -20,6 +21,9 @@ rayon = "0.6"
 tensorflow = "0.3"
 rulinalg = "0.4"
 bencher = "0.1"
+
+[build-dependencies]
+glob = "0.2"
 
 [[bench]]
 name = "preprocess"
