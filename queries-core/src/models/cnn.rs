@@ -28,10 +28,8 @@ impl TensorflowCNN {
         let mut proto = Vec::new();
         fs::File::open(model_path)?.read_to_end(&mut proto)?;
 
-        graph.import_graph_def(&proto, &ImportGraphDefOptions::new())
-            .map_err(|e| format!("Error in tensorflow: {:?}", e))?;
-        let session = Session::new(&SessionOptions::new(), &graph)
-            .map_err(|e| format!("Error in tensorflow: {:?}", e))?;
+        graph.import_graph_def(&proto, &ImportGraphDefOptions::new())?;
+        let session = Session::new(&SessionOptions::new(), &graph)?;
 
         Ok(TensorflowCNN(sync::Mutex::new((session, graph))))
     }
@@ -51,18 +49,17 @@ impl CNN for TensorflowCNN {
         }
 
         let mut step = StepWithGraph::new();
-        let tensor_res: Tensor<f32> = {
+        let tensor_res: Result<Tensor<f32>> = {
             let mut locked = self.0.lock().map_err(|_| "Can not take lock on Tensorflow. Mutex poisoned.")?;
             let (ref mut session, ref graph) = *locked;
-            step.add_input(&graph.operation_by_name_required("input").map_err(|e| format!("Error in tensorflow: {:?}", e))?,
-                           0,
-                           &x);
-            let res = step.request_output(&graph.operation_by_name_required("logits").map_err(|e| format!("Error in tensorflow: {:?}", e))?, 0);
+            step.add_input(&graph.operation_by_name_required("input")?, 0, &x);
+            let res = step.request_output(&graph.operation_by_name_required("logits")?, 0);
 
-            session.run(&mut step).map_err(|e| format!("Error in tensorflow: {:?}", e))?;
+            session.run(&mut step)?;
 
-            step.take_output(res).map_err(|e| format!("Error in tensorflow: {:?}", e))
-        }?;
+            Ok(step.take_output(res)?)
+        };
+        let tensor_res = tensor_res?;
 
         let mut vec = Vec::with_capacity(tensor_res.data().len());
         vec.extend_from_slice(&tensor_res.data());

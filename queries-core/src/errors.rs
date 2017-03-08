@@ -6,3 +6,9 @@ error_chain! {
         Protobuf(::protobuf::ProtobufError);
     }
 }
+
+impl ::std::convert::From<::tensorflow::Status> for Error {
+    fn from(tfs: ::tensorflow::Status) -> Error {
+        format!("Tensorflow error: {:?}", tfs).into()
+    }
+}
