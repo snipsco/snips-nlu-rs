@@ -1,24 +1,24 @@
 use ndarray::prelude::*;
 
 pub trait Classifier {
-    fn new(weights: Array2<f64>) -> Self;
-    fn run(&self, features: &Array2<f64>) -> Array2<f64>;
+    fn new(weights: Array2<f32>) -> Self;
+    fn run(&self, features: &Array2<f32>) -> Array2<f32>;
 }
 
 pub struct LogisticRegression {
-    weights: Array2<f64>,
+    weights: Array2<f32>,
 }
 
-fn sigmoid(d: f64) -> f64 {
+fn sigmoid(d: f32) -> f32 {
     1.0 / (1.0 + (-d).exp())
 }
 
 impl Classifier for LogisticRegression {
-    fn new(weights: Array2<f64>) -> LogisticRegression {
+    fn new(weights: Array2<f32>) -> LogisticRegression {
         LogisticRegression { weights: weights }
     }
 
-    fn run(&self, features: &Array2<f64>) -> Array2<f64> {
+    fn run(&self, features: &Array2<f32>) -> Array2<f32> {
         let intercept = Array::from_elem((1, features.dim().1), 1.0);
         let intercepted_features = stack![Axis(0), intercept, *features];
         let mut result = self.weights.dot(&intercepted_features);
@@ -28,15 +28,15 @@ impl Classifier for LogisticRegression {
 }
 
 pub struct MulticlassLogisticRegression {
-    weights: Array2<f64>,
+    weights: Array2<f32>,
 }
 
 impl Classifier for MulticlassLogisticRegression {
-    fn new(weights: Array2<f64>) -> MulticlassLogisticRegression {
+    fn new(weights: Array2<f32>) -> MulticlassLogisticRegression {
         MulticlassLogisticRegression { weights: weights }
     }
 
-    fn run(&self, features: &Array2<f64>) -> Array2<f64> {
+    fn run(&self, features: &Array2<f32>) -> Array2<f32> {
         let intercept = Array::from_elem((1, features.dim().1), 1.0);
         let intercepted_features = stack![Axis(0), intercept, *features];
         let mut result = self.weights.dot(&intercepted_features);
@@ -61,13 +61,13 @@ mod tests {
     struct TestDescription {
         //description: String,
         input: InputDescription,
-        output: Vec<Vec<f64>>,
+        output: Vec<Vec<f32>>,
     }
 
     #[derive(Deserialize)]
     struct InputDescription {
-        weights: Vec<Vec<f64>>,
-        features: Vec<Vec<f64>>,
+        weights: Vec<Vec<f32>>,
+        features: Vec<Vec<f32>>,
     }
 
     #[test]
@@ -89,7 +89,7 @@ mod tests {
             let reg = T::new(w);
             let result = reg.run(&f);
             let expected_result = create_transposed_array(&desc.output);
-            assert_epsilon_eq(expected_result, result, 1e-9);
+            assert_epsilon_eq(expected_result, result, 1e-6);
         }
     }
 }
