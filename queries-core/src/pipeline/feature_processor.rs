@@ -4,7 +4,7 @@ use ndarray::{ Array, Array2 };
 use FileConfiguration;
 use preprocessing::PreprocessorResult;
 use models::gazetteer::HashSetGazetteer;
-use models::model::{ Feature, Feature_Type, Feature_Domain, Argument };
+use protos::model::{ Feature, Feature_Type, Feature_Domain, Argument };
 
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64>;
@@ -104,7 +104,7 @@ mod test {
 
     use protobuf;
 
-    use models::model::Model;
+    use protos::model::Model;
     use preprocessing::preprocess;
     use FileConfiguration;
     use file_path;
