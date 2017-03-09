@@ -1,6 +1,7 @@
 use std::ops::Range;
 
 use regex::Regex;
+use yolo::Yolo;
 
 use preprocessing::Token;
 use preprocessing::convert_char_index;
@@ -14,7 +15,7 @@ pub fn tokenize(input: Vec<Token>) -> Vec<Token> {
 
 fn extract_punctuation(token: &Token) -> Vec<Token> {
     lazy_static! {
-        static ref PUNCTUATION_REGEX: Regex = Regex::new(r"[.,;:?!…\n\r]+").unwrap();
+        static ref PUNCTUATION_REGEX: Regex = Regex::new(r"[.,;:?!…\n\r]+").yolo();
     }
     let mut indexes = PUNCTUATION_REGEX.find_iter(&token.value)
         .flat_map(|find| vec![find.0, find.1])
@@ -49,7 +50,7 @@ fn extract_punctuation_on_simple_token(token: &Token) -> Vec<Token> {
 
 fn split_spaces(token: &Token) -> Vec<Token> {
     lazy_static! {
-        static ref SPACE_REGEX: Regex = Regex::new(r"\s+").unwrap();
+        static ref SPACE_REGEX: Regex = Regex::new(r"\s+").yolo();
     }
 
     let mut result: Vec<Token> = Vec::new();

@@ -15,6 +15,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tensorflow;
+extern crate yolo;
 
 use std::cmp::Ordering;
 use std::fs;
