@@ -6,7 +6,7 @@ use models::gazetteer::Gazetteer;
 
 pub fn has_gazetteer_hits<T: Gazetteer>(preprocessor_result: &PreprocessorResult,
                                         gazetteer: &T)
-                                        -> Vec<f64> {
+                                        -> Vec<f32> {
     let mut result = vec![0.0; preprocessor_result.tokens.len()];
 
     for ref ngram in &preprocessor_result.normalized_ngrams {
@@ -19,7 +19,7 @@ pub fn has_gazetteer_hits<T: Gazetteer>(preprocessor_result: &PreprocessorResult
     result
 }
 
-pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f64> {
+pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f32> {
     let mut result = vec![0.0; preprocessor_result.tokens.len()];
 
     for ref ngram in &preprocessor_result.formatted_ngrams {
@@ -32,7 +32,7 @@ pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &
     result
 }
 
-pub fn is_capitalized(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
+pub fn is_capitalized(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
     preprocessor_result.tokens
         .iter()
         .map(|token| {
@@ -45,7 +45,7 @@ pub fn is_capitalized(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
         .collect()
 }
 
-pub fn is_first_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
+pub fn is_first_word(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
     lazy_static! {
         static ref PUNCTUATIONS: Vec<&'static str> = vec![",", ".", "?"];
     }
@@ -64,7 +64,7 @@ pub fn is_first_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
     result
 }
 
-pub fn is_last_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
+pub fn is_last_word(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
     lazy_static! {
         static ref PUNCTUATIONS: Vec<&'static str> = vec![",", ".", "?"];
     }
@@ -81,7 +81,7 @@ pub fn is_last_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
     result
 }
 
-pub fn contains_possessive(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
+pub fn contains_possessive(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
     lazy_static! {
         static ref POSSESSIVE_REGEX: Regex = Regex::new(r"'s\b").yolo();
     }
@@ -116,7 +116,7 @@ mod test {
         //description: String,
         input: Input,
         args: Vec<Arg>,
-        output: Vec<f64>,
+        output: Vec<f32>,
     }
 
     #[derive(Deserialize)]
