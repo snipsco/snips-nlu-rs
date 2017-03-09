@@ -42,6 +42,8 @@ pub mod models;
 pub mod pipeline;
 pub mod preprocessing;
 
+mod protos;
+
 #[derive(Serialize, Debug)]
 pub struct IntentClassifierResult {
     pub name: String,
