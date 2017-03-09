@@ -2,6 +2,7 @@ use std::ops::Range;
 use std::iter::Iterator;
 
 use regex::Regex;
+use yolo::Yolo;
 
 use preprocessing::Token;
 use preprocessing::convert_char_index;
@@ -115,7 +116,7 @@ pub fn detect_entities(input: &str) -> Vec<Token> {
 
 fn price_detector() -> EntityDetector {
     lazy_static! {
-        static ref PRICE_REGEX: Regex = Regex::new(r"([$€£¥]\s?\d+(?:[\.,]\d+)?|\d+(?:[\.,]\d+)?\s?[$€£¥])").unwrap();
+        static ref PRICE_REGEX: Regex = Regex::new(r"([$€£¥]\s?\d+(?:[\.,]\d+)?|\d+(?:[\.,]\d+)?\s?[$€£¥])").yolo();
     }
 
     EntityDetector {
@@ -127,7 +128,7 @@ fn price_detector() -> EntityDetector {
 
 fn date_detector() -> EntityDetector {
     lazy_static! {
-        static ref DATE_REGEX: Regex = Regex::new("\\b((?:(?:[0-2]?\\d|3[01])[/\\.-](?:[0-2]?\\d|3[01])[/\\.-](?:\\d+))|(?:\\d{4}[/\\.-](?:[0-2]?\\d|3[01])[/\\.-](?:[0-2]?\\d|3[01])))\\b").unwrap();
+        static ref DATE_REGEX: Regex = Regex::new("\\b((?:(?:[0-2]?\\d|3[01])[/\\.-](?:[0-2]?\\d|3[01])[/\\.-](?:\\d+))|(?:\\d{4}[/\\.-](?:[0-2]?\\d|3[01])[/\\.-](?:[0-2]?\\d|3[01])))\\b").yolo();
     }
 
     EntityDetector {
@@ -138,7 +139,7 @@ fn date_detector() -> EntityDetector {
 
 fn digit_detector() -> EntityDetector {
     lazy_static! {
-        static ref DIGIT_REGEX: Regex = Regex::new(r"(?i)\b([\+-]?(?:\d+(?:[\.,]\d+)?|\d{1,3}(,\d{3})*(\.\d+)?|\.\d+)|(?:(?:(?:(?:(one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine))|(?:(ten)|(eleven)|(twelve)|(thirteen)|(fourteen)|(fifteen)|(sixteen)|(seventeen)|(eighteen)|(nineteen))|(?:(twenty)|(thirty)|(forty)|(fifty)|(sixty)|(seventy)|(eighty)|(ninety))\s(?:(one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine))|(?:(twenty)|(thirty)|(forty)|(fifty)|(sixty)|(seventy)|(eighty)|(ninety)))(?:\s((hundred)|(thousand)|(million)|(billion)|(trillion))(?:\sand\s|-|\s)))*(?:(?:(one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine))|(?:(ten)|(eleven)|(twelve)|(thirteen)|(fourteen)|(fifteen)|(sixteen)|(seventeen)|(eighteen)|(nineteen))|(?:(twenty)|(thirty)|(forty)|(fifty)|(sixty)|(seventy)|(eighty)|(ninety))\s(?:(one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine))|(?:(twenty)|(thirty)|(forty)|(fifty)|(sixty)|(seventy)|(eighty)|(ninety)))(?:\s(?:(hundred)|(thousand)|(million)|(billion)|(trillion)))?))\b").unwrap();
+        static ref DIGIT_REGEX: Regex = Regex::new(r"(?i)\b([\+-]?(?:\d+(?:[\.,]\d+)?|\d{1,3}(,\d{3})*(\.\d+)?|\.\d+)|(?:(?:(?:(?:(one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine))|(?:(ten)|(eleven)|(twelve)|(thirteen)|(fourteen)|(fifteen)|(sixteen)|(seventeen)|(eighteen)|(nineteen))|(?:(twenty)|(thirty)|(forty)|(fifty)|(sixty)|(seventy)|(eighty)|(ninety))\s(?:(one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine))|(?:(twenty)|(thirty)|(forty)|(fifty)|(sixty)|(seventy)|(eighty)|(ninety)))(?:\s((hundred)|(thousand)|(million)|(billion)|(trillion))(?:\sand\s|-|\s)))*(?:(?:(one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine))|(?:(ten)|(eleven)|(twelve)|(thirteen)|(fourteen)|(fifteen)|(sixteen)|(seventeen)|(eighteen)|(nineteen))|(?:(twenty)|(thirty)|(forty)|(fifty)|(sixty)|(seventy)|(eighty)|(ninety))\s(?:(one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine))|(?:(twenty)|(thirty)|(forty)|(fifty)|(sixty)|(seventy)|(eighty)|(ninety)))(?:\s(?:(hundred)|(thousand)|(million)|(billion)|(trillion)))?))\b").yolo();
     }
 
     EntityDetector {
@@ -150,7 +151,7 @@ fn digit_detector() -> EntityDetector {
 
 fn ordinal_detector() -> EntityDetector {
     lazy_static! {
-        static ref ORDINAL_REGEX: Regex = Regex::new(r"(?i)\b((?:(?:[0-9]*1\s*st|[0-9]*2\s*nd|[0-9]*3\s*rd|[0-9]*[04-9]\s*th)|(?:(?:(?:(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:\s+|-))?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth))|(?:tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|thirtieth|fortieth|fiftieth|sixtieth|seventieth|eightieth|ninetieth))))\b").unwrap();
+        static ref ORDINAL_REGEX: Regex = Regex::new(r"(?i)\b((?:(?:[0-9]*1\s*st|[0-9]*2\s*nd|[0-9]*3\s*rd|[0-9]*[04-9]\s*th)|(?:(?:(?:(?:twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:\s+|-))?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth))|(?:tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|thirtieth|fortieth|fiftieth|sixtieth|seventieth|eightieth|ninetieth))))\b").yolo();
     }
 
     EntityDetector {
@@ -161,7 +162,7 @@ fn ordinal_detector() -> EntityDetector {
 
 fn temperature_detector() -> EntityDetector {
     lazy_static! {
-        static ref TEMPERATURE_REGEX: Regex = Regex::new(r"\b([+/-]?\d+(?:[\.,]\d+)?\s?°[CFK]?)\b").unwrap();
+        static ref TEMPERATURE_REGEX: Regex = Regex::new(r"\b([+/-]?\d+(?:[\.,]\d+)?\s?°[CFK]?)\b").yolo();
     }
 
     EntityDetector {
@@ -172,7 +173,7 @@ fn temperature_detector() -> EntityDetector {
 
 fn time_detector() -> EntityDetector {
     lazy_static! {
-        static ref TIME_REGEX: Regex = Regex::new(r"((\b((?:(?:0?[1-9]|1[0-2])(?:[:\.][0-5]\d)?\s?[APap][mM])|(?:(?:[01]?\d|2[0-3])[:\.](?:[0-5]\d)))\b)|(((one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine)|(ten)|(eleven)|(twelve)|(thirteen)|(fourteen)|(fifteen)|(sixteen)|(seventeen)|(eighteen)|(nineteen)|(twenty)|(thirty)|(fourty)|(fifty))((\so'?\s?clock)|(\s[ap]\.?[m]\.?))))").unwrap();
+        static ref TIME_REGEX: Regex = Regex::new(r"((\b((?:(?:0?[1-9]|1[0-2])(?:[:\.][0-5]\d)?\s?[APap][mM])|(?:(?:[01]?\d|2[0-3])[:\.](?:[0-5]\d)))\b)|(((one)|(two)|(three)|(four)|(five)|(six)|(seven)|(eight)|(nine)|(ten)|(eleven)|(twelve)|(thirteen)|(fourteen)|(fifteen)|(sixteen)|(seventeen)|(eighteen)|(nineteen)|(twenty)|(thirty)|(fourty)|(fifty))((\so'?\s?clock)|(\s[ap]\.?[m]\.?))))").yolo();
     }
 
     EntityDetector {

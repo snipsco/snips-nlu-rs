@@ -21,6 +21,7 @@ rayon = "0.6"
 tensorflow = "0.3"
 rulinalg = "0.4"
 bencher = "0.1"
+yolo = "*"
 
 [build-dependencies]
 glob = "0.2"
