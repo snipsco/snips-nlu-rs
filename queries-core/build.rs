@@ -1,6 +1,7 @@
 extern crate glob;
 
 use std::env;
+use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -10,6 +11,9 @@ fn main() {
     let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
     let proto_dir = root_dir.join("proto");
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let generated_dir = out_dir.join("proto");
+
+    let _ = fs::create_dir(&generated_dir);
 
     let proto_files: Vec<PathBuf> = glob(proto_dir.join("*.proto").to_str().unwrap())
         .expect("Failed to read glob pattern")
@@ -17,7 +21,7 @@ fn main() {
         .collect();
 
     let protoc_status = Command::new("protoc")
-        .arg(format!("--rust_out={}", out_dir.to_str().unwrap()))
+        .arg(format!("--rust_out={}", generated_dir.to_str().unwrap()))
         .arg(format!("--proto_path={}", proto_dir.to_str().unwrap()))
         .args(&proto_files)
         .status()
@@ -29,7 +33,7 @@ fn main() {
         panic!("An error occured with protoc: {}", protoc_status)
     }
 
-    let generated_files: Vec<PathBuf> = glob(out_dir.join("*.rs").to_str().unwrap())
+    let generated_files: Vec<PathBuf> = glob(generated_dir.join("*.rs").to_str().unwrap())
         .expect("Failed to read glob pattern")
         .filter_map(Result::ok)
         .collect();
