@@ -1,4 +1,5 @@
 use regex::Regex;
+use yolo::Yolo;
 
 use preprocessing::PreprocessorResult;
 use models::gazetteer::Gazetteer;
@@ -82,7 +83,7 @@ pub fn is_last_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
 
 pub fn contains_possessive(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
     lazy_static! {
-        static ref POSSESSIVE_REGEX: Regex = Regex::new(r"'s\b").unwrap();
+        static ref POSSESSIVE_REGEX: Regex = Regex::new(r"'s\b").yolo();
     }
 
     let ref tokens = preprocessor_result.tokens;
