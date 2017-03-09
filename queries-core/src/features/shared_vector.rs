@@ -42,6 +42,24 @@ pub fn is_capitalized(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
         .collect()
 }
 
+#[allow(non_snake_case)]
+pub fn is_first_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
+    // TODO: lazy static
+    let PUNCTUATIONS = vec![",", ".", "?"];
+
+    let ref tokens = preprocessor_result.tokens;
+    let tokens_count = tokens.len();
+    let mut result = vec![0.0; tokens_count];
+
+    let mut i = 0;
+    while i < tokens_count && PUNCTUATIONS.contains(&&*tokens[i].normalized_value) {
+        i = i + 1;
+    }
+    if i < tokens_count {
+        result[i] = 1.0;
+    }
+    result
+}
 #[cfg(test)]
 mod test {
     use std::ops::Range;
@@ -50,6 +68,7 @@ mod test {
     use super::has_gazetteer_hits;
     use super::ngram_matcher;
     use super::is_capitalized;
+    use super::is_first_word;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
     use models::gazetteer::{HashSetGazetteer};
@@ -115,6 +134,7 @@ mod test {
             ("hasGazetteerHits", Box::new(has_gazetteer_hits_works)),
             ("ngramMatcher", Box::new(ngram_matcher_works)),
             ("isCapitalized", Box::new(is_capitalized_works)),
+            ("isFirstWord", Box::new(is_first_word_works)),
         ];
 
         let path = path::PathBuf::from("snips-sdk-tests/feature_extraction/SharedVector");
@@ -154,6 +174,12 @@ mod test {
     fn is_capitalized_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
         let preprocessor_result = PreprocessorResult::new(normalized_tokens);
         let result = is_capitalized(&preprocessor_result);
+        assert_eq!(result, test.output)
+    }
+
+    fn is_first_word_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
+        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+        let result = is_first_word(&preprocessor_result);
         assert_eq!(result, test.output)
     }
 }
