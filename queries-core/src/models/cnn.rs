@@ -14,7 +14,7 @@ use tensorflow::Tensor;
 use pipeline::Probability;
 
 pub trait CNN {
-    fn run(&self, features: &Array2<f64>) -> Result<Array2<f64>>;
+    fn run(&self, features: &Array2<f32>) -> Result<Array2<f32>>;
 }
 
 pub struct TensorflowCNN(sync::Mutex<(Session,Graph)>);
@@ -36,7 +36,7 @@ impl TensorflowCNN {
 }
 
 impl CNN for TensorflowCNN {
-    fn run(&self, features: &Array2<f64>) -> Result<Array2<Probability>> {
+    fn run(&self, features: &Array2<f32>) -> Result<Array2<Probability>> {
         let transposed_array = features.t();
         let tokens_count = transposed_array.shape()[0];
         let features_count = transposed_array.shape()[1];
@@ -44,7 +44,7 @@ impl CNN for TensorflowCNN {
         let mut x: Tensor<f32> = Tensor::new(&[tokens_count as u64, features_count as u64]);
         for row in 0..tokens_count {
             for col in 0..features_count {
-                x[row * features_count + col] = *transposed_array.get((row, col)).unwrap() as f32; // TODO: Geometry is checked ?
+                x[row * features_count + col] = *transposed_array.get((row, col)).unwrap(); // TODO: Geometry is checked ?
             }
         }
 
@@ -63,7 +63,6 @@ impl CNN for TensorflowCNN {
 
         let mut vec = Vec::with_capacity(tensor_res.data().len());
         vec.extend_from_slice(&tensor_res.data());
-        let vec: Vec<Probability> = vec.iter().map(|value| *value as Probability).collect();
 
         let res_shape = (tensor_res.dims()[0] as usize, tensor_res.dims()[1] as usize);
         Ok(Array::from_vec(vec).into_shape(res_shape)?)

@@ -44,10 +44,13 @@ impl IntentClassifier for ProtobufIntentClassifier {
 }
 
 impl Matrix {
-    fn to_array2(&self) -> Array2<f64> {
-        let matrix_buffer = self.get_buffer();
+    fn to_array2(&self) -> Array2<f32> {
+        let matrix_buffer = self.get_buffer()
+            .iter()
+            .map(|value| *value as f32)
+            .collect();
 
-        match Array::from_vec(matrix_buffer.to_vec())
+        match Array::from_vec(matrix_buffer)
             .into_shape((self.rows as usize, self.cols as usize)) {
             Ok(array) => array,
             Err(error) => panic!("Can't convert matrix into array2. Reason: {}", error),
@@ -72,8 +75,8 @@ mod test {
     #[derive(Deserialize)]
     struct TestDescription {
         text: String,
-        output: Vec<Vec<f64>>,
-//        features: Vec<Vec<f64>>,
+        output: Vec<Vec<f32>>,
+//        features: Vec<Vec<f32>>,
     }
 
     #[test]
@@ -91,7 +94,7 @@ mod test {
             for test in tests {
                 let preprocess_result = preprocess(&test.text);
                 let result = intent_classifier.run(&preprocess_result);
-                assert_epsilon_eq(arr2(&[[result]]), create_array(&test.output), 1e-9);
+                assert_epsilon_eq(arr2(&[[result]]), create_array(&test.output), 1e-6);
             }
         }
     }

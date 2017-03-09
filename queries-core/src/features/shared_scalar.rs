@@ -3,14 +3,14 @@ use models::gazetteer::Gazetteer;
 
 pub fn has_gazetteer_hits<T: Gazetteer>(preprocessor_result: &PreprocessorResult,
                                         gazetteer: &T)
-                                        -> Vec<f64> {
+                                        -> Vec<f32> {
     match preprocessor_result.normalized_ngrams.iter().find(|ngram| gazetteer.contains(&ngram.0)) {
         Some(_) => vec![1.0],
         None => vec![0.0],
     }
 }
 
-pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f64> {
+pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f32> {
     match preprocessor_result.formatted_ngrams.iter().find(|ngram| ngram.0 == ngram_to_check) {
         Some(_) => vec![1.0],
         None => vec![0.0],
@@ -35,7 +35,7 @@ mod test {
         //description: String,
         input: Input,
         args: Vec<Arg>,
-        output: f64,
+        output: f32,
     }
 
     #[derive(Deserialize)]

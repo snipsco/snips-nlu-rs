@@ -7,7 +7,7 @@ use models::gazetteer::HashSetGazetteer;
 use protos::model::{ Feature, Feature_Type, Feature_Domain, Argument };
 
 pub trait MatrixFeatureProcessor {
-    fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64>;
+    fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
 }
 
 pub struct ProtobufMatrixFeatureProcessor<'a> {
@@ -25,11 +25,11 @@ impl<'a> ProtobufMatrixFeatureProcessor<'a> {
 }
 
 impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
-    fn compute_features(&self, input: &PreprocessorResult) -> Array2<f64> {
+    fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32> {
         let computed_values = self.feature_functions
             .iter()
             .flat_map(|feature_function| feature_function.compute(self.file_configuration, input).unwrap()) // TODO: Dunno how to kill this unwrap
-            .collect::<Vec<f64>>();
+            .collect::<Vec<f32>>();
 
         let len = self.feature_functions.len();
         let feature_length = computed_values.len() / len;
@@ -42,7 +42,7 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 }
 
 impl Feature {
-    fn compute(&self, file_configuration: &FileConfiguration, input: &PreprocessorResult) -> Result<Vec<f64>> {
+    fn compute(&self, file_configuration: &FileConfiguration, input: &PreprocessorResult) -> Result<Vec<f32>> {
         let known_domain = self.get_known_domain();
         let feature_type = self.field_type;
         let arguments = self.get_arguments();
@@ -61,7 +61,7 @@ impl Feature {
                          input: &PreprocessorResult,
                          feature_type: &Feature_Type,
                          arguments: &[Argument])
-                         -> Result<Vec<f64>> {
+                         -> Result<Vec<f32>> {
         // TODO: this Result::Ok smells something bad
         Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
@@ -79,7 +79,7 @@ impl Feature {
                          input: &PreprocessorResult,
                          feature_type: &Feature_Type,
                          arguments: &[Argument])
-                         -> Result<Vec<f64>> {
+                         -> Result<Vec<f32>> {
         // TODO: Same as above
         Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
@@ -115,8 +115,8 @@ mod test {
     #[derive(Deserialize)]
     struct TestDescription {
         text: String,
-        //output: Vec<Vec<f64>>,
-        features: Vec<Vec<f64>>,
+        //output: Vec<Vec<f32>>,
+        features: Vec<Vec<f32>>,
     }
 
     #[test]
