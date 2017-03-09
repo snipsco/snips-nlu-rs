@@ -44,10 +44,10 @@ pub fn is_capitalized(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
         .collect()
 }
 
-#[allow(non_snake_case)]
 pub fn is_first_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
-    // TODO: lazy static
-    let PUNCTUATIONS = vec![",", ".", "?"];
+    lazy_static! {
+        static ref PUNCTUATIONS: Vec<&'static str> = vec![",", ".", "?"];
+    }
 
     let ref tokens = preprocessor_result.tokens;
     let tokens_count = tokens.len();
@@ -63,10 +63,10 @@ pub fn is_first_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
     result
 }
 
-#[allow(non_snake_case)]
 pub fn is_last_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
-    // TODO: lazy static
-    let PUNCTUATIONS = vec![",", ".", "?"];
+    lazy_static! {
+        static ref PUNCTUATIONS: Vec<&'static str> = vec![",", ".", "?"];
+    }
 
     let ref tokens = preprocessor_result.tokens;
     let tokens_count = tokens.len();
