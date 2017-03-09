@@ -2,10 +2,11 @@ use std::ascii::AsciiExt;
 
 use unicode_normalization::UnicodeNormalization;
 use regex::Regex;
+use yolo::Yolo;
 
 pub fn normalize(input: &str) -> String {
     lazy_static! {
-        static ref COMBINING_DIACRITRICAL_MARKS: Regex = Regex::new("[\u{0300}-\u{036F}]+").unwrap();
+        static ref COMBINING_DIACRITRICAL_MARKS: Regex = Regex::new("[\u{0300}-\u{036F}]+").yolo();
     }
 
     COMBINING_DIACRITRICAL_MARKS.replace_all(&input.nfd().collect::<String>(), "")
