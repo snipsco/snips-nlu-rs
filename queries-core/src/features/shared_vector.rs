@@ -60,6 +60,23 @@ pub fn is_first_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
     }
     result
 }
+
+#[allow(non_snake_case)]
+pub fn is_last_word(preprocessor_result: &PreprocessorResult) -> Vec<f64> {
+    // TODO: lazy static
+    let PUNCTUATIONS = vec![",", ".", "?"];
+
+    let ref tokens = preprocessor_result.tokens;
+    let tokens_count = tokens.len();
+    let mut result = vec![0.0; tokens_count];
+
+    let mut i = tokens_count - 1;
+    while PUNCTUATIONS.contains(&&*tokens[i].normalized_value) {
+        i = i - 1;
+    }
+    result[i] = 1.0;
+    result
+}
 #[cfg(test)]
 mod test {
     use std::ops::Range;
@@ -69,6 +86,7 @@ mod test {
     use super::ngram_matcher;
     use super::is_capitalized;
     use super::is_first_word;
+    use super::is_last_word;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
     use models::gazetteer::{HashSetGazetteer};
@@ -135,6 +153,7 @@ mod test {
             ("ngramMatcher", Box::new(ngram_matcher_works)),
             ("isCapitalized", Box::new(is_capitalized_works)),
             ("isFirstWord", Box::new(is_first_word_works)),
+            ("isLastWord", Box::new(is_last_word_works)),
         ];
 
         let path = path::PathBuf::from("snips-sdk-tests/feature_extraction/SharedVector");
@@ -180,6 +199,12 @@ mod test {
     fn is_first_word_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
         let preprocessor_result = PreprocessorResult::new(normalized_tokens);
         let result = is_first_word(&preprocessor_result);
+        assert_eq!(result, test.output)
+    }
+
+    fn is_last_word_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
+        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+        let result = is_last_word(&preprocessor_result);
         assert_eq!(result, test.output)
     }
 }
