@@ -15,6 +15,6 @@
 #[allow(unused_results)]
 
 pub mod model {
-    include!(concat!(env!("OUT_DIR"), "/model.rs"));
+    include!(concat!(env!("OUT_DIR"), "/proto/model.rs"));
 }
 
