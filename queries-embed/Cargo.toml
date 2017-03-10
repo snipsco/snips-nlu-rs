@@ -1,15 +1,18 @@
 [package]
 name = "queries-embed"
 version = "0.1.0"
-authors = ["Kevin Lefèvre <kevin.lefevre@snips.ai>"]
+authors = ["Kevin Lefèvre <kevin.lefevre@snips.ai>", "Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
+build = "build.rs"
 
 [dependencies]
 queries-core = { path = "../queries-core" }
-error-chain = { "0.10", default-features=false }
+error-chain = { version = "0.10", default-features=false }
 libc = "0.2"
+serde_json = "0.9"
+lazy_static = "0.2"
 
 [lib]
-crate-type = ["staticlib"]
+crate-type = ["staticlib", "cdylib"]
 
 [build-dependencies]
 rusty-cheddar = "0.3"
