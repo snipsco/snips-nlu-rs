@@ -3,12 +3,38 @@ extern crate queries_core;
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate error_chain;
+
+extern crate serde_json;
+
 use std::ffi::{CStr, CString};
 use std::mem::transmute;
 use std::sync::{Mutex};
 
-extern crate serde_json;
+use libc::c_char;
+use libc::c_float;
 
+
+
+mod errors {
+    error_chain! {
+          foreign_links {
+                Core(::queries_core::Error);
+                Serde(::serde_json::Error);
+                Utf8Error(::std::str::Utf8Error);
+                NulError(::std::ffi::NulError);
+          }
+    }
+
+    impl<T> ::std::convert::From<::std::sync::PoisonError<T>> for Error {
+        fn from(pe: ::std::sync::PoisonError<T>) -> Error {
+            format!("Poisoning error: {:?}", pe).into()
+        }
+    }
+}
+
+use errors::*;
 
 #[repr(C)]
 pub struct Opaque(std::sync::Mutex<queries_core::IntentParser>);
@@ -20,20 +46,15 @@ pub enum QUERIESRESULT {
     OK = 1,
 }
 
-
-lazy_static! {
-    static ref LAST_ERROR:std::sync::Mutex<String> = std::sync::Mutex::new("".to_string());
-}
-
-macro_rules! ctry {
+macro_rules! wrap {
     ( $e:expr ) => { match $e {
-        Ok(ok) => ok,
+        Ok(_) => {return QUERIESRESULT::OK; }
         Err(e) => {
-            let msg = format!("{:?}", e);
-            match LAST_ERROR.lock() {
-                Ok(mut guard) => *guard = msg,
-                Err(_) => () /* curl up and cry */
-            }
+            use std::io::Write;
+            use error_chain::ChainedError;
+            let stderr = &mut ::std::io::stderr();
+            let errmsg = "Error writing to stderr";
+            writeln!(stderr, "{}", e.display()).expect(errmsg);
             return QUERIESRESULT::KO;
         }
     }}
@@ -41,57 +62,86 @@ macro_rules! ctry {
 
 
 #[no_mangle]
-pub extern "C" fn intent_parser_create(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> QUERIESRESULT {
-    let root_dir = ctry!(unsafe { CStr::from_ptr(root_dir).to_str() });
+pub extern "C" fn intent_parser_create(root_dir: *const libc::c_char,
+                                       client: *mut *mut Opaque)
+                                       -> QUERIESRESULT {
+    wrap!(intent_parser_create_inner(root_dir, client));
+}
+
+
+fn intent_parser_create_inner(root_dir: *const libc::c_char,
+                              client: *mut *mut Opaque)
+                              -> Result<()> {
+    let root_dir = get_str(root_dir)?;
     let file_configuration = queries_core::FileConfiguration::new(root_dir);
-    let intent_parser = ctry!(queries_core::IntentParser::new(&file_configuration, None));
+    let intent_parser = queries_core::IntentParser::new(&file_configuration, None)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
-    QUERIESRESULT::OK
+    Ok(())
 }
 
 #[no_mangle]
 pub extern "C" fn intent_parser_run_intent_classification(client: *mut Opaque,
-                                                          input: *const libc::c_char,
-                                                          probability_threshold: libc::c_float,
-                                                          result_json: *mut *mut libc::c_char) -> QUERIESRESULT {
-    let input = ctry!(unsafe { CStr::from_ptr(input).to_str() });
-    let client: &Opaque = unsafe { transmute(client) };
+                                                          input: *const c_char,
+                                                          probability_threshold: c_float,
+                                                          result_json: *mut *mut c_char)
+                                                          -> QUERIESRESULT {
+    wrap!(intent_parser_run_intent_classification_inner(client,
+                                                        input,
+                                                        probability_threshold,
+                                                        result_json))
+}
 
-    let intent_parser = ctry!(client.0.lock());
+pub extern "C" fn intent_parser_run_intent_classification_inner(client: *mut Opaque,
+                                                                input: *const c_char,
+                                                                probability_threshold: c_float,
+                                                                result_json: *mut *mut c_char)
+                                                                -> Result<()> {
+    let input = get_str(input)?;
+    let client: &Opaque = unsafe { transmute(client) };
+    let intent_parser = client.0.lock()?;
 
     let results = intent_parser.run_intent_classifiers(input, probability_threshold as f64, None);
 
-    unsafe { *result_json = to_ptr(ctry!(serde_json::to_string(&results))) };
-
-    QUERIESRESULT::OK
+    point_to_string(result_json, serde_json::to_string(&results)?)
 }
 
 #[no_mangle]
 pub extern "C" fn intent_parser_run_tokens_classification(client: *mut Opaque,
-                                                          input: *const libc::c_char,
-                                                          intent_name: *const libc::c_char,
-                                                          result_json: *mut *mut libc::c_char) -> QUERIESRESULT {
-    let input = ctry!(unsafe { CStr::from_ptr(input).to_str() });
-    let intent_name = ctry!(unsafe { CStr::from_ptr(intent_name).to_str() });
+                                                          input: *const c_char,
+                                                          intent_name: *const c_char,
+                                                          result_json: *mut *mut c_char)
+                                                          -> QUERIESRESULT {
+    wrap!(intent_parser_run_tokens_classification_inner(client, input, intent_name, result_json))
+}
+
+#[no_mangle]
+pub extern "C" fn intent_parser_run_tokens_classification_inner(client: *mut Opaque,
+                                                                input: *const c_char,
+                                                                intent_name: *const c_char,
+                                                                result_json: *mut *mut c_char)
+                                                                -> Result<()> {
+    let input = get_str(input)?;
+    let intent_name = get_str(intent_name)?;
     let client: &Opaque = unsafe { transmute(client) };
+    let intent_parser = client.0.lock()?;
 
-    let intent_parser = ctry!(client.0.lock());
+    let result = intent_parser.run_tokens_classifier(input, intent_name)?;
 
-    let result = ctry!(intent_parser.run_tokens_classifier(input, intent_name));
-
-    unsafe { *result_json = to_ptr(ctry!(serde_json::to_string(&result))) };
-
-    QUERIESRESULT::OK
+    point_to_string(result_json, serde_json::to_string(&result)?)
 }
 
-/// Convert a Rust string to a native string
-unsafe fn to_ptr(string: String) -> *mut libc::c_char {
-    let cs = CString::new(string.as_bytes()).unwrap();
-    cs.into_raw()
+
+fn get_str<'a>(pointer: *const c_char) -> ::std::result::Result<&'a str, std::str::Utf8Error> {
+    unsafe { CStr::from_ptr(pointer) }.to_str()
 }
 
+fn point_to_string(pointer: *mut *mut libc::c_char, string: String) -> Result<()> {
+    let cs = CString::new(string.as_bytes())?;
+    unsafe { *pointer = cs.into_raw() }
+    Ok(())
+}
 
 #[no_mangle]
 pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUERIESRESULT {
