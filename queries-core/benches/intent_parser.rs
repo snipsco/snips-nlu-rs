@@ -31,7 +31,7 @@ fn run_everything(bench: &mut Bencher) {
         let intent_parser = IntentParser::new(&file_configuration, Some(&["BookRestaurant"])).unwrap();
         let text = "Book me a restaurant for two peoples at Le Chalet Savoyard";
         let result = intent_parser.run_intent_classifiers(text, 0.4, None);
-        let intent = intent_parser.run_tokens_classifier(text, "BookRestaurant");
+        let _ = intent_parser.run_tokens_classifier(text, &result[0].name);
     });
 }
 
