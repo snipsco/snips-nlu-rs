@@ -6,8 +6,9 @@ lib = cdll.LoadLibrary('../target/debug/libqueries_embed.so')
 class SnipsQueries(object):
     def __init__(self, data_path):
         self.obj = pointer(c_void_p()) 
-        result = lib.intent_parser_create(data_path.encode('utf-8'), byref(self.obj))
-        print("result : %s" % result)
+        self.ok = lib.intent_parser_create(data_path.encode('utf-8'), byref(self.obj))
+        if self.ok != 1:
+            raise RuntimeError("something wrong happened while creating the client, see stderr")
 
     def __del__(self):
         lib.intent_parser_destroy_client(self.obj)
