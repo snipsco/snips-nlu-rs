@@ -9,9 +9,11 @@ extern crate error_chain;
 extern crate serde_json;
 
 use std::ffi::{CStr, CString};
+use std::slice;
 use std::sync::{Mutex};
 
 use libc::c_char;
+use libc::c_int;
 use libc::c_float;
 
 
@@ -71,10 +73,24 @@ macro_rules! get_str {
     }};
 }
 
+macro_rules! get_str_vec {
+    ($size:ident, $pointer:ident) => {{
+        let mut strings: Vec<&str> = Vec::new();
+        for &s in unsafe { slice::from_raw_parts($pointer, $size as usize) } {
+            strings.push(get_str!(s))
+        }
+
+        strings
+    }}
+
+}
+
 #[no_mangle]
-pub extern "C" fn intent_parser_create(root_dir: *const libc::c_char,
-                                       client: *mut *mut Opaque) -> QUERIESRESULT {
-    wrap!(create(root_dir, client));
+pub extern "C" fn intent_parser_create(root_dir: *const c_char,
+                                       client: *mut *mut Opaque,
+                                       intent_count: c_int,
+                                       intents: *const *const c_char) -> QUERIESRESULT {
+    wrap!(create(root_dir, client, intent_count, intents));
 }
 
 
@@ -116,10 +132,22 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
     QUERIESRESULT::OK
 }
 
-fn create(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
+fn create(root_dir: *const libc::c_char,
+          client: *mut *mut Opaque,
+          intent_count: c_int,
+          intents: *const *const c_char) -> Result<()> {
     let root_dir = get_str!(root_dir);
+    let intent_strings: Vec<&str> = get_str_vec!(intent_count, intents);
+
     let file_configuration = queries_core::FileConfiguration::new(root_dir);
-    let intent_parser = queries_core::IntentParser::new(&file_configuration, None)?;
+
+    let intents: Option<&[&str]> = if intent_count == 0 {
+        None
+    } else {
+        Some(&intent_strings)
+    };
+
+    let intent_parser = queries_core::IntentParser::new(&file_configuration, intents)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -133,7 +161,7 @@ fn run_intent_classification(client: *mut Opaque,
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 
-    let results = intent_parser.run_intent_classifiers(input, probability_threshold as f64, None);
+    let results = intent_parser.run_intent_classifiers(input, probability_threshold, None);
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }

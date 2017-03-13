@@ -1,12 +1,14 @@
 from ctypes import *
 
-lib = cdll.LoadLibrary('../target/debug/libqueries_embed.so')
+lib = cdll.LoadLibrary('../../target/debug/libqueries_embed.so')
 
 
 class SnipsQueries(object):
-    def __init__(self, data_path):
+    def __init__(self, data_path, intent_types):
+        intent_types_arg = (c_char_p * len(intent_types))()
+        intent_types_arg[:] = list(map(lambda s: s.encode("utf-8"), intent_types))
         self.obj = pointer(c_void_p()) 
-        self.ok = lib.intent_parser_create(data_path.encode('utf-8'), byref(self.obj))
+        self.ok = lib.intent_parser_create(data_path.encode('utf-8'), byref(self.obj), len(intent_types), intent_types_arg )
         if self.ok != 1:
             raise RuntimeError("something wrong happened while creating the client, see stderr")
 
@@ -26,3 +28,4 @@ class SnipsQueries(object):
         result = string_at(pointer)
         lib.intent_parser_destroy_string(pointer)
         return result
+
