@@ -1,7 +1,8 @@
 from ctypes import *
+import os
 
-lib = cdll.LoadLibrary('../../target/debug/libqueries_embed.so')
-
+#lib = cdll.LoadLibrary('../../target/debug/libqueries_embed.so')
+lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), '../queries_embed.so'))
 
 class SnipsQueries(object):
     def __init__(self, data_path, intent_types):
