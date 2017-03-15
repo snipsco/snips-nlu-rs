@@ -2,14 +2,8 @@ from ctypes import *
 import os
 import sys
 
-if sys.platform == "win32":
-    lib_name = "../queries_embed.dll"
-elif sys.platform == "darwin":
-    lib_name = "../queries_embed.dylib"
-else:
-    lib_name = "../queries_embed.so"
 #lib = cdll.LoadLibrary('../../target/debug/libqueries_embed.so')
-lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), lib_name))
+lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "../queries_embed.so"))
 
 class SnipsQueries(object):
     def __init__(self, data_path, intent_types):
