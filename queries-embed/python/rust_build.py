@@ -60,7 +60,7 @@ class RustBuildCommand(Command):
         else:
             suffix = "release"
 
-        target_dir = os.path.join(os.path.dirname("../../Cargo.toml"), 
+        target_dir = os.path.join("../../", 
             "target/", suffix)
 
         if sys.platform == "win32":
@@ -79,7 +79,6 @@ class RustBuildCommand(Command):
         # Ask build_ext where the shared library would go if it had built it,
         # then copy it there.
         build_ext = self.get_finalized_command('build_ext')
-        print(build_ext)
         target_fname = os.path.splitext(os.path.basename(dylib_path)[3:])[0]
         ext_path = build_ext.get_ext_fullpath(os.path.basename(target_fname))
         try:
