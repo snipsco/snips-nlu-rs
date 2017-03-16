@@ -5,12 +5,6 @@ import sys
 
 from rust_build import build_rust_cmdclass, install_lib_including_rust
 
-class BinaryDistribution(Distribution):
-    """Distribution which always forces a binary package with platform name"""
-    def has_ext_modules(foo):
-        return True
-
-
 setup(
     name='snips-queries',
     version='0.1.0-SNAPSHOT',  # TODO
@@ -24,5 +18,4 @@ setup(
                 'install_lib': install_lib_including_rust
     },
     zip_safe=False,
-    distclass=BinaryDistribution
 )
