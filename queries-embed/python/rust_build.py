@@ -6,6 +6,7 @@ from __future__ import print_function
 import sys
 import subprocess
 import os.path
+import os
 import glob
 from distutils.cmd import Command
 from distutils.command.install_lib import install_lib
@@ -37,9 +38,12 @@ class RustBuildCommand(Command):
     def run(self):
         # Execute cargo.
         try:
+            target_tuple = os.environ.get('CARGO_TARGET')
             args = (["cargo", "+beta", "build"] + list(self.extra_cargo_args or []))
             if not self.debug:
                 args.append("--release")
+            if target_tuple:
+                args.append("--target=%s" % target_tuple)
             if not self.quiet:
                 print(" ".join(args), file=sys.stderr)
             output = subprocess.check_output(args, cwd="..")
@@ -60,8 +64,12 @@ class RustBuildCommand(Command):
         else:
             suffix = "release"
 
-        target_dir = os.path.join("../../", 
-            "target/", suffix)
+
+        if target_tuple:
+            target_dir = os.path.join("../../target", target_tuple, suffix)
+        else:
+            target_dir = os.path.join("../../target", suffix)
+
 
         if sys.platform == "win32":
             wildcard_so = "*.dll"
