@@ -11,6 +11,7 @@ use ::protos::model::Configuration;
 pub mod gazetteer;
 pub mod classifiers;
 pub mod cnn;
+pub mod tf;
 
 pub struct IntentConfiguration {
     pub intent_classifier: ProtobufIntentClassifier,
