@@ -22,7 +22,7 @@ class IntentParser(object):
 
         if exit_code != 1:
             raise ImportError('Something wrong happened while creating the '
-                'client. See stderr.')
+                'intent parser. See stderr.')
 
     def __del__(self):
         lib.intent_parser_destroy_client(self._parser)
