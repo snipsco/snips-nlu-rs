@@ -126,13 +126,20 @@ impl TensorFlowClassifier {
 impl Classifier for TensorFlowClassifier {
     fn predict_proba(&self, features: &Array2<f32>) -> Result<Array2<f32>> {
         let mut logits = self.run(features)?;
-        for mut row in logits.outer_iter_mut() {
-            let max = *(row.iter().max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less)).unwrap());
-            for value in row.iter_mut() {
-                *value = (*value - max).exp()
+        let num_classes = logits.cols();
+        if num_classes > 1 {
+            for mut row in logits.outer_iter_mut() {
+                let max = *(row.iter().max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less)).unwrap());
+                for value in row.iter_mut() {
+                    *value = (*value - max).exp()
+                }
+                let sum_exponent: f32 = row.iter().sum();
+                row /= sum_exponent;
             }
-            let sum_exponent: f32 = row.iter().sum();
-            row /= sum_exponent;
+        } else {
+            for mut value in logits.iter_mut() {
+                *value = 1. / (1. + (-*value).exp())
+            }
         }
 
         Ok(logits)
@@ -140,17 +147,23 @@ impl Classifier for TensorFlowClassifier {
 
     fn predict(&self, features: &Array2<f32>) -> Result<Array1<usize>> {
         let logits = self.run(features)?;
-        let predictions: Array1<usize> = Array::from_iter(logits.outer_iter().map(|row| {
-            let mut index = 0;
-            let mut max_value = f32::NEG_INFINITY;
-            for (j, &value) in row.iter().enumerate() {
-                if value > max_value {
-                    index = j;
-                    max_value = value;
+        let num_classes = logits.cols();
+        let predictions: Array1<usize> = if num_classes > 1 {
+            Array::from_iter(logits.outer_iter().map(|row| {
+                let mut index = 0;
+                let mut max_value = f32::NEG_INFINITY;
+                for (j, &value) in row.iter().enumerate() {
+                    if value > max_value {
+                        index = j;
+                        max_value = value;
+                    }
                 }
-            }
-            index
-        }));
+                index
+            }))
+        } else {
+            Array::from_iter(logits.iter()
+                .map(|value| (*value > 0.) as usize))
+        };
 
         Ok(predictions)
     }
