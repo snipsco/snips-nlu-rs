@@ -237,6 +237,19 @@ mod test {
     use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier, Classifier};
 
     #[test]
+    fn tf_classifier_1col_works() {
+        let model_path = Path::new("../data/snips-sdk-models-protobuf/models/intent_classification/BookRestaurant_model.pb");
+        let features = Array2::<f32>::zeros((1, 475));
+
+        let model = TensorFlowClassifier::new(model_path).unwrap();
+        let probas = model.predict_proba(&features);
+        let predictions = model.predict(&features);
+
+        println!("probas: {:?}", probas);
+        println!("predictions: {:?}", predictions);
+    }
+
+    #[test]
     fn tf_classifier_works() {
         let model_path = Path::new("../data/snips-sdk-models-protobuf/models/tokens_classification/BookRestaurant_model.pb");
         let features = Array2::<f32>::zeros((11, 1881));
@@ -248,11 +261,17 @@ mod test {
 
         println!("probas: {:?}", probas);
         println!("predictions: {:?}", predictions);
+    }
+
+    #[test]
+    fn tf_classifier_crf_works() {
+        let model_path = Path::new("../data/snips-sdk-models-protobuf/models/tokens_classification/BookRestaurant_model.pb");
+        let features = Array2::<f32>::zeros((11, 1881));
 
         // CNN + CRF
-        let model_crf = TensorFlowCRFClassifier::new(model_path, 4).unwrap();
-        let probas = model_crf.predict_proba(&features);
-        let predictions = model_crf.predict(&features);
+        let model = TensorFlowCRFClassifier::new(model_path, 4).unwrap();
+        let probas = model.predict_proba(&features);
+        let predictions = model.predict(&features);
 
         println!("probas (CRF): {:?}", probas);
         println!("predictions (CRF): {:?}", predictions);
