@@ -26,14 +26,16 @@ pub trait Classifier {
     fn predict_proba(&self, features: &Array2<f32>) -> Result<Array2<f32>>;
     fn predict(&self, features: &Array2<f32>) -> Result<Array1<usize>>;
     fn state(&self) -> &sync::Mutex<(Session, Graph)>;
+    fn input_node(&self) -> &str;
+    fn output_node(&self) -> &str;
     fn run(&self, features: &Array2<f32>) -> Result<Array2<f32>> {
         let x = array_to_tensor(features)?;
         let result: Result<Tensor<f32>> = {
             let mut step = StepWithGraph::new();
             let mut locked = self.state().lock().map_err(|_| "Can not take lock on TensorFlow. Mutex poisoned")?;
             let (ref mut session, ref graph) = *locked;
-            step.add_input(&graph.operation_by_name_required("input")?, 0, &x);
-            let res = step.request_output(&graph.operation_by_name_required("logits")?, 0);
+            step.add_input(&graph.operation_by_name_required(self.input_node())?, 0, &x);
+            let res = step.request_output(&graph.operation_by_name_required(self.output_node())?, 0);
 
             session.run(&mut step)?;
 
@@ -171,6 +173,14 @@ impl Classifier for TensorFlowClassifier {
     fn state(&self) -> &sync::Mutex<(Session, Graph)> {
         &self.state
     }
+
+    fn input_node(&self) -> &str {
+        "input"
+    }
+
+    fn output_node(&self) -> &str {
+        "logits"
+    }
 }
 
 impl TensorFlowCRFClassifier {
@@ -226,6 +236,14 @@ impl Classifier for TensorFlowCRFClassifier {
 
     fn state(&self) -> &sync::Mutex<(Session, Graph)> {
         &self.state
+    }
+
+    fn input_node(&self) -> &str {
+        "input"
+    }
+
+    fn output_node(&self) -> &str {
+        "logits"
     }
 }
 
