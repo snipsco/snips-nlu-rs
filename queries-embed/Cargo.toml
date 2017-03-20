@@ -2,7 +2,6 @@
 name = "queries-embed"
 version = "0.1.0"
 authors = ["Kevin Lefèvre <kevin.lefevre@snips.ai>", "Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
-build = "build.rs"
 
 [dependencies]
 queries-core = { path = "../queries-core" }
