@@ -5,58 +5,48 @@ use protobuf;
 use ndarray::prelude::*;
 
 use FileConfiguration;
-use protos::model::{Model, Matrix};
-use models::classifiers::{Classifier, LogisticRegression};
+use protos::model_configuration::ModelConfiguration;
+use models::tf::{TensorFlowClassifier, Classifier};
 use preprocessing::PreprocessorResult;
 use pipeline::Probability;
 use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 
 pub trait IntentClassifier {
-    fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability;
+    fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability>;
 }
 
 pub struct ProtobufIntentClassifier {
     file_configuration: FileConfiguration,
-    model: Model,
+    model: ModelConfiguration,
 }
 
 impl ProtobufIntentClassifier {
     pub fn new(file_configuration: &FileConfiguration, classifier_name: &str) -> Result<ProtobufIntentClassifier> {
         let classifier_path = file_configuration.intent_classifier_path(classifier_name);
         let mut model_file = fs::File::open(classifier_path)?;
-        let model = protobuf::parse_from_reader::<Model>(&mut model_file)?;
+        let model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
 
         Ok(ProtobufIntentClassifier { file_configuration: file_configuration.clone(), model: model })
     }
 }
 
 impl IntentClassifier for ProtobufIntentClassifier {
-    fn run(&self, preprocessor_result: &PreprocessorResult) -> Probability {
+    fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability> {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.file_configuration, &self.model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
 
-        let classifier =
-            LogisticRegression::new(self.model.get_arguments()[0].get_matrix().to_array2());
-        let probabilities = classifier.run(&computed_features);
 
-        probabilities[[0, 0]]
+        let classifier = TensorFlowClassifier::new(&self.file_configuration.intent_classifier_path(&self.model.get_model_path()));
+
+
+        //let classifier = panic!();
+            //LogisticRegression::new(self.model.get_arguments()[0].get_matrix().to_array2());
+        let probabilities = classifier?.run(&computed_features);
+
+        Ok(probabilities?[[0, 0]])
     }
 }
 
-impl Matrix {
-    fn to_array2(&self) -> Array2<f32> {
-        let matrix_buffer = self.get_buffer()
-            .iter()
-            .map(|value| *value as f32)
-            .collect();
-
-        match Array::from_vec(matrix_buffer)
-            .into_shape((self.rows as usize, self.cols as usize)) {
-            Ok(array) => array,
-            Err(error) => panic!("Can't convert matrix into array2. Reason: {}", error),
-        }
-    }
-}
 
 #[cfg(test)]
 mod test {

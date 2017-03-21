@@ -8,7 +8,7 @@ use FileConfiguration;
 use preprocessing::PreprocessorResult;
 use pipeline::Probability;
 use pipeline::feature_processor::{ MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor };
-use protos::model::Model;
+use protos::model_configuration::ModelConfiguration;
 use models::cnn::{ CNN, TensorflowCNN };
 
 pub trait TokensClassifier {
@@ -17,18 +17,18 @@ pub trait TokensClassifier {
 
 pub struct ProtobufTokensClassifier {
     file_configuration: FileConfiguration,
-    intent_model: Model,
+    intent_model: ModelConfiguration,
     cnn: TensorflowCNN,
 }
 
 impl ProtobufTokensClassifier {
-    pub fn new(file_configuration: &FileConfiguration, intent_model_name: &str, cnn_model_name: &str) -> Result<ProtobufTokensClassifier> {
+    pub fn new(file_configuration: &FileConfiguration, intent_model_name: &str) -> Result<ProtobufTokensClassifier> {
         let model_path = file_configuration.tokens_classifier_path(intent_model_name);
         let mut model_file = fs::File::open(model_path)?;
-        let intent_model = protobuf::parse_from_reader::<Model>(&mut model_file)?;
+        let intent_model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
 
-        let cnn_path = file_configuration.tokens_classifier_path(cnn_model_name);
-        let cnn = TensorflowCNN::new(cnn_path)?;
+        let cnn_path = file_configuration.tokens_classifier_path(intent_model.get_model_path());
+        let cnn = TensorflowCNN::new(cnn_path);
 
         Ok(ProtobufTokensClassifier { file_configuration: file_configuration.clone(), intent_model: intent_model, cnn: cnn })
     }

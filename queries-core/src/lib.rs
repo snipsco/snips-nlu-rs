@@ -30,6 +30,7 @@ use pipeline::Probability;
 use pipeline::intent_classifier::IntentClassifier;
 use pipeline::tokens_classifier::TokensClassifier;
 use pipeline::slot_filler::compute_slots;
+use yolo::Yolo;
 
 pub use preprocessing::preprocess;
 pub use errors::*;
@@ -144,7 +145,8 @@ impl IntentParser {
             .par_iter()
             .map(|(name, intent_configuration)| {
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
-                IntentClassifierResult { name: name.to_string(), probability: probability }
+                // TODO remove this YOLO
+                IntentClassifierResult { name: name.to_string(), probability: probability.yolo() }
             })
             .filter(|result| result.probability >= probability_threshold)
             .collect();

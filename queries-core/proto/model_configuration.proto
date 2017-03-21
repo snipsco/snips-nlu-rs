@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "feature.proto";
+
+message ModelConfiguration {
+    string model_path = 1; // e.g. ./BookRestaurant_model.pb
+    string version = 2;
+
+    repeated Feature features = 3;
+
+    bool has_bilou = 4;
+    bool has_crf = 5;
+
+    string input_node = 6;
+    string output_node = 7;
+    string transition_matrix_node = 8;
+}
