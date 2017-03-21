@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+message Slot {
+    enum Type {
+        STRING = 0;
+        INT = 1;
+        BOOLEAN = 2;
+        FLOAT = 3;
+        DATE = 4;
+    }
+
+    string name = 1;
+    oneof type {
+        Type known_type = 2;
+        string custom_type = 3;
+    }
+}

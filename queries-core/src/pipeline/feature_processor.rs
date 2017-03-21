@@ -4,7 +4,7 @@ use ndarray::{ Array, Array2 };
 use FileConfiguration;
 use preprocessing::PreprocessorResult;
 use models::gazetteer::HashSetGazetteer;
-use protos::model::{ Feature, Feature_Type, Feature_Domain, Argument };
+use protos::feature::{ Feature, Feature_Type, Feature_Domain, Feature_Argument };
 
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
@@ -43,7 +43,7 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 
 impl Feature {
     fn compute(&self, file_configuration: &FileConfiguration, input: &PreprocessorResult) -> Result<Vec<f32>> {
-        let known_domain = self.get_known_domain();
+        let known_domain = self.get_domain();
         let feature_type = self.field_type;
         let arguments = self.get_arguments();
 
@@ -60,7 +60,7 @@ impl Feature {
     fn get_shared_scalar(file_configuration: &FileConfiguration,
                          input: &PreprocessorResult,
                          feature_type: &Feature_Type,
-                         arguments: &[Argument])
+                         arguments: &[Feature_Argument])
                          -> Result<Vec<f32>> {
         // TODO: this Result::Ok smells something bad
         Ok(match *feature_type {
@@ -78,7 +78,7 @@ impl Feature {
     fn get_shared_vector(file_configuration: &FileConfiguration,
                          input: &PreprocessorResult,
                          feature_type: &Feature_Type,
-                         arguments: &[Argument])
+                         arguments: &[Feature_Argument])
                          -> Result<Vec<f32>> {
         // TODO: Same as above
         Ok(match *feature_type {
