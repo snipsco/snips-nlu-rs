@@ -20,7 +20,7 @@ setup(
     version=version,
     description='Snips Queries intent parser',
     author='Thibaut Lorrain',
-    author_email='thivaut.lorrain@snips.ai',
+    author_email='thibaut.lorrain@snips.ai',
     packages=["snips_queries"],
     install_requires=[],
     cmdclass={
