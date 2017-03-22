@@ -20,9 +20,12 @@ impl HashSetGazetteer {
     pub fn new(file_configuration: &FileConfiguration, gazetteer_name: &str) -> Result<HashSetGazetteer> {
         let gazetteer_path = file_configuration.gazetteer_path(gazetteer_name);
 
-        let mut f = File::open(gazetteer_path)?;
+        HashSetGazetteer::from(&mut File::open(gazetteer_path)?)
+    }
+
+    pub fn from(r: &mut Read) -> Result<HashSetGazetteer> {
         let mut s = String::new();
-        f.read_to_string(&mut s)?;
+        r.read_to_string(&mut s)?;
         let vec: Vec<String> = from_str(&s)?;
         Ok(HashSetGazetteer { values: vec.iter().cloned().collect() }) // TODO: Check if clone is necessary
     }

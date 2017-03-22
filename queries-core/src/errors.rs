@@ -4,6 +4,7 @@ error_chain! {
         NdArray(::ndarray::ShapeError);
         Serde(::serde_json::Error);
         Protobuf(::protobuf::ProtobufError);
+        Csv(::csv::Error);
     }
 }
 

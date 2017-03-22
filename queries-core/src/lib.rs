@@ -16,6 +16,7 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate tensorflow;
 extern crate yolo;
+extern crate csv;
 
 use std::cmp::Ordering;
 use std::fs;
@@ -51,6 +52,8 @@ pub struct IntentClassifierResult {
     pub name: String,
     pub probability: Probability,
 }
+
+mod config;
 
 #[derive(Debug, Clone)]
 pub struct FileConfiguration {
