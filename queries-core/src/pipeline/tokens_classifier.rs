@@ -28,9 +28,9 @@ impl ProtobufTokensClassifier {
         let intent_model = protobuf::parse_from_reader::<Model>(&mut model_file)?;
 
         let cnn_path = file_configuration.tokens_classifier_path(cnn_model_name);
-        let cnn = TensorflowCNN::new(cnn_path);
+        let cnn = TensorflowCNN::new(cnn_path)?;
 
-        Ok(ProtobufTokensClassifier { file_configuration: file_configuration.clone(), intent_model: intent_model, cnn: cnn? })
+        Ok(ProtobufTokensClassifier { file_configuration: file_configuration.clone(), intent_model: intent_model, cnn: cnn })
     }
 }
 

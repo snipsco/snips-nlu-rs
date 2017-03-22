@@ -92,7 +92,6 @@ pub extern "C" fn intent_parser_create(root_dir: *const c_char,
     wrap!(create(root_dir, client));
 }
 
-
 #[no_mangle]
 pub extern "C" fn intent_parser_run_intent_classification(client: *mut Opaque,
                                                           input: *const c_char,
@@ -111,7 +110,6 @@ pub extern "C" fn intent_parser_run_tokens_classification(client: *mut Opaque,
     wrap!(run_tokens_classification(client, input, intent_name, result_json))
 }
 
-
 #[no_mangle]
 pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUERIESRESULT {
     unsafe {
@@ -120,7 +118,6 @@ pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUE
 
     QUERIESRESULT::OK
 }
-
 
 #[no_mangle]
 pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRESULT {
@@ -174,4 +171,3 @@ fn point_to_string(pointer: *mut *mut libc::c_char, string: String) -> Result<()
     unsafe { *pointer = cs.into_raw() }
     Ok(())
 }
-
