@@ -12,13 +12,10 @@ lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "../queries_embed
 
 class IntentParser(object):
 
-    def __init__(self, data_path, intents):
-        intent_names = (c_char_p * len(intents))()
-        intent_names[:] = intents
+    def __init__(self, data_path):
         self.data_path = data_path
         self._parser = pointer(c_void_p())
-        exit_code = lib.intent_parser_create(data_path,
-            byref(self._parser), len(intents), intent_names)
+        exit_code = lib.intent_parser_create(data_path, byref(self._parser))
 
         if exit_code != 1:
             raise ImportError('Something wrong happened while creating the '

@@ -87,10 +87,9 @@ macro_rules! get_str_vec {
 
 #[no_mangle]
 pub extern "C" fn intent_parser_create(root_dir: *const c_char,
-                                       client: *mut *mut Opaque,
-                                       intent_count: c_int,
-                                       intents: *const *const c_char) -> QUERIESRESULT {
-    wrap!(create(root_dir, client, intent_count, intents));
+                                       client: *mut *mut Opaque)
+                                       -> QUERIESRESULT {
+    wrap!(create(root_dir, client));
 }
 
 
@@ -133,21 +132,11 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
 }
 
 fn create(root_dir: *const libc::c_char,
-          client: *mut *mut Opaque,
-          intent_count: c_int,
-          intents: *const *const c_char) -> Result<()> {
+          client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
-    let intent_strings: Vec<&str> = get_str_vec!(intent_count, intents);
-
     let file_configuration = queries_core::FileConfiguration::new(root_dir);
 
-    let intents: Option<&[&str]> = if intent_count == 0 {
-        None
-    } else {
-        Some(&intent_strings)
-    };
-
-    let intent_parser = queries_core::IntentParser::new(&file_configuration, intents)?;
+    let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
