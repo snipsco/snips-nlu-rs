@@ -1,6 +1,5 @@
 extern crate libc;
 extern crate queries_core;
-#[macro_use]
 extern crate lazy_static;
 
 #[macro_use]
@@ -9,11 +8,9 @@ extern crate error_chain;
 extern crate serde_json;
 
 use std::ffi::{CStr, CString};
-use std::slice;
 use std::sync::{Mutex};
 
 use libc::c_char;
-use libc::c_int;
 use libc::c_float;
 
 
@@ -87,12 +84,10 @@ macro_rules! get_str_vec {
 
 #[no_mangle]
 pub extern "C" fn intent_parser_create(root_dir: *const c_char,
-                                       client: *mut *mut Opaque,
-                                       intent_count: c_int,
-                                       intents: *const *const c_char) -> QUERIESRESULT {
-    wrap!(create(root_dir, client, intent_count, intents));
+                                       client: *mut *mut Opaque)
+                                       -> QUERIESRESULT {
+    wrap!(create(root_dir, client));
 }
-
 
 #[no_mangle]
 pub extern "C" fn intent_parser_run_intent_classification(client: *mut Opaque,
@@ -112,7 +107,6 @@ pub extern "C" fn intent_parser_run_tokens_classification(client: *mut Opaque,
     wrap!(run_tokens_classification(client, input, intent_name, result_json))
 }
 
-
 #[no_mangle]
 pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUERIESRESULT {
     unsafe {
@@ -121,7 +115,6 @@ pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUE
 
     QUERIESRESULT::OK
 }
-
 
 #[no_mangle]
 pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRESULT {
@@ -133,21 +126,11 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
 }
 
 fn create(root_dir: *const libc::c_char,
-          client: *mut *mut Opaque,
-          intent_count: c_int,
-          intents: *const *const c_char) -> Result<()> {
+          client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
-    let intent_strings: Vec<&str> = get_str_vec!(intent_count, intents);
-
     let file_configuration = queries_core::FileConfiguration::new(root_dir);
 
-    let intents: Option<&[&str]> = if intent_count == 0 {
-        None
-    } else {
-        Some(&intent_strings)
-    };
-
-    let intent_parser = queries_core::IntentParser::new(&file_configuration, intents)?;
+    let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -161,7 +144,7 @@ fn run_intent_classification(client: *mut Opaque,
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 
-    let results = intent_parser.run_intent_classifiers(input, probability_threshold, None);
+    let results = intent_parser.run_intent_classifiers(input, probability_threshold);
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
@@ -185,4 +168,3 @@ fn point_to_string(pointer: *mut *mut libc::c_char, string: String) -> Result<()
     unsafe { *pointer = cs.into_raw() }
     Ok(())
 }
-
