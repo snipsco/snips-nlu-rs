@@ -124,16 +124,10 @@ pub struct IntentParser {
 }
 
 impl IntentParser {
-    pub fn new(file_configuration: &FileConfiguration, configurations: Option<&[&str]>) -> Result<IntentParser> {
+    pub fn new(file_configuration: &FileConfiguration) -> Result<IntentParser> {
         let mut classifiers = HashMap::new();
 
-        let configurations_to_load = if let Some(required_configurations) = configurations {
-            required_configurations.iter().map(|s| s.to_string()).collect_vec()
-        } else {
-            file_configuration.available_intents()?
-        };
-
-        for ref c in configurations_to_load {
+        for ref c in file_configuration.available_intents()? {
             let intent = IntentConfiguration::new(file_configuration, c)?;
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
