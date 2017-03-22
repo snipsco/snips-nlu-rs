@@ -1,6 +1,5 @@
 extern crate libc;
 extern crate queries_core;
-#[macro_use]
 extern crate lazy_static;
 
 #[macro_use]
@@ -9,11 +8,9 @@ extern crate error_chain;
 extern crate serde_json;
 
 use std::ffi::{CStr, CString};
-use std::slice;
 use std::sync::{Mutex};
 
 use libc::c_char;
-use libc::c_int;
 use libc::c_float;
 
 
