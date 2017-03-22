@@ -150,7 +150,7 @@ fn run_intent_classification(client: *mut Opaque,
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 
-    let results = intent_parser.run_intent_classifiers(input, probability_threshold, None);
+    let results = intent_parser.run_intent_classifiers(input, probability_threshold);
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
