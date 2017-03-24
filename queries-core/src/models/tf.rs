@@ -15,12 +15,16 @@ use tensorflow::Tensor;
 
 pub struct TensorFlowClassifier {
     state: sync::Mutex<(Session, Graph)>,
+    input_node_name: String,
+    output_node_name: String,
 }
 
 pub struct TensorFlowCRFClassifier {
     state: sync::Mutex<(Session, Graph)>,
     transition_matrix: Array2<f32>,
     num_classes: u32,
+    input_node_name: String,
+    output_node_name: String,
 }
 
 pub trait Classifier {
@@ -112,7 +116,7 @@ fn viterbi_decode(unary_potentials: &Array2<f32>, transition_matrix: &Array2<f32
 }
 
 impl TensorFlowClassifier {
-    pub fn new(model: &mut Read) -> Result<TensorFlowClassifier> {
+    pub fn new(model: &mut Read, input_node_name: String, output_node_name: String) -> Result<TensorFlowClassifier> {
         let mut graph = Graph::new();
         let mut proto = Vec::new();
         model.read_to_end(&mut proto)?;
@@ -120,7 +124,11 @@ impl TensorFlowClassifier {
         graph.import_graph_def(&proto, &ImportGraphDefOptions::new())?;
         let session = Session::new(&SessionOptions::new(), &graph)?;
 
-        Ok(TensorFlowClassifier { state: sync::Mutex::new((session, graph)) })
+        Ok(TensorFlowClassifier {
+            state: sync::Mutex::new((session, graph)),
+            input_node_name: input_node_name,
+            output_node_name: output_node_name
+        })
     }
 }
 
@@ -174,16 +182,16 @@ impl Classifier for TensorFlowClassifier {
     }
 
     fn input_node(&self) -> &str {
-        "input"
+        &self.input_node_name
     }
 
     fn output_node(&self) -> &str {
-        "logits"
+        &self.output_node_name
     }
 }
 
 impl TensorFlowCRFClassifier {
-    pub fn new(model: &mut Read, num_classes: u32) -> Result<TensorFlowCRFClassifier> {
+    pub fn new(model: &mut Read, num_classes: u32, input_node_name: String, output_node_name: String, transition_matrix_node_name: &str) -> Result<TensorFlowCRFClassifier> {
         let mut graph = Graph::new();
         let mut proto = Vec::new();
         model.read_to_end(&mut proto)?;
@@ -193,7 +201,7 @@ impl TensorFlowCRFClassifier {
 
         let result: Result<Tensor<f32>> = {
             let mut step = StepWithGraph::new();
-            let res = step.request_output(&graph.operation_by_name_required("transitions")?, 0);
+            let res = step.request_output(&graph.operation_by_name_required(transition_matrix_node_name)?, 0);
 
             session.run(&mut step)?;
 
@@ -204,7 +212,9 @@ impl TensorFlowCRFClassifier {
         Ok(TensorFlowCRFClassifier {
             state: sync::Mutex::new((session, graph)),
             transition_matrix: transition_matrix?,
-            num_classes: num_classes
+            num_classes: num_classes,
+            input_node_name: input_node_name,
+            output_node_name: output_node_name,
         })
     }
 }
@@ -236,11 +246,11 @@ impl Classifier for TensorFlowCRFClassifier {
     }
 
     fn input_node(&self) -> &str {
-        "input"
+        &self.input_node_name
     }
 
     fn output_node(&self) -> &str {
-        "logits"
+        &self.output_node_name
     }
 }
 
