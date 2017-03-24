@@ -1,15 +1,13 @@
-use std::io::Read;
-use std::fs::File;
 use std::fs;
 use std::path;
+use std::io::Read;
+use std::fs::File;
 use std::collections::HashMap;
+
 use csv;
-
 use errors::*;
-
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
 use protobuf;
-
 
 pub trait AssistantConfig {
     fn get_available_intents_names(&self) -> Result<Vec<String>>;
@@ -27,7 +25,6 @@ pub trait IntentConfig  {
 pub struct FileBasedAssistantConfig {
     intents_dir: ::path::PathBuf,
     gazetteers_dir: ::path::PathBuf,
-
 }
 
 impl FileBasedAssistantConfig {
@@ -69,7 +66,6 @@ pub struct FileBasedIntentConfig {
     gazetteer_dir: ::path::PathBuf,
     gazetteer_mapping: HashMap<String, (String, String)> /* name -> (lang, version)*/,
 }
-
 
 impl FileBasedIntentConfig {
     fn new(intent_dir: ::path::PathBuf, gazetteer_dir: ::path::PathBuf) -> Result<FileBasedIntentConfig> {

@@ -8,7 +8,6 @@ extern crate ndarray;
 extern crate protobuf;
 extern crate rayon;
 extern crate regex;
-extern crate rulinalg;
 extern crate unicode_normalization;
 extern crate serde;
 #[macro_use]
@@ -42,11 +41,11 @@ use config::AssistantConfig;
 mod testutils;
 
 pub mod errors;
+mod config;
 mod features;
 mod models;
 mod pipeline;
 mod preprocessing;
-
 mod protos;
 
 #[derive(Serialize, Debug)]
@@ -55,8 +54,6 @@ pub struct IntentClassifierResult {
     pub probability: Probability,
 }
 
-pub mod config;
-
 pub fn file_path(file_name: &str) -> ::path::PathBuf {
     if ::std::env::var("DINGHY").is_ok() {
         ::std::env::current_exe().unwrap().parent().unwrap().join("test_data/data").join(file_name)
@@ -64,8 +61,6 @@ pub fn file_path(file_name: &str) -> ::path::PathBuf {
         ::path::PathBuf::from("../data").join(file_name)
     }
 }
-
-
 
 pub struct IntentParser {
     classifiers: HashMap<String, IntentConfiguration>,
