@@ -1,4 +1,4 @@
-use std::{fs, path, sync};
+use std::sync;
 use std::io::Read;
 use std::f32;
 use std::cmp;
@@ -183,12 +183,10 @@ impl Classifier for TensorFlowClassifier {
 }
 
 impl TensorFlowCRFClassifier {
-    pub fn new<P>(model_path: P, num_classes: u32) -> Result<TensorFlowCRFClassifier>
-        where P: AsRef<path::Path>
-    {
+    pub fn new(model: &mut Read, num_classes: u32) -> Result<TensorFlowCRFClassifier> {
         let mut graph = Graph::new();
         let mut proto = Vec::new();
-        fs::File::open(model_path)?.read_to_end(&mut proto)?;
+        model.read_to_end(&mut proto)?;
 
         graph.import_graph_def(&proto, &ImportGraphDefOptions::new())?;
         let mut session = Session::new(&SessionOptions::new(), &graph)?;

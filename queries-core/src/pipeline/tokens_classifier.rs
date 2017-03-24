@@ -11,16 +11,16 @@ use preprocessing::PreprocessorResult;
 use pipeline::Probability;
 use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 use protos::model_configuration::ModelConfiguration;
-use models::tf::{TensorFlowClassifier, Classifier};
+use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier, Classifier};
 
 pub trait TokensClassifier {
-    fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array2<Probability>>;
+    fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array1<usize>>;
 }
 
 pub struct ProtobufTokensClassifier {
     intent_config: sync::Arc<Box<IntentConfig>>,
     intent_model: ModelConfiguration,
-    classifier: TensorFlowClassifier,
+    classifier: Box<Classifier>,
 }
 
 
@@ -32,17 +32,22 @@ impl ProtobufTokensClassifier {
         let mut model_file = intent_config.get_file(model_path)?;
         let intent_model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
 
+        let classifier : Box<Classifier> = if intent_model.has_crf {
+            Box::new(TensorFlowCRFClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?,
+                                         pb_config.get_slots().len() as u32)?)
+        } else {
+            Box::new(TensorFlowClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?)?)
+        };
 
-        let classifier = TensorFlowClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?);
-        Ok(ProtobufTokensClassifier { intent_config: intent_config.clone(), intent_model: intent_model, classifier: classifier? })
+        Ok(ProtobufTokensClassifier { intent_config: intent_config.clone(), intent_model: intent_model, classifier: classifier })
     }
 }
 
 impl TokensClassifier for ProtobufTokensClassifier {
-    fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array2<Probability>> {
+    fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array1<usize>> {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(), self.intent_model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
-        Ok(self.classifier.predict_proba(&computed_features.t())?)
+        Ok(self.classifier.predict(&computed_features.t())?)
     }
 }
 

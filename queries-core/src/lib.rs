@@ -112,8 +112,13 @@ impl IntentParser {
         let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
 
         let token_values = preprocessor_result.tokens.iter().map(|token| &*token.value).collect_vec();
-        let slot_values = &compute_slots(&*token_values, &probabilities)[1..];
-        let slot_names = &intent_configuration.slot_names[1..];
+
+
+
+        let slot_names = &intent_configuration.slot_names;
+
+        println!("{:?} =>  {:?}", slot_names, probabilities);
+        let slot_values = &compute_slots(&*token_values, slot_names.len(), &probabilities);
 
         let mut result = HashMap::new();
         for (name, value) in slot_names.iter().zip(slot_values.iter()) {
