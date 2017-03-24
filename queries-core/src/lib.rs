@@ -41,7 +41,7 @@ use config::AssistantConfig;
 mod testutils;
 
 pub mod errors;
-mod config;
+pub mod config;
 mod features;
 mod models;
 mod pipeline;
