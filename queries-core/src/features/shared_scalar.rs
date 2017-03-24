@@ -17,6 +17,10 @@ pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &
     }
 }
 
+pub fn get_message_length(preprocessor_result: &PreprocessorResult, normalization: f32) -> Vec<f32> {
+    vec![preprocessor_result.raw.chars().count() as f32 / normalization]
+}
+
 #[cfg(test)]
 mod test {
     use std::ops::Range;
@@ -88,6 +92,7 @@ mod test {
         let tests: Vec<(&str, Box<Fn(&FileConfiguration, &TestDescription, Vec<NormalizedToken>)>)> = vec![
             ("hasGazetteerHits", Box::new(has_gazetteer_hits_works)),
             ("ngramMatcher", Box::new(ngram_matcher_works)),
+            //("getMessageLength", Box::new(get_message_length_works)),
         ];
 
         let path = path::PathBuf::from("snips-sdk-tests/feature_extraction/SharedScalar");
@@ -120,6 +125,12 @@ mod test {
     fn ngram_matcher_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
         let preprocessor_result = PreprocessorResult::new(normalized_tokens);
         let result = ngram_matcher(&preprocessor_result, &test.args[0].value);
+        assert_eq!(result, vec![test.output])
+    }
+
+    fn get_message_length_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
+        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+        let result = get_message_length(&preprocessor_result, &test.args[0].value.parse().unwrap());
         assert_eq!(result, vec![test.output])
     }
 }
