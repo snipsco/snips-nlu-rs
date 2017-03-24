@@ -98,7 +98,8 @@ impl IntentConfig for FileBasedIntentConfig {
         if let Some(mapping) = self.gazetteer_mapping.get(name) {
             let path = &self.gazetteer_dir
                 .join(&mapping.0).join(format!("{}_{}.json", &name, &mapping.1));
-            Ok(Box::new(HashSetGazetteer::new(&mut File::open(path).map_err(|_| format!("Could not load Gazetteer {:?}", path))?)?))
+            let mut file = File::open(path).map_err(|_| format!("Could not load Gazetteer {:?}", path))?;
+            Ok(Box::new(HashSetGazetteer::new(&mut file)?))
         } else {
             bail!("could not get gazetteer for name {}", name)
         }
