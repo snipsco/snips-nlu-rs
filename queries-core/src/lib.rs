@@ -44,10 +44,10 @@ use config::IntentConfig;
 mod testutils;
 
 pub mod errors;
-pub mod features;
-pub mod models;
-pub mod pipeline;
-pub mod preprocessing;
+mod features;
+mod models;
+mod pipeline;
+mod preprocessing;
 
 mod protos;
 
