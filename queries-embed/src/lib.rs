@@ -128,7 +128,8 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
 fn create(root_dir: *const libc::c_char,
           client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
-    let file_configuration = queries_core::FileConfiguration::new(root_dir);
+
+    let file_configuration = queries_core::config::FileBasedAssistantConfig::new(root_dir);
 
     let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
 

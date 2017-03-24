@@ -1,4 +1,4 @@
-use std::{ fs, path, sync };
+use std::{fs, path, sync};
 use std::io::Read;
 use std::f32;
 use std::cmp;
@@ -16,6 +16,7 @@ use tensorflow::Tensor;
 pub struct TensorFlowClassifier {
     state: sync::Mutex<(Session, Graph)>,
 }
+
 pub struct TensorFlowCRFClassifier {
     state: sync::Mutex<(Session, Graph)>,
     transition_matrix: Array2<f32>,
@@ -23,12 +24,12 @@ pub struct TensorFlowCRFClassifier {
 }
 
 pub trait Classifier {
-    fn predict_proba(&self, features: &Array2<f32>) -> Result<Array2<f32>>;
-    fn predict(&self, features: &Array2<f32>) -> Result<Array1<usize>>;
+    fn predict_proba(&self, features: &ArrayView2<f32>) -> Result<Array2<f32>>;
+    fn predict(&self, features: &ArrayView2<f32>) -> Result<Array1<usize>>;
     fn state(&self) -> &sync::Mutex<(Session, Graph)>;
     fn input_node(&self) -> &str;
     fn output_node(&self) -> &str;
-    fn run(&self, features: &Array2<f32>) -> Result<Array2<f32>> {
+    fn run(&self, features: &ArrayView2<f32>) -> Result<Array2<f32>> {
         let x = array_to_tensor(features)?;
         let result: Result<Tensor<f32>> = {
             let mut step = StepWithGraph::new();
@@ -46,7 +47,7 @@ pub trait Classifier {
     }
 }
 
-fn array_to_tensor(array: &Array2<f32>) -> Result<Tensor<f32>> {
+fn array_to_tensor(array: &ArrayView2<f32>) -> Result<Tensor<f32>> {
     let shape = array.shape();
     let mut tensor: Tensor<f32> = Tensor::new(&[shape[0] as u64, shape[1] as u64]);
     for (i, &elem) in array.view().iter().enumerate() {
@@ -111,22 +112,20 @@ fn viterbi_decode(unary_potentials: &Array2<f32>, transition_matrix: &Array2<f32
 }
 
 impl TensorFlowClassifier {
-    pub fn new<P>(model_path: P) -> Result<TensorFlowClassifier>
-        where P: AsRef<path::Path>
-    {
+    pub fn new(model: &mut Read) -> Result<TensorFlowClassifier> {
         let mut graph = Graph::new();
         let mut proto = Vec::new();
-        fs::File::open(model_path)?.read_to_end(&mut proto)?;
+        model.read_to_end(&mut proto)?;
 
         graph.import_graph_def(&proto, &ImportGraphDefOptions::new())?;
         let session = Session::new(&SessionOptions::new(), &graph)?;
 
-        Ok(TensorFlowClassifier {state: sync::Mutex::new((session, graph))})
+        Ok(TensorFlowClassifier { state: sync::Mutex::new((session, graph)) })
     }
 }
 
 impl Classifier for TensorFlowClassifier {
-    fn predict_proba(&self, features: &Array2<f32>) -> Result<Array2<f32>> {
+    fn predict_proba(&self, features: &ArrayView2<f32>) -> Result<Array2<f32>> {
         let mut logits = self.run(features)?;
         let num_classes = logits.cols();
         if num_classes > 1 {
@@ -147,7 +146,7 @@ impl Classifier for TensorFlowClassifier {
         Ok(logits)
     }
 
-    fn predict(&self, features: &Array2<f32>) -> Result<Array1<usize>> {
+    fn predict(&self, features: &ArrayView2<f32>) -> Result<Array1<usize>> {
         let logits = self.run(features)?;
         let num_classes = logits.cols();
         let predictions: Array1<usize> = if num_classes > 1 {
@@ -213,7 +212,7 @@ impl TensorFlowCRFClassifier {
 }
 
 impl Classifier for TensorFlowCRFClassifier {
-    fn predict_proba(&self, features: &Array2<f32>) -> Result<Array2<f32>> {
+    fn predict_proba(&self, features: &ArrayView2<f32>) -> Result<Array2<f32>> {
         // TODO: Replace this warning by a proper logger
         println!("Predictions for models based on a Conditional Random \
             Fields (CRF) are given by the Viterbi algorithm, which returns \
@@ -227,7 +226,7 @@ impl Classifier for TensorFlowCRFClassifier {
         Ok(probas)
     }
 
-    fn predict(&self, features: &Array2<f32>) -> Result<Array1<usize>> {
+    fn predict(&self, features: &ArrayView2<f32>) -> Result<Array1<usize>> {
         let unary_potentials = self.run(&features)?;
         let predictions = viterbi_decode(&unary_potentials, &self.transition_matrix);
 

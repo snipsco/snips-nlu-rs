@@ -1,44 +1,49 @@
 use std::fs;
+use std::path;
+use std::sync;
 
 use protobuf;
 use ndarray::prelude::*;
 
 use errors::*;
-use FileConfiguration;
+
+use config::IntentConfig;
 use preprocessing::PreprocessorResult;
 use pipeline::Probability;
-use pipeline::feature_processor::{ MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor };
+use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 use protos::model_configuration::ModelConfiguration;
-use models::cnn::{ CNN, TensorflowCNN };
+use models::tf::{TensorFlowClassifier, Classifier};
 
 pub trait TokensClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array2<Probability>>;
 }
 
 pub struct ProtobufTokensClassifier {
-    file_configuration: FileConfiguration,
+    intent_config: sync::Arc<Box<IntentConfig>>,
     intent_model: ModelConfiguration,
-    cnn: TensorflowCNN,
+    classifier: TensorFlowClassifier,
 }
 
+
+// TODO merge code with protobuf intent classifier
 impl ProtobufTokensClassifier {
-    pub fn new(file_configuration: &FileConfiguration, intent_model_name: &str) -> Result<ProtobufTokensClassifier> {
-        let model_path = file_configuration.tokens_classifier_path(intent_model_name);
-        let mut model_file = fs::File::open(model_path)?;
+    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>, intent_model_name: &str) -> Result<ProtobufTokensClassifier> {
+        let pb_config = intent_config.get_pb_config()?;
+        let model_path = path::Path::new(pb_config.get_tokens_classifier_path());
+        let mut model_file = intent_config.get_file(model_path)?;
         let intent_model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
 
-        let cnn_path = file_configuration.tokens_classifier_path(intent_model.get_model_path());
-        let cnn = TensorflowCNN::new(cnn_path);
 
-        Ok(ProtobufTokensClassifier { file_configuration: file_configuration.clone(), intent_model: intent_model, cnn: cnn })
+        let classifier = TensorFlowClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?);
+        Ok(ProtobufTokensClassifier { intent_config: intent_config.clone(), intent_model: intent_model, classifier: classifier? })
     }
 }
 
 impl TokensClassifier for ProtobufTokensClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array2<Probability>> {
-        let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.file_configuration, self.intent_model.get_features());
+        let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(), self.intent_model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
-        Ok(self.cnn.run(&computed_features)?)
+        Ok(self.classifier.predict_proba(&computed_features.t())?)
     }
 }
 
@@ -46,7 +51,7 @@ impl TokensClassifier for ProtobufTokensClassifier {
 mod test {
     use preprocessing::preprocess;
     use FileConfiguration;
-    use super::{ TokensClassifier, ProtobufTokensClassifier };
+    use super::{TokensClassifier, ProtobufTokensClassifier};
 
     #[test]
     #[ignore]
@@ -58,7 +63,7 @@ mod test {
 
         let preprocessor_result = preprocess("Book me a table for two people at Le Chalet Savoyard");
 
-        let tokens_classifier = ProtobufTokensClassifier::new(&file_configuration, model_name, cnn_name).unwrap();
+        let tokens_classifier = ProtobufTokensClassifier::new(&file_configuration, model_name).unwrap();
         let probabilities = tokens_classifier.run(&preprocessor_result);
 
         println!("probabilities: {:?}", probabilities);

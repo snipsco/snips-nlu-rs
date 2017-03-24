@@ -21,6 +21,7 @@ extern crate csv;
 use std::cmp::Ordering;
 use std::fs;
 use std::path;
+use std::sync;
 use std::collections::HashMap;
 
 use itertools::Itertools;
@@ -35,6 +36,9 @@ use yolo::Yolo;
 
 pub use preprocessing::preprocess;
 pub use errors::*;
+
+use config::AssistantConfig;
+use config::IntentConfig;
 
 #[cfg(test)]
 mod testutils;
@@ -53,67 +57,7 @@ pub struct IntentClassifierResult {
     pub probability: Probability,
 }
 
-mod config;
-
-#[derive(Debug, Clone)]
-pub struct FileConfiguration {
-    root_dir: ::path::PathBuf,
-    configuration_dir: ::path::PathBuf,
-    intent_classifier_dir: ::path::PathBuf,
-    tokens_classifier_dir: ::path::PathBuf,
-    gazetteer_dir: ::path::PathBuf,
-}
-
-impl FileConfiguration {
-    pub fn new<P: AsRef<path::Path>>(root_dir: P) -> FileConfiguration {
-        let root_dir = ::path::PathBuf::from(root_dir.as_ref());
-
-        FileConfiguration {
-            configuration_dir: root_dir.join("snips-sdk-models-protobuf/configurations"),
-            intent_classifier_dir: root_dir.join("snips-sdk-models-protobuf/models/intent_classification"),
-            tokens_classifier_dir: root_dir.join("snips-sdk-models-protobuf/models/tokens_classification"),
-            gazetteer_dir: root_dir.join("snips-sdk-gazetteers/gazetteers"),
-            root_dir: root_dir,
-        }
-    }
-
-    pub fn default() -> FileConfiguration {
-        FileConfiguration::new(file_path("."))
-    }
-
-    pub fn configuration_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        self.configuration_dir.join(classifier_name).with_extension("pb")
-    }
-
-    pub fn intent_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        self.intent_classifier_dir.join(classifier_name).with_extension("pb")
-    }
-
-    pub fn tokens_classifier_path(&self, classifier_name: &str) -> ::path::PathBuf {
-        self.tokens_classifier_dir.join(classifier_name).with_extension("pb")
-    }
-
-    pub fn gazetteer_path(&self, gazetteer_name: &str) -> ::path::PathBuf {
-        self.gazetteer_dir.join(gazetteer_name).with_extension("json")
-    }
-
-    pub fn available_intents(&self) -> Result<Vec<String>> {
-        let entries = fs::read_dir(&self.configuration_dir)?;
-
-        let mut available_intents = vec![];
-
-        // TODO: kill those unwrap
-        for entry in entries {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            let stem = path.file_stem().unwrap();
-            let result = stem.to_str().unwrap();
-            available_intents.push(result.to_string());
-        }
-
-        Ok(available_intents)
-    }
-}
+pub mod config;
 
 pub fn file_path(file_name: &str) -> ::path::PathBuf {
     if ::std::env::var("DINGHY").is_ok() {
@@ -123,16 +67,18 @@ pub fn file_path(file_name: &str) -> ::path::PathBuf {
     }
 }
 
+
+
 pub struct IntentParser {
-    classifiers: HashMap<String, IntentConfiguration>
+    classifiers: HashMap<String, IntentConfiguration>,
 }
 
 impl IntentParser {
-    pub fn new(file_configuration: &FileConfiguration) -> Result<IntentParser> {
+    pub fn new(assistant_config: &AssistantConfig) -> Result<IntentParser> {
         let mut classifiers = HashMap::new();
 
-        for ref c in file_configuration.available_intents()? {
-            let intent = IntentConfiguration::new(file_configuration, c)?;
+        for ref c in assistant_config.get_available_intents_names()? {
+            let intent = IntentConfiguration::new(sync::Arc::new(assistant_config.get_intent_configuration(c)?))?;
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
 
