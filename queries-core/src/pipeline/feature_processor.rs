@@ -102,6 +102,9 @@ impl Feature {
             Feature_Type::CONTAINS_POSSESSIVE => {
                 ::features::shared_vector::contains_possessive(input)
             }
+            Feature_Type::CONTAINS_DIGITS => {
+                ::features::shared_vector::contains_digits(input)
+            }
             feature_type => panic!("Feature functions not implemented: {:?}", feature_type)
         })
     }
