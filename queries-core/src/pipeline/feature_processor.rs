@@ -71,6 +71,9 @@ impl Feature {
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
+            Feature_Type::GET_MESSAGE_LENGTH => {
+                ::features::shared_scalar::get_message_length(input, arguments[0].get_scalar() as f32)
+            }
             feature_type => panic!("Feature function not implemented: {:?}", feature_type)
         })
     }
