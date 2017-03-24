@@ -1,14 +1,12 @@
 use std::path;
 use std::sync;
 
+use errors::*;
 use protobuf;
 use ndarray::prelude::*;
 
-use errors::*;
-
 use config::IntentConfig;
 use preprocessing::PreprocessorResult;
-use pipeline::Probability;
 use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 use protos::model_configuration::ModelConfiguration;
 use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier, Classifier};

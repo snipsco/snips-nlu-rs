@@ -1,7 +1,4 @@
 use ndarray::prelude::*;
-use rulinalg::utils::argmax;
-
-use pipeline::Probability;
 
 pub fn compute_slots(tokens: &[&str], num_slots: usize, token_probabilities: &Array1<usize>) -> Vec<String> {
     let mut data: Vec<Vec<String>> = vec![vec![]; num_slots];
