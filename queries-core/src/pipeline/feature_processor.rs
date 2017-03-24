@@ -1,10 +1,8 @@
 use errors::*;
 use ndarray::{Array, Array2};
-use std::io::Read;
 use std::sync;
 
 use preprocessing::PreprocessorResult;
-use models::gazetteer::{Gazetteer, HashSetGazetteer};
 use protos::feature::{Feature, Feature_Type, Feature_Domain, Feature_Argument};
 
 use config::IntentConfig;
