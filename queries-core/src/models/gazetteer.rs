@@ -2,7 +2,7 @@ use std::io::prelude::*;
 use std::collections::HashSet;
 
 use errors::*;
-use serde_json::from_reader;
+use serde_json;
 
 pub trait Gazetteer {
     fn contains(&self, value: &str) -> bool;
@@ -14,7 +14,7 @@ pub struct HashSetGazetteer {
 
 impl HashSetGazetteer {
     pub fn new(r: &mut Read) -> Result<HashSetGazetteer> {
-        let vec: Vec<String> = from_reader(r)?;
+        let vec: Vec<String> = serde_json::from_reader(r)?;
         Ok(HashSetGazetteer { values: vec.iter().cloned().collect() }) // TODO: Check if clone is necessary
     }
 }
