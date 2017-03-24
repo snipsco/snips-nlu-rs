@@ -76,22 +76,22 @@ fn viterbi_decode(unary_potentials: &Array2<f32>, transition_matrix: &Array2<f32
 
     let mut treillis: Array1<f32> = Array::from_shape_fn(num_classes, |x| unary_potentials[(0, x)]);
     let mut viterbi: Array1<usize> = Array::zeros(num_samples);
-    let mut traceback: Array2<usize> = Array::zeros((num_samples, num_classes));
+    let mut traceback: Array2<usize> = Array::zeros((num_samples - 1, num_classes));
 
     // Create the treillis
-    for mut subview in traceback.outer_iter_mut() {
+    for (t, mut subview) in traceback.outer_iter_mut().enumerate() {
         let treillis_copy = treillis.to_owned();
         for (i, col) in transition_matrix.axis_iter(Axis(1)).enumerate() {
             let mut index = 0;
             let mut max_value = f32::NEG_INFINITY;
             for (j, &transition) in col.iter().enumerate() {
-                let value = treillis_copy[i] + transition;
+                let value = treillis_copy[j] + transition;
                 if value > max_value {
                     index = j;
                     max_value = value;
                 }
             }
-            treillis[i] = max_value;
+            treillis[i] = unary_potentials[(t + 1, i)] + max_value;
             subview[i] = index;
         }
     }
@@ -109,7 +109,7 @@ fn viterbi_decode(unary_potentials: &Array2<f32>, transition_matrix: &Array2<f32
     };
     for t in 1..num_samples {
         let index: usize = num_samples - t;
-        viterbi[index - 1] = traceback[(index, viterbi[index])];
+        viterbi[index - 1] = traceback[(index - 1, viterbi[index])];
     }
 
     Ok(viterbi)
