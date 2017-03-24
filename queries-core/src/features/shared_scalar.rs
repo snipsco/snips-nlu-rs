@@ -1,8 +1,8 @@
 use preprocessing::PreprocessorResult;
 use models::gazetteer::Gazetteer;
 
-pub fn has_gazetteer_hits<T: Gazetteer>(preprocessor_result: &PreprocessorResult,
-                                        gazetteer: &T)
+pub fn has_gazetteer_hits(preprocessor_result: &PreprocessorResult,
+                                        gazetteer: Box<Gazetteer>)
                                         -> Vec<f32> {
     match preprocessor_result.normalized_ngrams.iter().find(|ngram| gazetteer.contains(&ngram.0)) {
         Some(_) => vec![1.0],

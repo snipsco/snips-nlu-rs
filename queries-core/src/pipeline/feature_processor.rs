@@ -1,24 +1,27 @@
 use errors::*;
-use ndarray::{ Array, Array2 };
+use ndarray::{Array, Array2};
+use std::io::Read;
+use std::sync;
 
-use FileConfiguration;
 use preprocessing::PreprocessorResult;
-use models::gazetteer::HashSetGazetteer;
-use protos::feature::{ Feature, Feature_Type, Feature_Domain, Feature_Argument };
+use models::gazetteer::{Gazetteer, HashSetGazetteer};
+use protos::feature::{Feature, Feature_Type, Feature_Domain, Feature_Argument};
+
+use config::IntentConfig;
 
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
 }
 
 pub struct ProtobufMatrixFeatureProcessor<'a> {
-    file_configuration: &'a FileConfiguration,
+    intent_config: sync::Arc<Box<IntentConfig>>,
     feature_functions: &'a [Feature],
 }
 
 impl<'a> ProtobufMatrixFeatureProcessor<'a> {
-    pub fn new(file_configuration: &'a FileConfiguration, features: &'a [Feature]) -> ProtobufMatrixFeatureProcessor<'a> {
+    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>, features: &'a [Feature]) -> ProtobufMatrixFeatureProcessor<'a> {
         ProtobufMatrixFeatureProcessor {
-            file_configuration: file_configuration,
+            intent_config: intent_config,
             feature_functions: features
         }
     }
@@ -28,7 +31,7 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32> {
         let computed_values = self.feature_functions
             .iter()
-            .flat_map(|feature_function| feature_function.compute(self.file_configuration, input).unwrap()) // TODO: Dunno how to kill this unwrap
+            .flat_map(|feature_function| feature_function.compute(&**self.intent_config, input).unwrap()) // TODO: Dunno how to kill this unwrap
             .collect::<Vec<f32>>();
 
         let len = self.feature_functions.len();
@@ -42,22 +45,22 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 }
 
 impl Feature {
-    fn compute(&self, file_configuration: &FileConfiguration, input: &PreprocessorResult) -> Result<Vec<f32>> {
+    fn compute(&self, intent_config: &IntentConfig, input: &PreprocessorResult) -> Result<Vec<f32>> {
         let known_domain = self.get_domain();
         let feature_type = self.field_type;
         let arguments = self.get_arguments();
 
         match known_domain {
             Feature_Domain::SHARED_SCALAR => {
-                Self::get_shared_scalar(file_configuration, input, &feature_type, arguments)
+                Self::get_shared_scalar(intent_config, input, &feature_type, arguments)
             }
             Feature_Domain::SHARED_VECTOR => {
-                Self::get_shared_vector(file_configuration, input, &feature_type, arguments)
+                Self::get_shared_vector(intent_config, input, &feature_type, arguments)
             }
         }
     }
 
-    fn get_shared_scalar(file_configuration: &FileConfiguration,
+    fn get_shared_scalar(intent_config: &IntentConfig,
                          input: &PreprocessorResult,
                          feature_type: &Feature_Type,
                          arguments: &[Feature_Argument])
@@ -65,8 +68,8 @@ impl Feature {
         // TODO: this Result::Ok smells something bad
         Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
-                let gazetteer = HashSetGazetteer::new(file_configuration, arguments[0].get_gazetteer())?;
-                ::features::shared_scalar::has_gazetteer_hits(input, &gazetteer)
+                let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
+                ::features::shared_scalar::has_gazetteer_hits(input, gazetteer)
             }
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
@@ -75,7 +78,7 @@ impl Feature {
         })
     }
 
-    fn get_shared_vector(file_configuration: &FileConfiguration,
+    fn get_shared_vector(intent_config: &IntentConfig,
                          input: &PreprocessorResult,
                          feature_type: &Feature_Type,
                          arguments: &[Feature_Argument])
@@ -83,8 +86,8 @@ impl Feature {
         // TODO: Same as above
         Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
-                let gazetteer = HashSetGazetteer::new(file_configuration, arguments[0].get_gazetteer())?;
-                ::features::shared_vector::has_gazetteer_hits(input, &gazetteer)
+                let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
+                ::features::shared_vector::has_gazetteer_hits(input, gazetteer)
             }
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_vector::ngram_matcher(input, arguments[0].get_str())
@@ -140,10 +143,10 @@ mod test {
 
                 let result = feature_processor.compute_features(&preprocessor_result);
                 assert_eq!(result,
-                           create_transposed_array(&test.features),
-                           "for {:?}, input: {}",
-                           path.file_stem().unwrap(),
-                           &test.text);
+                create_transposed_array(&test.features),
+                "for {:?}, input: {}",
+                path.file_stem().unwrap(),
+                &test.text);
             }
         }
     }

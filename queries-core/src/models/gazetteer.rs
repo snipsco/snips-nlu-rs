@@ -3,11 +3,9 @@ use std::collections::HashSet;
 use std::fs::File;
 
 use errors::*;
-use serde_json::from_str;
+use serde_json::from_reader;
 
-use FileConfiguration;
-
-pub trait Gazetteer: Sized {
+pub trait Gazetteer {
     fn contains(&self, value: &str) -> bool;
 }
 
@@ -16,17 +14,8 @@ pub struct HashSetGazetteer {
 }
 
 impl HashSetGazetteer {
-    // TODO: To be improved
-    pub fn new(file_configuration: &FileConfiguration, gazetteer_name: &str) -> Result<HashSetGazetteer> {
-        let gazetteer_path = file_configuration.gazetteer_path(gazetteer_name);
-
-        HashSetGazetteer::from(&mut File::open(gazetteer_path)?)
-    }
-
-    pub fn from(r: &mut Read) -> Result<HashSetGazetteer> {
-        let mut s = String::new();
-        r.read_to_string(&mut s)?;
-        let vec: Vec<String> = from_str(&s)?;
+    pub fn new(r: &mut Read) -> Result<HashSetGazetteer> {
+        let vec: Vec<String> = from_reader(r)?;
         Ok(HashSetGazetteer { values: vec.iter().cloned().collect() }) // TODO: Check if clone is necessary
     }
 }
@@ -44,9 +33,8 @@ mod tests {
 
     #[test]
     fn gazetteer_work() {
-       let file_configuration = FileConfiguration::default();
-       let gazetteer_name = "action_verbs_infinitive";
+        let path = ::file_path("snips-sdk-gazetteers/gazetteers/action_verbs_infinitive.json");
 
-       assert!(HashSetGazetteer::new(&file_configuration, gazetteer_name).is_ok())
+        assert!(HashSetGazetteer::new(File::open(path)).is_ok())
     }
 }

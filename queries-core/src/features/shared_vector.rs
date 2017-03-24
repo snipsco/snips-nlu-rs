@@ -4,8 +4,8 @@ use yolo::Yolo;
 use preprocessing::PreprocessorResult;
 use models::gazetteer::Gazetteer;
 
-pub fn has_gazetteer_hits<T: Gazetteer>(preprocessor_result: &PreprocessorResult,
-                                        gazetteer: &T)
+pub fn has_gazetteer_hits(preprocessor_result: &PreprocessorResult,
+                                        gazetteer: Box<Gazetteer>)
                                         -> Vec<f32> {
     let mut result = vec![0.0; preprocessor_result.tokens.len()];
 

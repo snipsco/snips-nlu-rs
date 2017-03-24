@@ -1,10 +1,14 @@
 use std::fs;
+use std::path;
+use std::sync;
+
 
 use errors::*;
 use protobuf;
 use ndarray::prelude::*;
 
-use FileConfiguration;
+use config::IntentConfig;
+
 use protos::model_configuration::ModelConfiguration;
 use models::tf::{TensorFlowClassifier, Classifier};
 use preprocessing::PreprocessorResult;
@@ -16,33 +20,29 @@ pub trait IntentClassifier {
 }
 
 pub struct ProtobufIntentClassifier {
-    file_configuration: FileConfiguration,
-    model: ModelConfiguration,
+    intent_config: sync::Arc<Box<IntentConfig>>,
+    intent_model: ModelConfiguration,
+    classifier: TensorFlowClassifier,
 }
 
+// TODO merge code with protobuf tokens classifier
 impl ProtobufIntentClassifier {
-    pub fn new(file_configuration: &FileConfiguration, classifier_name: &str) -> Result<ProtobufIntentClassifier> {
-        let classifier_path = file_configuration.intent_classifier_path(classifier_name);
-        let mut model_file = fs::File::open(classifier_path)?;
-        let model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
+    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>, classifier_name: &str) -> Result<ProtobufIntentClassifier> {
+        let pb_config = intent_config.get_pb_config()?;
+        let model_path = path::Path::new(pb_config.get_intent_classifier_path());
+        let mut model_file = intent_config.get_file(model_path)?;
+        let intent_model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
 
-        Ok(ProtobufIntentClassifier { file_configuration: file_configuration.clone(), model: model })
+        let classifier = TensorFlowClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?);
+        Ok(ProtobufIntentClassifier { intent_config: intent_config.clone(), intent_model: intent_model, classifier: classifier? })
     }
 }
 
 impl IntentClassifier for ProtobufIntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability> {
-        let feature_processor = ProtobufMatrixFeatureProcessor::new(&self.file_configuration, &self.model.get_features());
+        let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(), &self.intent_model.get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
-
-
-        let classifier = TensorFlowClassifier::new(&self.file_configuration.intent_classifier_path(&self.model.get_model_path()));
-
-
-        //let classifier = panic!();
-            //LogisticRegression::new(self.model.get_arguments()[0].get_matrix().to_array2());
-        let probabilities = classifier?.run(&computed_features);
-
+        let probabilities = self.classifier.predict_proba(&computed_features.t());
         Ok(probabilities?[[0, 0]])
     }
 }
@@ -66,7 +66,7 @@ mod test {
     struct TestDescription {
         text: String,
         output: Vec<Vec<f32>>,
-//        features: Vec<Vec<f32>>,
+        //        features: Vec<Vec<f32>>,
     }
 
     #[test]
