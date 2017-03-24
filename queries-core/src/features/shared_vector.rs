@@ -94,6 +94,19 @@ pub fn contains_possessive(preprocessor_result: &PreprocessorResult) -> Vec<f32>
         .collect()
 }
 
+pub fn contains_digits(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
+    lazy_static! {
+        static ref DIGITS_REGEX: Regex = Regex::new(r"[0-9]").yolo();
+    }
+
+    let ref tokens = preprocessor_result.tokens;
+    tokens.iter()
+        .map(|t| {
+            if DIGITS_REGEX.is_match(&t.normalized_value) { 1.0 } else { 0.0 }
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod test {
     use std::ops::Range;
