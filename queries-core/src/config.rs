@@ -73,12 +73,12 @@ pub struct FileBasedIntentConfig {
 
 impl FileBasedIntentConfig {
     fn new(intent_dir: ::path::PathBuf, gazetteer_dir: ::path::PathBuf) -> Result<FileBasedIntentConfig> {
-        let mut csv_reader = csv::Reader::from_file(intent_dir.join("gazetteers.csv"))?;
+        let mut csv_reader = csv::Reader::from_file(intent_dir.join("gazetteers.csv"))?.has_headers(false);
         let mut mappings = HashMap::new();
 
-        for row in csv_reader.records() {
-            let row = row?;
-            mappings.insert(row[0].clone(), (row[1].clone(), row[2].clone()));
+        for row in csv_reader.decode() {
+            let (name, lang, version) = row?;
+            mappings.insert(name, (lang, version));
         }
 
         Ok(FileBasedIntentConfig {
@@ -95,10 +95,13 @@ impl IntentConfig for FileBasedIntentConfig {
     }
 
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>> {
-        let mapping = &self.gazetteer_mapping[name];
-        let path = &self.gazetteer_dir
-            .join(&mapping.0).join(format!("{}_{}.json", &name, &mapping.1));
-        Ok(Box::new(HashSetGazetteer::new(&mut File::open(path).map_err(|_| format!("Could not load Gazetteer {:?}", path))?)?))
+        if let Some(mapping) = self.gazetteer_mapping.get(name) {
+            let path = &self.gazetteer_dir
+                .join(&mapping.0).join(format!("{}_{}.json", &name, &mapping.1));
+            Ok(Box::new(HashSetGazetteer::new(&mut File::open(path).map_err(|_| format!("Could not load Gazetteer {:?}", path))?)?))
+        } else {
+            bail!("could not get gazetteer for name {}", name)
+        }
     }
 }
 
