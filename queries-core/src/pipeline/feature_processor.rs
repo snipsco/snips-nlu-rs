@@ -65,7 +65,6 @@ impl Feature {
                          feature_type: &Feature_Type,
                          arguments: &[Feature_Argument])
                          -> Result<Vec<f32>> {
-        // TODO: this Result::Ok smells something bad
         Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
                 let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
@@ -83,7 +82,6 @@ impl Feature {
                          feature_type: &Feature_Type,
                          arguments: &[Feature_Argument])
                          -> Result<Vec<f32>> {
-        // TODO: Same as above
         Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
                 let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
@@ -94,6 +92,15 @@ impl Feature {
             }
             Feature_Type::IS_CAPITALIZED => {
                 ::features::shared_vector::is_capitalized(input)
+            }
+            Feature_Type::IS_FIRST_WORD => {
+                ::features::shared_vector::is_first_word(input)
+            }
+            Feature_Type::IS_LAST_WORD => {
+                ::features::shared_vector::is_last_word(input)
+            }
+            Feature_Type::CONTAINS_POSSESSIVE => {
+                ::features::shared_vector::contains_possessive(input)
             }
             feature_type => panic!("Feature functions not implemented: {:?}", feature_type)
         })
