@@ -19,7 +19,6 @@ extern crate yolo;
 extern crate csv;
 
 use std::cmp::Ordering;
-use std::fs;
 use std::path;
 use std::sync;
 use std::collections::HashMap;
@@ -38,7 +37,6 @@ pub use preprocessing::preprocess;
 pub use errors::*;
 
 use config::AssistantConfig;
-use config::IntentConfig;
 
 #[cfg(test)]
 mod testutils;

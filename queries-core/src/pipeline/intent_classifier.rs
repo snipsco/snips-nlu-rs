@@ -1,14 +1,10 @@
-use std::fs;
 use std::path;
 use std::sync;
 
-
 use errors::*;
 use protobuf;
-use ndarray::prelude::*;
 
 use config::IntentConfig;
-
 use protos::model_configuration::ModelConfiguration;
 use models::tf::{TensorFlowClassifier, Classifier};
 use preprocessing::PreprocessorResult;
@@ -27,7 +23,7 @@ pub struct ProtobufIntentClassifier {
 
 // TODO merge code with protobuf tokens classifier
 impl ProtobufIntentClassifier {
-    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>, classifier_name: &str) -> Result<ProtobufIntentClassifier> {
+    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>) -> Result<ProtobufIntentClassifier> {
         let pb_config = intent_config.get_pb_config()?;
         let model_path = path::Path::new(pb_config.get_intent_classifier_path());
         let mut model_file = intent_config.get_file(model_path)?;

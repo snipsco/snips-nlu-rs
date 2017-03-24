@@ -1,6 +1,5 @@
 use std::io::prelude::*;
 use std::collections::HashSet;
-use std::fs::File;
 
 use errors::*;
 use serde_json::from_reader;

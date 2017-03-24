@@ -1,4 +1,3 @@
-use std::fs;
 use std::path;
 use std::sync;
 
@@ -27,7 +26,7 @@ pub struct ProtobufTokensClassifier {
 
 // TODO merge code with protobuf intent classifier
 impl ProtobufTokensClassifier {
-    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>, intent_model_name: &str) -> Result<ProtobufTokensClassifier> {
+    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>) -> Result<ProtobufTokensClassifier> {
         let pb_config = intent_config.get_pb_config()?;
         let model_path = path::Path::new(pb_config.get_tokens_classifier_path());
         let mut model_file = intent_config.get_file(model_path)?;
