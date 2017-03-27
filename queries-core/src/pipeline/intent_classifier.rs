@@ -32,13 +32,19 @@ impl ProtobufIntentClassifier {
         let classifier = TensorFlowClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?,
                                                    intent_model.get_input_node().to_string(),
                                                    intent_model.get_output_node().to_string());
-        Ok(ProtobufIntentClassifier { intent_config: intent_config.clone(), intent_model: intent_model, classifier: classifier? })
+        Ok(ProtobufIntentClassifier {
+            intent_config: intent_config.clone(),
+            intent_model: intent_model,
+            classifier: classifier?,
+        })
     }
 }
 
 impl IntentClassifier for ProtobufIntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability> {
-        let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(), &self.intent_model.get_features());
+        let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(),
+                                                                    &self.intent_model
+                                                                        .get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
         let probabilities = self.classifier.predict_proba(&computed_features.t());
         Ok(probabilities?[[0, 0]])
@@ -63,7 +69,7 @@ mod test {
     #[derive(Deserialize)]
     struct TestDescription {
         text: String,
-        output: Vec<Vec<f32>>,
+        output: Vec<Vec<f32>>, 
         //        features: Vec<Vec<f32>>,
     }
 
@@ -72,14 +78,17 @@ mod test {
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn intent_classifier_works() {
         let file_configuration = FileConfiguration::default();
-        let paths = fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/")).unwrap();
+        let paths =
+            fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/"))
+                .unwrap();
 
         for path in paths {
             let path = path.unwrap().path();
             let tests: Vec<TestDescription> = parse_json(path.to_str().unwrap());
 
             let model_name = path.file_stem().unwrap().to_str().unwrap();
-            let intent_classifier = ProtobufIntentClassifier::new(&file_configuration, model_name).unwrap();
+            let intent_classifier = ProtobufIntentClassifier::new(&file_configuration, model_name)
+                .unwrap();
 
             for test in tests {
                 let preprocess_result = preprocess(&test.text);

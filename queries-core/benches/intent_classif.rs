@@ -37,9 +37,10 @@ macro_rules! run_classifier {
 }
 
 load_classifier!(load_book_restaurant, "BookRestaurant");
-run_classifier!(run_book_restaurant_coinstot, "BookRestaurant",
-    "Book me a table at Coinsto Vino");
+run_classifier!(run_book_restaurant_coinstot,
+                "BookRestaurant",
+                "Book me a table at Coinsto Vino");
 
 benchmark_group!(load, load_book_restaurant);
 benchmark_group!(run, run_book_restaurant_coinstot);
-benchmark_main!(load,run);
+benchmark_main!(load, run);
