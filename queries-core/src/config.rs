@@ -8,17 +8,19 @@ use csv;
 use errors::*;
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
 use protobuf;
+use protos::intent_configuration::IntentConfiguration;
 
 pub trait AssistantConfig {
     fn get_available_intents_names(&self) -> Result<Vec<String>>;
     fn get_intent_configuration(&self, name: &str) -> Result<Box<IntentConfig>>;
 }
 
-pub trait IntentConfig  {
+pub trait IntentConfig {
     fn get_file(&self, file_name: &path::Path) -> Result<Box<Read>>;
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>>;
-    fn get_pb_config(&self) -> Result<::protos::intent_configuration::IntentConfiguration> {
-        Ok(protobuf::parse_from_reader::<::protos::intent_configuration::IntentConfiguration>(&mut Self::get_file(&self, path::Path::new("config.pb"))?)?)
+    fn get_pb_config(&self) -> Result<IntentConfiguration> {
+        let reader = &mut Self::get_file(&self, path::Path::new("config.pb"))?;
+        Ok(protobuf::parse_from_reader::<IntentConfiguration>(reader)?)
     }
 }
 
@@ -57,19 +59,22 @@ impl AssistantConfig for FileBasedAssistantConfig {
 
     fn get_intent_configuration(&self, name: &str) -> Result<Box<IntentConfig>> {
         Ok(Box::new(FileBasedIntentConfig::new(self.intents_dir.join(name),
-                                   self.gazetteers_dir.clone())?))
+                                               self.gazetteers_dir.clone())?))
     }
 }
 
 pub struct FileBasedIntentConfig {
-    intent_dir: ::path::PathBuf,
-    gazetteer_dir: ::path::PathBuf,
+    intent_dir: path::PathBuf,
+    gazetteer_dir: path::PathBuf,
     gazetteer_mapping: HashMap<String, (String, String)> /* name -> (lang, version)*/,
 }
 
 impl FileBasedIntentConfig {
-    fn new(intent_dir: ::path::PathBuf, gazetteer_dir: ::path::PathBuf) -> Result<FileBasedIntentConfig> {
-        let mut csv_reader = csv::Reader::from_file(intent_dir.join("gazetteers.csv"))?.has_headers(false);
+    fn new(intent_dir: path::PathBuf, gazetteer_dir: path::PathBuf) -> Result<FileBasedIntentConfig> {
+        let gazetteers_file = &intent_dir.join("gazetteers.csv");
+        let mut csv_reader = csv::Reader::from_file(gazetteers_file)
+            .map_err(|_| format!("Could not open gazetteers file : '{:?}'", gazetteers_file))?
+            .has_headers(false);
         let mut mappings = HashMap::new();
 
         for row in csv_reader.decode() {
@@ -87,14 +92,18 @@ impl FileBasedIntentConfig {
 
 impl IntentConfig for FileBasedIntentConfig {
     fn get_file(&self, file_name: &path::Path) -> Result<Box<Read>> {
-        Ok(Box::new(File::open(&self.intent_dir.join(file_name))?))
+        let path = &self.intent_dir.join(file_name);
+        let file = File::open(path)
+            .map_err(|_| format!("Could not open file '{:?}'", path));
+        Ok(Box::new(file?))
     }
 
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>> {
         if let Some(mapping) = self.gazetteer_mapping.get(name) {
             let path = &self.gazetteer_dir
                 .join(&mapping.0).join(format!("{}_{}.json", &name, &mapping.1));
-            let mut file = File::open(path).map_err(|_| format!("Could not load Gazetteer {:?}", path))?;
+            let mut file = File::open(path)
+                .map_err(|_| format!("Could not load Gazetteer from file '{:?}'", path))?;
             Ok(Box::new(HashSetGazetteer::new(&mut file)?))
         } else {
             bail!("could not get gazetteer for name {}", name)
