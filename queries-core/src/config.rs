@@ -66,11 +66,13 @@ impl AssistantConfig for FileBasedAssistantConfig {
 pub struct FileBasedIntentConfig {
     intent_dir: path::PathBuf,
     gazetteer_dir: path::PathBuf,
-    gazetteer_mapping: HashMap<String, (String, String)> /* name -> (lang, version)*/,
+    gazetteer_mapping: HashMap<String, (String, String)>, /* name -> (lang, version)*/
 }
 
 impl FileBasedIntentConfig {
-    fn new(intent_dir: path::PathBuf, gazetteer_dir: path::PathBuf) -> Result<FileBasedIntentConfig> {
+    fn new(intent_dir: path::PathBuf,
+           gazetteer_dir: path::PathBuf)
+           -> Result<FileBasedIntentConfig> {
         let gazetteers_file = &intent_dir.join("gazetteers.csv");
         let mut csv_reader = csv::Reader::from_file(gazetteers_file)
             .map_err(|_| format!("Could not open gazetteers file : '{:?}'", gazetteers_file))?
@@ -93,15 +95,15 @@ impl FileBasedIntentConfig {
 impl IntentConfig for FileBasedIntentConfig {
     fn get_file(&self, file_name: &path::Path) -> Result<Box<Read>> {
         let path = &self.intent_dir.join(file_name);
-        let file = File::open(path)
-            .map_err(|_| format!("Could not open file '{:?}'", path));
+        let file = File::open(path).map_err(|_| format!("Could not open file '{:?}'", path));
         Ok(Box::new(file?))
     }
 
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>> {
         if let Some(mapping) = self.gazetteer_mapping.get(name) {
             let path = &self.gazetteer_dir
-                .join(&mapping.0).join(format!("{}_{}.json", &name, &mapping.1));
+                .join(&mapping.0)
+                .join(format!("{}_{}.json", &name, &mapping.1));
             let mut file = File::open(path)
                 .map_err(|_| format!("Could not load Gazetteer from file '{:?}'", path))?;
             Ok(Box::new(HashSetGazetteer::new(&mut file)?))
@@ -110,4 +112,3 @@ impl IntentConfig for FileBasedIntentConfig {
         }
     }
 }
-

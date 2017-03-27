@@ -1,6 +1,9 @@
 use ndarray::prelude::*;
 
-pub fn compute_slots(tokens: &[&str], num_slots: usize, token_probabilities: &Array1<usize>) -> Vec<String> {
+pub fn compute_slots(tokens: &[&str],
+                     num_slots: usize,
+                     token_probabilities: &Array1<usize>)
+                     -> Vec<String> {
     let mut data: Vec<Vec<String>> = vec![vec![]; num_slots];
 
     for (i, token) in tokens.iter().enumerate() {
@@ -20,10 +23,8 @@ mod test {
     #[test]
     fn slot_filler_works() {
         let tokens = vec!["book", "me", "a", "restaurant"];
-        let tokens_probabilities = arr2(&[[0.1, 1.4, 0.3],
-            [0.6, 0.5, 0.4],
-            [0.7, 0.8, 0.9],
-            [1.2, 1.1, 1.0]]);
+        let tokens_probabilities =
+            arr2(&[[0.1, 1.4, 0.3], [0.6, 0.5, 0.4], [0.7, 0.8, 0.9], [1.2, 1.1, 1.0]]);
 
         let expected = vec!["me restaurant", "book", "a"];
         let slots = compute_slots(&tokens, &tokens_probabilities);

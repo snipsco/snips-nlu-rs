@@ -8,7 +8,7 @@ extern crate error_chain;
 extern crate serde_json;
 
 use std::ffi::{CStr, CString};
-use std::sync::{Mutex};
+use std::sync::Mutex;
 
 use libc::c_char;
 use libc::c_float;
@@ -125,8 +125,7 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
     QUERIESRESULT::OK
 }
 
-fn create(root_dir: *const libc::c_char,
-          client: *mut *mut Opaque) -> Result<()> {
+fn create(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
     let file_configuration = queries_core::config::FileBasedAssistantConfig::new(root_dir);
@@ -141,7 +140,8 @@ fn create(root_dir: *const libc::c_char,
 fn run_intent_classification(client: *mut Opaque,
                              input: *const c_char,
                              probability_threshold: c_float,
-                             result_json: *mut *mut c_char) -> Result<()> {
+                             result_json: *mut *mut c_char)
+                             -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 
@@ -153,7 +153,8 @@ fn run_intent_classification(client: *mut Opaque,
 fn run_tokens_classification(client: *mut Opaque,
                              input: *const c_char,
                              intent_name: *const c_char,
-                             result_json: *mut *mut c_char) -> Result<()> {
+                             result_json: *mut *mut c_char)
+                             -> Result<()> {
     let input = get_str!(input);
     let intent_name = get_str!(intent_name);
     let intent_parser = get_intent_parser!(client);

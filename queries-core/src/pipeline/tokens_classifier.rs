@@ -42,13 +42,19 @@ impl ProtobufTokensClassifier {
                                                intent_model.get_output_node().to_string())?)
         };
 
-        Ok(ProtobufTokensClassifier { intent_config: intent_config.clone(), intent_model: intent_model, classifier: classifier })
+        Ok(ProtobufTokensClassifier {
+            intent_config: intent_config.clone(),
+            intent_model: intent_model,
+            classifier: classifier,
+        })
     }
 }
 
 impl TokensClassifier for ProtobufTokensClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array1<usize>> {
-        let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(), self.intent_model.get_features());
+        let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(),
+                                                                    self.intent_model
+                                                                        .get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
         Ok(self.classifier.predict(&computed_features.t())?)
     }
@@ -68,9 +74,11 @@ mod test {
         let model_name = "BookRestaurant_features";
         let cnn_name = "BookRestaurant_model";
 
-        let preprocessor_result = preprocess("Book me a table for two people at Le Chalet Savoyard");
+        let preprocessor_result = preprocess("Book me a table for two people at Le Chalet \
+                                              Savoyard");
 
-        let tokens_classifier = ProtobufTokensClassifier::new(&file_configuration, model_name).unwrap();
+        let tokens_classifier = ProtobufTokensClassifier::new(&file_configuration, model_name)
+            .unwrap();
         let probabilities = tokens_classifier.run(&preprocessor_result);
 
         println!("probabilities: {:?}", probabilities);

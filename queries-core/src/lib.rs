@@ -78,8 +78,12 @@ impl IntentParser {
         Ok(IntentParser { classifiers: classifiers })
     }
 
-    pub fn run_intent_classifiers(&self, input: &str, probability_threshold: f32) -> Vec<IntentClassifierResult> {
-        assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "it's a developer error to pass a probability_threshold between 0.0 and 1.0");
+    pub fn run_intent_classifiers(&self,
+                                  input: &str,
+                                  probability_threshold: f32)
+                                  -> Vec<IntentClassifierResult> {
+        assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0,
+                "it's a developer error to pass a probability_threshold between 0.0 and 1.0");
 
         let preprocessor_result = preprocess(input);
 
@@ -88,7 +92,10 @@ impl IntentParser {
             .map(|(name, intent_configuration)| {
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
                 // TODO remove this YOLO
-                IntentClassifierResult { name: name.to_string(), probability: probability.yolo() }
+                IntentClassifierResult {
+                    name: name.to_string(),
+                    probability: probability.yolo(),
+                }
             })
             .filter(|result| result.probability >= probability_threshold)
             .collect();
@@ -100,13 +107,17 @@ impl IntentParser {
         probabilities
     }
 
-    pub fn run_tokens_classifier(&self, input: &str, intent_name: &str) -> Result<HashMap<String, String>> {
+    pub fn run_tokens_classifier(&self,
+                                 input: &str,
+                                 intent_name: &str)
+                                 -> Result<HashMap<String, String>> {
         let preprocessor_result = preprocess(input);
 
         let intent_configuration = self.classifiers.get(intent_name).ok_or("intent not found")?; // TODO: Should be my own error set ?
         let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
 
-        let token_values = preprocessor_result.tokens.iter().map(|token| &*token.value).collect_vec();
+        let token_values =
+            preprocessor_result.tokens.iter().map(|token| &*token.value).collect_vec();
 
 
 

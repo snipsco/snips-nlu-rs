@@ -17,10 +17,12 @@ pub struct ProtobufMatrixFeatureProcessor<'a> {
 }
 
 impl<'a> ProtobufMatrixFeatureProcessor<'a> {
-    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>, features: &'a [Feature]) -> ProtobufMatrixFeatureProcessor<'a> {
+    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>,
+               features: &'a [Feature])
+               -> ProtobufMatrixFeatureProcessor<'a> {
         ProtobufMatrixFeatureProcessor {
             intent_config: intent_config,
-            feature_functions: features
+            feature_functions: features,
         }
     }
 }
@@ -43,7 +45,10 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 }
 
 impl Feature {
-    fn compute(&self, intent_config: &IntentConfig, input: &PreprocessorResult) -> Result<Vec<f32>> {
+    fn compute(&self,
+               intent_config: &IntentConfig,
+               input: &PreprocessorResult)
+               -> Result<Vec<f32>> {
         let known_domain = self.get_domain();
         let feature_type = self.field_type;
         let arguments = self.get_arguments();
@@ -72,9 +77,10 @@ impl Feature {
                 ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
             Feature_Type::GET_MESSAGE_LENGTH => {
-                ::features::shared_scalar::get_message_length(input, arguments[0].get_scalar() as f32)
+                ::features::shared_scalar::get_message_length(input,
+                                                              arguments[0].get_scalar() as f32)
             }
-            feature_type => panic!("Feature function not implemented: {:?}", feature_type)
+            feature_type => panic!("Feature function not implemented: {:?}", feature_type),
         })
     }
 
@@ -91,22 +97,14 @@ impl Feature {
             Feature_Type::NGRAM_MATCHER => {
                 ::features::shared_vector::ngram_matcher(input, arguments[0].get_str())
             }
-            Feature_Type::IS_CAPITALIZED => {
-                ::features::shared_vector::is_capitalized(input)
-            }
-            Feature_Type::IS_FIRST_WORD => {
-                ::features::shared_vector::is_first_word(input)
-            }
-            Feature_Type::IS_LAST_WORD => {
-                ::features::shared_vector::is_last_word(input)
-            }
+            Feature_Type::IS_CAPITALIZED => ::features::shared_vector::is_capitalized(input),
+            Feature_Type::IS_FIRST_WORD => ::features::shared_vector::is_first_word(input),
+            Feature_Type::IS_LAST_WORD => ::features::shared_vector::is_last_word(input),
             Feature_Type::CONTAINS_POSSESSIVE => {
                 ::features::shared_vector::contains_possessive(input)
             }
-            Feature_Type::CONTAINS_DIGITS => {
-                ::features::shared_vector::contains_digits(input)
-            }
-            feature_type => panic!("Feature functions not implemented: {:?}", feature_type)
+            Feature_Type::CONTAINS_DIGITS => ::features::shared_vector::contains_digits(input),
+            feature_type => panic!("Feature functions not implemented: {:?}", feature_type),
         })
     }
 }
@@ -138,7 +136,9 @@ mod test {
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn feature_processor_works() {
         let file_configuration = FileConfiguration::default();
-        let paths = fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/")).unwrap();
+        let paths =
+            fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/"))
+                .unwrap();
 
         for path in paths {
             let path = path.unwrap().path();
@@ -150,14 +150,15 @@ mod test {
 
             for test in tests {
                 let preprocessor_result = preprocess(&test.text);
-                let feature_processor = ProtobufMatrixFeatureProcessor::new(&file_configuration, &model.get_features());
+                let feature_processor = ProtobufMatrixFeatureProcessor::new(&file_configuration,
+                                                                            &model.get_features());
 
                 let result = feature_processor.compute_features(&preprocessor_result);
                 assert_eq!(result,
-                create_transposed_array(&test.features),
-                "for {:?}, input: {}",
-                path.file_stem().unwrap(),
-                &test.text);
+                           create_transposed_array(&test.features),
+                           "for {:?}, input: {}",
+                           path.file_stem().unwrap(),
+                           &test.text);
             }
         }
     }

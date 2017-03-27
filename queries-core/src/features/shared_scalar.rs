@@ -2,8 +2,8 @@ use preprocessing::PreprocessorResult;
 use models::gazetteer::Gazetteer;
 
 pub fn has_gazetteer_hits(preprocessor_result: &PreprocessorResult,
-                                        gazetteer: Box<Gazetteer>)
-                                        -> Vec<f32> {
+                          gazetteer: Box<Gazetteer>)
+                          -> Vec<f32> {
     match preprocessor_result.normalized_ngrams.iter().find(|ngram| gazetteer.contains(&ngram.0)) {
         Some(_) => vec![1.0],
         None => vec![0.0],
@@ -17,7 +17,9 @@ pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &
     }
 }
 
-pub fn get_message_length(preprocessor_result: &PreprocessorResult, normalization: f32) -> Vec<f32> {
+pub fn get_message_length(preprocessor_result: &PreprocessorResult,
+                          normalization: f32)
+                          -> Vec<f32> {
     vec![preprocessor_result.raw.chars().count() as f32 / normalization]
 }
 
@@ -30,7 +32,7 @@ mod test {
     use super::ngram_matcher;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
-    use models::gazetteer::{HashSetGazetteer};
+    use models::gazetteer::HashSetGazetteer;
     use testutils::parse_json;
     use FileConfiguration;
 
@@ -115,20 +117,26 @@ mod test {
         }
     }
 
-    fn has_gazetteer_hits_works(file_configuration: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
+    fn has_gazetteer_hits_works(file_configuration: &FileConfiguration,
+                                test: &TestDescription,
+                                normalized_tokens: Vec<NormalizedToken>) {
         let preprocessor_result = PreprocessorResult::new(normalized_tokens);
         let gazetteer = HashSetGazetteer::new(file_configuration, &*test.args[0].value).unwrap();
         let result = has_gazetteer_hits(&preprocessor_result, &gazetteer);
         assert_eq!(result, vec![test.output])
     }
 
-    fn ngram_matcher_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
+    fn ngram_matcher_works(_: &FileConfiguration,
+                           test: &TestDescription,
+                           normalized_tokens: Vec<NormalizedToken>) {
         let preprocessor_result = PreprocessorResult::new(normalized_tokens);
         let result = ngram_matcher(&preprocessor_result, &test.args[0].value);
         assert_eq!(result, vec![test.output])
     }
 
-    fn get_message_length_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
+    fn get_message_length_works(_: &FileConfiguration,
+                                test: &TestDescription,
+                                normalized_tokens: Vec<NormalizedToken>) {
         let preprocessor_result = PreprocessorResult::new(normalized_tokens);
         let result = get_message_length(&preprocessor_result, &test.args[0].value.parse().unwrap());
         assert_eq!(result, vec![test.output])

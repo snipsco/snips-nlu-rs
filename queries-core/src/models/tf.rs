@@ -37,10 +37,12 @@ pub trait Classifier {
         let x = array_to_tensor(features)?;
         let result: Result<Tensor<f32>> = {
             let mut step = StepWithGraph::new();
-            let mut locked = self.state().lock().map_err(|_| "Can not take lock on TensorFlow. Mutex poisoned")?;
+            let mut locked =
+                self.state().lock().map_err(|_| "Can not take lock on TensorFlow. Mutex poisoned")?;
             let (ref mut session, ref graph) = *locked;
             step.add_input(&graph.operation_by_name_required(self.input_node())?, 0, &x);
-            let res = step.request_output(&graph.operation_by_name_required(self.output_node())?, 0);
+            let res =
+                step.request_output(&graph.operation_by_name_required(self.output_node())?, 0);
 
             session.run(&mut step)?;
 
@@ -70,7 +72,9 @@ fn tensor_to_array(tensor: &Tensor<f32>) -> Result<Array2<f32>> {
     Ok(array)
 }
 
-fn viterbi_decode(unary_potentials: &Array2<f32>, transition_matrix: &Array2<f32>) -> Result<Array1<usize>> {
+fn viterbi_decode(unary_potentials: &Array2<f32>,
+                  transition_matrix: &Array2<f32>)
+                  -> Result<Array1<usize>> {
     let num_samples = unary_potentials.rows();
     let num_classes = unary_potentials.cols();
 
@@ -116,7 +120,10 @@ fn viterbi_decode(unary_potentials: &Array2<f32>, transition_matrix: &Array2<f32
 }
 
 impl TensorFlowClassifier {
-    pub fn new(model: &mut Read, input_node_name: String, output_node_name: String) -> Result<TensorFlowClassifier> {
+    pub fn new(model: &mut Read,
+               input_node_name: String,
+               output_node_name: String)
+               -> Result<TensorFlowClassifier> {
         let mut graph = Graph::new();
         let mut proto = Vec::new();
         model.read_to_end(&mut proto)?;
@@ -127,7 +134,7 @@ impl TensorFlowClassifier {
         Ok(TensorFlowClassifier {
             state: sync::Mutex::new((session, graph)),
             input_node_name: input_node_name,
-            output_node_name: output_node_name
+            output_node_name: output_node_name,
         })
     }
 }
@@ -138,7 +145,9 @@ impl Classifier for TensorFlowClassifier {
         let num_classes = logits.cols();
         if num_classes > 1 {
             for mut row in logits.outer_iter_mut() {
-                let max = *(row.iter().max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less)).unwrap());
+                let max = *(row.iter()
+                    .max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less))
+                    .unwrap());
                 for value in row.iter_mut() {
                     *value = (*value - max).exp()
                 }
@@ -191,7 +200,12 @@ impl Classifier for TensorFlowClassifier {
 }
 
 impl TensorFlowCRFClassifier {
-    pub fn new(model: &mut Read, num_classes: u32, input_node_name: String, output_node_name: String, transition_matrix_node_name: &str) -> Result<TensorFlowCRFClassifier> {
+    pub fn new(model: &mut Read,
+               num_classes: u32,
+               input_node_name: String,
+               output_node_name: String,
+               transition_matrix_node_name: &str)
+               -> Result<TensorFlowCRFClassifier> {
         let mut graph = Graph::new();
         let mut proto = Vec::new();
         model.read_to_end(&mut proto)?;
@@ -259,7 +273,7 @@ mod test {
     use ndarray::prelude::*;
 
     use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier, Classifier};
-    use ::FileConfiguration;
+    use FileConfiguration;
 
     #[test]
     fn tf_classifier_1col_works() {
