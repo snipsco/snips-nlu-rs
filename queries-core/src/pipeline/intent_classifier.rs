@@ -28,8 +28,9 @@ impl ProtobufIntentClassifier {
         let model_path = path::Path::new(pb_config.get_intent_classifier_path());
         let mut model_file = intent_config.get_file(model_path)?;
         let intent_model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
-
-        let classifier = TensorFlowClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?,
+        let tf_model =
+            &mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?;
+        let classifier = TensorFlowClassifier::new(tf_model,
                                                    intent_model.get_input_node().to_string(),
                                                    intent_model.get_output_node().to_string());
         Ok(ProtobufIntentClassifier {
@@ -69,8 +70,7 @@ mod test {
     #[derive(Deserialize)]
     struct TestDescription {
         text: String,
-        output: Vec<Vec<f32>>, 
-        //        features: Vec<Vec<f32>>,
+        output: Vec<Vec<f32>>,
     }
 
     #[test]

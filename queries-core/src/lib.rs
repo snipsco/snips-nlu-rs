@@ -71,7 +71,8 @@ impl IntentParser {
         let mut classifiers = HashMap::new();
 
         for ref c in assistant_config.get_available_intents_names()? {
-            let intent = IntentConfiguration::new(sync::Arc::new(assistant_config.get_intent_configuration(c)?))?;
+            let intent_config = sync::Arc::new(assistant_config.get_intent_configuration(c)?);
+            let intent = IntentConfiguration::new(intent_config)?;
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
 
@@ -113,7 +114,9 @@ impl IntentParser {
                                  -> Result<HashMap<String, String>> {
         let preprocessor_result = preprocess(input);
 
-        let intent_configuration = self.classifiers.get(intent_name).ok_or("intent not found")?; // TODO: Should be my own error set ?
+        let intent_configuration = self.classifiers
+            .get(intent_name)
+            .ok_or(format!("intent {:?} not found", intent_name))?;
         let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
 
         let token_values =

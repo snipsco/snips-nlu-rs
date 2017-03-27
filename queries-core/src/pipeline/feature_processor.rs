@@ -7,6 +7,8 @@ use protos::feature::{Feature, Feature_Type, Feature_Domain, Feature_Argument};
 
 use config::IntentConfig;
 
+use features::{shared_scalar, shared_vector};
+
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
 }
@@ -71,14 +73,15 @@ impl Feature {
         Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
                 let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
-                ::features::shared_scalar::has_gazetteer_hits(input, gazetteer)
+                shared_scalar::has_gazetteer_hits(input, gazetteer)
             }
             Feature_Type::NGRAM_MATCHER => {
-                ::features::shared_scalar::ngram_matcher(input, arguments[0].get_str())
+                let ngram_to_check = arguments[0].get_str();
+                shared_scalar::ngram_matcher(input, ngram_to_check)
             }
             Feature_Type::GET_MESSAGE_LENGTH => {
-                ::features::shared_scalar::get_message_length(input,
-                                                              arguments[0].get_scalar() as f32)
+                let normalization = arguments[0].get_scalar() as f32;
+                shared_scalar::get_message_length(input, normalization)
             }
             feature_type => panic!("Feature function not implemented: {:?}", feature_type),
         })
@@ -92,18 +95,17 @@ impl Feature {
         Ok(match *feature_type {
             Feature_Type::HAS_GAZETTEER_HITS => {
                 let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
-                ::features::shared_vector::has_gazetteer_hits(input, gazetteer)
+                shared_vector::has_gazetteer_hits(input, gazetteer)
             }
             Feature_Type::NGRAM_MATCHER => {
-                ::features::shared_vector::ngram_matcher(input, arguments[0].get_str())
+                let ngram_to_check = arguments[0].get_str();
+                shared_vector::ngram_matcher(input, ngram_to_check)
             }
-            Feature_Type::IS_CAPITALIZED => ::features::shared_vector::is_capitalized(input),
-            Feature_Type::IS_FIRST_WORD => ::features::shared_vector::is_first_word(input),
-            Feature_Type::IS_LAST_WORD => ::features::shared_vector::is_last_word(input),
-            Feature_Type::CONTAINS_POSSESSIVE => {
-                ::features::shared_vector::contains_possessive(input)
-            }
-            Feature_Type::CONTAINS_DIGITS => ::features::shared_vector::contains_digits(input),
+            Feature_Type::IS_CAPITALIZED => shared_vector::is_capitalized(input),
+            Feature_Type::IS_FIRST_WORD => shared_vector::is_first_word(input),
+            Feature_Type::IS_LAST_WORD => shared_vector::is_last_word(input),
+            Feature_Type::CONTAINS_POSSESSIVE => shared_vector::contains_possessive(input),
+            Feature_Type::CONTAINS_DIGITS => shared_vector::contains_digits(input),
             feature_type => panic!("Feature functions not implemented: {:?}", feature_type),
         })
     }
