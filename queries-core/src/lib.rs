@@ -30,7 +30,6 @@ use pipeline::Probability;
 use pipeline::intent_classifier::IntentClassifier;
 use pipeline::tokens_classifier::TokensClassifier;
 use pipeline::slot_filler::compute_slots;
-use yolo::Yolo;
 
 pub use preprocessing::preprocess;
 pub use errors::*;
@@ -84,7 +83,7 @@ impl IntentParser {
                                   probability_threshold: f32)
                                   -> Vec<IntentClassifierResult> {
         assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0,
-                "it's a developer error to pass a probability_threshold between 0.0 and 1.0");
+        "it's a developer error to pass a probability_threshold between 0.0 and 1.0");
 
         let preprocessor_result = preprocess(input);
 
@@ -92,10 +91,12 @@ impl IntentParser {
             .par_iter()
             .map(|(name, intent_configuration)| {
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
-                // TODO remove this YOLO
                 IntentClassifierResult {
                     name: name.to_string(),
-                    probability: probability.yolo(),
+                    probability: probability.unwrap_or_else(|e| {
+                        println!("could not run intent classifier for {} : {:?}", name, e);
+                        -1.0
+                    }),
                 }
             })
             .filter(|result| result.probability >= probability_threshold)
@@ -121,8 +122,6 @@ impl IntentParser {
 
         let token_values =
             preprocessor_result.tokens.iter().map(|token| &*token.value).collect_vec();
-
-
 
         let slot_names = &intent_configuration.slot_names;
 
