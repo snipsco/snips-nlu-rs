@@ -29,15 +29,16 @@ impl ProtobufTokensClassifier {
         let model_path = path::Path::new(pb_config.get_tokens_classifier_path());
         let mut model_file = intent_config.get_file(model_path)?;
         let intent_model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
-
+        let tf_model =
+            &mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?;
         let classifier: Box<Classifier> = if intent_model.has_crf {
-            Box::new(TensorFlowCRFClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?,
+            Box::new(TensorFlowCRFClassifier::new(tf_model,
                                                   pb_config.get_slots().len() as u32,
                                                   intent_model.get_input_node().to_string(),
                                                   intent_model.get_output_node().to_string(),
                                                   intent_model.get_transition_matrix_node())?)
         } else {
-            Box::new(TensorFlowClassifier::new(&mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?,
+            Box::new(TensorFlowClassifier::new(tf_model,
                                                intent_model.get_input_node().to_string(),
                                                intent_model.get_output_node().to_string())?)
         };

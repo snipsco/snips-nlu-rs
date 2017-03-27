@@ -215,7 +215,8 @@ impl TensorFlowCRFClassifier {
 
         let result: Result<Tensor<f32>> = {
             let mut step = StepWithGraph::new();
-            let res = step.request_output(&graph.operation_by_name_required(transition_matrix_node_name)?, 0);
+            let node = &graph.operation_by_name_required(transition_matrix_node_name)?;
+            let res = step.request_output(node, 0);
 
             session.run(&mut step)?;
 
