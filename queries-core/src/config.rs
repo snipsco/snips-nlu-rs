@@ -45,13 +45,15 @@ impl AssistantConfig for FileBasedAssistantConfig {
 
         let mut available_intents = vec![];
 
-        // TODO: kill those unwrap
         for entry in entries {
-            let entry = entry.unwrap();
+            let entry = entry?;
             let path = entry.path();
-            let stem = path.file_stem().unwrap();
-            let result = stem.to_str().unwrap();
-            available_intents.push(result.to_string());
+            if path.is_dir() {
+                let intent_name = path.file_name()
+                    .and_then(|it| it.to_str())
+                    .ok_or(format!("invalid unicode in '{:?}'", path))?;
+                available_intents.push(intent_name.to_string())
+            }
         }
 
         Ok(available_intents)
@@ -66,7 +68,8 @@ impl AssistantConfig for FileBasedAssistantConfig {
 pub struct FileBasedIntentConfig {
     intent_dir: path::PathBuf,
     gazetteer_dir: path::PathBuf,
-    gazetteer_mapping: HashMap<String, (String, String)>, /* name -> (lang, version)*/
+    /* name -> (lang, version)*/
+    gazetteer_mapping: HashMap<String, (String, String)>,
 }
 
 impl FileBasedIntentConfig {
