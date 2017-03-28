@@ -297,10 +297,11 @@ mod test {
                      Classifier,
                      viterbi_decode};
     use testutils::{epsilon_eq, assert_epsilon_eq};
+    use ::file_path;
 
     #[test]
     fn tf_classifier_run_works() {
-        let filename = "../data/tests/models/tf/graph_multiclass_logistic_regression.pb";
+        let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
         let model = TensorFlowClassifier::new(&mut model_file,
@@ -325,7 +326,7 @@ mod test {
 
     #[test]
     fn tf_classifier_predict_proba_works() {
-        let filename = "../data/tests/models/tf/graph_multiclass_logistic_regression.pb";
+        let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
         let model = TensorFlowClassifier::new(&mut model_file,
@@ -369,7 +370,7 @@ mod test {
 
     #[test]
     fn tf_classifier_predict_works() {
-        let filename = "../data/tests/models/tf/graph_multiclass_logistic_regression.pb";
+        let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
         let model = TensorFlowClassifier::new(&mut model_file,
@@ -408,7 +409,7 @@ mod test {
 
     #[test]
     fn tf_classifier_binary_predict_proba_works() {
-        let filename = "../data/tests/models/tf/graph_logistic_regression.pb";
+        let filename = file_path("tests/models/tf/graph_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
         let model = TensorFlowClassifier::new(&mut model_file,
@@ -441,7 +442,7 @@ mod test {
 
     #[test]
     fn tf_classifier_binary_predict_works() {
-        let filename = "../data/tests/models/tf/graph_logistic_regression.pb";
+        let filename = file_path("tests/models/tf/graph_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
         let model = TensorFlowClassifier::new(&mut model_file,
@@ -490,7 +491,7 @@ mod test {
 
     #[test]
     fn tf_classifier_crf_predict_works() {
-        let filename = "../data/tests/models/tf/graph_crf.pb";
+        let filename = file_path("tests/models/tf/graph_crf.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
         let model = TensorFlowCRFClassifier::new(&mut model_file,
