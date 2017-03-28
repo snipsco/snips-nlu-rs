@@ -25,8 +25,8 @@ pub trait IntentConfig {
 }
 
 pub struct FileBasedAssistantConfig {
-    intents_dir: ::path::PathBuf,
-    gazetteers_dir: ::path::PathBuf,
+    intents_dir: path::PathBuf,
+    gazetteers_dir: path::PathBuf,
 }
 
 impl FileBasedAssistantConfig {
@@ -36,6 +36,13 @@ impl FileBasedAssistantConfig {
             intents_dir: root_dir.join("intents"),
             gazetteers_dir: root_dir.join("gazetteers"),
         }
+    }
+}
+
+#[cfg(test)]
+impl FileBasedAssistantConfig {
+    pub fn default() -> FileBasedAssistantConfig {
+        FileBasedAssistantConfig::new("../data")
     }
 }
 

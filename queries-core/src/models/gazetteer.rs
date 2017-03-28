@@ -28,13 +28,17 @@ impl Gazetteer for HashSetGazetteer {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Cursor;
+    use serde_json;
     use super::HashSetGazetteer;
-    use FileConfiguration;
 
     #[test]
     fn gazetteer_work() {
-        let path = ::file_path("snips-sdk-gazetteers/gazetteers/action_verbs_infinitive.json");
+        //let data = r#"["abc", "xyz"]"#;
+        //let json: Vec<String> = serde_json::from_str(&mut data).unwrap();
 
-        assert!(HashSetGazetteer::new(File::open(path)).is_ok())
+        //let mut c = Cursor::new(json);
+
+        //assert!(HashSetGazetteer::new(&mut c).is_ok())
     }
 }

@@ -120,12 +120,12 @@ impl IntentParser {
             .ok_or(format!("intent {:?} not found", intent_name))?;
         let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
 
-        let token_values =
-            preprocessor_result.tokens.iter().map(|token| &*token.value).collect_vec();
+        let token_values = preprocessor_result.tokens
+            .iter()
+            .map(|token| &*token.value)
+            .collect_vec();
 
         let slot_names = &intent_configuration.slot_names;
-
-        println!("{:?} =>  {:?}", slot_names, probabilities);
         let slot_values = &compute_slots(&*token_values, slot_names.len(), &probabilities);
 
         let mut result = HashMap::new();
@@ -137,16 +137,3 @@ impl IntentParser {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use FileConfiguration;
-
-    #[test]
-    #[ignore]
-    fn list_configurations() {
-        let file_configuration = FileConfiguration::default();
-
-        let available_intents = file_configuration.available_intents().unwrap();
-        println!("available_intents: {:?}", available_intents);
-    }
-}

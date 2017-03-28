@@ -28,15 +28,19 @@ mod test {
     use std::ops::Range;
     use std::path;
 
+    use serde_json;
+
     use super::has_gazetteer_hits;
     use super::ngram_matcher;
+    use super::get_message_length;
+
+    use config::FileBasedAssistantConfig;
+    use models::gazetteer::HashSetGazetteer;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
-    use models::gazetteer::HashSetGazetteer;
     use testutils::parse_json;
-    use FileConfiguration;
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     struct TestDescription {
         //description: String,
         input: Input,
@@ -44,13 +48,13 @@ mod test {
         output: f32,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     struct Input {
         text: String,
         tokens: Vec<Token>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     struct Token {
         #[serde(rename = "startIndex")]
         start_index: usize,
@@ -61,12 +65,20 @@ mod test {
         entity: Option<String>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     struct Arg {
         //#[serde(rename = "type")]
         //kind: String,
         //name: String,
-        value: String,
+        value: Data,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(untagged)]
+    enum Data {
+        StringValue(String),
+        StringArray(Vec<String>),
+        Float(f32),
     }
 
     impl Token {
@@ -89,12 +101,10 @@ mod test {
 
     #[test]
     fn feature_function_works() {
-        let file_configuration = FileConfiguration::default();
-
-        let tests: Vec<(&str, Box<Fn(&FileConfiguration, &TestDescription, Vec<NormalizedToken>)>)> = vec![
+        let tests: Vec<(&str, Box<Fn(&TestDescription, &PreprocessorResult)>)> = vec![
             ("hasGazetteerHits", Box::new(has_gazetteer_hits_works)),
             ("ngramMatcher", Box::new(ngram_matcher_works)),
-            //("getMessageLength", Box::new(get_message_length_works)),
+            ("getMessageLength", Box::new(get_message_length_works)),
         ];
 
         let path = path::PathBuf::from("snips-sdk-tests/feature_extraction/SharedScalar");
@@ -106,39 +116,39 @@ mod test {
             assert!(parsed_tests.len() != 0);
 
             for parsed_test in parsed_tests {
-                let normalized_tokens: Vec<NormalizedToken> = parsed_test.input
-                    .tokens
+                let input_text = parsed_test.input.text.to_string();
+                let normalized_tokens: Vec<NormalizedToken> = parsed_test.input.tokens
                     .iter()
                     .map(|test_token| test_token.to_normalized_token(&parsed_test.input.text))
                     .collect();
 
-                test.1(&file_configuration, &parsed_test, normalized_tokens);
+                let preprocessor_result = PreprocessorResult::new(input_text, normalized_tokens);
+                test.1(&parsed_test, &preprocessor_result);
             }
         }
     }
 
-    fn has_gazetteer_hits_works(file_configuration: &FileConfiguration,
-                                test: &TestDescription,
-                                normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
-        let gazetteer = HashSetGazetteer::new(file_configuration, &*test.args[0].value).unwrap();
-        let result = has_gazetteer_hits(&preprocessor_result, &gazetteer);
+    fn has_gazetteer_hits_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
+        let gazetteer_values = if let Data::StringArray(ref value) = test.args[0].value {
+           value
+        } else {
+            panic!("test doesn't contain a gazetteer: {:?}", test)
+        };
+
+        //let gazetteer = HashSetGazetteer::new(gazetteer_values).unwrap();
+        //let result = has_gazetteer_hits(&preprocessor_result, &gazetteer);
+        //assert_eq!(result, vec![test.output])
+    }
+
+    fn ngram_matcher_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
+        let ngram = if let Data::StringValue(ref value) = test.args[0].value { value } else { panic!() };
+        let result = ngram_matcher(&preprocessor_result, &ngram);
         assert_eq!(result, vec![test.output])
     }
 
-    fn ngram_matcher_works(_: &FileConfiguration,
-                           test: &TestDescription,
-                           normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
-        let result = ngram_matcher(&preprocessor_result, &test.args[0].value);
-        assert_eq!(result, vec![test.output])
-    }
-
-    fn get_message_length_works(_: &FileConfiguration,
-                                test: &TestDescription,
-                                normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
-        let result = get_message_length(&preprocessor_result, &test.args[0].value.parse().unwrap());
+    fn get_message_length_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
+        let normalization = if let Data::Float(value) = test.args[0].value { value } else { panic!() };
+        let result = get_message_length(&preprocessor_result, normalization);
         assert_eq!(result, vec![test.output])
     }
 }
