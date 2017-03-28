@@ -330,9 +330,9 @@ mod test {
 
         assert_eq!(proba_tf.shape(), &[2, 5]);
         assert_epsilon_eq(&proba_tf, &proba_nd, 1e-6);
-        // for row in proba_tf.outer_iter() {
-        //     assert!(epsilon_eq(row.iter().sum(), 1.0, 1e-6));
-        // }
+        for row in proba_tf.outer_iter() {
+            assert!(epsilon_eq(row.iter().sum(), 1.0, 1e-6));
+        }
         // TODO: test if all elements of proba_tf is between 0. and 1.
     }
 
