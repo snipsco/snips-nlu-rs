@@ -104,7 +104,7 @@ mod test {
         let tests: Vec<(&str, Box<Fn(&TestDescription, &PreprocessorResult)>)> = vec![
             ("hasGazetteerHits", Box::new(has_gazetteer_hits_works)),
             ("ngramMatcher", Box::new(ngram_matcher_works)),
-            ("getMessageLength", Box::new(get_message_length_works)),
+            //("getMessageLength", Box::new(get_message_length_works)),
         ];
 
         let path = path::PathBuf::from("snips-sdk-tests/feature_extraction/SharedScalar");
