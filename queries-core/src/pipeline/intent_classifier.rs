@@ -57,17 +57,12 @@ impl IntentClassifier for ProtobufIntentClassifier {
 #[cfg(test)]
 mod test {
     use std::fs;
-    use std::path;
-    use std::sync;
 
-    use protobuf;
     use ndarray::arr2;
 
     use file_path;
-    use models::IntentConfiguration;
-    use config::{AssistantConfig, IntentConfig, FileBasedAssistantConfig};
+    use config::{AssistantConfig, FileBasedAssistantConfig};
     use preprocessing::preprocess;
-    use protos::model_configuration::ModelConfiguration;
     use testutils::parse_json;
     use testutils::create_array;
     use testutils::assert_epsilon_eq;
@@ -83,7 +78,6 @@ mod test {
     #[ignore]
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn intent_classifier_works() {
-        let assistant_config = FileBasedAssistantConfig::default();
         let paths =
             fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/"))
                 .unwrap();
@@ -94,9 +88,6 @@ mod test {
 
             let model_name = path.file_stem().unwrap().to_str().unwrap();
             let intent_config = FileBasedAssistantConfig::default().get_intent_configuration(model_name).unwrap();
-            let pb_intent_config = intent_config.get_pb_config().unwrap();
-            let mut intent_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
-            let pb_intent_configuration = protobuf::parse_from_reader::<ModelConfiguration>(&mut intent_classifier_config).unwrap();
 
             let intent_classifier = ProtobufIntentClassifier::new(intent_config).unwrap();
 
