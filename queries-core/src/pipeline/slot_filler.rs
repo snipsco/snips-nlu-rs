@@ -23,10 +23,10 @@ mod test {
     #[test]
     fn slot_filler_works() {
         let tokens = vec!["book", "me", "a", "restaurant"];
-        let tokens_probabilities: Array1<usize> = arr1(&[0, 1, 3, 0, 0, 0, 0, 0, 0, 2, 1, 1]);
+        let tokens_predictions: Array1<usize> = arr1(&[1, 1, 3, 0]);
 
-        let expected = vec!["me restaurant", "book", "a"];
-        let slots = compute_slots(&tokens, expected.len(), &tokens_probabilities);
+        let expected = vec!["book me", "", "a"];
+        let slots = compute_slots(&tokens, expected.len(), &tokens_predictions);
 
         assert_eq!(slots, expected);
     }
