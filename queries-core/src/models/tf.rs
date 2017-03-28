@@ -286,83 +286,241 @@ impl Classifier for TensorFlowCRFClassifier {
 #[cfg(test)]
 mod test {
     use std::path;
+    use std::fs::File;
+    use std::cmp;
+    use std::f32;
 
     use ndarray::prelude::*;
-    use protobuf;
 
-    use config::{AssistantConfig, IntentConfig, FileBasedAssistantConfig};
-    use protos::model_configuration::ModelConfiguration;
-    use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier, Classifier};
+    use models::tf::{TensorFlowClassifier,
+                     TensorFlowCRFClassifier,
+                     Classifier,
+                     viterbi_decode};
+    use testutils::{epsilon_eq, assert_epsilon_eq};
+    use ::file_path;
 
     #[test]
-    fn tf_classifier_1col_works() {
-        let intent_config = FileBasedAssistantConfig::default().get_intent_configuration("BookRestaurant").unwrap();
-        let pb_intent_config = intent_config.get_pb_config().unwrap();
-        let mut intent_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
-        let pb_model_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut intent_classifier_config).unwrap();
-        let model_path = pb_model_config.get_model_path();
-        let tf_model = &mut intent_config.get_file(path::Path::new(model_path)).unwrap();
+    fn tf_classifier_run_works() {
+        let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
+        let model_path = path::PathBuf::from(filename);
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowClassifier::new(&mut model_file,
+                                              "inputs".to_string(),
+                                              "logits".to_string()).unwrap();
 
-        // TODO: Get the number of features from the BookRestaurant_config file
-        let features = Array2::<f32>::zeros((1, 475));
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let logits_tf = model.run(&x.view()).unwrap();
 
-        let model = TensorFlowClassifier::new(tf_model,
-                                              pb_model_config.get_input_node().to_string(),
-                                              pb_model_config.get_output_node().to_string()).unwrap();
-        let probas = model.predict_proba(&features.view());
-        let predictions = model.predict(&features.view());
+        // ndarray
+        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+                       [0.13, 0.17, 0.19, 0.23, 0.29],
+                       [0.31, 0.37, 0.41, 0.43, 0.47]]);
+        let logits_nd = x.dot(&w);
 
-        println!("probas: {:?}", probas);
-        println!("predictions: {:?}", predictions);
+        assert_eq!(logits_tf.shape(), &[2, 5]);
+        assert_epsilon_eq(&logits_tf, &logits_nd, 1e-6);
     }
 
     #[test]
-    fn tf_classifier_works() {
-        let intent_config = FileBasedAssistantConfig::default()
-            .get_intent_configuration("BookRestaurant").unwrap();
-        let pb_intent_config = intent_config.get_pb_config().unwrap();
-        let mut tokens_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
-        let pb_model_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut tokens_classifier_config).unwrap();
-        let model_path = pb_model_config.get_model_path();
-        let tf_model = &mut intent_config.get_file(path::Path::new(model_path)).unwrap();
+    fn tf_classifier_predict_proba_works() {
+        let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
+        let model_path = path::PathBuf::from(filename);
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowClassifier::new(&mut model_file,
+                                              "inputs".to_string(),
+                                              "logits".to_string()).unwrap();
 
-        // TODO: Get the number of features from the BookRestaurant_config file
-        let features = Array2::<f32>::zeros((11, 1881));
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let proba_tf = model.predict_proba(&x.view()).unwrap();
 
-        // CNN
-        let model = TensorFlowClassifier::new(tf_model,
-                                              pb_model_config.get_input_node().to_string(),
-                                              pb_model_config.get_output_node().to_string()).unwrap();
-        let probas = model.predict_proba(&features.view());
-        let predictions = model.predict(&features.view());
+        // ndarray
+        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+                       [0.13, 0.17, 0.19, 0.23, 0.29],
+                       [0.31, 0.37, 0.41, 0.43, 0.47]]);
+        let mut proba_nd = x.dot(&w);
+        // TODO: Have the softmax function below in an utils
+        for mut row in proba_nd.outer_iter_mut() {
+            let max = *(row.iter()
+                .max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less))
+                .unwrap());
+            for value in row.iter_mut() {
+                *value = (*value - max).exp()
+            }
+            let sum_exponent: f32 = row.iter().sum();
+            row /= sum_exponent;
+        }
 
-        println!("probas: {:?}", probas);
-        println!("predictions: {:?}", predictions);
+        assert_eq!(proba_tf.shape(), &[2, 5]);
+        assert_epsilon_eq(&proba_tf, &proba_nd, 1e-6);
+        // All the values are valid probabilities (0. <= x <= 1.)
+        for &value in proba_tf.iter() {
+            assert!(value >= 0.0 && value <= 1.0);
+        }
+        // All the rows sum to 1. (valid probability distributions)
+        for row in proba_tf.outer_iter() {
+            assert!(epsilon_eq(row.iter().sum(), 1.0, 1e-6));
+        }
     }
 
     #[test]
-    fn tf_classifier_crf_works() {
-        let intent_config = FileBasedAssistantConfig::default()
-            .get_intent_configuration("BookRestaurant").unwrap();
-        let pb_intent_config = intent_config.get_pb_config().unwrap();
-        let mut tokens_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
-        let pb_tokens_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut tokens_classifier_config).unwrap();
-        let model_path = pb_tokens_config.get_model_path();
-        let tf_model = &mut intent_config.get_file(path::Path::new(model_path)).unwrap();
+    fn tf_classifier_predict_works() {
+        let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
+        let model_path = path::PathBuf::from(filename);
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowClassifier::new(&mut model_file,
+                                              "inputs".to_string(),
+                                              "logits".to_string()).unwrap();
 
-        // TODO: Get the number of features from the BookRestaurant_config file
-        let features = Array2::<f32>::zeros((11, 1881));
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let predictions_tf = model.predict(&x.view()).unwrap();
 
-        // CNN + CRF
-        let model = TensorFlowCRFClassifier::new(tf_model,
-                                                 pb_intent_config.get_slots().len() as u32,
-                                                 pb_tokens_config.get_input_node().to_string(),
-                                                 pb_tokens_config.get_output_node().to_string(),
-                                                 pb_tokens_config.get_transition_matrix_node()).unwrap();
-        let probas = model.predict_proba(&features.view());
-        let predictions = model.predict(&features.view());
+        // ndarray
+        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+                       [0.13, 0.17, 0.19, 0.23, 0.29],
+                       [0.31, 0.37, 0.41, 0.43, 0.47]]);
+        let logits_nd = x.dot(&w);
+        // TODO: Have the argmax function below in an utils
+        let predictions_nd = Array1::<usize>::from_iter(logits_nd.outer_iter().map(|row| {
+            let mut index = 0;
+            let mut max_value = f32::NEG_INFINITY;
+            for (j, &value) in row.iter().enumerate() {
+                if value > max_value {
+                    index = j;
+                    max_value = value;
+                }
+            }
+            index
+        }));
 
-        println!("probas (CRF): {:?}", probas);
-        println!("predictions (CRF): {:?}", predictions);
+        assert_eq!(predictions_tf.shape(), &[2]);
+        for (index, value) in predictions_tf.indexed_iter() {
+            assert_eq!(*value, predictions_nd[index]);
+        }
+    }
+
+    #[test]
+    fn tf_classifier_binary_predict_proba_works() {
+        let filename = file_path("tests/models/tf/graph_logistic_regression.pb");
+        let model_path = path::PathBuf::from(filename);
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowClassifier::new(&mut model_file,
+                                              "inputs".to_string(),
+                                              "logits".to_string()).unwrap();
+
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let proba_tf = model.predict_proba(&x.view()).unwrap();
+
+        // ndarray
+        let w = arr2(&[[0.2],
+                       [0.3],
+                       [0.5]]);
+        let mut proba_nd = x.dot(&w);
+        // TODO: Have the sigmoid function below in an utils
+        for mut value in proba_nd.iter_mut() {
+            *value = 1. / (1. + (-*value).exp())
+        }
+
+        assert_eq!(proba_tf.shape(), &[2, 1]);
+        assert_epsilon_eq(&proba_tf, &proba_nd, 1e-6);
+        // All the values are valid probabilities (0. <= x <= 1.)
+        for &value in proba_tf.iter() {
+            assert!(value >= 0.0 && value <= 1.0);
+        }
+    }
+
+    #[test]
+    fn tf_classifier_binary_predict_works() {
+        let filename = file_path("tests/models/tf/graph_logistic_regression.pb");
+        let model_path = path::PathBuf::from(filename);
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowClassifier::new(&mut model_file,
+                                              "inputs".to_string(),
+                                              "logits".to_string()).unwrap();
+
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let predictions_tf = model.predict(&x.view()).unwrap();
+
+        // ndarray
+        let w = arr2(&[[0.2],
+                       [0.3],
+                       [0.5]]);
+        let logits_nd = x.dot(&w);
+        // TODO: Have the round function below in an utils
+        let predictions_nd = Array1::<usize>::from_iter(logits_nd.iter()
+                .map(|value| (*value > 0.) as usize));
+
+        assert_eq!(predictions_tf.shape(), &[2]);
+        for (index, value) in predictions_tf.indexed_iter() {
+            assert_eq!(*value, predictions_nd[index]);
+        }
+    }
+
+    #[test]
+    fn tf_viterbi_decode_works() {
+        // TODO: Move this test and viterbi_decode to an utils
+        let unary_potentials = arr2(&[[  2.0,  -3.0,   5.0],
+                                      [ -7.0,  11.0, -13.0],
+                                      [ 17.0, -19.0,  23.0],
+                                      [-29.0,  31.0, -37.0]]);
+        let transition_matrix = arr2(&[[ -1.0,  1.0,  -2.0],
+                                       [  3.0, -5.0,   8.0],
+                                       [-13.0, 21.0, -34.0]]);
+        let viterbi_sequence = viterbi_decode(&unary_potentials,
+                                              &transition_matrix).unwrap();
+        let expected_sequence = arr1(&[2, 1, 2, 1]);
+
+        for (index, value) in viterbi_sequence.indexed_iter() {
+            assert_eq!(*value, expected_sequence[index]);
+        }
+    }
+
+    #[test]
+    fn tf_classifier_crf_predict_works() {
+        let filename = file_path("tests/models/tf/graph_crf.pb");
+        let model_path = path::PathBuf::from(filename);
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowCRFClassifier::new(&mut model_file,
+                                                 5,
+                                                 "inputs".to_string(),
+                                                 "logits".to_string(),
+                                                 "psi").unwrap();
+
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let predictions_tf = model.predict(&x.view()).unwrap();
+
+        // ndarray
+        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+                       [0.13, 0.17, 0.19, 0.23, 0.29],
+                       [0.31, 0.37, 0.41, 0.43, 0.47]]);
+        let psi = arr2(&[[ 0.0,  1.0,  2.0,  3.0,  4.0],
+                         [ 5.0,  6.0,  7.0,  8.0,  9.0],
+                         [10.0, 11.0, 12.0, 13.0, 14.0],
+                         [15.0, 16.0, 17.0, 18.0, 19.0],
+                         [20.0, 21.0, 22.0, 23.0, 24.0]]);
+        let unary_potentials_nd = x.dot(&w);
+        let predictions_nd = viterbi_decode(&unary_potentials_nd, &psi).unwrap();
+
+        assert_eq!(predictions_tf.shape(), &[2]);
+        for (index, value) in predictions_tf.indexed_iter() {
+            assert_eq!(*value, predictions_nd[index]);
+        }
     }
 }
