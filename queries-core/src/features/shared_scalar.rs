@@ -28,14 +28,9 @@ mod test {
     use std::ops::Range;
     use std::path;
 
-    use serde_json;
-
-    use super::has_gazetteer_hits;
     use super::ngram_matcher;
     use super::get_message_length;
 
-    use config::FileBasedAssistantConfig;
-    use models::gazetteer::HashSetGazetteer;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
     use testutils::parse_json;
@@ -130,7 +125,7 @@ mod test {
 
     fn has_gazetteer_hits_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
         let gazetteer_values = if let Data::StringArray(ref value) = test.args[0].value {
-           value
+            value
         } else {
             panic!("test doesn't contain a gazetteer: {:?}", test)
         };
