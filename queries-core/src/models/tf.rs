@@ -407,6 +407,69 @@ mod test {
     }
 
     #[test]
+    fn tf_classifier_binary_predict_proba_works() {
+        let filename = "../data/tests/models/tf/graph_logistic_regression.pb";
+        let model_path = path::PathBuf::from(filename);
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowClassifier::new(&mut model_file,
+                                              "inputs".to_string(),
+                                              "logits".to_string()).unwrap();
+
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let proba_tf = model.predict_proba(&x.view()).unwrap();
+
+        // ndarray
+        let w = arr2(&[[0.2],
+                       [0.3],
+                       [0.5]]);
+        let mut proba_nd = x.dot(&w);
+        // TODO: Have the sigmoid function below in an utils
+        for mut value in proba_nd.iter_mut() {
+            *value = 1. / (1. + (-*value).exp())
+        }
+
+        assert_eq!(proba_tf.shape(), &[2, 1]);
+        assert_epsilon_eq(&proba_tf, &proba_nd, 1e-6);
+        // All the values are valid probabilities (0. <= x <= 1.)
+        for &value in proba_tf.iter() {
+            assert!(value >= 0.0 && value <= 1.0);
+        }
+    }
+
+    #[test]
+    fn tf_classifier_binary_predict_works() {
+        let filename = "../data/tests/models/tf/graph_logistic_regression.pb";
+        let model_path = path::PathBuf::from(filename);
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowClassifier::new(&mut model_file,
+                                              "inputs".to_string(),
+                                              "logits".to_string()).unwrap();
+
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let predictions_tf = model.predict(&x.view()).unwrap();
+
+        // ndarray
+        let w = arr2(&[[0.2],
+                       [0.3],
+                       [0.5]]);
+        let logits_nd = x.dot(&w);
+        // TODO: Have the round function below in an utils
+        let predictions_nd = Array1::<usize>::from_iter(logits_nd.iter()
+                .map(|value| (*value > 0.) as usize));
+
+        assert_eq!(predictions_tf.shape(), &[2]);
+        for (index, value) in predictions_tf.indexed_iter() {
+            assert_eq!(*value, predictions_nd[index]);
+        }
+    }
+
+    #[test]
     fn tf_viterbi_decode_works() {
         // TODO: Move this test and viterbi_decode to an utils
         let unary_potentials = arr2(&[[  2.0,  -3.0,   5.0],

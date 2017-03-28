@@ -1,6 +1,18 @@
 # Resources
 
-## `graph_multiclass_logistic_regression.pb`
+## Graphs
+
+### `graph_logistic_regression.pb`
+
+This model is a (binary) Logistic Regression `y = sigmoid(W * x)`, where
+```
+     .2
+W =  .3
+     .5
+```
+The input node is called `inputs`, the output node is called `logits`.
+
+### `graph_multiclass_logistic_regression.pb`
 
 This model is a multi-class (5 classes) Logistic Regression `y = softmax(W * x)`, where
 ```
@@ -10,7 +22,7 @@ W =  .13  .17  .19  .23  .29
 ```
 The input node is called `inputs`, the output node is called `logits`.
 
-## `graph_crf.pb`
+### `graph_crf.pb`
 
 This model is a Conditional Random Field (CRF). The unary potentials are a linear mapping of the inputs with parameter `W`, and transition matrix is `psi`, where
 ```
