@@ -13,7 +13,7 @@ pub fn parse_json<T: Deserialize>(file_name: &str) -> T {
     serde_json::from_str::<T>(&s).unwrap()
 }
 
-pub fn assert_epsilon_eq(a: Array2<f32>, b: Array2<f32>, epsilon: f32) {
+pub fn assert_epsilon_eq(a: &Array2<f32>, b: &Array2<f32>, epsilon: f32) {
     for (index, elem_a) in a.indexed_iter() {
         assert!(epsilon_eq(*elem_a, b[index], epsilon))
     }
