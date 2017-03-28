@@ -125,6 +125,8 @@ mod test {
     use models::gazetteer::HashSetGazetteer;
     use testutils::parse_json;
 
+    use serde_json;
+
     #[derive(Debug, Deserialize)]
     struct TestDescription {
         //description: String,
@@ -216,15 +218,12 @@ mod test {
     }
 
     fn has_gazetteer_hits_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
-        let gazetteer_values = if let Data::StringValue(ref value) = test.args[0].value {
-           value
-        } else {
-            panic!("test doesn't contain a gazetteer: {:?}", test)
-        };
-        //let gazetteer = HashSetGazetteer::new(&gazetteer_values).unwrap();
+        let values = if let Data::StringArray(ref v) = test.args[0].value { v } else { panic!() };
 
-        //let result = has_gazetteer_hits(&preprocessor_result, &gazetteer);
-        //assert_eq!(result, test.output)
+        let gazetteer = HashSetGazetteer::new(&mut serde_json::to_string(values).unwrap().as_bytes()).unwrap();
+
+        let result = has_gazetteer_hits(&preprocessor_result, Box::new(gazetteer));
+        assert_eq!(result, test.output)
     }
 
     fn ngram_matcher_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {

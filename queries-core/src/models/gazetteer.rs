@@ -28,17 +28,15 @@ impl Gazetteer for HashSetGazetteer {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
-    use serde_json;
-    use super::HashSetGazetteer;
+    use super::{HashSetGazetteer, Gazetteer};
 
     #[test]
     fn gazetteer_work() {
-        //let data = r#"["abc", "xyz"]"#;
-        //let json: Vec<String> = serde_json::from_str(&mut data).unwrap();
-
-        //let mut c = Cursor::new(json);
-
-        //assert!(HashSetGazetteer::new(&mut c).is_ok())
+        let data = r#"["abc", "xyz"]"#;
+        let gazetteer = HashSetGazetteer::new(&mut data.as_bytes());
+        assert!(gazetteer.is_ok());
+        let gazetteer = gazetteer.unwrap();
+        assert!(gazetteer.contains("abc"));
+        assert!(!gazetteer.contains("def"));
     }
 }
