@@ -1,8 +1,8 @@
 # Resources
 
-## `graph_logistic_regression.pb`
+## `graph_multiclass_logistic_regression.pb`
 
-This model is a Logistic Regression model `y = softmax(W * x)`, where
+This model is a multi-class (5 classes) Logistic Regression `y = softmax(W * x)`, where
 ```
       .2   .3   .5   .7  .11
 W =  .13  .17  .19  .23  .29
