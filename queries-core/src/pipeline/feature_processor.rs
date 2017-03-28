@@ -1,5 +1,3 @@
-use std::sync;
-
 use errors::*;
 use ndarray::{Array, Array2};
 
@@ -8,17 +6,19 @@ use features::{shared_scalar, shared_vector};
 use preprocessing::PreprocessorResult;
 use protos::feature::{Feature, Feature_Type, Feature_Domain, Feature_Argument};
 
+use config::ArcBoxedIntentConfig;
+
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
 }
 
 pub struct ProtobufMatrixFeatureProcessor<'a> {
-    intent_config: sync::Arc<Box<IntentConfig>>,
+    intent_config: ArcBoxedIntentConfig,
     feature_functions: &'a [Feature],
 }
 
 impl<'a> ProtobufMatrixFeatureProcessor<'a> {
-    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>,
+    pub fn new(intent_config: ArcBoxedIntentConfig,
                features: &'a [Feature])
                -> ProtobufMatrixFeatureProcessor<'a> {
         ProtobufMatrixFeatureProcessor {

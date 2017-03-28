@@ -19,6 +19,13 @@ pub struct TensorFlowClassifier {
     output_node_name: String,
 }
 
+/// We need the classifiers to be both [`Send`] and [`Sync`] in order to be able to use them in a
+/// multi-threaded environment. We should ensure that the mutex is enough for that (the rust type
+/// system seems not to be confident about that because there's a raw pointer to the TF graph,
+/// hence the unsafe impl)
+unsafe impl Send for TensorFlowClassifier {}
+unsafe impl Sync for TensorFlowClassifier {}
+
 pub struct TensorFlowCRFClassifier {
     state: sync::Mutex<(Session, Graph)>,
     transition_matrix: Array2<f32>,
@@ -26,6 +33,13 @@ pub struct TensorFlowCRFClassifier {
     input_node_name: String,
     output_node_name: String,
 }
+
+/// We need the classifiers to be both [`Send`] and [`Sync`] in order to be able to use them in a
+/// multi-threaded environment. We should ensure that the mutex is enough for that (the rust type
+/// system seems not to be confident about that because there's a raw pointer to the TF graph,
+/// hence the unsafe impl)
+unsafe impl Send for TensorFlowCRFClassifier {}
+unsafe impl Sync for TensorFlowCRFClassifier {}
 
 pub trait Classifier {
     fn predict_proba(&self, features: &ArrayView2<f32>) -> Result<Array2<f32>>;

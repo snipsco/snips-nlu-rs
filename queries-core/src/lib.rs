@@ -19,7 +19,6 @@ extern crate csv;
 
 use std::cmp::Ordering;
 use std::path;
-use std::sync;
 use std::collections::HashMap;
 
 use itertools::Itertools;
@@ -70,7 +69,7 @@ impl IntentParser {
         let mut classifiers = HashMap::new();
 
         for ref c in assistant_config.get_available_intents_names()? {
-            let intent_config = sync::Arc::new(assistant_config.get_intent_configuration(c)?);
+            let intent_config = assistant_config.get_intent_configuration(c)?;
             let intent = IntentConfiguration::new(intent_config)?;
             classifiers.insert(intent.intent_name.to_string(), intent);
         }

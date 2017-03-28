@@ -3,6 +3,7 @@ use std::path;
 use std::io::Read;
 use std::fs::File;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use csv;
 use errors::*;
@@ -12,7 +13,7 @@ use protos::intent_configuration::IntentConfiguration;
 
 pub trait AssistantConfig {
     fn get_available_intents_names(&self) -> Result<Vec<String>>;
-    fn get_intent_configuration(&self, name: &str) -> Result<Box<IntentConfig>>;
+    fn get_intent_configuration(&self, name: &str) -> Result<ArcBoxedIntentConfig>;
 }
 
 pub trait IntentConfig {
@@ -23,6 +24,8 @@ pub trait IntentConfig {
         Ok(protobuf::parse_from_reader::<IntentConfiguration>(reader)?)
     }
 }
+
+pub type ArcBoxedIntentConfig = Arc<Box<IntentConfig + Send + Sync>>;
 
 pub struct FileBasedAssistantConfig {
     intents_dir: path::PathBuf,
@@ -66,9 +69,9 @@ impl AssistantConfig for FileBasedAssistantConfig {
         Ok(available_intents)
     }
 
-    fn get_intent_configuration(&self, name: &str) -> Result<Box<IntentConfig>> {
-        Ok(Box::new(FileBasedIntentConfig::new(self.intents_dir.join(name),
-                                               self.gazetteers_dir.clone())?))
+    fn get_intent_configuration(&self, name: &str) -> Result<ArcBoxedIntentConfig> {
+        Ok(Arc::new(Box::new(FileBasedIntentConfig::new(self.intents_dir.join(name),
+                                                        self.gazetteers_dir.clone())?)))
     }
 }
 
