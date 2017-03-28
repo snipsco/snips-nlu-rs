@@ -29,10 +29,15 @@ mod test {
     use std::path;
 
     use super::ngram_matcher;
-    use super::get_message_length;
+    //use super::get_message_length;
+    use super::has_gazetteer_hits;
 
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
+    use models::gazetteer::HashSetGazetteer;
+
+    use serde_json;
+
     use testutils::parse_json;
 
     #[derive(Debug, Deserialize)]
@@ -124,15 +129,12 @@ mod test {
     }
 
     fn has_gazetteer_hits_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
-        let gazetteer_values = if let Data::StringArray(ref value) = test.args[0].value {
-            value
-        } else {
-            panic!("test doesn't contain a gazetteer: {:?}", test)
-        };
+        let values = if let Data::StringArray(ref v) = test.args[0].value { v } else { panic!() };
 
-        //let gazetteer = HashSetGazetteer::new(gazetteer_values).unwrap();
-        //let result = has_gazetteer_hits(&preprocessor_result, &gazetteer);
-        //assert_eq!(result, vec![test.output])
+        let gazetteer = HashSetGazetteer::new(&mut serde_json::to_string(values).unwrap().as_bytes()).unwrap();
+
+        let result = has_gazetteer_hits(&preprocessor_result, Box::new(gazetteer));
+        assert_eq!(result, vec![test.output])
     }
 
     fn ngram_matcher_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
@@ -141,9 +143,9 @@ mod test {
         assert_eq!(result, vec![test.output])
     }
 
-    fn get_message_length_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
+    /*fn get_message_length_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
         let normalization = if let Data::Float(value) = test.args[0].value { value } else { panic!() };
         let result = get_message_length(&preprocessor_result, normalization);
         assert_eq!(result, vec![test.output])
-    }
+    }*/
 }

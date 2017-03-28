@@ -63,13 +63,7 @@ impl TokensClassifier for ProtobufTokensClassifier {
 
 #[cfg(test)]
 mod test {
-    use std::path;
-    use std::sync;
-
-    use protobuf;
-
     use config::{AssistantConfig, FileBasedAssistantConfig};
-    use protos::model_configuration::ModelConfiguration;
     use preprocessing::preprocess;
     use super::{TokensClassifier, ProtobufTokensClassifier};
 
@@ -81,9 +75,6 @@ mod test {
                                               Savoyard");
 
         let intent_config = FileBasedAssistantConfig::default().get_intent_configuration("BookRestaurant").unwrap();
-        let pb_intent_config = intent_config.get_pb_config().unwrap();
-        let mut tokens_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
-        let pb_intent_configuration = protobuf::parse_from_reader::<ModelConfiguration>(&mut tokens_classifier_config).unwrap();
 
         let tokens_classifier = ProtobufTokensClassifier::new(intent_config).unwrap();
 

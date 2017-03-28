@@ -114,8 +114,6 @@ impl Feature {
 mod test {
     use std::fs;
     use std::path;
-    use std::fs::File;
-    use std::sync;
 
     use protobuf;
 
@@ -138,7 +136,6 @@ mod test {
     #[ignore]
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn feature_processor_works() {
-        let assitant_config = FileBasedAssistantConfig::default();
         let paths =
             fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/"))
                 .unwrap();
