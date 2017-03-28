@@ -159,7 +159,6 @@ fn run_tokens_classification(client: *mut Opaque,
     let intent_name = get_str!(intent_name);
     let intent_parser = get_intent_parser!(client);
 
-
     let result = intent_parser.run_tokens_classifier(input, intent_name)?;
 
     point_to_string(result_json, serde_json::to_string(&result)?)

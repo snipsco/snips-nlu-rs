@@ -21,7 +21,6 @@ use std::cmp::Ordering;
 use std::path;
 use std::collections::HashMap;
 
-use itertools::Itertools;
 use rayon::prelude::*;
 
 use models::IntentConfiguration;
@@ -32,6 +31,7 @@ use pipeline::slot_filler::compute_slots;
 
 pub use preprocessing::preprocess;
 pub use errors::*;
+pub use pipeline::slot_filler::Token;
 
 use config::AssistantConfig;
 
@@ -111,7 +111,7 @@ impl IntentParser {
     pub fn run_tokens_classifier(&self,
                                  input: &str,
                                  intent_name: &str)
-                                 -> Result<HashMap<String, String>> {
+                                 -> Result<HashMap<String, Vec<Token>>> {
         let preprocessor_result = preprocess(input);
 
         let intent_configuration = self.classifiers
@@ -119,13 +119,8 @@ impl IntentParser {
             .ok_or(format!("intent {:?} not found", intent_name))?;
         let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
 
-        let token_values = preprocessor_result.tokens
-            .iter()
-            .map(|token| &*token.value)
-            .collect_vec();
-
         let slot_names = &intent_configuration.slot_names;
-        let slot_values = &compute_slots(&*token_values, slot_names.len(), &probabilities);
+        let slot_values = &compute_slots(&preprocessor_result, slot_names.len(), &probabilities);
 
         let mut result = HashMap::new();
         for (name, value) in slot_names.iter().zip(slot_values.iter()) {
