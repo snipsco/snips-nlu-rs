@@ -91,7 +91,7 @@ mod tests {
             let reg = T::new(w);
             let result = reg.run(&f);
             let expected_result = create_transposed_array(&desc.output);
-            assert_epsilon_eq(expected_result, result, 1e-6);
+            assert_epsilon_eq(&expected_result, &result, 1e-6);
         }
     }
 }

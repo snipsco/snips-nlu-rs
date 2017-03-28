@@ -286,6 +286,8 @@ impl Classifier for TensorFlowCRFClassifier {
 #[cfg(test)]
 mod test {
     use std::path;
+    use std::fs::File;
+    use std::cmp;
 
     use ndarray::prelude::*;
     use protobuf;
@@ -293,76 +295,94 @@ mod test {
     use config::{AssistantConfig, IntentConfig, FileBasedAssistantConfig};
     use protos::model_configuration::ModelConfiguration;
     use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier, Classifier};
+    use testutils::{epsilon_eq, assert_epsilon_eq};
 
     #[test]
-    fn tf_classifier_1col_works() {
-        let intent_config = FileBasedAssistantConfig::default().get_intent_configuration("BookRestaurant").unwrap();
-        let pb_intent_config = intent_config.get_pb_config().unwrap();
-        let mut intent_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
-        let pb_model_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut intent_classifier_config).unwrap();
-        let model_path = pb_model_config.get_model_path();
-        let tf_model = &mut intent_config.get_file(path::Path::new(model_path)).unwrap();
+    fn tf_classifier_predict_proba_works() {
+        let model_path = path::PathBuf::from("../data/tests/models/tf/graph_logistic_regression.pb");
+        let mut model_file = Box::new(File::open(model_path).unwrap());
+        let model = TensorFlowClassifier::new(&mut model_file,
+                                              "inputs".to_string(),
+                                              "logits".to_string()).unwrap();
 
-        // TODO: Get the number of features from the BookRestaurant_config file
-        let features = Array2::<f32>::zeros((1, 475));
+        // Data
+        let x = arr2(&[[0.1, 0.1, 0.1],
+                       [0.3, 0.5, 0.8]]);
+        // TensorFlow
+        let proba_tf = model.predict_proba(&x.view()).unwrap();
 
-        let model = TensorFlowClassifier::new(tf_model,
-                                              pb_model_config.get_input_node().to_string(),
-                                              pb_model_config.get_output_node().to_string()).unwrap();
-        let probas = model.predict_proba(&features.view());
-        let predictions = model.predict(&features.view());
+        // ndarray
+        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+                       [0.13, 0.17, 0.19, 0.23, 0.29],
+                       [0.31, 0.37, 0.41, 0.43, 0.47]]);
+        let mut proba_nd = x.dot(&w);
+        // TODO: Have the softmax function below in an utils 
+        for mut row in proba_nd.outer_iter_mut() {
+            let max = *(row.iter()
+                .max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less))
+                .unwrap());
+            for value in row.iter_mut() {
+                *value = (*value - max).exp()
+            }
+            let sum_exponent: f32 = row.iter().sum();
+            row /= sum_exponent;
+        }
 
-        println!("probas: {:?}", probas);
-        println!("predictions: {:?}", predictions);
+        assert_eq!(proba_tf.shape(), &[2, 5]);
+        assert_epsilon_eq(&proba_tf, &proba_nd, 1e-6);
+        // for row in proba_tf.outer_iter() {
+        //     assert!(epsilon_eq(row.iter().sum(), 1.0, 1e-6));
+        // }
+        // TODO: test if all elements of proba_tf is between 0. and 1.
     }
 
-    #[test]
-    fn tf_classifier_works() {
-        let intent_config = FileBasedAssistantConfig::default()
-            .get_intent_configuration("BookRestaurant").unwrap();
-        let pb_intent_config = intent_config.get_pb_config().unwrap();
-        let mut tokens_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
-        let pb_model_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut tokens_classifier_config).unwrap();
-        let model_path = pb_model_config.get_model_path();
-        let tf_model = &mut intent_config.get_file(path::Path::new(model_path)).unwrap();
+    // #[test]
+    // fn tf_classifier_works() {
+    //     let intent_config = FileBasedAssistantConfig::default()
+    //         .get_intent_configuration("BookRestaurant").unwrap();
+    //     let pb_intent_config = intent_config.get_pb_config().unwrap();
+    //     let mut tokens_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
+    //     let pb_model_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut tokens_classifier_config).unwrap();
+    //     let model_path = pb_model_config.get_model_path();
+    //     let tf_model = &mut intent_config.get_file(path::Path::new(model_path)).unwrap();
 
-        // TODO: Get the number of features from the BookRestaurant_config file
-        let features = Array2::<f32>::zeros((11, 1881));
+    //     // TODO: Get the number of features from the BookRestaurant_config file
+    //     let features = Array2::<f32>::zeros((11, 1881));
 
-        // CNN
-        let model = TensorFlowClassifier::new(tf_model,
-                                              pb_model_config.get_input_node().to_string(),
-                                              pb_model_config.get_output_node().to_string()).unwrap();
-        let probas = model.predict_proba(&features.view());
-        let predictions = model.predict(&features.view());
+    //     // CNN
+    //     let model = TensorFlowClassifier::new(tf_model,
+    //                                           pb_model_config.get_input_node().to_string(),
+    //                                           pb_model_config.get_output_node().to_string()).unwrap();
+    //     let probas = model.predict_proba(&features.view());
+    //     let predictions = model.predict(&features.view());
 
-        println!("probas: {:?}", probas);
-        println!("predictions: {:?}", predictions);
-    }
+    //     println!("probas: {:?}", probas);
+    //     println!("predictions: {:?}", predictions);
+    // }
 
-    #[test]
-    fn tf_classifier_crf_works() {
-        let intent_config = FileBasedAssistantConfig::default()
-            .get_intent_configuration("BookRestaurant").unwrap();
-        let pb_intent_config = intent_config.get_pb_config().unwrap();
-        let mut tokens_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
-        let pb_tokens_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut tokens_classifier_config).unwrap();
-        let model_path = pb_tokens_config.get_model_path();
-        let tf_model = &mut intent_config.get_file(path::Path::new(model_path)).unwrap();
+    // #[test]
+    // fn tf_classifier_crf_works() {
+    //     let intent_config = FileBasedAssistantConfig::default()
+    //         .get_intent_configuration("BookRestaurant").unwrap();
+    //     let pb_intent_config = intent_config.get_pb_config().unwrap();
+    //     let mut tokens_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
+    //     let pb_tokens_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut tokens_classifier_config).unwrap();
+    //     let model_path = pb_tokens_config.get_model_path();
+    //     let tf_model = &mut intent_config.get_file(path::Path::new(model_path)).unwrap();
 
-        // TODO: Get the number of features from the BookRestaurant_config file
-        let features = Array2::<f32>::zeros((11, 1881));
+    //     // TODO: Get the number of features from the BookRestaurant_config file
+    //     let features = Array2::<f32>::zeros((11, 1881));
 
-        // CNN + CRF
-        let model = TensorFlowCRFClassifier::new(tf_model,
-                                                 pb_intent_config.get_slots().len() as u32,
-                                                 pb_tokens_config.get_input_node().to_string(),
-                                                 pb_tokens_config.get_output_node().to_string(),
-                                                 pb_tokens_config.get_transition_matrix_node()).unwrap();
-        let probas = model.predict_proba(&features.view());
-        let predictions = model.predict(&features.view());
+    //     // CNN + CRF
+    //     let model = TensorFlowCRFClassifier::new(tf_model,
+    //                                              pb_intent_config.get_slots().len() as u32,
+    //                                              pb_tokens_config.get_input_node().to_string(),
+    //                                              pb_tokens_config.get_output_node().to_string(),
+    //                                              pb_tokens_config.get_transition_matrix_node()).unwrap();
+    //     let probas = model.predict_proba(&features.view());
+    //     let predictions = model.predict(&features.view());
 
-        println!("probas (CRF): {:?}", probas);
-        println!("predictions (CRF): {:?}", predictions);
-    }
+    //     println!("probas (CRF): {:?}", probas);
+    //     println!("predictions (CRF): {:?}", predictions);
+    // }
 }

@@ -103,7 +103,7 @@ mod test {
             for test in tests {
                 let preprocess_result = preprocess(&test.text);
                 let result = intent_classifier.run(&preprocess_result).unwrap();
-                assert_epsilon_eq(arr2(&[[result]]), create_array(&test.output), 1e-6);
+                assert_epsilon_eq(&arr2(&[[result]]), &create_array(&test.output), 1e-6);
             }
         }
     }
