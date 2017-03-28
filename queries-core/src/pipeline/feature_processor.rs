@@ -1,13 +1,12 @@
-use errors::*;
-use ndarray::{Array, Array2};
 use std::sync;
 
-use preprocessing::PreprocessorResult;
-use protos::feature::{Feature, Feature_Type, Feature_Domain, Feature_Argument};
+use errors::*;
+use ndarray::{Array, Array2};
 
 use config::IntentConfig;
-
 use features::{shared_scalar, shared_vector};
+use preprocessing::PreprocessorResult;
+use protos::feature::{Feature, Feature_Type, Feature_Domain, Feature_Argument};
 
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
@@ -114,14 +113,16 @@ impl Feature {
 #[cfg(test)]
 mod test {
     use std::fs;
+    use std::path;
     use std::fs::File;
+    use std::sync;
 
     use protobuf;
 
-    use protos::model::Model;
-    use preprocessing::preprocess;
-    use FileConfiguration;
     use file_path;
+    use config::{ AssistantConfig, FileBasedAssistantConfig };
+    use preprocessing::preprocess;
+    use protos::model_configuration::ModelConfiguration;
     use testutils::parse_json;
     use testutils::create_transposed_array;
     use super::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
@@ -137,7 +138,7 @@ mod test {
     #[ignore]
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn feature_processor_works() {
-        let file_configuration = FileConfiguration::default();
+        let assitant_config = FileBasedAssistantConfig::default();
         let paths =
             fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/"))
                 .unwrap();
@@ -146,14 +147,18 @@ mod test {
             let path = path.unwrap().path();
             let tests: Vec<TestDescription> = parse_json(path.to_str().unwrap());
 
-            let model_path = file_configuration.intent_classifier_path(path.file_stem().unwrap().to_str().unwrap());
-            let mut model_file = File::open(model_path).unwrap();
-            let model = protobuf::parse_from_reader::<Model>(&mut model_file).unwrap();
+            let model_name = path.file_stem().unwrap().to_str().unwrap();
+            let intent_config = FileBasedAssistantConfig::default().get_intent_configuration(model_name).unwrap();
+            let pb_intent_config = intent_config.get_pb_config().unwrap();
+            let mut intent_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
+            let pb_model_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut intent_classifier_config).unwrap();
 
+            let intent_config = sync::Arc::new(intent_config);
             for test in tests {
+                // TODO: Replace preprocess by json
                 let preprocessor_result = preprocess(&test.text);
-                let feature_processor = ProtobufMatrixFeatureProcessor::new(&file_configuration,
-                                                                            &model.get_features());
+                let feature_processor = ProtobufMatrixFeatureProcessor::new(intent_config.clone(),
+                                                                            &pb_model_config.get_features());
 
                 let result = feature_processor.compute_features(&preprocessor_result);
                 assert_eq!(result,
