@@ -98,7 +98,6 @@ mod test {
             let mut intent_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
             let pb_intent_configuration = protobuf::parse_from_reader::<ModelConfiguration>(&mut intent_classifier_config).unwrap();
 
-            let intent_config = sync::Arc::new(intent_config);
             let intent_classifier = ProtobufIntentClassifier::new(intent_config).unwrap();
 
             for test in tests {

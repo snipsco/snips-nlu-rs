@@ -153,7 +153,6 @@ mod test {
             let mut intent_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
             let pb_model_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut intent_classifier_config).unwrap();
 
-            let intent_config = sync::Arc::new(intent_config);
             for test in tests {
                 // TODO: Replace preprocess by json
                 let preprocessor_result = preprocess(&test.text);
