@@ -8,6 +8,7 @@ This model is a Logistic Regression model `y = softmax(W * x)`, where
 W =  .13  .17  .19  .23  .29
      .31  .37  .41  .43  .47
 ```
+The input node is called `inputs`, the output node is called `logits`.
 
 ## `graph_crf.pb`
 
@@ -23,3 +24,4 @@ psi =  10.  11.  12.  13.  14.
        15.  16.  17.  18.  19.
        20.  21.  22.  23.  24.
 ```
+The input node is called `inputs`, the output node is called `logits` and the transition matrix node is called `psi`.
