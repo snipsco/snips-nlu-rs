@@ -1,42 +1,43 @@
 use std::path;
-use std::sync;
 
 use errors::*;
 use protobuf;
 
-use config::IntentConfig;
+use config::ArcBoxedIntentConfig;
 use protos::model_configuration::ModelConfiguration;
-use models::tf::{TensorFlowClassifier, Classifier};
+use models::tf::TensorFlowClassifier;
 use preprocessing::PreprocessorResult;
 use pipeline::Probability;
 use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
+use pipeline::BoxedClassifier;
 
 pub trait IntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability>;
 }
 
 pub struct ProtobufIntentClassifier {
-    intent_config: sync::Arc<Box<IntentConfig>>,
+    intent_config: ArcBoxedIntentConfig,
     intent_model: ModelConfiguration,
-    classifier: TensorFlowClassifier,
+    classifier: BoxedClassifier,
 }
 
 // TODO merge code with protobuf tokens classifier
 impl ProtobufIntentClassifier {
-    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>) -> Result<ProtobufIntentClassifier> {
+    pub fn new(intent_config: ArcBoxedIntentConfig) -> Result<ProtobufIntentClassifier> {
         let pb_config = intent_config.get_pb_config()?;
         let model_path = path::Path::new(pb_config.get_intent_classifier_path());
         let mut model_file = intent_config.get_file(model_path)?;
         let intent_model = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
         let tf_model =
             &mut intent_config.get_file(path::Path::new(&intent_model.get_model_path()))?;
-        let classifier = TensorFlowClassifier::new(tf_model,
-                                                   intent_model.get_input_node().to_string(),
-                                                   intent_model.get_output_node().to_string());
+        let classifier =
+            Box::new(TensorFlowClassifier::new(tf_model,
+                                               intent_model.get_input_node().to_string(),
+                                               intent_model.get_output_node().to_string())?);
         Ok(ProtobufIntentClassifier {
             intent_config: intent_config.clone(),
             intent_model: intent_model,
-            classifier: classifier?,
+            classifier: classifier,
         })
     }
 }

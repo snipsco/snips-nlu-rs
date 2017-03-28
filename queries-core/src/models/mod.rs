@@ -1,10 +1,8 @@
-use std::sync;
-
 use errors::*;
 
-use config::IntentConfig;
 use pipeline::intent_classifier::ProtobufIntentClassifier;
 use pipeline::tokens_classifier::ProtobufTokensClassifier;
+use config::ArcBoxedIntentConfig;
 
 pub mod gazetteer;
 pub mod classifiers;
@@ -17,10 +15,8 @@ pub struct IntentConfiguration {
     pub intent_name: String,
 }
 
-unsafe impl Sync for IntentConfiguration {}
-
 impl IntentConfiguration {
-    pub fn new(intent_config: sync::Arc<Box<IntentConfig>>) -> Result<IntentConfiguration> {
+    pub fn new(intent_config: ArcBoxedIntentConfig) -> Result<IntentConfiguration> {
         let data = intent_config.get_pb_config()?;
         let slots = data.get_slots().iter().map(|s| s.get_name().to_string()).collect();
 
