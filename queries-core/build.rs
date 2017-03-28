@@ -9,9 +9,9 @@ use glob::glob;
 
 fn main() {
     let root_dir = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
-    let proto_dir = root_dir.join("proto");
+    let proto_dir = root_dir.join("protos");
     let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let generated_dir = out_dir.join("proto");
+    let generated_dir = out_dir.join("protos");
 
     let _ = fs::create_dir(&generated_dir);
 
