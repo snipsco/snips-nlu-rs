@@ -56,8 +56,7 @@ impl AssistantConfig for FileBasedAssistantConfig {
         let mut available_intents = vec![];
 
         for entry in entries {
-            let entry = entry?;
-            let path = entry.path();
+            let path = entry?.path();
             if path.is_dir() {
                 let intent_name = path.file_name()
                     .and_then(|it| it.to_str())
@@ -114,9 +113,10 @@ impl IntentConfig for FileBasedIntentConfig {
 
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>> {
         if let Some(mapping) = self.gazetteer_mapping.get(name) {
+            let (ref lang, ref version) = *mapping;
             let path = &self.gazetteer_dir
-                .join(&mapping.0)
-                .join(format!("{}_{}.json", &name, &mapping.1));
+                .join(&lang)
+                .join(format!("{}_{}.json", &name, &version));
             let mut file = File::open(path)
                 .map_err(|_| format!("Could not load Gazetteer from file '{:?}'", path))?;
             Ok(Box::new(HashSetGazetteer::new(&mut file)?))
