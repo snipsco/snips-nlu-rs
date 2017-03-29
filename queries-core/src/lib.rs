@@ -81,9 +81,10 @@ impl IntentParser {
     pub fn run_intent_classifiers(&self,
                                   input: &str,
                                   probability_threshold: f32)
-                                  -> Vec<IntentClassifierResult> {
-        assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0,
-        "it's a developer error to pass a probability_threshold between 0.0 and 1.0");
+                                  -> Result<Vec<IntentClassifierResult>> {
+        if probability_threshold < 0.0 || probability_threshold > 1.0 {
+            bail!("it's a developer error to pass a probability_threshold between 0.0 and 1.0")
+        }
 
         let preprocessor_result = preprocess(input);
 
@@ -106,7 +107,7 @@ impl IntentParser {
             a.probability.partial_cmp(&b.probability).unwrap_or(Ordering::Equal).reverse()
         });
 
-        probabilities
+        Ok(probabilities)
     }
 
     pub fn run_tokens_classifier(&self,
