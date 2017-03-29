@@ -43,10 +43,8 @@ pub fn create_normalized_tokens(input: &str) -> Vec<NormalizedToken> {
         .collect()
 }
 
-
 pub fn preprocess(input: &str) -> PreprocessorResult {
-    let normalized_tokens = create_normalized_tokens(input);
-    PreprocessorResult::new(normalized_tokens)
+    PreprocessorResult::new(input.into(), create_normalized_tokens(input))
 }
 
 fn convert_char_index(string: &str, byte_index: usize) -> usize {

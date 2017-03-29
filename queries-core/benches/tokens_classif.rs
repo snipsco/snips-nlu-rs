@@ -24,13 +24,12 @@ fn run_intent_model(bench: &mut Bencher) {
     let model_name = "BookRestaurant_features";
     let cnn_name = "BookRestaurant_model";
 
-    let tokens_classifier = ProtobufTokensClassifier::new(&file_configuration, &model_name, &cnn_name).unwrap();
+    let tokens_classifier =
+        ProtobufTokensClassifier::new(&file_configuration, &model_name, &cnn_name).unwrap();
 
     let preprocessor_result = preprocess("Book me a table for two people at Le Chalet Savoyard");
 
-    bench.iter(|| {
-        let _ = tokens_classifier.run(&preprocessor_result);
-    });
+    bench.iter(|| { let _ = tokens_classifier.run(&preprocessor_result); });
 }
 
 benchmark_group!(tokens_classifier, load_classifier, run_intent_model);
