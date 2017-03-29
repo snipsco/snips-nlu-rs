@@ -45,20 +45,19 @@ mod test {
     use super::compute_slots;
 
     #[test]
-    #[ignore]
     fn slot_filler_works() {
-        let preprocess_result = preprocess("Book me a table for tomorrow at Chartier in the evening", "").unwrap();
+        let text = "Book me a table for tomorrow at Chartier in the evening";
+        let entities = r#"[{"end_index":28,"value":"tomorrow","start_index":20,"entity":"%TIME%"},{"end_index": 55,"value":"in the evening","start_index":41,"entity":"%TIME_INTERVAL%"}]"#;
+        let preprocess_result = preprocess(text, entities).unwrap();
         let tokens_predictions: Array1<usize> = arr1(&[0, 0, 0, 0, 2, 2, 0, 3, 0, 2, 2]);
 
         let expected = vec![
             vec![],
-            vec![
-                Token { value: "for tomorrow".to_string(), range: Range { start: 16, end: 28 } },
-                Token { value: "the evening".to_string(), range: Range { start: 44, end: 55 } },
-            ],
+            vec![Token { value: "for tomorrow".to_string(), range: Range { start: 16, end: 28 } }],
             vec![Token { value: "Chartier".to_string(), range: Range { start: 32, end: 40 } }],
         ];
         let slots = compute_slots(&preprocess_result, expected.len(), &tokens_predictions);
+        println!("slots: {:?}", slots);
         assert_eq!(slots, expected);
     }
 }
