@@ -12,7 +12,7 @@
 #[allow(unused_imports)]
 #[allow(unused_results)]
 pub mod feature {
-    include!(concat!(env!("OUT_DIR"), "/proto/feature.rs"));
+    include!(concat!(env!("OUT_DIR"), "/protos/feature.rs"));
 }
 
 #[allow(unknown_lints)]
@@ -29,7 +29,7 @@ pub mod feature {
 #[allow(unused_imports)]
 #[allow(unused_results)]
 pub mod slot {
-    include!(concat!(env!("OUT_DIR"), "/proto/slot.rs"));
+    include!(concat!(env!("OUT_DIR"), "/protos/slot.rs"));
 }
 
 #[allow(unknown_lints)]
@@ -46,7 +46,7 @@ pub mod slot {
 #[allow(unused_imports)]
 #[allow(unused_results)]
 pub mod intent_configuration {
-    include!(concat!(env!("OUT_DIR"), "/proto/intent_configuration.rs"));
+    include!(concat!(env!("OUT_DIR"), "/protos/intent_configuration.rs"));
 }
 
 #[allow(unknown_lints)]
@@ -63,5 +63,5 @@ pub mod intent_configuration {
 #[allow(unused_imports)]
 #[allow(unused_results)]
 pub mod model_configuration {
-    include!(concat!(env!("OUT_DIR"), "/proto/model_configuration.rs"));
+    include!(concat!(env!("OUT_DIR"), "/protos/model_configuration.rs"));
 }

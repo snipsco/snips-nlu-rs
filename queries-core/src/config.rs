@@ -77,8 +77,8 @@ impl AssistantConfig for FileBasedAssistantConfig {
 pub struct FileBasedIntentConfig {
     intent_dir: path::PathBuf,
     gazetteer_dir: path::PathBuf,
-    /* name -> (lang, version)*/
-    gazetteer_mapping: HashMap<String, (String, String)>,
+    /* name -> (lang, category, version)*/
+    gazetteer_mapping: HashMap<String, (String, String, String)>,
 }
 
 impl FileBasedIntentConfig {
@@ -92,8 +92,8 @@ impl FileBasedIntentConfig {
         let mut mappings = HashMap::new();
 
         for row in csv_reader.decode() {
-            let (name, lang, version) = row?;
-            mappings.insert(name, (lang, version));
+            let (lang, category, name, version) = row?;
+            mappings.insert(name, (lang, category, version));
         }
 
         Ok(FileBasedIntentConfig {
@@ -113,9 +113,10 @@ impl IntentConfig for FileBasedIntentConfig {
 
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>> {
         if let Some(mapping) = self.gazetteer_mapping.get(name) {
-            let (ref lang, ref version) = *mapping;
+            let (ref lang, ref category, ref version) = *mapping;
             let path = &self.gazetteer_dir
                 .join(&lang)
+                .join(&category)
                 .join(format!("{}_{}.json", &name, &version));
             let mut file = File::open(path)
                 .map_err(|_| format!("Could not load Gazetteer from file '{:?}'", path))?;
