@@ -1,10 +1,21 @@
+use std::ops::Range;
+
+use errors::*;
+use serde_json;
+
 mod normalization;
 mod entity;
 mod tokenization;
 mod preprocessor_result;
 pub use self::preprocessor_result::PreprocessorResult;
 
-use std::ops::Range;
+#[derive(Deserialize, Debug, PartialEq, Clone)]
+pub struct EntityToken {
+    value: String,
+    start_index: usize,
+    end_index: usize,
+    entity: String,
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
@@ -16,6 +27,21 @@ pub struct Token {
 }
 
 impl Token {
+    fn from(input: &str, entity_token: &EntityToken) -> Token {
+        Token {
+            range: Range {
+                start: convert_byte_index(input, entity_token.start_index),
+                end: convert_byte_index(input, entity_token.end_index),
+            },
+            char_range: Range {
+                start: entity_token.start_index,
+                end: entity_token.end_index,
+            },
+            value: entity_token.value.clone(),
+            entity: Some(entity_token.entity.clone()),
+        }
+    }
+
     fn to_normalized(&self) -> NormalizedToken {
         NormalizedToken {
             value: self.value.clone(),
@@ -36,15 +62,20 @@ pub struct NormalizedToken {
     pub entity: Option<String>,
 }
 
-pub fn create_normalized_tokens(input: &str) -> Vec<NormalizedToken> {
-    tokenization::tokenize(entity::detect_entities(input))
+pub fn create_normalized_tokens(input: &str, entity_tokens: Vec<Token>) -> Vec<NormalizedToken> {
+    tokenization::tokenize(entity::detect_entities(input, entity_tokens))
         .iter()
         .map(|token| token.to_normalized())
         .collect()
 }
 
-pub fn preprocess(input: &str) -> PreprocessorResult {
-    PreprocessorResult::new(input.into(), create_normalized_tokens(input))
+pub fn preprocess(input: &str, entities: &str) -> Result<PreprocessorResult> {
+    let entity_tokens = serde_json::from_str::<Vec<EntityToken>>(entities)?
+        .iter()
+        .map(|entity_token| Token::from(input, entity_token))
+        .collect();
+
+    Ok(PreprocessorResult::new(input.into(), create_normalized_tokens(input, entity_tokens)))
 }
 
 fn convert_char_index(string: &str, byte_index: usize) -> usize {
@@ -63,8 +94,6 @@ fn convert_char_index(string: &str, byte_index: usize) -> usize {
     last_char_index + 1
 }
 
-
-#[cfg(test)]
 pub fn convert_byte_index(string: &str, char_index: usize) -> usize {
     let mut result = 0;
     for (current_char_index, char) in string.chars().enumerate() {
