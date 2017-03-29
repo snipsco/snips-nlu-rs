@@ -4,9 +4,9 @@ use yolo::Yolo;
 use preprocessing::PreprocessorResult;
 use models::gazetteer::Gazetteer;
 
-pub fn has_gazetteer_hits<T: Gazetteer>(preprocessor_result: &PreprocessorResult,
-                                        gazetteer: &T)
-                                        -> Vec<f32> {
+pub fn has_gazetteer_hits(preprocessor_result: &PreprocessorResult,
+                          gazetteer: Box<Gazetteer>)
+                          -> Vec<f32> {
     let mut result = vec![0.0; preprocessor_result.tokens.len()];
 
     for ref ngram in &preprocessor_result.normalized_ngrams {
@@ -35,12 +35,10 @@ pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &
 pub fn is_capitalized(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
     preprocessor_result.tokens
         .iter()
-        .map(|token| {
-            if let Some(first_char) = token.value.chars().next() {
-               if first_char.is_uppercase() { 1.0 } else { 0.0 }
-            } else {
-               0.0
-            }
+        .map(|token| if let Some(first_char) = token.value.chars().next() {
+            if first_char.is_uppercase() { 1.0 } else { 0.0 }
+        } else {
+            0.0
         })
         .collect()
 }
@@ -88,8 +86,25 @@ pub fn contains_possessive(preprocessor_result: &PreprocessorResult) -> Vec<f32>
 
     let ref tokens = preprocessor_result.tokens;
     tokens.iter()
-        .map(|t| {
-            if POSSESSIVE_REGEX.is_match(&t.normalized_value) { 1.0 } else { 0.0 }
+        .map(|t| if POSSESSIVE_REGEX.is_match(&t.normalized_value) {
+            1.0
+        } else {
+            0.0
+        })
+        .collect()
+}
+
+pub fn contains_digits(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
+    lazy_static! {
+        static ref DIGITS_REGEX: Regex = Regex::new(r"[0-9]").yolo();
+    }
+
+    let ref tokens = preprocessor_result.tokens;
+    tokens.iter()
+        .map(|t| if DIGITS_REGEX.is_match(&t.normalized_value) {
+            1.0
+        } else {
+            0.0
         })
         .collect()
 }
@@ -107,11 +122,12 @@ mod test {
     use super::contains_possessive;
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use preprocessing::convert_byte_index;
-    use models::gazetteer::{HashSetGazetteer};
+    use models::gazetteer::HashSetGazetteer;
     use testutils::parse_json;
-    use FileConfiguration;
 
-    #[derive(Deserialize)]
+    use serde_json;
+
+    #[derive(Debug, Deserialize)]
     struct TestDescription {
         //description: String,
         input: Input,
@@ -119,13 +135,13 @@ mod test {
         output: Vec<f32>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     struct Input {
         text: String,
         tokens: Vec<Token>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     struct Token {
         #[serde(rename = "startIndex")]
         start_index: usize,
@@ -136,12 +152,20 @@ mod test {
         entity: Option<String>,
     }
 
-    #[derive(Deserialize)]
+    #[derive(Debug, Deserialize)]
     struct Arg {
         //#[serde(rename = "type")]
         //kind: String,
         //name: String,
-        value: String,
+        value: Data,
+    }
+
+    #[derive(Debug, Deserialize)]
+    #[serde(untagged)]
+    enum Data {
+        StringValue(String),
+        StringArray(Vec<String>),
+        Float(f32),
     }
 
     impl Token {
@@ -164,9 +188,7 @@ mod test {
 
     #[test]
     fn feature_function_works() {
-        let file_configuration = FileConfiguration::default();
-
-        let tests: Vec<(&str, Box<Fn(&FileConfiguration, &TestDescription, Vec<NormalizedToken>)>)> = vec![
+        let tests: Vec<(&str, Box<Fn(&TestDescription, &PreprocessorResult)>)> = vec![
             ("hasGazetteerHits", Box::new(has_gazetteer_hits_works)),
             ("ngramMatcher", Box::new(ngram_matcher_works)),
             ("isCapitalized", Box::new(is_capitalized_works)),
@@ -184,51 +206,48 @@ mod test {
             assert!(parsed_tests.len() != 0);
 
             for parsed_test in parsed_tests {
-                let normalized_tokens: Vec<NormalizedToken> = parsed_test.input
-                    .tokens
+                let normalized_tokens: Vec<NormalizedToken> = parsed_test.input.tokens
                     .iter()
                     .map(|test_token| test_token.to_normalized_token(&parsed_test.input.text))
                     .collect();
 
-                test.1(&file_configuration, &parsed_test, normalized_tokens);
+                let preprocessor_result = PreprocessorResult::new(parsed_test.input.text.to_string(), normalized_tokens);
+                test.1(&parsed_test, &preprocessor_result);
             }
         }
     }
 
-    fn has_gazetteer_hits_works(file_configuration: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
-        let gazetteer = HashSetGazetteer::new(&file_configuration, &test.args[0].value).unwrap();
+    fn has_gazetteer_hits_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
+        let values = if let Data::StringArray(ref v) = test.args[0].value { v } else { panic!() };
 
-        let result = has_gazetteer_hits(&preprocessor_result, &gazetteer);
+        let gazetteer = HashSetGazetteer::new(&mut serde_json::to_string(values).unwrap().as_bytes()).unwrap();
+
+        let result = has_gazetteer_hits(&preprocessor_result, Box::new(gazetteer));
         assert_eq!(result, test.output)
     }
 
-    fn ngram_matcher_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
-        let result = ngram_matcher(&preprocessor_result, &test.args[0].value);
+    fn ngram_matcher_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
+        let ngram = if let Data::StringValue(ref v) = test.args[0].value { v } else { panic!() };
+        let result = ngram_matcher(&preprocessor_result, &ngram);
         assert_eq!(result, test.output)
     }
 
-    fn is_capitalized_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+    fn is_capitalized_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
         let result = is_capitalized(&preprocessor_result);
         assert_eq!(result, test.output)
     }
 
-    fn is_first_word_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+    fn is_first_word_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
         let result = is_first_word(&preprocessor_result);
         assert_eq!(result, test.output)
     }
 
-    fn is_last_word_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+    fn is_last_word_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
         let result = is_last_word(&preprocessor_result);
         assert_eq!(result, test.output)
     }
 
-    fn contains_possessive_works(_: &FileConfiguration, test: &TestDescription, normalized_tokens: Vec<NormalizedToken>) {
-        let preprocessor_result = PreprocessorResult::new(normalized_tokens);
+    fn contains_possessive_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
         let result = contains_possessive(&preprocessor_result);
         assert_eq!(result, test.output)
     }

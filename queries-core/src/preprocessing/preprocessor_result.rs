@@ -8,6 +8,7 @@ type Ngrams = (String, Vec<usize>);
 
 #[derive(Debug)]
 pub struct PreprocessorResult {
+    pub raw: String,
     pub tokens: Vec<NormalizedToken>,
     pub ngrams: Vec<Ngrams>,
     pub normalized_ngrams: Vec<Ngrams>,
@@ -15,8 +16,9 @@ pub struct PreprocessorResult {
 }
 
 impl PreprocessorResult {
-    pub fn new(tokens: Vec<NormalizedToken>) -> PreprocessorResult {
+    pub fn new(raw: String, tokens: Vec<NormalizedToken>) -> PreprocessorResult {
         return PreprocessorResult {
+            raw: raw,
             ngrams: compute_all_ngrams(&*tokens.iter().map(|token| &*token.value).collect_vec(),
                                        tokens.len()),
             normalized_ngrams: compute_all_ngrams(&*tokens.iter()

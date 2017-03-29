@@ -29,9 +29,10 @@ fn run_intent_classifications(bench: &mut Bencher) {
 
 fn run_everything(bench: &mut Bencher) {
     let file_configuration = FileConfiguration::default();
-    
+
     bench.iter(|| {
-        let intent_parser = IntentParser::new(&file_configuration, Some(&["BookRestaurant"])).yolo();
+        let intent_parser = IntentParser::new(&file_configuration, Some(&["BookRestaurant"]))
+            .yolo();
         let text = "Book me a restaurant for two peoples at Le Chalet Savoyard";
         let result = intent_parser.run_intent_classifiers(text, 0.4, None);
         let _ = intent_parser.run_tokens_classifier(text, &result[0].name);

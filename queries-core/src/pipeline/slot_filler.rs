@@ -1,38 +1,63 @@
+use std::ops::Range;
+
 use ndarray::prelude::*;
-use rulinalg::utils::argmax;
 
-use pipeline::Probability;
+use preprocessing::PreprocessorResult;
 
-pub fn compute_slots(tokens: &[&str], token_probabilities: &Array2<Probability>) -> Vec<String> {
-    let mut data: Vec<Vec<String>> = vec![vec![]; token_probabilities.cols()];
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct Token {
+    value: String,
+    range: Range<usize>,
+}
 
-    for row in 0..token_probabilities.rows() {
-        let probabilities = token_probabilities.row(row);
-        let (max_probability_index, _) = argmax(&probabilities.to_vec());
+pub fn compute_slots(preprocessor_result: &PreprocessorResult,
+                     num_slots: usize,
+                     tokens_predictions: &Array1<usize>)
+                     -> Vec<Vec<Token>> {
+    let mut result: Vec<Vec<Token>> = vec![vec![]; num_slots];
 
-        let token = tokens[row].to_string();
-        data[max_probability_index].push(token);
+    for (i, token) in preprocessor_result.tokens.iter().enumerate() {
+        if tokens_predictions[i] == 0 { continue }
+
+        let ref mut tokens = result[tokens_predictions[i] - 1];
+
+        if tokens.is_empty() || (i > 0 && tokens_predictions[i] != tokens_predictions[i - 1]) {
+            tokens.push(Token { value: token.value.to_string(), range: token.char_range.clone() });
+        } else {
+            let existing_token = tokens.last_mut().unwrap(); // checked
+            let ref mut existing_token_value = existing_token.value;
+            let ref mut existing_token_range = existing_token.range;
+            existing_token_value.push_str(&format!(" {}", &token.value));
+            existing_token_range.end = token.char_range.end;
+        }
     }
-
-    data.iter().map(|tokens| tokens.join(" ")).collect()
+    result
 }
 
 #[cfg(test)]
 mod test {
+    use std::ops::Range;
+
     use ndarray::prelude::*;
-    use pipeline::slot_filler::compute_slots;
+
+    use preprocessing::preprocess;
+    use super::Token;
+    use super::compute_slots;
 
     #[test]
     fn slot_filler_works() {
-        let tokens = vec!["book", "me", "a", "restaurant"];
-        let tokens_probabilities = arr2(&[[0.1, 1.4, 0.3],
-                                          [0.6, 0.5, 0.4],
-                                          [0.7, 0.8, 0.9],
-                                          [1.2, 1.1, 1.0]]);
+        let preprocess_result = preprocess("Book me a table for tomorrow at Chartier in the evening");
+        let tokens_predictions: Array1<usize> = arr1(&[0, 0, 0, 0, 2, 2, 0, 3, 0, 2, 2]);
 
-        let expected = vec!["me restaurant", "book", "a"];
-        let slots = compute_slots(&tokens, &tokens_probabilities);
-
+        let expected = vec![
+            vec![],
+            vec![
+                Token { value: "for tomorrow".to_string(), range: Range { start: 16, end: 28 } },
+                Token { value: "the evening".to_string(), range: Range { start: 44, end: 55 } },
+            ],
+            vec![Token { value: "Chartier".to_string(), range: Range { start: 32, end: 40 } }],
+        ];
+        let slots = compute_slots(&preprocess_result, expected.len(), &tokens_predictions);
         assert_eq!(slots, expected);
     }
 }
