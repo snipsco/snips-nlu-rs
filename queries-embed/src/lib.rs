@@ -46,8 +46,8 @@ pub enum QUERIESRESULT {
 }
 
 macro_rules! wrap {
-    ( $e:expr ) => { match $e {
-        Ok(_) => {return QUERIESRESULT::OK; }
+    ($e:expr) => { match $e {
+        Ok(_) => { return QUERIESRESULT::OK; }
         Err(e) => {
             use std::io::Write;
             use error_chain::ChainedError;
@@ -78,10 +78,8 @@ macro_rules! get_str_vec {
         for &s in unsafe { slice::from_raw_parts($pointer, $size as usize) } {
             strings.push(get_str!(s))
         }
-
         strings
     }}
-
 }
 
 #[no_mangle]
