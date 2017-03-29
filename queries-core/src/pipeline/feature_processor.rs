@@ -1,12 +1,11 @@
 use errors::*;
 use ndarray::{Array, Array2};
 
+use config::ArcBoxedIntentConfig;
 use config::IntentConfig;
 use features::{shared_scalar, shared_vector};
 use preprocessing::PreprocessorResult;
-use protos::feature::{Feature, Feature_Type, Feature_Domain, Feature_Argument};
-
-use config::ArcBoxedIntentConfig;
+use protos::feature::{Feature, Feature_Scalar_Type, Feature_Vector_Type, Feature_Argument};
 
 pub trait MatrixFeatureProcessor {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
@@ -46,66 +45,57 @@ impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
 }
 
 impl Feature {
-    fn compute(&self,
-               intent_config: &IntentConfig,
-               input: &PreprocessorResult)
-               -> Result<Vec<f32>> {
-        let known_domain = self.get_domain();
-        let feature_type = self.field_type;
+    fn compute(&self, intent_config: &IntentConfig, input: &PreprocessorResult) -> Result<Vec<f32>> {
         let arguments = self.get_arguments();
 
-        match known_domain {
-            Feature_Domain::SHARED_SCALAR => {
-                Self::get_shared_scalar(intent_config, input, &feature_type, arguments)
-            }
-            Feature_Domain::SHARED_VECTOR => {
-                Self::get_shared_vector(intent_config, input, &feature_type, arguments)
-            }
+        if self.has_scalar_type() {
+            Self::get_shared_scalar(intent_config, input, &self.get_scalar_type(), arguments)
+        } else if self.has_vector_type() {
+            Self::get_shared_vector(intent_config, input, &self.get_vector_type(), arguments)
+        } else {
+            bail!("No feature function passed")
         }
     }
 
     fn get_shared_scalar(intent_config: &IntentConfig,
                          input: &PreprocessorResult,
-                         feature_type: &Feature_Type,
+                         feature_type: &Feature_Scalar_Type,
                          arguments: &[Feature_Argument])
                          -> Result<Vec<f32>> {
         Ok(match *feature_type {
-            Feature_Type::HAS_GAZETTEER_HITS => {
+            Feature_Scalar_Type::HAS_GAZETTEER_HITS => {
                 let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
                 shared_scalar::has_gazetteer_hits(input, gazetteer)
             }
-            Feature_Type::NGRAM_MATCHER => {
-                let ngram_to_check = arguments[0].get_str();
-                shared_scalar::ngram_matcher(input, ngram_to_check)
+            Feature_Scalar_Type::NGRAM_MATCHER => {
+                shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
-            Feature_Type::GET_MESSAGE_LENGTH => {
+            Feature_Scalar_Type::GET_MESSAGE_LENGTH => {
                 let normalization = arguments[0].get_scalar() as f32;
                 shared_scalar::get_message_length(input, normalization)
             }
-            feature_type => panic!("Feature function not implemented: {:?}", feature_type),
         })
     }
 
     fn get_shared_vector(intent_config: &IntentConfig,
                          input: &PreprocessorResult,
-                         feature_type: &Feature_Type,
+                         feature_type: &Feature_Vector_Type,
                          arguments: &[Feature_Argument])
                          -> Result<Vec<f32>> {
         Ok(match *feature_type {
-            Feature_Type::HAS_GAZETTEER_HITS => {
+            Feature_Vector_Type::HAS_GAZETTEER_HITS => {
                 let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
                 shared_vector::has_gazetteer_hits(input, gazetteer)
             }
-            Feature_Type::NGRAM_MATCHER => {
-                let ngram_to_check = arguments[0].get_str();
-                shared_vector::ngram_matcher(input, ngram_to_check)
+            Feature_Vector_Type::NGRAM_MATCHER => {
+                shared_vector::ngram_matcher(input, arguments[0].get_str())
             }
-            Feature_Type::IS_CAPITALIZED => shared_vector::is_capitalized(input),
-            Feature_Type::IS_FIRST_WORD => shared_vector::is_first_word(input),
-            Feature_Type::IS_LAST_WORD => shared_vector::is_last_word(input),
-            Feature_Type::CONTAINS_POSSESSIVE => shared_vector::contains_possessive(input),
-            Feature_Type::CONTAINS_DIGITS => shared_vector::contains_digits(input),
-            feature_type => panic!("Feature functions not implemented: {:?}", feature_type),
+            Feature_Vector_Type::IS_CAPITALIZED => shared_vector::is_capitalized(input),
+            Feature_Vector_Type::IS_DATE => shared_vector::is_date(input),
+            Feature_Vector_Type::IS_FIRST_WORD => shared_vector::is_first_word(input),
+            Feature_Vector_Type::IS_LAST_WORD => shared_vector::is_last_word(input),
+            Feature_Vector_Type::CONTAINS_POSSESSIVE => shared_vector::contains_possessive(input),
+            Feature_Vector_Type::CONTAINS_DIGITS => shared_vector::contains_digits(input),
         })
     }
 }
