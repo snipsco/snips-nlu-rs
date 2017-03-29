@@ -27,7 +27,7 @@ pub struct Token {
 }
 
 impl Token {
-    fn from(input: &str, entity_token: &EntityToken) -> Token {
+    fn from(input: &str, entity_token: EntityToken) -> Token {
         Token {
             range: Range {
                 start: convert_byte_index(input, entity_token.start_index),
@@ -37,18 +37,18 @@ impl Token {
                 start: entity_token.start_index,
                 end: entity_token.end_index,
             },
-            value: entity_token.value.clone(),
-            entity: Some(entity_token.entity.clone()),
+            value: entity_token.value,
+            entity: Some(entity_token.entity),
         }
     }
 
-    fn to_normalized(&self) -> NormalizedToken {
+    fn to_normalized(self) -> NormalizedToken {
         NormalizedToken {
-            value: self.value.clone(),
             normalized_value: normalization::normalize(&self.value),
-            range: self.range.clone(),
-            char_range: self.char_range.clone(),
-            entity: self.entity.clone(),
+            value: self.value,
+            range: self.range,
+            char_range: self.char_range,
+            entity: self.entity,
         }
     }
 }
@@ -64,14 +64,14 @@ pub struct NormalizedToken {
 
 pub fn create_normalized_tokens(input: &str, entity_tokens: Vec<Token>) -> Vec<NormalizedToken> {
     tokenization::tokenize(entity::detect_entities(input, entity_tokens))
-        .iter()
+        .into_iter()
         .map(|token| token.to_normalized())
         .collect()
 }
 
 pub fn preprocess(input: &str, entities: &str) -> Result<PreprocessorResult> {
     let entity_tokens = serde_json::from_str::<Vec<EntityToken>>(entities)?
-        .iter()
+        .into_iter()
         .map(|entity_token| Token::from(input, entity_token))
         .collect();
 
