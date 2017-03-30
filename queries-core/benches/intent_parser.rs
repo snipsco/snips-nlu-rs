@@ -9,7 +9,8 @@ use yolo::Yolo;
 use queries_core::config::FileBasedAssistantConfig;
 
 fn get_intent_parser() -> queries_core::IntentParser {
-    let assistant_config = FileBasedAssistantConfig::new("../data2");
+    let root_dir = queries_core::file_path("untracked");
+    let assistant_config = FileBasedAssistantConfig::new(root_dir);
     queries_core::IntentParser::new(&assistant_config).yolo()
 }
 

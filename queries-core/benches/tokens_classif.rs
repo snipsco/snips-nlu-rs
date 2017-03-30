@@ -10,7 +10,8 @@ use queries_core::config::{AssistantConfig, FileBasedAssistantConfig};
 use queries_core::pipeline::tokens_classifier::{TokensClassifier, ProtobufTokensClassifier};
 
 fn get_classifier(classifier: &str) -> ProtobufTokensClassifier {
-    let assistant_config = FileBasedAssistantConfig::new("../data2");
+    let root_dir = queries_core::file_path("untracked");
+    let assistant_config = FileBasedAssistantConfig::new(root_dir);
     let intent_config = assistant_config
         .get_intent_configuration(classifier)
         .yolo();
