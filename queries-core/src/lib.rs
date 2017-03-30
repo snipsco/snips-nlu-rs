@@ -16,6 +16,7 @@ extern crate serde_json;
 extern crate tensorflow;
 extern crate yolo;
 extern crate csv;
+extern crate zip;
 
 use std::cmp::Ordering;
 use std::path;

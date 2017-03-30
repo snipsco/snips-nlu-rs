@@ -1,14 +1,18 @@
-use std::fs;
-use std::path;
-use std::io::Read;
-use std::fs::File;
 use std::collections::HashMap;
-use std::sync::Arc;
+use std::fs;
+use std::fs::File;
+use std::io::{Read, Seek, Cursor};
+use std::path;
+use std::sync::{Arc, Mutex};
 
 use csv;
+use protobuf;
+use regex::Regex;
+use yolo::Yolo;
+use zip;
+
 use errors::*;
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
-use protobuf;
 use protos::intent_configuration::IntentConfiguration;
 
 pub trait AssistantConfig {
@@ -124,5 +128,140 @@ impl IntentConfig for FileBasedIntentConfig {
         } else {
             bail!("could not get gazetteer for name {}", name)
         }
+    }
+}
+
+pub struct BinaryBasedAssistantConfig<R: Read + Seek + Send + 'static> {
+    archive: Arc<Mutex<zip::read::ZipArchive<R>>>,
+}
+
+impl<R: Read + Seek + Send + 'static> BinaryBasedAssistantConfig<R> {
+    pub fn new(reader: R) -> Result<BinaryBasedAssistantConfig<R>> {
+        let zip = zip::ZipArchive::new(reader)?;
+        Ok(BinaryBasedAssistantConfig { archive: Arc::new(Mutex::new(zip)) })
+    }
+}
+
+impl<R: Read + Seek + Send + 'static> AssistantConfig for BinaryBasedAssistantConfig<R> {
+    fn get_available_intents_names(&self) -> Result<Vec<String>> {
+        lazy_static! {
+            static ref INTENT_REGEX: Regex = Regex::new(r"intents/(.+?)/config.pb").yolo();
+        }
+        let mut locked =
+            self.archive.lock().map_err(|_| "Can not take lock on ZipFile. Mutex poisoned")?;
+
+        let ref mut archive = *locked;
+
+        let mut available_intents = vec![];
+
+        for i in 0..archive.len() {
+            let file = archive.by_index(i).unwrap();
+            if let Some(captures) = INTENT_REGEX.captures(file.name()) {
+                available_intents.push(captures[1].to_string());
+            }
+        }
+        Ok(available_intents)
+    }
+
+    fn get_intent_configuration(&self, name: &str) -> Result<ArcBoxedIntentConfig> {
+        Ok(Arc::new(Box::new(BinaryBasedIntentConfig::new(self.archive.clone(), name.to_string())?)))
+    }
+}
+
+pub struct BinaryBasedIntentConfig<R: Read + Seek + Send + 'static> {
+    archive: Arc<Mutex<zip::read::ZipArchive<R>>>,
+    intent_name: String,
+    /* name -> (lang, category, version)*/
+    gazetteer_mapping: HashMap<String, (String, String, String)>,
+}
+
+impl<R: Read + Seek + Send + 'static> BinaryBasedIntentConfig<R> {
+    fn new(archive: Arc<Mutex<zip::read::ZipArchive<R>>>, name: String) -> Result<BinaryBasedIntentConfig<R>> {
+        let archive_clone = archive.clone();
+        let mut locked = archive_clone.lock()
+            .map_err(|_| "Can not take lock on ZipFile. Mutex poisoned")?;
+
+        let ref mut zip_file = *locked;
+
+        let gazetteers_reader = zip_file.by_name(&format!("intents/{}/gazetteers.csv", &name));
+        let mut csv_reader = csv::Reader::from_reader(gazetteers_reader?)
+            .has_headers(false);
+        let mut mappings = HashMap::new();
+
+        for row in csv_reader.decode() {
+            let (lang, category, name, version) = row?;
+            mappings.insert(name, (lang, category, version));
+        }
+
+        Ok(BinaryBasedIntentConfig {
+            archive: archive,
+            intent_name: name,
+            gazetteer_mapping: mappings
+        })
+    }
+}
+
+impl<R: Read + Seek + Send + 'static> IntentConfig for BinaryBasedIntentConfig<R> {
+    fn get_file(&self, file_name: &path::Path) -> Result<Box<Read>> {
+        let mut locked = self.archive.lock()
+            .map_err(|_| "Can not take lock on ZipFile. Mutex poisoned")?;
+
+        let ref mut zip_file = *locked;
+        let file = zip_file.by_name(&format!("intents/{}/{}",
+                                             self.intent_name,
+                                             &file_name.to_str().ok_or("Utf8 error on path name")?));
+
+        let mut result = vec![];
+        file?.read_to_end(&mut result)?;
+
+        Ok(Box::new(Cursor::new(result)))
+    }
+
+    fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>> {
+        if let Some(mapping) = self.gazetteer_mapping.get(name) {
+            let (ref lang, ref category, ref version) = *mapping;
+
+            let mut locked = self.archive.lock()
+                .map_err(|_| "Can not take lock on ZipFile. Mutex poisoned")?;
+
+            let ref mut zip_file = *locked;
+
+            let file_name = format!("gazetteers/{}/{}/{}_{}.json", lang, category, name, version);
+            let file = zip_file.by_name(&file_name);
+
+            Ok(Box::new(HashSetGazetteer::new(&mut file?)?))
+        } else {
+            bail!("could not get gazetteer for name {}", name)
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use std::fs;
+    use std::path;
+    use super::{BinaryBasedAssistantConfig, AssistantConfig};
+
+    use file_path;
+
+    #[test]
+    fn can_decode() {
+        let reader = fs::File::open(file_path("tests/zip_files/sample_builtin_config.zip")).unwrap();
+        let intent_config = BinaryBasedAssistantConfig::new(reader).unwrap();
+
+        assert!(intent_config.get_available_intents_names().unwrap().len() == 1);
+        assert!(intent_config.get_available_intents_names().unwrap()[0] == "BookRestaurant");
+
+        let book_restaurant = intent_config.get_intent_configuration("BookRestaurant").unwrap();
+
+        assert!(book_restaurant.get_gazetteer("meals").unwrap().contains("lunch"));
+        assert!(!book_restaurant.get_gazetteer("meals").unwrap().contains("lunch2"));
+        let mut test_file = book_restaurant.get_file(path::Path::new("test_file")).unwrap();
+        let mut file_content = String::new();
+
+        test_file.read_to_string(&mut file_content).unwrap();
+
+        assert!(file_content.trim() == "Hello, world !")
     }
 }
