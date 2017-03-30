@@ -5,6 +5,7 @@ error_chain! {
         Serde(::serde_json::Error);
         Protobuf(::protobuf::ProtobufError);
         Csv(::csv::Error);
+        Zip(::zip::result::ZipError);
     }
 }
 

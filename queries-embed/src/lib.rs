@@ -9,6 +9,8 @@ extern crate serde_json;
 
 use std::ffi::{CStr, CString};
 use std::sync::Mutex;
+use std::slice;
+use std::io::Cursor;
 
 use libc::c_char;
 use libc::c_float;
@@ -83,10 +85,18 @@ macro_rules! get_str_vec {
 }
 
 #[no_mangle]
-pub extern "C" fn intent_parser_create(root_dir: *const c_char,
-                                       client: *mut *mut Opaque)
-                                       -> QUERIESRESULT {
-    wrap!(create(root_dir, client));
+pub extern "C" fn intent_parser_create_from_dir(root_dir: *const c_char,
+                                                client: *mut *mut Opaque)
+                                                -> QUERIESRESULT {
+    wrap!(create_from_dir(root_dir, client));
+}
+
+#[no_mangle]
+pub extern "C" fn intent_parser_create_from_binary(binary: *const libc::c_uchar,
+                                                   binary_size: libc::c_uint,
+                                                   client: *mut *mut Opaque)
+                                                   -> QUERIESRESULT {
+    wrap!(create_from_binary(binary, binary_size, client));
 }
 
 #[no_mangle]
@@ -125,10 +135,27 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
     QUERIESRESULT::OK
 }
 
-fn create(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
+fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
     let file_configuration = queries_core::config::FileBasedAssistantConfig::new(root_dir);
+
+    let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
+
+    unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
+
+    println!("create ok");
+    Ok(())
+}
+
+fn create_from_binary(binary: *const libc::c_uchar,
+                      binary_size: libc::c_uint,
+                      client: *mut *mut Opaque)
+                      -> Result<()> {
+    let slice = unsafe { slice::from_raw_parts(binary, binary_size as usize) };
+
+    let file_configuration =
+        queries_core::config::BinaryBasedAssistantConfig::new(Cursor::new(slice.to_owned()))?;
 
     let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
 
