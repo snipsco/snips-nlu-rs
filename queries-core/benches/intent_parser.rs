@@ -23,19 +23,21 @@ fn load_parser(bench: &mut Bencher) {
 fn run_parser(bench: &mut Bencher) {
     let intent_parser = get_intent_parser();
 
-    let text = "Book me a restaurant for two people at Le Chalet Savoyard";
+    let text = "Book me a table for four people at Le Chalet Savoyard tonight";
+    let entities = r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#;
     bench.iter(|| {
-        let result = intent_parser.run_intent_classifiers(&text, 0.4);
-        let _ = intent_parser.run_tokens_classifier(&text, &result[0].name).yolo();
+        let result = intent_parser.run_intent_classifiers(&text, 0.4, &entities).yolo();
+        let _ = intent_parser.run_tokens_classifier(&text, &result[0].name, &entities).yolo();
     });
 }
 
 fn load_and_run_parser(bench: &mut Bencher) {
-    let text = "Book me a restaurant for two people at Le Chalet Savoyard";
+    let text = "Book me a table for four people at Le Chalet Savoyard tonight";
+    let entities = r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#;
     bench.iter(|| {
         let intent_parser = get_intent_parser();
-        let result = intent_parser.run_intent_classifiers(text, 0.4);
-        let _ = intent_parser.run_tokens_classifier(text, &result[0].name).yolo();
+        let result = intent_parser.run_intent_classifiers(text, 0.4, &entities).yolo();
+        let _ = intent_parser.run_tokens_classifier(text, &result[0].name, &entities).yolo();
     });
 }
 

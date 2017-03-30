@@ -9,10 +9,10 @@ from snips_queries import IntentParser
 q = IntentParser("en", data_path="../../data/untracked")
 #q = IntentParser("en", data_binary=bytearray(open("../../data/untracked/builtins_final.zip", "rb").read()))
 
-text = "Book me a restaurant for five people tonight"
+text = "Book me a table for four people at Le Chalet Savoyard at 9pm"
 
 r = q.get_intent(text, 0.4)
-print("%s", r)
+print(r)
 
 r = q.get_entities(text, "BookRestaurant")
-print("%s", r)
+print(r)
