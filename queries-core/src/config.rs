@@ -1,17 +1,18 @@
-use std::fs;
-use std::path;
-use std::io::{Read, Seek, Cursor};
-use std::fs::File;
 use std::collections::HashMap;
+use std::fs;
+use std::fs::File;
+use std::io::{Read, Seek, Cursor};
+use std::path;
 use std::sync::{Arc, Mutex};
 
 use csv;
+use protobuf;
 use regex::Regex;
 use yolo::Yolo;
-use errors::*;
 use zip;
+
+use errors::*;
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
-use protobuf;
 use protos::intent_configuration::IntentConfiguration;
 
 pub trait AssistantConfig {
@@ -144,7 +145,7 @@ impl<R: Read + Seek + Send + 'static> BinaryBasedAssistantConfig<R> {
 impl<R: Read + Seek + Send + 'static> AssistantConfig for BinaryBasedAssistantConfig<R> {
     fn get_available_intents_names(&self) -> Result<Vec<String>> {
         lazy_static! {
-                static ref INTENT_REGEX: Regex = Regex::new(r"intents/(.+?)/config.pb").yolo();
+            static ref INTENT_REGEX: Regex = Regex::new(r"intents/(.+?)/config.pb").yolo();
         }
         let mut locked =
             self.archive.lock().map_err(|_| "Can not take lock on ZipFile. Mutex poisoned")?;
