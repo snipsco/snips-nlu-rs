@@ -1,36 +1,34 @@
 #[macro_use]
 extern crate bencher;
-
 extern crate queries_core;
+extern crate yolo;
 
 use bencher::Bencher;
-use queries_core::FileConfiguration;
-use queries_core::pipeline::tokens_classifier::ProtobufTokensClassifier;
-use queries_core::pipeline::tokens_classifier::TokensClassifier;
-use queries_core::preprocess;
+use yolo::Yolo;
+
+use queries_core::config::{AssistantConfig, FileBasedAssistantConfig};
+use queries_core::pipeline::tokens_classifier::{TokensClassifier, ProtobufTokensClassifier};
+
+fn get_classifier(classifier: &str) -> ProtobufTokensClassifier {
+    let assistant_config = FileBasedAssistantConfig::new("../data2");
+    let intent_config = assistant_config
+        .get_intent_configuration(classifier)
+        .yolo();
+    ProtobufTokensClassifier::new(intent_config).yolo()
+}
 
 fn load_classifier(bench: &mut Bencher) {
-    let file_configuration = FileConfiguration::default();
-    let model_name = "BookRestaurant_features";
-    let cnn_name = "BookRestaurant_model";
-
     bench.iter(|| {
-        let _ = ProtobufTokensClassifier::new(&file_configuration, &model_name, &cnn_name);
+        let _ = get_classifier("BookRestaurant");
     });
 }
 
-fn run_intent_model(bench: &mut Bencher) {
-    let file_configuration = FileConfiguration::default();
-    let model_name = "BookRestaurant_features";
-    let cnn_name = "BookRestaurant_model";
-
-    let tokens_classifier =
-        ProtobufTokensClassifier::new(&file_configuration, &model_name, &cnn_name).unwrap();
-
-    let preprocessor_result = preprocess("Book me a table for two people at Le Chalet Savoyard");
+fn run_classifier(bench: &mut Bencher) {
+    let tokens_classifier = get_classifier("BookRestaurant");
+    let preprocessor_result = queries_core::preprocess("Book me a table for two people at Le Chalet Savoyard");
 
     bench.iter(|| { let _ = tokens_classifier.run(&preprocessor_result); });
 }
 
-benchmark_group!(tokens_classifier, load_classifier, run_intent_model);
+benchmark_group!(tokens_classifier, load_classifier, run_classifier);
 benchmark_main!(tokens_classifier);
