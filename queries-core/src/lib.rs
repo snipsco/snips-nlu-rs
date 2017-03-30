@@ -43,8 +43,8 @@ pub mod errors;
 pub mod config;
 mod features;
 mod models;
-mod pipeline;
-mod preprocessing;
+pub mod pipeline;
+pub mod preprocessing;
 mod protos;
 
 #[derive(Serialize, Debug)]
@@ -131,4 +131,3 @@ impl IntentParser {
         Ok(result)
     }
 }
-
