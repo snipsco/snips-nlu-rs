@@ -23,7 +23,7 @@ fn load_parser(bench: &mut Bencher) {
 fn run_parser(bench: &mut Bencher) {
     let intent_parser = get_intent_parser();
 
-    let text = "Book me a restaurant for two peoples at Le Chalet Savoyard";
+    let text = "Book me a restaurant for two people at Le Chalet Savoyard";
     bench.iter(|| {
         let result = intent_parser.run_intent_classifiers(&text, 0.4);
         let _ = intent_parser.run_tokens_classifier(&text, &result[0].name).yolo();
@@ -31,7 +31,7 @@ fn run_parser(bench: &mut Bencher) {
 }
 
 fn load_and_run_parser(bench: &mut Bencher) {
-    let text = "Book me a restaurant for two peoples at Le Chalet Savoyard";
+    let text = "Book me a restaurant for two people at Le Chalet Savoyard";
     bench.iter(|| {
         let intent_parser = get_intent_parser();
         let result = intent_parser.run_intent_classifiers(text, 0.4);
