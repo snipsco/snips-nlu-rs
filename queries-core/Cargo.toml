@@ -22,6 +22,7 @@ tensorflow = "0.3"
 bencher = "0.1"
 csv = "0.15.0"
 yolo = "*"
+zip = { version = "0.2", default-features = false }
 
 [build-dependencies]
 glob = "0.2"

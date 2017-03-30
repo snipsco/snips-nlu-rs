@@ -1,9 +1,10 @@
-from snips_queries import SnipsQueries
+from snips_queries import IntentParser
 
-q=SnipsQueries("../../data", ["BookRestaurant"])
+#q=IntentParser(data_binary=bytearray(open("/home/fredszaq/Work/tmp/builtins_final.zip", "rb").read()))
+q=IntentParser(data_path="/home/fredszaq/Work/tmp/builtins_final")
 
-r= q.run_intent_classification("book me a restaurant for five people tonight", 0.4)
+r= q.get_intent("book me a restaurant for five people tonight")
 print("%s" % r) 
 
-r= q.run_tokens_classification("book me a restaurant for five people tonight", "BookRestaurant")
+r= q.get_entities("book me a restaurant for five people tonight", "BookRestaurant")
 print("%s" % r) 
