@@ -1,46 +1,35 @@
 #[macro_use]
 extern crate bencher;
-
 extern crate queries_core;
+extern crate yolo;
 
 use bencher::Bencher;
-use queries_core::FileConfiguration;
-use queries_core::preprocess;
-use queries_core::pipeline::intent_classifier::ProtobufIntentClassifier;
-use queries_core::pipeline::intent_classifier::IntentClassifier;
+use yolo::Yolo;
 
-macro_rules! load_classifier {
-    ($name:ident, $classifier:expr) => {
-        fn $name(bench: &mut Bencher) {
-            let file_configuration = FileConfiguration::default();
+use queries_core::config::{AssistantConfig, FileBasedAssistantConfig};
+use queries_core::pipeline::intent_classifier::{IntentClassifier, ProtobufIntentClassifier};
 
-            bench.iter(|| {
-                ProtobufIntentClassifier::new(&file_configuration, $classifier).unwrap();
-            });
-        }
-    }
+fn get_classifier(classifier: &str) -> ProtobufIntentClassifier {
+    let root_dir = queries_core::file_path("untracked");
+    let assistant_config = FileBasedAssistantConfig::new(root_dir);
+    let intent_config = assistant_config
+        .get_intent_configuration(classifier)
+        .yolo();
+    ProtobufIntentClassifier::new(intent_config).yolo()
 }
 
-macro_rules! run_classifier {
-    ($name:ident, $classifier:expr, $input:expr) => {
-        fn $name(bench: &mut Bencher) {
-            let file_configuration = FileConfiguration::default();
-
-            let parsed_input = preprocess($input);
-            let classifier = ProtobufIntentClassifier::new(&file_configuration, $classifier).unwrap();
-
-            bench.iter(|| {
-                classifier.run(&parsed_input);
-            });
-        }
-    }
+fn load_classifier(bench: &mut Bencher) {
+    bench.iter(|| {
+        let _ = get_classifier("BookRestaurant");
+    });
 }
 
-load_classifier!(load_book_restaurant, "BookRestaurant");
-run_classifier!(run_book_restaurant_coinstot,
-                "BookRestaurant",
-                "Book me a table at Coinsto Vino");
+fn run_classifier(bench: &mut Bencher) {
+    let classifier = get_classifier("BookRestaurant");
+    let preprocessor_result = queries_core::preprocess("Book me a table for two people at Le Chalet Savoyard");
 
-benchmark_group!(load, load_book_restaurant);
-benchmark_group!(run, run_book_restaurant_coinstot);
-benchmark_main!(load, run);
+    bench.iter(|| { let _ = classifier.run(&preprocessor_result); });
+}
+
+benchmark_group!(intent_classifier, load_classifier, run_classifier);
+benchmark_main!(intent_classifier);
