@@ -45,6 +45,7 @@ mod features;
 mod models;
 pub mod pipeline;
 pub mod preprocessing;
+mod postprocessing;
 mod protos;
 
 #[derive(Serialize, Debug)]
