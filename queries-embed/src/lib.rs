@@ -46,8 +46,8 @@ pub enum QUERIESRESULT {
 }
 
 macro_rules! wrap {
-    ( $e:expr ) => { match $e {
-        Ok(_) => {return QUERIESRESULT::OK; }
+    ($e:expr) => { match $e {
+        Ok(_) => { return QUERIESRESULT::OK; }
         Err(e) => {
             use std::io::Write;
             use error_chain::ChainedError;
@@ -78,10 +78,8 @@ macro_rules! get_str_vec {
         for &s in unsafe { slice::from_raw_parts($pointer, $size as usize) } {
             strings.push(get_str!(s))
         }
-
         strings
     }}
-
 }
 
 #[no_mangle]
@@ -103,18 +101,20 @@ pub extern "C" fn intent_parser_create_from_binary(binary: *const libc::c_uchar,
 pub extern "C" fn intent_parser_run_intent_classification(client: *mut Opaque,
                                                           input: *const c_char,
                                                           probability_threshold: c_float,
+                                                          entities: *const c_char,
                                                           result_json: *mut *mut c_char)
                                                           -> QUERIESRESULT {
-    wrap!(run_intent_classification(client, input, probability_threshold, result_json))
+    wrap!(run_intent_classification(client, input, probability_threshold, entities, result_json))
 }
 
 #[no_mangle]
 pub extern "C" fn intent_parser_run_tokens_classification(client: *mut Opaque,
                                                           input: *const c_char,
                                                           intent_name: *const c_char,
+                                                          entities: *const c_char,
                                                           result_json: *mut *mut c_char)
                                                           -> QUERIESRESULT {
-    wrap!(run_tokens_classification(client, input, intent_name, result_json))
+    wrap!(run_tokens_classification(client, input, intent_name, entities, result_json))
 }
 
 #[no_mangle]
@@ -167,12 +167,14 @@ fn create_from_binary(binary: *const libc::c_uchar,
 fn run_intent_classification(client: *mut Opaque,
                              input: *const c_char,
                              probability_threshold: c_float,
+                             entities: *const c_char,
                              result_json: *mut *mut c_char)
                              -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
+    let entities = get_str!(entities);
 
-    let results = intent_parser.run_intent_classifiers(input, probability_threshold);
+    let results = intent_parser.run_intent_classifiers(input, probability_threshold, entities)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
@@ -180,13 +182,15 @@ fn run_intent_classification(client: *mut Opaque,
 fn run_tokens_classification(client: *mut Opaque,
                              input: *const c_char,
                              intent_name: *const c_char,
+                             entities: *const c_char,
                              result_json: *mut *mut c_char)
                              -> Result<()> {
     let input = get_str!(input);
     let intent_name = get_str!(intent_name);
     let intent_parser = get_intent_parser!(client);
+    let entities = get_str!(entities);
 
-    let result = intent_parser.run_tokens_classifier(input, intent_name)?;
+    let result = intent_parser.run_tokens_classifier(input, intent_name, entities)?;
 
     point_to_string(result_json, serde_json::to_string(&result)?)
 }

@@ -92,7 +92,8 @@ mod test {
             let intent_classifier = ProtobufIntentClassifier::new(intent_config).unwrap();
 
             for test in tests {
-                let preprocess_result = preprocess(&test.text);
+                // TODO: Build PreprocessorResult from test instead of running the preprocessor
+                let preprocess_result = preprocess(&test.text, "").unwrap();
                 let result = intent_classifier.run(&preprocess_result).unwrap();
                 assert_epsilon_eq(&arr2(&[[result]]), &create_array(&test.output), 1e-6);
             }

@@ -72,7 +72,7 @@ mod test {
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn tokens_classifier_works() {
         let preprocessor_result = preprocess("Book me a table for two people at Le Chalet \
-                                              Savoyard");
+                                              Savoyard", "").unwrap();
 
         let intent_config = FileBasedAssistantConfig::default().get_intent_configuration("BookRestaurant").unwrap();
 

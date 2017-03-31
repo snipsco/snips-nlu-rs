@@ -26,7 +26,10 @@ fn load_classifier(bench: &mut Bencher) {
 
 fn run_classifier(bench: &mut Bencher) {
     let classifier = get_classifier("BookRestaurant");
-    let preprocessor_result = queries_core::preprocess("Book me a table for two people at Le Chalet Savoyard");
+    let preprocessor_result = queries_core::preprocess(
+        "Book me a table for four people at Le Chalet Savoyard tonight",
+        r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#)
+        .yolo();
 
     bench.iter(|| { let _ = classifier.run(&preprocessor_result); });
 }

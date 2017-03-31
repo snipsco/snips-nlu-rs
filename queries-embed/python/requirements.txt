@@ -1,0 +1,1 @@
+-e git+ssh://git@github.com/snipsco/duckling-python.git@0.0.9#egg=ducklin-0.0.9
