@@ -11,6 +11,7 @@ import duckling.core as duckling
 
 lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "../queries_embed.so"))
 #lib = cdll.LoadLibrary("../../target/debug/libqueries_embed.so") # use for dev
+#lib = cdll.LoadLibrary("../../target/debug/libqueries_embed.dylib") # use for dev
 
 class IntentParser(object):
 
