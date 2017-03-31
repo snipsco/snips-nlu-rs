@@ -45,6 +45,7 @@ mod features;
 mod models;
 pub mod pipeline;
 pub mod preprocessing;
+mod postprocessing;
 mod protos;
 
 #[derive(Serialize, Debug)]
@@ -121,10 +122,10 @@ impl IntentParser {
         let intent_configuration = self.classifiers
             .get(intent_name)
             .ok_or(format!("intent {:?} not found", intent_name))?;
-        let probabilities = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
+        let predictions = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
 
         let slot_names = &intent_configuration.slot_names;
-        let slot_values = &compute_slots(&preprocessor_result, slot_names.len(), &probabilities);
+        let slot_values = &compute_slots(&preprocessor_result, slot_names.len(), &predictions);
 
         let mut result = HashMap::new();
         for (name, value) in slot_names.iter().zip(slot_values.iter()) {
