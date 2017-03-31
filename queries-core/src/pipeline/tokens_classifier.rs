@@ -6,6 +6,7 @@ use ndarray::prelude::*;
 
 use config::ArcBoxedIntentConfig;
 use preprocessing::PreprocessorResult;
+use postprocessing;
 use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 use protos::model_configuration::ModelConfiguration;
 use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier};
@@ -57,7 +58,13 @@ impl TokensClassifier for ProtobufTokensClassifier {
                                                                     self.intent_model
                                                                         .get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
-        Ok(self.classifier.predict(&computed_features.t())?)
+        let predictions = self.classifier.predict(&computed_features.t())?;
+
+        if self.intent_model.has_bilou {
+            Ok(postprocessing::bilou(predictions))
+        } else {
+            Ok(predictions)
+        }
     }
 }
 
