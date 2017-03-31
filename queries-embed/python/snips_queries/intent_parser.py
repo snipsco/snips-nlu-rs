@@ -50,7 +50,7 @@ class IntentParser(object):
             self._parser,
             query.encode("utf-8"),
             c_float(threshold),
-            json.dumps(entities),
+            json.dumps(entities).encode("utf-8"),
             byref(pointer))
         result = string_at(pointer)
         lib.intent_parser_destroy_string(pointer)
@@ -65,7 +65,7 @@ class IntentParser(object):
             self._parser,
             query.encode("utf-8"),
             intent.encode("utf-8"),
-            json.dumps(entities),
+            json.dumps(entities).encode("utf-8"),
             byref(pointer))
         result = string_at(pointer)
         lib.intent_parser_destroy_string(pointer)
