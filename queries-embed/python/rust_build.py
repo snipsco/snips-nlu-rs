@@ -1,4 +1,4 @@
-## Largely inspired from https://github.com/novocaine/rust-python-ext
+# Largely inspired from https://github.com/novocaine/rust-python-ext
 # MIT LICENCE - Copyright (c) 2015 James Salter
 
 
@@ -51,25 +51,23 @@ class RustBuildCommand(Command):
             msg = "cargo failed with code: %d\n%s" % (e.returncode, e.output)
             raise Exception(msg)
         except OSError:
-            raise Exception("Unable to execute 'cargo' - this package " 
-                "requires rust to be installed and cargo to be on the PATH")
+            raise Exception("Unable to execute 'cargo' - this package "
+                            "requires rust to be installed and cargo to be on the PATH")
 
         if not self.quiet:
             print(output, file=sys.stderr)
 
-        # Find the shared library that cargo hopefully produced and copy 
+        # Find the shared library that cargo hopefully produced and copy
         # it into the build directory as if it were produced by build_cext.
         if self.debug:
             suffix = "debug"
         else:
             suffix = "release"
 
-
         if target_tuple:
             target_dir = os.path.join("../../target", target_tuple, suffix)
         else:
             target_dir = os.path.join("../../target", suffix)
-
 
         if sys.platform == "win32":
             wildcard_so = "*.dll"
@@ -82,7 +80,7 @@ class RustBuildCommand(Command):
             dylib_path = glob.glob(os.path.join(target_dir, wildcard_so))[0]
         except IndexError:
             raise Exception("rust build failed; unable to find any .dylib in %s" %
-                target_dir)
+                            target_dir)
 
         # Ask build_ext where the shared library would go if it had built it,
         # then copy it there.
@@ -96,7 +94,7 @@ class RustBuildCommand(Command):
         shutil.copyfile(dylib_path, ext_path)
 
 
-def build_rust_cmdclass(debug=False, 
+def build_rust_cmdclass(debug=False,
                         extra_cargo_args=None, quiet=False):
     """
     Args:
@@ -140,4 +138,3 @@ class install_lib_including_rust(install_lib):
         install_lib.build(self)
         if not self.skip_build:
             self.run_command('build_rust')
-

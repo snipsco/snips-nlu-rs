@@ -142,7 +142,7 @@ mod test {
 
             for test in tests {
                 // TODO: Replace preprocess by json
-                let preprocessor_result = preprocess(&test.text);
+                let preprocessor_result = preprocess(&test.text, "").unwrap();
                 let feature_processor = ProtobufMatrixFeatureProcessor::new(intent_config.clone(),
                                                                             &pb_model_config.get_features());
 
