@@ -38,7 +38,6 @@ impl PreprocessorResult {
     }
 }
 
-// TODO: This func should be optimized
 fn compute_all_ngrams(tokens: &[&str], max_ngram_size: usize) -> Vec<Ngrams> {
     let mut ngrams: Vec<Ngrams> = Vec::new();
 

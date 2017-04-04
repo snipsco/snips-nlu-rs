@@ -1,5 +1,5 @@
 use errors::*;
-use ndarray::{Array, Array2};
+use ndarray::prelude::*;
 
 use config::ArcBoxedIntentConfig;
 use config::IntentConfig;
