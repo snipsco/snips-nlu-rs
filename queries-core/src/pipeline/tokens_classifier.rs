@@ -4,13 +4,13 @@ use errors::*;
 use protobuf;
 use ndarray::prelude::*;
 
+use super::BoxedClassifier;
+use super::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 use config::ArcBoxedIntentConfig;
 use preprocessing::PreprocessorResult;
 use postprocessing;
-use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 use protos::model_configuration::ModelConfiguration;
 use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier};
-use pipeline::BoxedClassifier;
 
 pub trait TokensClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array1<usize>>;
