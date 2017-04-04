@@ -15,6 +15,9 @@ use errors::*;
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
 use protos::intent_configuration::IntentConfiguration;
 
+#[cfg(test)]
+use file_path;
+
 pub trait AssistantConfig {
     fn get_available_intents_names(&self) -> Result<Vec<String>>;
     fn get_intent_configuration(&self, name: &str) -> Result<ArcBoxedIntentConfig>;
@@ -49,7 +52,7 @@ impl FileBasedAssistantConfig {
 #[cfg(test)]
 impl FileBasedAssistantConfig {
     pub fn default() -> FileBasedAssistantConfig {
-        FileBasedAssistantConfig::new("../data")
+        FileBasedAssistantConfig::new(file_path("../data"))
     }
 }
 
