@@ -5,7 +5,6 @@ use pipeline::tokens_classifier::ProtobufTokensClassifier;
 use config::ArcBoxedIntentConfig;
 
 pub mod gazetteer;
-pub mod classifiers;
 pub mod tf;
 
 pub struct IntentConfiguration {
