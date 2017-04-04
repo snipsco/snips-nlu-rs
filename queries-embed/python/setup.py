@@ -1,6 +1,7 @@
 from setuptools import setup
 import os
 import re
+import time
 
 from rust_build import build_rust_cmdclass, install_lib_including_rust
 
@@ -11,7 +12,7 @@ setup_py = os.path.abspath(os.path.dirname(__file__))
 try:
     with open(os.path.join(setup_py, 'snips_queries', '__init__.py'), 'r') as f:
         init_py = f.read()
-    version = re.search('__version__ = "(.*)"', init_py).groups()[0]
+    version = re.search('__version__ = "(.*)"', init_py).groups()[0].replace("-SNAPSHOT", ".dev%i" % time.time())
 except Exception:
     version = ''
 
