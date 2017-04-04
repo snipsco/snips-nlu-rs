@@ -3,7 +3,6 @@ extern crate error_chain;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use(stack)]
 extern crate ndarray;
 extern crate protobuf;
 extern crate rayon;
