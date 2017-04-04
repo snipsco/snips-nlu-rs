@@ -79,10 +79,6 @@ pub fn is_last_word(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
     result
 }
 
-pub fn is_date(_: &PreprocessorResult) -> Vec<f32> {
-    unimplemented!()
-}
-
 pub fn contains_possessive(preprocessor_result: &PreprocessorResult) -> Vec<f32> {
     lazy_static! {
         static ref POSSESSIVE_REGEX: Regex = Regex::new(r"'s\b").yolo();
