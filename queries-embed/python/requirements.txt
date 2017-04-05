@@ -1,0 +1,7 @@
+appdirs==1.4.3
+duckling==0.0.12
+enum34==1.1.6
+packaging==16.8
+pyparsing==2.2.0
+python-dateutil==2.6.0
+six==1.10.0

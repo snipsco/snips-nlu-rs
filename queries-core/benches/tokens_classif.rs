@@ -1,0 +1,38 @@
+#[macro_use]
+extern crate bencher;
+extern crate queries_core;
+extern crate yolo;
+
+use bencher::Bencher;
+use yolo::Yolo;
+
+use queries_core::config::{AssistantConfig, FileBasedAssistantConfig};
+use queries_core::pipeline::tokens_classifier::{TokensClassifier, ProtobufTokensClassifier};
+
+fn get_tokens_classifier(classifier: &str) -> ProtobufTokensClassifier {
+    let root_dir = queries_core::file_path("untracked");
+    let assistant_config = FileBasedAssistantConfig::new(root_dir);
+    let intent_config = assistant_config
+        .get_intent_configuration(classifier)
+        .yolo();
+    ProtobufTokensClassifier::new(intent_config).yolo()
+}
+
+fn load_tokens_classifier(bench: &mut Bencher) {
+    bench.iter(|| {
+        let _ = get_tokens_classifier("BookRestaurant");
+    });
+}
+
+fn run_tokens_classifier(bench: &mut Bencher) {
+    let tokens_classifier = get_tokens_classifier("BookRestaurant");
+    let preprocessor_result = queries_core::preprocess(
+        "Book me a table for four people at Le Chalet Savoyard tonight",
+        r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#)
+        .yolo();
+
+    bench.iter(|| { let _ = tokens_classifier.run(&preprocessor_result); });
+}
+
+benchmark_group!(tokens_classifier, load_tokens_classifier, run_tokens_classifier);
+benchmark_main!(tokens_classifier);

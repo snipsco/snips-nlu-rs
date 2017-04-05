@@ -1,0 +1,44 @@
+[package]
+name = "queries-core"
+version = "0.4.0"
+authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>", "Kevin Lefevre <kevin.lefevre@snips.ai>"]
+repository = "https://github.com/snipsco/snips-queries-rust/"
+description = "Rust implementation of the Queries SDK"
+build = "build.rs"
+
+[dependencies]
+error-chain = { version = "0.10", default-features=false }
+itertools = "0.5"
+serde = "0.9"
+serde_derive = "0.9"
+serde_json = "0.9"
+ndarray = "0.8"
+unicode-normalization = "0.1"
+regex = "0.1"
+lazy_static = "0.2"
+protobuf = "1.2"
+rayon = "0.6"
+tensorflow = "0.3"
+bencher = "0.1"
+csv = "0.15.0"
+yolo = "*"
+zip = { version = "0.2", default-features = false }
+
+[build-dependencies]
+glob = "0.2"
+
+[[bench]]
+name = "preprocess"
+harness = false
+
+[[bench]]
+name = "intent_classif"
+harness = false
+
+[[bench]]
+name = "tokens_classif"
+harness = false
+
+[[bench]]
+name = "intent_parser"
+harness = false
