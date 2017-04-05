@@ -3,13 +3,13 @@ use std::path;
 use errors::*;
 use protobuf;
 
+use super::Probability;
+use super::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
+use super::BoxedClassifier;
 use config::ArcBoxedIntentConfig;
 use protos::model_configuration::ModelConfiguration;
 use models::tf::TensorFlowClassifier;
 use preprocessing::PreprocessorResult;
-use pipeline::Probability;
-use pipeline::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
-use pipeline::BoxedClassifier;
 
 pub trait IntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability>;

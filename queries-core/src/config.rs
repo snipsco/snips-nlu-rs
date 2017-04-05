@@ -15,12 +15,15 @@ use errors::*;
 use models::gazetteer::{Gazetteer, HashSetGazetteer};
 use protos::intent_configuration::IntentConfiguration;
 
+#[cfg(test)]
+use file_path;
+
 pub trait AssistantConfig {
     fn get_available_intents_names(&self) -> Result<Vec<String>>;
     fn get_intent_configuration(&self, name: &str) -> Result<ArcBoxedIntentConfig>;
 }
 
-pub trait IntentConfig {
+pub trait IntentConfig: Send + Sync {
     fn get_file(&self, file_name: &path::Path) -> Result<Box<Read>>;
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>>;
     fn get_pb_config(&self) -> Result<IntentConfiguration> {
@@ -29,7 +32,7 @@ pub trait IntentConfig {
     }
 }
 
-pub type ArcBoxedIntentConfig = Arc<Box<IntentConfig + Send + Sync>>;
+pub type ArcBoxedIntentConfig = Arc<Box<IntentConfig>>;
 
 pub struct FileBasedAssistantConfig {
     intents_dir: path::PathBuf,
@@ -49,7 +52,7 @@ impl FileBasedAssistantConfig {
 #[cfg(test)]
 impl FileBasedAssistantConfig {
     pub fn default() -> FileBasedAssistantConfig {
-        FileBasedAssistantConfig::new("../data")
+        FileBasedAssistantConfig::new(file_path("../data"))
     }
 }
 

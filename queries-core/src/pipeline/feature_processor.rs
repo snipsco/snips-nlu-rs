@@ -1,5 +1,5 @@
 use errors::*;
-use ndarray::{Array, Array2};
+use ndarray::prelude::*;
 
 use config::ArcBoxedIntentConfig;
 use config::IntentConfig;
@@ -91,7 +91,6 @@ impl Feature {
                 shared_vector::ngram_matcher(input, arguments[0].get_str())
             }
             Feature_Vector_Type::IS_CAPITALIZED => shared_vector::is_capitalized(input),
-            Feature_Vector_Type::IS_DATE => shared_vector::is_date(input),
             Feature_Vector_Type::IS_FIRST_WORD => shared_vector::is_first_word(input),
             Feature_Vector_Type::IS_LAST_WORD => shared_vector::is_last_word(input),
             Feature_Vector_Type::CONTAINS_POSSESSIVE => shared_vector::contains_possessive(input),
