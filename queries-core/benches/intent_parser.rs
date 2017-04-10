@@ -20,28 +20,40 @@ fn load_parser(bench: &mut Bencher) {
     });
 }
 
-fn run_parser(bench: &mut Bencher) {
-    let intent_parser = get_intent_parser();
+macro_rules! run_parser {
+    ($name:ident, $input:expr, $json:expr) => {
+        fn $name(bench: &mut Bencher) {
+            let intent_parser = get_intent_parser();
 
-    let text = "Book me a table for four people at Le Chalet Savoyard tonight";
-    let entities = r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#;
-    bench.iter(|| {
-        let result = intent_parser.run_intent_classifiers(&text, 0.4, &entities).yolo();
-        let _ = intent_parser.run_tokens_classifier(&text, &result[0].name, &entities).yolo();
-    });
+            bench.iter(|| {
+                let result = intent_parser.run_intent_classifiers($input, 0.4, $json).yolo();
+                let _ = intent_parser.run_tokens_classifier($input, &result[0].name, $json).yolo();
+            });
+        }
+    }
 }
 
-fn load_and_run_parser(bench: &mut Bencher) {
-    let text = "Book me a table for four people at Le Chalet Savoyard tonight";
-    let entities = r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#;
-    bench.iter(|| {
-        let intent_parser = get_intent_parser();
-        let result = intent_parser.run_intent_classifiers(text, 0.4, &entities).yolo();
-        let _ = intent_parser.run_tokens_classifier(text, &result[0].name, &entities).yolo();
-    });
+macro_rules! load_and_run_parser {
+    ($name:ident, $input:expr, $json:expr) => {
+        fn $name(bench: &mut Bencher) {
+            bench.iter(|| {
+                let intent_parser = get_intent_parser();
+                let result = intent_parser.run_intent_classifiers($input, 0.4, $json).yolo();
+                let _ = intent_parser.run_tokens_classifier($input, &result[0].name, $json).yolo();
+            });
+        }
+    }
 }
+
+run_parser!(run_book_restaurant,
+"Book me a table for four people at Le Chalet Savoyard tonight",
+r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#);
+run_parser!(run_get_weather,
+"What will be the weather tomorrow in Paris ?",
+r#"[{"end_index": 33, "value": "tomorrow", "start_index": 25, "entity": "%TIME%"}]"#);
 
 benchmark_group!(load, load_parser);
-benchmark_group!(run, run_parser);
-benchmark_group!(everything, load_and_run_parser);
-benchmark_main!(load, run, everything);
+benchmark_group!(run, run_book_restaurant, run_get_weather);
+//benchmark_group!(everything, load_and_run_book_restaurant, load_and_run_get_weather);
+
+benchmark_main!(load, run/*, everything*/);
