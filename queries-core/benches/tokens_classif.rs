@@ -18,21 +18,39 @@ fn get_tokens_classifier(classifier: &str) -> ProtobufTokensClassifier {
     ProtobufTokensClassifier::new(intent_config).yolo()
 }
 
-fn load_tokens_classifier(bench: &mut Bencher) {
-    bench.iter(|| {
-        let _ = get_tokens_classifier("BookRestaurant");
-    });
+macro_rules! load_classifier {
+    ($name:ident, $classifier:expr) => {
+        fn $name(bench: &mut Bencher) {
+            bench.iter(|| {
+                let _ = get_tokens_classifier($classifier);
+            });
+        }
+    }
 }
 
-fn run_tokens_classifier(bench: &mut Bencher) {
-    let tokens_classifier = get_tokens_classifier("BookRestaurant");
-    let preprocessor_result = queries_core::preprocess(
-        "Book me a table for four people at Le Chalet Savoyard tonight",
-        r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#)
-        .yolo();
+macro_rules! run_classifier {
+    ($name:ident, $classifier:expr, $input:expr, $json:expr) => {
+        fn $name(bench: &mut Bencher) {
+            let classifier = get_tokens_classifier($classifier);
+            let preprocessor_result = queries_core::preprocess($input, $json).yolo();
 
-    bench.iter(|| { let _ = tokens_classifier.run(&preprocessor_result); });
+            bench.iter(|| {
+                let _ = classifier.run(&preprocessor_result);
+            });
+        }
+    }
 }
 
-benchmark_group!(tokens_classifier, load_tokens_classifier, run_tokens_classifier);
-benchmark_main!(tokens_classifier);
+load_classifier!(load_book_restaurant, "BookRestaurant");
+load_classifier!(load_get_weather, "GetWeather");
+run_classifier!(run_book_restaurant, "BookRestaurant",
+"Book me a table for four people at Le Chalet Savoyard tonight",
+r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#);
+run_classifier!(run_get_weather, "GetWeather",
+"What will be the weather tomorrow in Paris ?",
+r#"[{"end_index": 33, "value": "tomorrow", "start_index": 25, "entity": "%TIME%"}]"#);
+
+benchmark_group!(load, load_book_restaurant, load_get_weather);
+benchmark_group!(run, run_book_restaurant, run_get_weather);
+
+benchmark_main!(load, run);
