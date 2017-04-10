@@ -42,9 +42,7 @@ impl IntentParser {
                                   probability_threshold: f32,
                                   entities: &str)
                                   -> Result<Vec<IntentClassifierResult>> {
-        if probability_threshold < 0.0 || probability_threshold > 1.0 {
-            bail!("it's a developer error to pass a probability_threshold between 0.0 and 1.0")
-        }
+        ensure!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "probability_threshold must be between 0.0 and 1.0");
 
         let preprocessor_result = preprocess(input, entities)?;
 
