@@ -43,14 +43,19 @@ macro_rules! run_classifier {
 
 load_classifier!(load_book_restaurant, "BookRestaurant");
 load_classifier!(load_get_weather, "GetWeather");
+load_classifier!(load_play_music, "PlayMusic");
+
 run_classifier!(run_book_restaurant, "BookRestaurant",
 "Book me a table for four people at Le Chalet Savoyard tonight",
 r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#);
 run_classifier!(run_get_weather, "GetWeather",
 "What will be the weather tomorrow in Paris ?",
 r#"[{"end_index": 33, "value": "tomorrow", "start_index": 25, "entity": "%TIME%"}]"#);
+run_classifier!(run_play_music, "PlayMusic",
+"Give me some psychedelic hip-hop please",
+r#"[]"#);
 
-benchmark_group!(load, load_book_restaurant, load_get_weather);
-benchmark_group!(run, run_book_restaurant, run_get_weather);
+benchmark_group!(load, load_book_restaurant, load_get_weather, load_play_music);
+benchmark_group!(run, run_book_restaurant, run_get_weather, run_play_music);
 
 benchmark_main!(load, run);

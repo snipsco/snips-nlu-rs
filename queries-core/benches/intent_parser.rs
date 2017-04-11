@@ -51,9 +51,12 @@ r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"},
 run_parser!(run_get_weather,
 "What will be the weather tomorrow in Paris ?",
 r#"[{"end_index": 33, "value": "tomorrow", "start_index": 25, "entity": "%TIME%"}]"#);
+run_parser!(run_play_music,
+"Give me some psychedelic hip-hop please",
+r#"[]"#);
 
 benchmark_group!(load, load_parser);
-benchmark_group!(run, run_book_restaurant, run_get_weather);
+benchmark_group!(run, run_book_restaurant, run_get_weather, run_play_music);
 //benchmark_group!(everything, load_and_run_book_restaurant, load_and_run_get_weather);
 
 benchmark_main!(load, run/*, everything*/);
