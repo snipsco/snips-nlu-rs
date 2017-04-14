@@ -12,7 +12,7 @@ use yolo::Yolo;
 use zip;
 
 use errors::*;
-use models::gazetteer::{Gazetteer, HashSetGazetteer};
+use models::gazetteer::{Gazetteer, HashSetGazetteer, FstGazetteerFactory, GazetteerKey};
 use protos::intent_configuration::IntentConfiguration;
 
 #[cfg(test)]
@@ -36,16 +36,18 @@ pub type ArcBoxedIntentConfig = Arc<Box<IntentConfig>>;
 
 pub struct FileBasedAssistantConfig {
     intents_dir: path::PathBuf,
-    gazetteers_dir: path::PathBuf,
+    gazetteer_factory: FstGazetteerFactory,
 }
 
 impl FileBasedAssistantConfig {
-    pub fn new<P: AsRef<path::Path>>(root_dir: P) -> FileBasedAssistantConfig {
+    pub fn new<P: AsRef<path::Path>>(root_dir: P) -> Result<FileBasedAssistantConfig> {
         let root_dir = path::PathBuf::from(root_dir.as_ref());
-        FileBasedAssistantConfig {
+        let mut header_file = File::open(root_dir.join("gazetteers/header.fst"))?;
+        Ok(FileBasedAssistantConfig {
             intents_dir: root_dir.join("intents"),
-            gazetteers_dir: root_dir.join("gazetteers"),
-        }
+            gazetteer_factory: FstGazetteerFactory::new_mmap(root_dir.join("gazetteers/data.fst"),
+                                                             &mut header_file)?,
+        })
     }
 }
 
@@ -77,20 +79,19 @@ impl AssistantConfig for FileBasedAssistantConfig {
 
     fn get_intent_configuration(&self, name: &str) -> Result<ArcBoxedIntentConfig> {
         Ok(Arc::new(Box::new(FileBasedIntentConfig::new(self.intents_dir.join(name),
-                                                        self.gazetteers_dir.clone())?)))
+                                                        self.gazetteer_factory.clone())?)))
     }
 }
 
 pub struct FileBasedIntentConfig {
     intent_dir: path::PathBuf,
-    gazetteer_dir: path::PathBuf,
-    /* name -> (lang, category, version)*/
-    gazetteer_mapping: HashMap<String, (String, String, String)>,
+    gazetteer_factory: FstGazetteerFactory,
+    gazetteer_mapping: HashMap<String, GazetteerKey>,
 }
 
 impl FileBasedIntentConfig {
     fn new(intent_dir: path::PathBuf,
-           gazetteer_dir: path::PathBuf)
+           gazetteer_factory: FstGazetteerFactory, )
            -> Result<FileBasedIntentConfig> {
         let gazetteers_file = &intent_dir.join("gazetteers.csv");
         let mut csv_reader = csv::Reader::from_file(gazetteers_file)
@@ -99,13 +100,18 @@ impl FileBasedIntentConfig {
         let mut mappings = HashMap::new();
 
         for row in csv_reader.decode() {
-            let (lang, category, name, version) = row?;
-            mappings.insert(name, (lang, category, version));
+            let (lang, category, name, version): (String, String, String, String) = row?;
+            mappings.insert(name.clone(), GazetteerKey {
+                lang: lang,
+                category: category,
+                name: name,
+                version: version
+            });
         }
 
         Ok(FileBasedIntentConfig {
             intent_dir: intent_dir,
-            gazetteer_dir: gazetteer_dir,
+            gazetteer_factory: gazetteer_factory,
             gazetteer_mapping: mappings,
         })
     }
@@ -119,15 +125,8 @@ impl IntentConfig for FileBasedIntentConfig {
     }
 
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>> {
-        if let Some(mapping) = self.gazetteer_mapping.get(name) {
-            let (ref lang, ref category, ref version) = *mapping;
-            let path = &self.gazetteer_dir
-                .join(&lang)
-                .join(&category)
-                .join(format!("{}_{}.json", &name, &version));
-            let mut file = File::open(path)
-                .map_err(|_| format!("Could not load Gazetteer from file '{:?}'", path))?;
-            Ok(Box::new(HashSetGazetteer::new(&mut file)?))
+        if let Some(key) = self.gazetteer_mapping.get(name) {
+            self.gazetteer_factory.get_gazetteer(key)
         } else {
             bail!("could not get gazetteer for name {}", name)
         }
