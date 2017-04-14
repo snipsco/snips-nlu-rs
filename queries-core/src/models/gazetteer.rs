@@ -1,33 +1,14 @@
 use std::collections::{HashSet, HashMap};
 use std::io::prelude::*;
-use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::Arc;
 
 use errors::*;
 use csv;
 use fst;
-use serde_json;
 
 pub trait Gazetteer {
     fn contains(&self, value: &str) -> bool;
-}
-
-pub struct HashSetGazetteer {
-    values: HashSet<String>,
-}
-
-impl HashSetGazetteer {
-    pub fn new(r: &mut Read) -> Result<Self> {
-        let vec: Vec<String> = serde_json::from_reader(r)?;
-        Ok(HashSetGazetteer { values: HashSet::from_iter(vec) })
-    }
-}
-
-impl Gazetteer for HashSetGazetteer {
-    fn contains(&self, value: &str) -> bool {
-        self.values.contains(value)
-    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq)]
@@ -54,9 +35,7 @@ impl FstGazetteerFactory {
         })
     }
 
-    pub fn new_ram<F: Read, H: Read>(fst_reader: &mut F, header_reader: &mut H) -> Result<Self> {
-        let mut fst_bytes: Vec<u8> = vec![];
-        fst_reader.read_to_end(&mut fst_bytes)?;
+    pub fn new_ram<R: Read>(fst_bytes: Vec<u8>, header_reader: &mut R) -> Result<Self> {
         Ok(FstGazetteerFactory {
             map: Arc::new(fst::Map::from_bytes(fst_bytes)?),
             header: FstGazetteerFactory::build_header(header_reader)?
