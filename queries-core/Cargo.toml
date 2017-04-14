@@ -9,6 +9,7 @@ build = "build.rs"
 [dependencies]
 error-chain = { version = "0.10", default-features=false }
 itertools = "0.5"
+fst = "0.1"
 serde = "0.9"
 serde_derive = "0.9"
 serde_json = "0.9"
