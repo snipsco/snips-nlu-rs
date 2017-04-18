@@ -1,14 +1,38 @@
 use std::collections::{HashSet, HashMap};
 use std::io::prelude::*;
+#[cfg(test)]
+use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::Arc;
 
 use errors::*;
 use csv;
 use fst;
+#[cfg(test)]
+use serde_json;
 
 pub trait Gazetteer {
     fn contains(&self, value: &str) -> bool;
+}
+
+#[cfg(test)]
+pub struct HashSetGazetteer {
+    values: HashSet<String>,
+}
+
+#[cfg(test)]
+impl HashSetGazetteer {
+    pub fn new(r: &mut Read) -> Result<HashSetGazetteer> {
+        let vec: Vec<String> = serde_json::from_reader(r)?;
+        Ok(HashSetGazetteer { values: HashSet::from_iter(vec) })
+    }
+}
+
+#[cfg(test)]
+impl Gazetteer for HashSetGazetteer {
+    fn contains(&self, value: &str) -> bool {
+        self.values.contains(value)
+    }
 }
 
 #[derive(Debug, Hash, PartialEq, Eq)]
@@ -94,7 +118,7 @@ mod tests {
     use super::{HashSetGazetteer, Gazetteer};
 
     #[test]
-    fn gazetteer_work() {
+    fn hashset_gazetteer_work() {
         let data = r#"["abc", "xyz"]"#;
         let gazetteer = HashSetGazetteer::new(&mut data.as_bytes());
         assert!(gazetteer.is_ok());
