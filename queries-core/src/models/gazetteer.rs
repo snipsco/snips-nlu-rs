@@ -73,18 +73,22 @@ impl FstGazetteerFactory {
 
         for row in csv_reader.decode() {
             let (lang, cat, name, version, ids): (String, String, String, String, String) = row?;
-            let id_set = ids.split(",").map(|it| it.parse().unwrap()).collect::<HashSet<u64>>();
-            header.insert(
-                GazetteerKey {
-                    lang: lang,
-                    category: cat,
-                    name: name,
-                    version: version
-                },
-                Arc::new(id_set));
+            let key = GazetteerKey {
+                lang: lang,
+                category: cat,
+                name: name,
+                version: version
+            };
+            let id_set = ids.split(",").map(|it|
+                it.parse()
+                    .map_err(|e|
+                        format!("Gazetteer header parsing error for {:?} : {:?}", &key, e))
+                    .unwrap())
+                .collect::<HashSet<u64>>();
+            header.insert(key, Arc::new(id_set));
         }
 
-        return Ok(Arc::new(header))
+        Ok(Arc::new(header))
     }
 
     pub fn get_gazetteer(&self, key: &GazetteerKey) -> Result<Box<Gazetteer>> {
@@ -153,6 +157,5 @@ mod tests {
             name: "weekdays".to_string(),
             version: "c1a55db201e23372076c6cc77177ed1ad2393f56".to_string()
         }).is_err())
-
     }
 }
