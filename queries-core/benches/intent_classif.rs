@@ -11,7 +11,7 @@ use queries_core::pipeline::intent_classifier::{IntentClassifier, ProtobufIntent
 
 fn get_intent_classifier(classifier: &str) -> ProtobufIntentClassifier {
     let root_dir = queries_core::file_path("untracked");
-    let assistant_config = FileBasedAssistantConfig::new(root_dir);
+    let assistant_config = FileBasedAssistantConfig::new(root_dir).yolo();
     let intent_config = assistant_config
         .get_intent_configuration(classifier)
         .yolo();
