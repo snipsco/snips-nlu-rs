@@ -4,16 +4,18 @@ use models::gazetteer::Gazetteer;
 pub fn has_gazetteer_hits(preprocessor_result: &PreprocessorResult,
                           gazetteer: Box<Gazetteer>)
                           -> Vec<f32> {
-    match preprocessor_result.normalized_ngrams.iter().find(|ngram| gazetteer.contains(&ngram.0)) {
-        Some(_) => vec![1.0],
-        None => vec![0.0],
+    if preprocessor_result.normalized_ngrams.iter().any(|ngram| gazetteer.contains(&ngram.0)) {
+        vec![1.0]
+    } else {
+        vec![0.0]
     }
 }
 
 pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f32> {
-    match preprocessor_result.formatted_ngrams.iter().find(|ngram| ngram.0 == ngram_to_check) {
-        Some(_) => vec![1.0],
-        None => vec![0.0],
+    if preprocessor_result.formatted_ngrams.iter().any(|ngram| ngram.0 == ngram_to_check) {
+        vec![1.0]
+    } else {
+        vec![0.0]
     }
 }
 
