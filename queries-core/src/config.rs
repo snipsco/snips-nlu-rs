@@ -18,8 +18,8 @@ use protos::intent_configuration::IntentConfiguration;
 #[cfg(test)]
 use file_path;
 
-static GAZETTEER_FST : &'static str = "gazetteers/words.fst";
-static GAZETTEER_HEADER : &'static str = "gazetteers/header.txt";
+static GAZETTEER_FST: &'static str = "gazetteers/words.fst";
+static GAZETTEER_HEADER: &'static str = "gazetteers/header.txt";
 
 pub trait AssistantConfig {
     fn get_available_intents_names(&self) -> Result<Vec<String>>;
@@ -94,7 +94,7 @@ pub struct FileBasedIntentConfig {
 
 impl FileBasedIntentConfig {
     fn new(intent_dir: path::PathBuf,
-           gazetteer_factory: FstGazetteerFactory, )
+           gazetteer_factory: FstGazetteerFactory)
            -> Result<FileBasedIntentConfig> {
         let gazetteers_file = &intent_dir.join("gazetteers.csv");
         let mut csv_reader = csv::Reader::from_file(gazetteers_file)
