@@ -16,6 +16,7 @@ pub trait Gazetteer {
 }
 
 #[cfg(test)]
+/// Toy version of a gazetteer wrapping a hashmap, that can easily be used in tests
 pub struct HashSetGazetteer {
     values: HashSet<String>,
 }
@@ -115,15 +116,43 @@ impl Gazetteer for FstGazetteer {
 
 #[cfg(test)]
 mod tests {
-    use super::{HashSetGazetteer, Gazetteer};
+    use std::fs::File;
+    use file_path;
+    use super::{HashSetGazetteer, FstGazetteerFactory, Gazetteer, GazetteerKey};
 
     #[test]
-    fn hashset_gazetteer_work() {
+    fn hashset_gazetteer_works() {
         let data = r#"["abc", "xyz"]"#;
         let gazetteer = HashSetGazetteer::new(&mut data.as_bytes());
         assert!(gazetteer.is_ok());
         let gazetteer = gazetteer.unwrap();
         assert!(gazetteer.contains("abc"));
         assert!(!gazetteer.contains("def"));
+    }
+
+    #[test]
+    fn fst_gazetteer_factory_works() {
+        let mut header_reader = File::open(file_path("tests/gazetteer/header.txt")).unwrap();
+        let factory = FstGazetteerFactory::new_mmap(file_path("tests/gazetteer/words.fst"),
+                                                    &mut header_reader);
+        let factory = factory.unwrap();
+
+        let weekdays = factory.get_gazetteer(&GazetteerKey {
+            lang: "en".to_string(),
+            category: "date_and_time".to_string(),
+            name: "weekdays".to_string(),
+            version: "c1a55db201e23372076c6cc77177ed1ad2393f56".to_string()
+        }).unwrap();
+
+        assert!(weekdays.contains("thursday"));
+        assert!(!weekdays.contains("furzeday"));
+
+        assert!(factory.get_gazetteer(&GazetteerKey {
+            lang: "en".to_string(),
+            category: "some unexisitng category".to_string(),
+            name: "weekdays".to_string(),
+            version: "c1a55db201e23372076c6cc77177ed1ad2393f56".to_string()
+        }).is_err())
+
     }
 }
