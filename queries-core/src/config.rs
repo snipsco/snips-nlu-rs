@@ -18,8 +18,8 @@ use protos::intent_configuration::IntentConfiguration;
 #[cfg(test)]
 use file_path;
 
-static GAZETTEER_FST : &'static str = "gazetteers/data.fst";
-static GAZETTEER_HEADER : &'static str = "gazetteers/header.truc";
+static GAZETTEER_FST : &'static str = "gazetteers/words.fst";
+static GAZETTEER_HEADER : &'static str = "gazetteers/header.txt";
 
 pub trait AssistantConfig {
     fn get_available_intents_names(&self) -> Result<Vec<String>>;
@@ -57,7 +57,7 @@ impl FileBasedAssistantConfig {
 #[cfg(test)]
 impl FileBasedAssistantConfig {
     pub fn default() -> FileBasedAssistantConfig {
-        FileBasedAssistantConfig::new(file_path("../data"))
+        FileBasedAssistantConfig::new(file_path("../data")).unwrap()
     }
 }
 
