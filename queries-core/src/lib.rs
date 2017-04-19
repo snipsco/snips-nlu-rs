@@ -26,6 +26,7 @@ pub use preprocessing::preprocess;
 pub use pipeline::slot_filler::Token;
 pub use pipeline::intent_parser::IntentClassifierResult;
 pub use pipeline::intent_parser::IntentParser;
+pub use models::gazetteer::GazetteerKey;
 
 #[cfg(test)]
 mod testutils;
