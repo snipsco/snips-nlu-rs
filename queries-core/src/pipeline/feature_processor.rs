@@ -127,23 +127,33 @@ mod test {
 
     #[test]
     fn feature_processor_works() {
-        let paths = fs::read_dir(file_path("untracked/tests/")).unwrap();
+        let paths_result = fs::read_dir(file_path("untracked/tests/"));
+        if let Err(_) = paths_result {
+            return;
+        }
         let assistant_config = FileBasedAssistantConfig::new(file_path("untracked")).unwrap();
 
-        for entry in paths {
+        for entry in paths_result.unwrap() {
             let path = entry.unwrap().path();
-            if !path.is_dir() { continue }
+            if !path.is_dir() {
+                continue;
+            }
 
             let model_name = path.file_stem().unwrap().to_str().unwrap();
-            let intent_config = assistant_config.get_intent_configuration(model_name).unwrap();
+            let intent_config = assistant_config
+                .get_intent_configuration(model_name)
+                .unwrap();
             let pb_intent_config = intent_config.get_pb_config().unwrap();
 
             let test = |test_filename, pb_model_config: ModelConfiguration| {
-                let tests: Vec<TestDescription> = parse_json(path.join(test_filename).to_str().unwrap());
+                let tests: Vec<TestDescription> =
+                    parse_json(path.join(test_filename).to_str().unwrap());
                 for test in tests {
                     let preprocessor_result = preprocess(&test.text, &test.entities).unwrap();
 
-                    let feature_processor = ProtobufMatrixFeatureProcessor::new(intent_config.clone(), &pb_model_config.get_features());
+                    let feature_processor =
+                        ProtobufMatrixFeatureProcessor::new(intent_config.clone(),
+                                                            &pb_model_config.get_features());
                     let result = feature_processor.compute_features(&preprocessor_result);
 
                     let formatted_errors: Vec<String> = create_transposed_array(&test.features).genrows().into_iter().enumerate()
