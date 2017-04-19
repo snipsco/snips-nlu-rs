@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate error_chain;
 extern crate itertools;
+extern crate fst;
 #[macro_use]
 extern crate lazy_static;
 extern crate ndarray;
