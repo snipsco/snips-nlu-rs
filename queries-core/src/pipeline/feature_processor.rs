@@ -71,7 +71,7 @@ impl Feature {
                 shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
             Feature_Scalar_Type::GET_MESSAGE_LENGTH => {
-                let normalization = arguments[0].get_scalar() as f32;
+                let normalization = arguments[0].get_scalar();
                 shared_scalar::get_message_length(input, normalization)
             }
         })
