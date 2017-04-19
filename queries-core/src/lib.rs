@@ -27,14 +27,16 @@ pub use pipeline::slot_filler::Token;
 pub use pipeline::intent_parser::IntentClassifierResult;
 pub use pipeline::intent_parser::IntentParser;
 pub use models::gazetteer::GazetteerKey;
+pub use config::FileBasedAssistantConfig;
+pub use config::BinaryBasedAssistantConfig;
 
 #[cfg(test)]
 mod testutils;
 
 pub mod errors;
-pub mod config;
 pub mod pipeline;
 pub mod preprocessing;
+mod config;
 mod features;
 mod models;
 mod postprocessing;

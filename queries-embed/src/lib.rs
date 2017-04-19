@@ -136,7 +136,7 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let file_configuration = queries_core::config::FileBasedAssistantConfig::new(root_dir)?;
+    let file_configuration = queries_core::FileBasedAssistantConfig::new(root_dir)?;
 
     let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
 
@@ -153,7 +153,7 @@ fn create_from_binary(binary: *const libc::c_uchar,
     let slice = unsafe { slice::from_raw_parts(binary, binary_size as usize) };
 
     let file_configuration =
-        queries_core::config::BinaryBasedAssistantConfig::new(Cursor::new(slice.to_owned()))?;
+        queries_core::BinaryBasedAssistantConfig::new(Cursor::new(slice.to_owned()))?;
 
     let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
 
