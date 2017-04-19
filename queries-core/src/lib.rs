@@ -1,25 +1,25 @@
+extern crate csv;
 #[macro_use]
 extern crate error_chain;
-extern crate itertools;
 extern crate fst;
+extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
 extern crate ndarray;
 extern crate protobuf;
 extern crate rayon;
 extern crate regex;
-extern crate unicode_normalization;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
 extern crate tensorflow;
+extern crate unicode_normalization;
 extern crate yolo;
-extern crate csv;
 extern crate zip;
 
-use std::path;
 use std::env;
+use std::path;
 
 pub use errors::*;
 pub use preprocessing::preprocess;
