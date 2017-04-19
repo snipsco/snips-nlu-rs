@@ -15,7 +15,6 @@ use std::io::Cursor;
 use libc::c_char;
 use libc::c_float;
 
-
 mod errors {
     error_chain! {
           foreign_links {
@@ -37,7 +36,6 @@ use errors::*;
 
 #[repr(C)]
 pub struct Opaque(std::sync::Mutex<queries_core::IntentParser>);
-
 
 #[repr(C)]
 pub enum QUERIESRESULT {
@@ -138,7 +136,7 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let file_configuration = queries_core::config::FileBasedAssistantConfig::new(root_dir);
+    let file_configuration = queries_core::config::FileBasedAssistantConfig::new(root_dir)?;
 
     let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
 

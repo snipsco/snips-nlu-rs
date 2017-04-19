@@ -6,6 +6,7 @@ error_chain! {
         Protobuf(::protobuf::ProtobufError);
         Csv(::csv::Error);
         Zip(::zip::result::ZipError);
+        Fst(::fst::Error);
     }
 }
 
