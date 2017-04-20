@@ -6,11 +6,11 @@ use errors::*;
 use protobuf;
 use ndarray::prelude::*;
 
-use super::{Probability, Prediction};
-use super::FeatureProcessor;
-use super::deep_feature_processor::DeepFeatureProcessor;
-use super::BoxedClassifier;
-use super::ClassifierWrapper;
+use pipeline::{Probability, Prediction};
+use pipeline::FeatureProcessor;
+use super::feature_processor::DeepFeatureProcessor;
+use pipeline::BoxedClassifier;
+use pipeline::ClassifierWrapper;
 use config::ArcBoxedIntentConfig;
 use protos::model_configuration::ModelConfiguration;
 use protos::intent_configuration::IntentConfiguration;

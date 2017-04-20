@@ -1,14 +1,8 @@
-use std::ops::Range;
-
 use ndarray::prelude::*;
 
-use preprocessing::PreprocessorResult;
+use pipeline::SlotValue;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct SlotValue {
-    value: String,
-    range: Range<usize>,
-}
+use preprocessing::PreprocessorResult;
 
 pub fn compute_slots(preprocessor_result: &PreprocessorResult,
                      num_slots: usize,

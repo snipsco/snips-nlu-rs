@@ -8,7 +8,7 @@ use errors::*;
 use preprocessing::preprocess;
 use config::AssistantConfig;
 
-use super::{ClassifierWrapper, IntentClassifierResult, IntentParser, Slots};
+use pipeline::{ClassifierWrapper, IntentClassifierResult, IntentParser, Slots};
 use super::intent_configuration::IntentConfiguration;
 use super::slot_filler::compute_slots;
 
