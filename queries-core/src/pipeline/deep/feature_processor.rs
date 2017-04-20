@@ -1,33 +1,30 @@
 use errors::*;
 use ndarray::prelude::*;
 
+use pipeline::FeatureProcessor;
 use config::ArcBoxedIntentConfig;
 use config::IntentConfig;
 use features::{shared_scalar, shared_vector};
 use preprocessing::PreprocessorResult;
 use protos::feature::{Feature, Feature_Scalar_Type, Feature_Vector_Type, Feature_Argument};
 
-pub trait MatrixFeatureProcessor {
-    fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
-}
-
-pub struct ProtobufMatrixFeatureProcessor<'a> {
+pub struct DeepFeatureProcessor<'a> {
     intent_config: ArcBoxedIntentConfig,
     feature_functions: &'a [Feature],
 }
 
-impl<'a> ProtobufMatrixFeatureProcessor<'a> {
+impl<'a> DeepFeatureProcessor<'a> {
     pub fn new(intent_config: ArcBoxedIntentConfig,
                features: &'a [Feature])
-               -> ProtobufMatrixFeatureProcessor<'a> {
-        ProtobufMatrixFeatureProcessor {
+               -> DeepFeatureProcessor<'a> {
+        DeepFeatureProcessor {
             intent_config: intent_config,
             feature_functions: features,
         }
     }
 }
 
-impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
+impl<'a> FeatureProcessor<PreprocessorResult, Array2<f32>> for DeepFeatureProcessor<'a> {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32> {
         let computed_values = self.feature_functions
             .iter()
@@ -112,7 +109,7 @@ mod test {
     use protos::model_configuration::ModelConfiguration;
     use testutils::parse_json;
     use testutils::create_transposed_array;
-    use super::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
+    use super::{FeatureProcessor, DeepFeatureProcessor};
 
     #[derive(Deserialize, Debug)]
     struct TestDescription {
@@ -152,8 +149,8 @@ mod test {
                     let preprocessor_result = preprocess(&test.text, &test.entities).unwrap();
 
                     let feature_processor =
-                        ProtobufMatrixFeatureProcessor::new(intent_config.clone(),
-                                                            &pb_model_config.get_features());
+                        DeepFeatureProcessor::new(intent_config.clone(),
+                                                  &pb_model_config.get_features());
                     let result = feature_processor.compute_features(&preprocessor_result);
 
                     let formatted_errors: Vec<String> = create_transposed_array(&test.features).genrows().into_iter().enumerate()

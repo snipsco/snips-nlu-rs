@@ -22,13 +22,17 @@ use std::env;
 use std::path;
 
 pub use errors::*;
-pub use preprocessing::preprocess;
-pub use pipeline::slot_filler::Token;
-pub use pipeline::intent_parser::IntentClassifierResult;
-pub use pipeline::intent_parser::IntentParser;
-pub use models::gazetteer::GazetteerKey;
-pub use config::FileBasedAssistantConfig;
+
+pub use config::AssistantConfig;
 pub use config::BinaryBasedAssistantConfig;
+pub use config::FileBasedAssistantConfig;
+pub use models::gazetteer::GazetteerKey;
+pub use preprocessing::preprocess;
+pub use pipeline::deep::intent_parser::DeepIntentParser;
+pub use pipeline::IntentClassifierResult;
+pub use pipeline::IntentParser;
+pub use pipeline::Probability;
+pub use pipeline::SlotValue;
 
 #[cfg(test)]
 mod testutils;
