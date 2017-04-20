@@ -7,8 +7,8 @@ use features::{shared_scalar, shared_vector};
 use preprocessing::PreprocessorResult;
 use protos::feature::{Feature, Feature_Scalar_Type, Feature_Vector_Type, Feature_Argument};
 
-pub trait MatrixFeatureProcessor {
-    fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32>;
+pub trait FeatureProcessor<I, O> {
+    fn compute_features(&self, input : &I) -> O;
 }
 
 pub struct ProtobufMatrixFeatureProcessor<'a> {
@@ -27,7 +27,7 @@ impl<'a> ProtobufMatrixFeatureProcessor<'a> {
     }
 }
 
-impl<'a> MatrixFeatureProcessor for ProtobufMatrixFeatureProcessor<'a> {
+impl<'a> FeatureProcessor<PreprocessorResult, Array2<f32>> for ProtobufMatrixFeatureProcessor<'a> {
     fn compute_features(&self, input: &PreprocessorResult) -> Array2<f32> {
         let computed_values = self.feature_functions
             .iter()
@@ -112,7 +112,7 @@ mod test {
     use protos::model_configuration::ModelConfiguration;
     use testutils::parse_json;
     use testutils::create_transposed_array;
-    use super::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
+    use super::{FeatureProcessor, ProtobufMatrixFeatureProcessor};
 
     #[derive(Deserialize, Debug)]
     struct TestDescription {

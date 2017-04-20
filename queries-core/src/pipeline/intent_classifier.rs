@@ -4,16 +4,13 @@ use errors::*;
 use protobuf;
 
 use super::Probability;
-use super::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
+use super::feature_processor::{FeatureProcessor, ProtobufMatrixFeatureProcessor};
 use super::BoxedClassifier;
+use super::ClassifierWrapper;
 use config::ArcBoxedIntentConfig;
 use protos::model_configuration::ModelConfiguration;
 use models::tf::TensorFlowClassifier;
 use preprocessing::PreprocessorResult;
-
-pub trait IntentClassifier {
-    fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability>;
-}
 
 pub struct ProtobufIntentClassifier {
     intent_config: ArcBoxedIntentConfig,
@@ -42,7 +39,7 @@ impl ProtobufIntentClassifier {
     }
 }
 
-impl IntentClassifier for ProtobufIntentClassifier {
+impl ClassifierWrapper<PreprocessorResult, Probability> for ProtobufIntentClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability> {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(),
                                                                     &self.intent_model
@@ -66,7 +63,7 @@ mod test {
     use testutils::parse_json;
     use testutils::create_array;
     use testutils::assert_epsilon_eq;
-    use super::{IntentClassifier, ProtobufIntentClassifier};
+    use super::{ClassifierWrapper, ProtobufIntentClassifier};
 
     #[derive(Deserialize)]
     struct TestDescription {
