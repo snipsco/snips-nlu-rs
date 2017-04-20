@@ -7,15 +7,16 @@ use bencher::Bencher;
 use yolo::Yolo;
 
 use queries_core::config::{AssistantConfig, FileBasedAssistantConfig};
-use queries_core::pipeline::tokens_classifier::{TokensClassifier, ProtobufTokensClassifier};
+use queries_core::pipeline::tf_classifier_wrapper::TFClassifierWrapper;
+use queries_core::pipeline::ClassifierWrapper;
 
-fn get_tokens_classifier(classifier: &str) -> ProtobufTokensClassifier {
+fn get_tokens_classifier(classifier: &str) -> TFClassifierWrapper {
     let root_dir = queries_core::file_path("untracked");
     let assistant_config = FileBasedAssistantConfig::new(root_dir).yolo();
     let intent_config = assistant_config
         .get_intent_configuration(classifier)
         .yolo();
-    ProtobufTokensClassifier::new(intent_config).yolo()
+    TFClassifierWrapper::new_tokens_classifier(intent_config).yolo()
 }
 
 macro_rules! load_classifier {
