@@ -14,7 +14,7 @@ pub fn parse_json<T: Deserialize>(file_name: &str) -> T {
     let mut s = String::new();
     assert!(f.read_to_string(&mut s).is_ok());
     serde_json::from_str::<T>(&s)
-        .map_err(|_| format!("could not parse json in {:?}\n{:?}", file_name, s))
+        .map_err(|err| format!("could not parse json in {:?}\n{:?}", file_name, err))
         .unwrap()
 }
 

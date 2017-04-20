@@ -25,7 +25,7 @@ setup(
     author_email='thibaut.lorrain@snips.ai',
     packages=["snips_queries"],
     install_requires=[
-        "duckling==0.0.14",
+        "duckling==0.0.15",
     ],
     cmdclass={
         'build_rust': build_rust_cmdclass(debug=False),

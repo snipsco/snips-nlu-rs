@@ -71,7 +71,7 @@ impl Feature {
                 shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
             Feature_Scalar_Type::GET_MESSAGE_LENGTH => {
-                let normalization = arguments[0].get_scalar() as f32;
+                let normalization = arguments[0].get_scalar();
                 shared_scalar::get_message_length(input, normalization)
             }
         })
@@ -107,50 +107,81 @@ mod test {
     use protobuf;
 
     use file_path;
-    use config::{ AssistantConfig, FileBasedAssistantConfig };
+    use config::{AssistantConfig, FileBasedAssistantConfig};
     use preprocessing::preprocess;
     use protos::model_configuration::ModelConfiguration;
     use testutils::parse_json;
     use testutils::create_transposed_array;
     use super::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
 
-    #[derive(Deserialize)]
+    #[derive(Deserialize, Debug)]
     struct TestDescription {
         text: String,
-        //output: Vec<Vec<f32>>,
+        entities: String,
+        version: String,
+        #[serde(rename = "type")]
+        kind: String,
         features: Vec<Vec<f32>>,
+        //output: Vec<Vec<f32>>,
     }
 
     #[test]
-    #[ignore]
-    // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn feature_processor_works() {
-        let paths =
-            fs::read_dir(file_path("snips-sdk-models-protobuf/tests/intent_classification/"))
-                .unwrap();
+        let paths_result = fs::read_dir(file_path("untracked/tests/"));
+        if let Err(_) = paths_result {
+            return;
+        }
+        let assistant_config = FileBasedAssistantConfig::new(file_path("untracked")).unwrap();
 
-        for path in paths {
-            let path = path.unwrap().path();
-            let tests: Vec<TestDescription> = parse_json(path.to_str().unwrap());
+        for entry in paths_result.unwrap() {
+            let path = entry.unwrap().path();
+            if !path.is_dir() {
+                continue;
+            }
 
             let model_name = path.file_stem().unwrap().to_str().unwrap();
-            let intent_config = FileBasedAssistantConfig::default().get_intent_configuration(model_name).unwrap();
+            let intent_config = assistant_config
+                .get_intent_configuration(model_name)
+                .unwrap();
             let pb_intent_config = intent_config.get_pb_config().unwrap();
-            let mut intent_classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
-            let pb_model_config = protobuf::parse_from_reader::<ModelConfiguration>(&mut intent_classifier_config).unwrap();
 
-            for test in tests {
-                // TODO: Replace preprocess by json
-                let preprocessor_result = preprocess(&test.text, "").unwrap();
-                let feature_processor = ProtobufMatrixFeatureProcessor::new(intent_config.clone(),
-                                                                            &pb_model_config.get_features());
+            let test = |test_filename, pb_model_config: ModelConfiguration| {
+                let tests: Vec<TestDescription> =
+                    parse_json(path.join(test_filename).to_str().unwrap());
+                for test in tests {
+                    let preprocessor_result = preprocess(&test.text, &test.entities).unwrap();
 
-                let result = feature_processor.compute_features(&preprocessor_result);
-                assert_eq!(result,
-                           create_transposed_array(&test.features),
-                           "for {:?}, input: {}",
-                           path.file_stem().unwrap(),
-                           &test.text);
+                    let feature_processor =
+                        ProtobufMatrixFeatureProcessor::new(intent_config.clone(),
+                                                            &pb_model_config.get_features());
+                    let result = feature_processor.compute_features(&preprocessor_result);
+
+                    let formatted_errors: Vec<String> = create_transposed_array(&test.features).genrows().into_iter().enumerate()
+                        .filter_map(|(i, expected_row)| {
+                            let retrieved_row = result.row(i);
+                            if retrieved_row != expected_row {
+                                Some(format!("feature #{} failed - ({:?}).\n\tgot:      {}\n\texpected: {}",
+                                i, &pb_model_config.get_features()[i], retrieved_row, expected_row))
+                            } else {
+                                None
+                            }
+                        })
+                    .collect();
+
+                    assert!(formatted_errors.len() == 0, "{} {} v{}, input: {}\n{}",
+                        &test.kind, model_name, &test.version, &test.text, formatted_errors.join("\n"));
+                }
+            };
+
+            {
+                let mut classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
+                let pb_model_config: ModelConfiguration = protobuf::parse_from_reader(&mut classifier_config).unwrap();
+                test("intent_classifier.json", pb_model_config);
+            }
+            {
+                let mut classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
+                let pb_model_config: ModelConfiguration = protobuf::parse_from_reader(&mut classifier_config).unwrap();
+                test("entity_extraction.json", pb_model_config);
             }
         }
     }
