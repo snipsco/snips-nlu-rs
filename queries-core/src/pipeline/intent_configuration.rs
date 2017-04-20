@@ -2,14 +2,13 @@ use ndarray::prelude::*;
 
 use errors::*;
 
-use super::Probability;
+use super::{Probability, Prediction};
 use super::tf_classifier_wrapper::TFClassifierWrapper;
 use config::ArcBoxedIntentConfig;
 
-
 pub struct IntentConfiguration {
     pub intent_classifier: TFClassifierWrapper<Probability>,
-    pub tokens_classifier: TFClassifierWrapper<Array1<usize>>,
+    pub tokens_classifier: TFClassifierWrapper<Array1<Prediction>>,
     pub slot_names: Vec<String>,
     pub intent_name: String,
 }

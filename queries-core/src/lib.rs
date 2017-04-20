@@ -23,9 +23,10 @@ use std::path;
 
 pub use errors::*;
 pub use preprocessing::preprocess;
-pub use pipeline::slot_filler::Token;
-pub use pipeline::intent_parser::IntentClassifierResult;
-pub use pipeline::intent_parser::IntentParser;
+pub use pipeline::slot_filler::SlotValue;
+pub use pipeline::IntentClassifierResult;
+pub use pipeline::deep_intent_parser::DeepIntentParser;
+pub use pipeline::IntentParser;
 pub use models::gazetteer::GazetteerKey;
 pub use config::FileBasedAssistantConfig;
 pub use config::BinaryBasedAssistantConfig;

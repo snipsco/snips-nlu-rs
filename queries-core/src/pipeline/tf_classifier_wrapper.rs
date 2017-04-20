@@ -6,8 +6,9 @@ use errors::*;
 use protobuf;
 use ndarray::prelude::*;
 
-use super::Probability;
-use super::feature_processor::{FeatureProcessor, ProtobufMatrixFeatureProcessor};
+use super::{Probability, Prediction};
+use super::FeatureProcessor;
+use super::deep_feature_processor::DeepFeatureProcessor;
 use super::BoxedClassifier;
 use super::ClassifierWrapper;
 use config::ArcBoxedIntentConfig;
@@ -24,7 +25,7 @@ pub struct TFClassifierWrapper<T> {
     phantom: PhantomData<T>
 }
 
-impl TFClassifierWrapper<TFClassifierWrapper<Probability>>  {
+impl TFClassifierWrapper<TFClassifierWrapper<Probability>> {
     pub fn new_intent_classifier(intent_config: ArcBoxedIntentConfig) -> Result<TFClassifierWrapper<Probability>> {
         let (mut tf_model, intent_model) = get_model_file(&intent_config,
                                                           |pb_config| pb_config.get_intent_classifier_path())?;
@@ -41,8 +42,8 @@ impl TFClassifierWrapper<TFClassifierWrapper<Probability>>  {
     }
 }
 
-impl TFClassifierWrapper<TFClassifierWrapper<Array1<usize>>> {
-    pub fn new_tokens_classifier(intent_config: ArcBoxedIntentConfig) -> Result<TFClassifierWrapper<Array1<usize>>> {
+impl TFClassifierWrapper<TFClassifierWrapper<Array1<Prediction>>> {
+    pub fn new_tokens_classifier(intent_config: ArcBoxedIntentConfig) -> Result<TFClassifierWrapper<Array1<Prediction>>> {
         let (mut tf_model, intent_model) = get_model_file(&intent_config,
                                                           |pb_config| pb_config.get_tokens_classifier_path())?;
         let classifier: BoxedClassifier = if intent_model.has_crf {
@@ -66,8 +67,8 @@ impl TFClassifierWrapper<TFClassifierWrapper<Array1<usize>>> {
     }
 }
 
-fn get_model_file<F>(intent_config : &ArcBoxedIntentConfig, path_extractor : F) -> Result<(Box<Read>, ModelConfiguration)>
-where F: Fn(&IntentConfiguration) -> &str {
+fn get_model_file<F>(intent_config: &ArcBoxedIntentConfig, path_extractor: F) -> Result<(Box<Read>, ModelConfiguration)>
+    where F: Fn(&IntentConfiguration) -> &str {
     let pb_config = intent_config.get_pb_config()?;
     let path_str = path_extractor(&pb_config);
     let model_path = path::Path::new(&path_str);
@@ -80,7 +81,7 @@ where F: Fn(&IntentConfiguration) -> &str {
 
 impl ClassifierWrapper<PreprocessorResult, Probability> for TFClassifierWrapper<Probability> {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability> {
-        let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(),
+        let feature_processor = DeepFeatureProcessor::new(self.intent_config.clone(),
                                                                     &self.intent_model
                                                                         .get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
@@ -89,9 +90,9 @@ impl ClassifierWrapper<PreprocessorResult, Probability> for TFClassifierWrapper<
     }
 }
 
-impl ClassifierWrapper<PreprocessorResult, Array1<usize>> for TFClassifierWrapper<Array1<usize>> {
+impl ClassifierWrapper<PreprocessorResult, Array1<Prediction>> for TFClassifierWrapper<Array1<Prediction>> {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array1<usize>> {
-        let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(),
+        let feature_processor = DeepFeatureProcessor::new(self.intent_config.clone(),
                                                                     self.intent_model
                                                                         .get_features());
         let computed_features = feature_processor.compute_features(preprocessor_result);
