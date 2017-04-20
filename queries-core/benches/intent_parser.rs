@@ -6,12 +6,13 @@ extern crate yolo;
 use bencher::Bencher;
 use yolo::Yolo;
 
-use queries_core::config::FileBasedAssistantConfig;
+use queries_core::FileBasedAssistantConfig;
+use queries_core::IntentParser;
 
-fn get_intent_parser() -> queries_core::IntentParser {
+fn get_intent_parser() -> queries_core::DeepIntentParser {
     let root_dir = queries_core::file_path("untracked");
     let assistant_config = FileBasedAssistantConfig::new(root_dir).yolo();
-    queries_core::IntentParser::new(&assistant_config).yolo()
+    queries_core::DeepIntentParser::new(&assistant_config).yolo()
 }
 
 fn load_parser(bench: &mut Bencher) {
@@ -26,20 +27,8 @@ macro_rules! run_parser {
             let intent_parser = get_intent_parser();
 
             bench.iter(|| {
-                let result = intent_parser.run_intent_classifiers($input, 0.4, $json).yolo();
-                let _ = intent_parser.run_tokens_classifier($input, &result[0].name, $json).yolo();
-            });
-        }
-    }
-}
-
-macro_rules! load_and_run_parser {
-    ($name:ident, $input:expr, $json:expr) => {
-        fn $name(bench: &mut Bencher) {
-            bench.iter(|| {
-                let intent_parser = get_intent_parser();
-                let result = intent_parser.run_intent_classifiers($input, 0.4, $json).yolo();
-                let _ = intent_parser.run_tokens_classifier($input, &result[0].name, $json).yolo();
+                let result = intent_parser.get_intent($input, 0.4, $json).yolo();
+                let _ = intent_parser.get_entities($input, &result[0].name, $json).yolo();
             });
         }
     }
@@ -57,6 +46,5 @@ r#"[]"#);
 
 benchmark_group!(load, load_parser);
 benchmark_group!(run, run_book_restaurant, run_get_weather, run_play_music);
-//benchmark_group!(everything, load_and_run_book_restaurant, load_and_run_get_weather);
 
-benchmark_main!(load, run/*, everything*/);
+benchmark_main!(load, run);

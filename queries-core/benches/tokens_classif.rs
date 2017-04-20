@@ -1,21 +1,24 @@
 #[macro_use]
 extern crate bencher;
 extern crate queries_core;
+extern crate ndarray;
 extern crate yolo;
 
 use bencher::Bencher;
+use ndarray::prelude::*;
 use yolo::Yolo;
 
-use queries_core::config::{AssistantConfig, FileBasedAssistantConfig};
-use queries_core::pipeline::tokens_classifier::{TokensClassifier, ProtobufTokensClassifier};
+use queries_core::{AssistantConfig, FileBasedAssistantConfig};
+use queries_core::pipeline::deep::tf_classifier_wrapper::TFClassifierWrapper;
+use queries_core::pipeline::ClassifierWrapper;
 
-fn get_tokens_classifier(classifier: &str) -> ProtobufTokensClassifier {
+fn get_tokens_classifier(classifier: &str) -> TFClassifierWrapper<Array1<usize>> {
     let root_dir = queries_core::file_path("untracked");
     let assistant_config = FileBasedAssistantConfig::new(root_dir).yolo();
     let intent_config = assistant_config
         .get_intent_configuration(classifier)
         .yolo();
-    ProtobufTokensClassifier::new(intent_config).yolo()
+    TFClassifierWrapper::new_tokens_classifier(intent_config).yolo()
 }
 
 macro_rules! load_classifier {

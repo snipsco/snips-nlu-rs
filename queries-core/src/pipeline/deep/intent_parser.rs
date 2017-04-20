@@ -1,31 +1,23 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-use errors::*;
 use rayon::prelude::*;
 
-use super::Probability;
-use super::intent_configuration::IntentConfiguration;
-use super::slot_filler::Token;
-use super::slot_filler::compute_slots;
-use super::tokens_classifier::TokensClassifier;
-use super::intent_classifier::IntentClassifier;
-use preprocessing::preprocess;
+use errors::*;
 
+use preprocessing::preprocess;
 use config::AssistantConfig;
 
-#[derive(Serialize, Debug)]
-pub struct IntentClassifierResult {
-    pub name: String,
-    pub probability: Probability,
-}
+use pipeline::{ClassifierWrapper, IntentClassifierResult, IntentParser, Slots};
+use super::intent_configuration::IntentConfiguration;
+use super::slot_filler::compute_slots;
 
-pub struct IntentParser {
+pub struct DeepIntentParser {
     classifiers: HashMap<String, IntentConfiguration>,
 }
 
-impl IntentParser {
-    pub fn new(assistant_config: &AssistantConfig) -> Result<IntentParser> {
+impl DeepIntentParser {
+    pub fn new(assistant_config: &AssistantConfig) -> Result<DeepIntentParser> {
         let mut classifiers = HashMap::new();
 
         for ref c in assistant_config.get_available_intents_names()? {
@@ -34,14 +26,16 @@ impl IntentParser {
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
 
-        Ok(IntentParser { classifiers: classifiers })
+        Ok(DeepIntentParser { classifiers: classifiers })
     }
+}
 
-    pub fn run_intent_classifiers(&self,
-                                  input: &str,
-                                  probability_threshold: f32,
-                                  entities: &str)
-                                  -> Result<Vec<IntentClassifierResult>> {
+impl IntentParser for DeepIntentParser {
+    fn get_intent(&self,
+                  input: &str,
+                  probability_threshold: f32,
+                  entities: &str)
+                  -> Result<Vec<IntentClassifierResult>> {
         ensure!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "probability_threshold must be between 0.0 and 1.0");
 
         let preprocessor_result = preprocess(input, entities)?;
@@ -68,11 +62,11 @@ impl IntentParser {
         Ok(probabilities)
     }
 
-    pub fn run_tokens_classifier(&self,
-                                 input: &str,
-                                 intent_name: &str,
-                                 entities: &str)
-                                 -> Result<HashMap<String, Vec<Token>>> {
+    fn get_entities(&self,
+                    input: &str,
+                    intent_name: &str,
+                    entities: &str)
+                    -> Result<Slots> {
         let preprocessor_result = preprocess(input, entities)?;
 
         let intent_configuration = self.classifiers
