@@ -15,6 +15,8 @@ use std::io::Cursor;
 use libc::c_char;
 use libc::c_float;
 
+use queries_core::IntentParser;
+
 mod errors {
     error_chain! {
           foreign_links {
@@ -35,7 +37,7 @@ mod errors {
 use errors::*;
 
 #[repr(C)]
-pub struct Opaque(std::sync::Mutex<queries_core::IntentParser>);
+pub struct Opaque(std::sync::Mutex<queries_core::DeepIntentParser>);
 
 #[repr(C)]
 pub enum QUERIESRESULT {
@@ -138,7 +140,7 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> R
 
     let file_configuration = queries_core::FileBasedAssistantConfig::new(root_dir)?;
 
-    let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
+    let intent_parser = queries_core::DeepIntentParser::new(&file_configuration)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -155,7 +157,7 @@ fn create_from_binary(binary: *const libc::c_uchar,
     let file_configuration =
         queries_core::BinaryBasedAssistantConfig::new(Cursor::new(slice.to_owned()))?;
 
-    let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
+    let intent_parser = queries_core::DeepIntentParser::new(&file_configuration)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -172,7 +174,7 @@ fn run_intent_classification(client: *mut Opaque,
     let intent_parser = get_intent_parser!(client);
     let entities = get_str!(entities);
 
-    let results = intent_parser.run_intent_classifiers(input, probability_threshold, entities)?;
+    let results = intent_parser.get_intent(input, probability_threshold, entities)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
@@ -188,7 +190,7 @@ fn run_tokens_classification(client: *mut Opaque,
     let intent_parser = get_intent_parser!(client);
     let entities = get_str!(entities);
 
-    let result = intent_parser.run_tokens_classifier(input, intent_name, entities)?;
+    let result = intent_parser.get_entities(input, intent_name, entities)?;
 
     point_to_string(result_json, serde_json::to_string(&result)?)
 }
