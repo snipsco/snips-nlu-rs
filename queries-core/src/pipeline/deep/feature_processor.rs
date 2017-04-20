@@ -1,7 +1,7 @@
 use errors::*;
 use ndarray::prelude::*;
 
-use super::FeatureProcessor;
+use pipeline::FeatureProcessor;
 use config::ArcBoxedIntentConfig;
 use config::IntentConfig;
 use features::{shared_scalar, shared_vector};

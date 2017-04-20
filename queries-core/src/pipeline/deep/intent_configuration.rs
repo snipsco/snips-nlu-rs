@@ -2,7 +2,7 @@ use ndarray::prelude::*;
 
 use errors::*;
 
-use super::{Probability, Prediction};
+use pipeline::{Probability, Prediction};
 use super::tf_classifier_wrapper::TFClassifierWrapper;
 use config::ArcBoxedIntentConfig;
 
