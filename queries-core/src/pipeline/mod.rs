@@ -35,7 +35,7 @@ trait FeatureProcessor<I, O> {
     fn compute_features(&self, input : &I) -> O;
 }
 
-trait ClassifierWrapper<I, O> {
+pub trait ClassifierWrapper<I, O> {
     fn run(&self, input : &I) -> Result<O>;
 }
 

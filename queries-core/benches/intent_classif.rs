@@ -6,10 +6,12 @@ extern crate yolo;
 use bencher::Bencher;
 use yolo::Yolo;
 
-use queries_core::config::{AssistantConfig, FileBasedAssistantConfig};
-use queries_core::pipeline::tf_classifier_wrapper::{ClassifierWrapper, TFClassifierWrapper};
+use queries_core::{AssistantConfig, FileBasedAssistantConfig};
+use queries_core::pipeline::ClassifierWrapper;
+use queries_core::pipeline::deep::tf_classifier_wrapper::TFClassifierWrapper;
+use queries_core::Probability;
 
-fn get_intent_classifier(classifier: &str) -> TFClassifierWrapper {
+fn get_intent_classifier(classifier: &str) -> TFClassifierWrapper<Probability> {
     let root_dir = queries_core::file_path("untracked");
     let assistant_config = FileBasedAssistantConfig::new(root_dir).yolo();
     let intent_config = assistant_config
