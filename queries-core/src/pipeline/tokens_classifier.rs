@@ -5,16 +5,13 @@ use protobuf;
 use ndarray::prelude::*;
 
 use super::BoxedClassifier;
-use super::feature_processor::{MatrixFeatureProcessor, ProtobufMatrixFeatureProcessor};
+use super::feature_processor::{FeatureProcessor, ProtobufMatrixFeatureProcessor};
+use super::ClassifierWrapper;
 use config::ArcBoxedIntentConfig;
 use preprocessing::PreprocessorResult;
 use postprocessing;
 use protos::model_configuration::ModelConfiguration;
 use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier};
-
-pub trait TokensClassifier {
-    fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array1<usize>>;
-}
 
 pub struct ProtobufTokensClassifier {
     intent_config: ArcBoxedIntentConfig,
@@ -52,7 +49,7 @@ impl ProtobufTokensClassifier {
     }
 }
 
-impl TokensClassifier for ProtobufTokensClassifier {
+impl ClassifierWrapper<PreprocessorResult, Array1<usize>> for ProtobufTokensClassifier {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Array1<usize>> {
         let feature_processor = ProtobufMatrixFeatureProcessor::new(self.intent_config.clone(),
                                                                     self.intent_model
@@ -72,7 +69,8 @@ impl TokensClassifier for ProtobufTokensClassifier {
 mod test {
     use config::{AssistantConfig, FileBasedAssistantConfig};
     use preprocessing::preprocess;
-    use super::{TokensClassifier, ProtobufTokensClassifier};
+    use pipeline::ClassifierWrapper;
+    use super::ProtobufTokensClassifier;
 
     #[test]
     #[ignore]

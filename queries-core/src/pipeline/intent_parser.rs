@@ -8,8 +8,7 @@ use super::Probability;
 use super::intent_configuration::IntentConfiguration;
 use super::slot_filler::Token;
 use super::slot_filler::compute_slots;
-use super::tokens_classifier::TokensClassifier;
-use super::intent_classifier::IntentClassifier;
+use super::ClassifierWrapper;
 use preprocessing::preprocess;
 
 use config::AssistantConfig;

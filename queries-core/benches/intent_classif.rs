@@ -7,7 +7,7 @@ use bencher::Bencher;
 use yolo::Yolo;
 
 use queries_core::config::{AssistantConfig, FileBasedAssistantConfig};
-use queries_core::pipeline::intent_classifier::{IntentClassifier, ProtobufIntentClassifier};
+use queries_core::pipeline::intent_classifier::{ClassifierWrapper, ProtobufIntentClassifier};
 
 fn get_intent_classifier(classifier: &str) -> ProtobufIntentClassifier {
     let root_dir = queries_core::file_path("untracked");
