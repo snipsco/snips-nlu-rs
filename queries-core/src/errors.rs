@@ -7,6 +7,7 @@ error_chain! {
         Zip(::zip::result::ZipError);
         Fst(::fst::Error);
         Preprocessor(::preprocessing::Error);
+        Regex(::regex::Error);
     }
 }
 
