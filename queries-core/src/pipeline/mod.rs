@@ -4,6 +4,7 @@ use std::ops::Range;
 use errors::*;
 
 pub mod deep;
+pub mod light;
 
 pub type Probability = f32;
 
@@ -19,7 +20,7 @@ pub struct SlotValue {
 
 type Slots = HashMap<String, Vec<SlotValue>>;
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Debug, PartialEq)]
 pub struct IntentClassifierResult {
     pub name: String,
     pub probability: Probability,
