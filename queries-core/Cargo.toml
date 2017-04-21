@@ -21,6 +21,7 @@ protobuf = "1.2"
 rayon = "0.6"
 tensorflow = "0.3"
 csv = "0.15"
+maplit = "0.1"
 yolo = "*"
 zip = { version = "0.2", default-features = false }
 
