@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use std::ops::Add;
 
 use itertools::Itertools;
-use regex::{RegexSet, RegexSetBuilder};
+use regex::{Regex, RegexBuilder};
 
 use errors::*;
 use pipeline::{IntentClassifierResult, IntentParser, Slots, SlotValue};
 
 pub struct RegexIntentParser {
-    regexes_per_intent: HashMap<String, RegexSet>,
+    regexes_per_intent: HashMap<String, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, String>,
     slot_names_to_entities: HashMap<String, String>,
 }
@@ -21,12 +21,21 @@ impl RegexIntentParser {
         let regexes: Result<_> = patterns
             .into_iter()
             .map(|(intent, patterns)| {
-                let mut rb = RegexSetBuilder::new(&patterns);
-                rb.case_insensitive(true);
-                Ok((intent, rb.build()?))
+                let regexes: Result<_> = patterns
+                    .into_iter()
+                    .map(|p| {
+                        let mut rb = RegexBuilder::new(&p);
+                        rb.case_insensitive(true);
+                        Ok(rb.build()?)
+                    })
+                    .fold_results(vec![], |mut v, r| {
+                        v.push(r);
+                        v
+                    });
+                Ok((intent, regexes?))
             })
-            .fold_results(hashmap![], |mut h, (intent, regex)| {
-                h.insert(intent, regex);
+            .fold_results(hashmap![], |mut h, (intent, regexes)| {
+                h.insert(intent, regexes);
                 h
             });
 
@@ -84,11 +93,37 @@ impl IntentParser for RegexIntentParser {
             .get(intent_name)
             .ok_or(format!("intent {:?} not found", intent_name))?;
 
-        for m in regexes.matches(&input) {
-            
-        }
+        let mut result = hashmap![];
+        for regex in regexes {
+            for caps in regex.captures_iter(input) {
+                caps.iter()
+                    .zip(regex.capture_names())
+                    .skip(1)
+                    .filter_map(|(option_match, option_group_name)| {
+                        if let Some(a_match) = option_match {
+                            if let Some(group_name) = option_group_name {
+                                return Some((a_match, group_name));
+                            }
+                        }
+                        return None;
+                    })
+                    .map(|(a_match, group_name)| {
+                        let range = a_match.start()..a_match.end();
+                        let value = a_match.as_str();
+                        let slot_name = &self.group_names_to_slot_names[group_name];
+                        let entity = &self.slot_names_to_entities[slot_name];
 
-        Ok(HashMap::new())
+                        (slot_name, SlotValue { value: value.into(), range: range })
+                    })
+                    .foreach(|(slot_name, slot_value)| {
+                        result
+                            .entry(slot_name.to_string())
+                            .or_insert_with(|| vec![])
+                            .push(slot_value);
+                    });
+            }
+        }
+        Ok(deduplicate_overlapping_slots(result))
     }
 }
 
