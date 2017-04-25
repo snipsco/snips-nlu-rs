@@ -142,7 +142,6 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> R
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
-    println!("create ok");
     Ok(())
 }
 
