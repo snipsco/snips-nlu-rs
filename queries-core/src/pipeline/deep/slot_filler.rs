@@ -41,8 +41,7 @@ mod test {
     #[test]
     fn slot_filler_works() {
         let text = "Book me a table for tomorrow at Chartier in the evening";
-        let entities = r#"[{"end_index":28,"value":"tomorrow","start_index":20,"entity":"%TIME%"},{"end_index": 55,"value":"in the evening","start_index":41,"entity":"%TIME_INTERVAL%"}]"#;
-        let preprocess_result = preprocess(text, entities).unwrap();
+        let preprocess_result = preprocess(text).unwrap();
         let tokens_predictions: Array1<usize> = arr1(&[0, 0, 0, 0, 2, 2, 0, 3, 0, 2, 2]);
 
         let expected = vec![

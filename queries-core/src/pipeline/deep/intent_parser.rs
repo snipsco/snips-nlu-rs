@@ -33,12 +33,11 @@ impl DeepIntentParser {
 impl IntentParser for DeepIntentParser {
     fn get_intent(&self,
                   input: &str,
-                  probability_threshold: f32,
-                  entities: &str)
+                  probability_threshold: f32)
                   -> Result<Vec<IntentClassifierResult>> {
         ensure!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "probability_threshold must be between 0.0 and 1.0");
 
-        let preprocessor_result = preprocess(input, entities)?;
+        let preprocessor_result = preprocess(input)?;
 
         let mut probabilities: Vec<IntentClassifierResult> = self.classifiers
             .par_iter()
@@ -62,12 +61,8 @@ impl IntentParser for DeepIntentParser {
         Ok(probabilities)
     }
 
-    fn get_entities(&self,
-                    input: &str,
-                    intent_name: &str,
-                    entities: &str)
-                    -> Result<Slots> {
-        let preprocessor_result = preprocess(input, entities)?;
+    fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
+        let preprocessor_result = preprocess(input)?;
 
         let intent_configuration = self.classifiers
             .get(intent_name)

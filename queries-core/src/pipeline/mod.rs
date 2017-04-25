@@ -26,9 +26,9 @@ pub struct IntentClassifierResult {
 }
 
 pub trait IntentParser {
-    fn get_intent(&self, input: &str, probability_threshold: f32, entities: &str) -> Result<Vec<IntentClassifierResult>>;
+    fn get_intent(&self, input: &str, probability_threshold: f32) -> Result<Vec<IntentClassifierResult>>;
 
-    fn get_entities(&self, input: &str, intent_name: &str, entities: &str) -> Result<Slots>;
+    fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots>;
 }
 
 trait FeatureProcessor<I, O> {

@@ -7,11 +7,10 @@ from __future__ import unicode_literals
 from ctypes import c_char, c_char_p, c_wchar_p, c_void_p, c_float, string_at, pointer, byref, cdll
 import os
 import json
-import duckling.core as duckling
 
-lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "../queries_embed.so"))
+#lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "../queries_embed.so"))
 #lib = cdll.LoadLibrary("../../target/debug/libqueries_embed.so") # use for dev
-#lib = cdll.LoadLibrary("../../target/debug/libqueries_embed.dylib") # use for dev
+lib = cdll.LoadLibrary("../../target/debug/libqueries_embed.dylib") # use for dev
 
 class IntentParser(object):
 
@@ -37,67 +36,32 @@ class IntentParser(object):
             raise ImportError('Something wrong happened while creating the '
                               'intent parser. See stderr.')
 
-        duckling.load()
 
     def __del__(self):
         lib.intent_parser_destroy_client(self._parser)
 
-    def get_intent(self, query, threshold=0.):
-        entities = self._build_entities(query)
 
+    def get_intent(self, query, threshold=0.):
         pointer = c_char_p()
         lib.intent_parser_run_intent_classification(
             self._parser,
             query.encode("utf-8"),
             c_float(threshold),
-            json.dumps(entities).encode("utf-8"),
             byref(pointer))
         result = string_at(pointer)
         lib.intent_parser_destroy_string(pointer)
 
         return json.loads(result)
 
-    def get_entities(self, query, intent):
-        entities = self._build_entities(query)
 
+    def get_entities(self, query, intent):
         pointer = c_char_p()
         lib.intent_parser_run_tokens_classification(
             self._parser,
             query.encode("utf-8"),
             intent.encode("utf-8"),
-            json.dumps(entities).encode("utf-8"),
             byref(pointer))
         result = string_at(pointer)
         lib.intent_parser_destroy_string(pointer)
 
         return json.loads(result)
-
-    def _build_entities(self, query):
-        tokens = duckling.parse(self.language, query, [
-                                "number",
-                                "time",
-                                "duration",
-                                "ordinal",
-                                "temperature",
-                                "amount-of-money"])
-        symbol_mapping = {
-            "time": "%TIME%",
-            "number": "%NUMBER%",
-            "ordinal": "%ORDINAL%",
-            "temperature": "%TEMPERATURE%",
-            "amount-of-money": "%PRICE%",
-            "duration": "%DURATION%"
-        }
-
-        def resolve(entity):
-            dimension = symbol_mapping.get(entity.get("dim"))
-            if dimension == "%TIME%" and entity.get("value", {}).get("type") == "interval" is not None:
-                dimension = "%TIME_INTERVAL%"
-            return {
-                "entity": dimension,
-                "start_index": entity.get("start"),
-                "end_index": entity.get("end"),
-                "value": entity.get("body")
-            }
-
-        return map(resolve, tokens)

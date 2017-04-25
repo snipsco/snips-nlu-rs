@@ -145,7 +145,7 @@ mod test {
 
             for test in tests {
                 // TODO: Build PreprocessorResult from test instead of running the preprocessor
-                let preprocess_result = preprocess(&test.text, "").unwrap();
+                let preprocess_result = preprocess(&test.text).unwrap();
                 let result = intent_classifier.run(&preprocess_result).unwrap();
                 assert_epsilon_eq(&arr2(&[[result]]), &create_array(&test.output), 1e-6);
             }
@@ -157,7 +157,7 @@ mod test {
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn tokens_classifier_works() {
         let preprocessor_result = preprocess("Book me a table for two people at Le Chalet \
-                                              Savoyard", "").unwrap();
+                                              Savoyard").unwrap();
 
         let intent_config = FileBasedAssistantConfig::default().get_intent_configuration("BookRestaurant").unwrap();
 

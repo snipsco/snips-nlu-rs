@@ -7,6 +7,7 @@ error_chain! {
         Csv(::csv::Error);
         Zip(::zip::result::ZipError);
         Fst(::fst::Error);
+        Rustling(::rustling_ontology::RustlingError);
     }
 }
 

@@ -31,10 +31,10 @@ macro_rules! load_classifier {
 }
 
 macro_rules! run_classifier {
-    ($name:ident, $classifier:expr, $input:expr, $json:expr) => {
+    ($name:ident, $classifier:expr, $input:expr) => {
         fn $name(bench: &mut Bencher) {
             let classifier = get_intent_classifier($classifier);
-            let preprocessor_result = queries_core::preprocess($input, $json).yolo();
+            let preprocessor_result = queries_core::preprocess($input).yolo();
 
             bench.iter(|| {
                 let _ = classifier.run(&preprocessor_result);
@@ -48,14 +48,11 @@ load_classifier!(load_get_weather, "GetWeather");
 load_classifier!(load_play_music, "PlayMusic");
 
 run_classifier!(run_book_restaurant, "BookRestaurant",
-"Book me a table for four people at Le Chalet Savoyard tonight",
-r#"[{"end_index": 24, "value": "four", "start_index": 20, "entity": "%NUMBER%"}, {"end_index": 61, "value": "tonight", "start_index": 54, "entity": "%TIME_INTERVAL%"}]"#);
+"Book me a table for four people at Le Chalet Savoyard tonight");
 run_classifier!(run_get_weather, "GetWeather",
-"What will be the weather tomorrow in Paris ?",
-r#"[{"end_index": 33, "value": "tomorrow", "start_index": 25, "entity": "%TIME%"}]"#);
+"What will be the weather tomorrow in Paris ?");
 run_classifier!(run_play_music, "PlayMusic",
-"Give me some psychedelic hip-hop please",
-r#"[]"#);
+"Give me some psychedelic hip-hop please");
 
 benchmark_group!(load, load_book_restaurant, load_get_weather, load_play_music);
 benchmark_group!(run, run_book_restaurant, run_get_weather, run_play_music);
