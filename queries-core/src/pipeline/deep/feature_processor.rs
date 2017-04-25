@@ -114,7 +114,6 @@ mod test {
     #[derive(Deserialize, Debug)]
     struct TestDescription {
         text: String,
-        entities: String,
         version: String,
         #[serde(rename = "type")]
         kind: String,
@@ -146,7 +145,7 @@ mod test {
                 let tests: Vec<TestDescription> =
                     parse_json(path.join(test_filename).to_str().unwrap());
                 for test in tests {
-                    let preprocessor_result = preprocess(&test.text, &test.entities).unwrap();
+                    let preprocessor_result = preprocess(&test.text).unwrap();
 
                     let feature_processor =
                         DeepFeatureProcessor::new(intent_config.clone(),
@@ -163,7 +162,7 @@ mod test {
                                 None
                             }
                         })
-                    .collect();
+                        .collect();
 
                     assert!(formatted_errors.len() == 0, "{} {} v{}, input: {}\n{}",
                         &test.kind, model_name, &test.version, &test.text, formatted_errors.join("\n"));

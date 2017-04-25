@@ -1,21 +1,14 @@
 use std::ops::Range;
 
+use rustling_ontology::*;
+
 use errors::*;
-use serde_json;
 
 mod normalization;
 mod entity;
 mod tokenization;
 mod preprocessor_result;
 pub use self::preprocessor_result::PreprocessorResult;
-
-#[derive(Deserialize, Debug, PartialEq, Clone)]
-pub struct EntityToken {
-    value: String,
-    start_index: usize,
-    end_index: usize,
-    entity: String,
-}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
@@ -26,19 +19,37 @@ pub struct Token {
     entity: Option<String>,
 }
 
+trait EntityMapping {
+    fn to_entity(&self) -> Option<&'static str>;
+}
+
+impl EntityMapping for Dimension {
+    fn to_entity(&self) -> Option<&'static str> {
+        match self.kind() {
+            DimensionKind::Number => Some("%NUMBER%"),
+            DimensionKind::Ordinal => Some("%ORDINAL%"),
+            DimensionKind::AmountOfMoney => Some("%PRICE%"),
+            DimensionKind::Temperature => Some("%TEMPERATURE%"),
+            _ => None
+        }
+    }
+}
+
 impl Token {
-    fn from(input: &str, entity_token: EntityToken) -> Token {
+    fn from(input: &str, parser_match: ParserMatch<Dimension>) -> Token {
+        let range = Range {
+            start: parser_match.range.0,
+            end: parser_match.range.1,
+        };
+
         Token {
-            range: Range {
-                start: convert_byte_index(input, entity_token.start_index),
-                end: convert_byte_index(input, entity_token.end_index),
-            },
+            range: range.clone(),
             char_range: Range {
-                start: entity_token.start_index,
-                end: entity_token.end_index,
+                start: convert_char_index(input, range.start),
+                end: convert_char_index(input, range.end),
             },
-            value: entity_token.value,
-            entity: Some(entity_token.entity),
+            value: input[range].to_string(),
+            entity: parser_match.value.to_entity().map(|e| e.to_string()),
         }
     }
 
@@ -69,11 +80,11 @@ pub fn create_normalized_tokens(input: &str, entity_tokens: Vec<Token>) -> Vec<N
         .collect()
 }
 
-pub fn preprocess(input: &str, entities: &str) -> Result<PreprocessorResult> {
-    let entity_tokens = serde_json::from_str::<Vec<EntityToken>>(entities)?
-        .into_iter()
-        .map(|entity_token| Token::from(input, entity_token))
-        .collect();
+pub fn preprocess(input: &str) -> Result<PreprocessorResult> {
+    let parser = build_parser(Lang::EN)?;
+    let entities = parser.parse(input)?;
+
+    let entity_tokens = entities.into_iter().map(|pm| Token::from(input, pm)).collect();
 
     Ok(PreprocessorResult::new(input.into(), create_normalized_tokens(input, entity_tokens)))
 }
