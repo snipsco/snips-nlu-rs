@@ -24,6 +24,7 @@ bencher = "0.1"
 csv = "0.15.0"
 yolo = "*"
 zip = { version = "0.2", default-features = false }
+rustling-ontology = { git = "ssh://git@github.com/snipsco/rustling-ontology.git", tag = "0.0.1" }
 
 [build-dependencies]
 glob = "0.2"

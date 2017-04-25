@@ -9,6 +9,7 @@ extern crate ndarray;
 extern crate protobuf;
 extern crate rayon;
 extern crate regex;
+extern crate rustling_ontology;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
