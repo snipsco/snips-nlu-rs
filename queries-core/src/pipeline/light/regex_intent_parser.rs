@@ -18,34 +18,31 @@ impl RegexIntentParser {
     pub fn new(patterns: HashMap<String, Vec<String>>,
                group_names_to_slot_names: HashMap<String, String>,
                slot_names_to_entities: HashMap<String, String>) -> Result<Self> {
-        let regexes: Result<_> = patterns
-            .into_iter()
-            .map(|(intent, patterns)| {
-                let regexes: Result<_> = patterns
-                    .into_iter()
-                    .map(|p| {
-                        let mut rb = RegexBuilder::new(&p);
-                        rb.case_insensitive(true);
-                        Ok(rb.build()?)
-                    })
-                    .fold_results(vec![], |mut v, r| {
-                        v.push(r);
-                        v
-                    });
-                Ok((intent, regexes?))
-            })
-            .fold_results(hashmap![], |mut h, (intent, regexes)| {
-                h.insert(intent, regexes);
-                h
-            });
-
         Ok(RegexIntentParser {
-            regexes_per_intent: regexes?,
+            regexes_per_intent: compile_regexes_per_intent(patterns)?,
             group_names_to_slot_names: group_names_to_slot_names,
             slot_names_to_entities: slot_names_to_entities,
         })
     }
 }
+
+fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>) -> Result<HashMap<String, Vec<Regex>>> {
+    patterns
+        .into_iter()
+        .map(|(intent, patterns)| {
+            let regexes: Result<_> = patterns
+                .into_iter()
+                .map(|p| {
+                    let mut rb = RegexBuilder::new(&p);
+                    rb.case_insensitive(true);
+                    Ok(rb.build()?)
+                })
+                .collect();
+            Ok((intent, regexes?))
+        }).
+        collect()
+}
+
 
 impl IntentParser for RegexIntentParser {
     fn get_intent(&self,
