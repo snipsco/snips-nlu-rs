@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
-use std::ops::Add;
 
 use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
@@ -49,19 +48,15 @@ impl IntentParser for RegexIntentParser {
                   input: &str,
                   probability_threshold: f32,
                   entities: &str) -> Result<Vec<IntentClassifierResult>> {
-        let entities_per_intent: Result<_> = self.regexes_per_intent
-            .keys()
-            .map(|intent_name| Ok((intent_name, self.get_entities(input, intent_name, entities)?)))
-            .fold_results(vec![], |mut h, (intent_name, entities)| {
-                h.push((intent_name, entities));
-                h
-            });
-        let entities_per_intent = entities_per_intent?;
+        let intents = self.regexes_per_intent.keys();
+        let mut total_nb_entities = 0;
+        let mut entities_per_intent = Vec::with_capacity(intents.len());
+        for intent_name in intents {
+            let entities = self.get_entities(input, intent_name, entities)?;
+            total_nb_entities += entities.len();
+            entities_per_intent.push((intent_name, entities));
+        }
 
-        let total_nb_entities = entities_per_intent
-            .iter()
-            .map(|&(_, ref entities)| entities.len())
-            .fold(0, Add::add);
         // TODO: handle intents without slots
         if total_nb_entities == 0 {
             bail!("No intent found for given input \"{}\"", input)
@@ -96,13 +91,12 @@ impl IntentParser for RegexIntentParser {
                 caps.iter()
                     .zip(regex.capture_names())
                     .skip(1)
-                    .filter_map(|(option_match, option_group_name)| {
-                        if let Some(a_match) = option_match {
-                            if let Some(group_name) = option_group_name {
-                                return Some((a_match, group_name));
-                            }
+                    .filter_map(|(opt_match, opt_group_name)| {
+                        if let (Some(a_match), Some(group_name)) = (opt_match, opt_group_name) {
+                            Some((a_match, group_name))
+                        } else {
+                            None
                         }
-                        return None;
                     })
                     .map(|(a_match, group_name)| {
                         let range = a_match.start()..a_match.end();
