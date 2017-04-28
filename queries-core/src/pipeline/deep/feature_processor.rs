@@ -105,10 +105,9 @@ mod test {
 
     use file_path;
     use config::{AssistantConfig, FileBasedAssistantConfig};
-    use preprocessing::preprocess;
+    use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
     use protos::model_configuration::ModelConfiguration;
-    use testutils::parse_json;
-    use testutils::create_transposed_array;
+    use testutils::{parse_json, create_transposed_array};
     use super::{FeatureProcessor, DeepFeatureProcessor};
 
     #[derive(Deserialize, Debug)]
@@ -141,11 +140,13 @@ mod test {
                 .unwrap();
             let pb_intent_config = intent_config.get_pb_config().unwrap();
 
+            let preprocessor = DeepPreprocessor::new(Lang::EN).unwrap();
+
             let test = |test_filename, pb_model_config: ModelConfiguration| {
                 let tests: Vec<TestDescription> =
                     parse_json(path.join(test_filename).to_str().unwrap());
                 for test in tests {
-                    let preprocessor_result = preprocess(&test.text).unwrap();
+                    let preprocessor_result = preprocessor.run(&test.text).unwrap();
 
                     let feature_processor =
                         DeepFeatureProcessor::new(intent_config.clone(),

@@ -34,14 +34,13 @@ mod test {
 
     use ndarray::prelude::*;
 
-    use preprocessing::preprocess;
+    use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
     use super::SlotValue;
     use super::compute_slots;
 
     #[test]
     fn slot_filler_works() {
         let text = "Book me a table for tomorrow at Chartier in the evening";
-        let preprocess_result = preprocess(text).unwrap();
         let tokens_predictions: Array1<usize> = arr1(&[0, 0, 0, 0, 2, 2, 0, 3, 0, 2, 2]);
 
         let expected = vec![
@@ -49,8 +48,10 @@ mod test {
             vec![SlotValue { value: "for tomorrow".to_string(), range: Range { start: 16, end: 28 } }],
             vec![SlotValue { value: "Chartier".to_string(), range: Range { start: 32, end: 40 } }],
         ];
+
+        let preprocessor = DeepPreprocessor::new(Lang::EN).unwrap();
+        let preprocess_result = preprocessor.run(text).unwrap();
         let slots = compute_slots(&preprocess_result, expected.len(), &tokens_predictions);
-        println!("slots: {:?}", slots);
         assert_eq!(slots, expected);
     }
 }

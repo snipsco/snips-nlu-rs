@@ -78,7 +78,6 @@ fn get_model_file<F>(intent_config: &ArcBoxedIntentConfig, path_extractor: F) ->
     Ok((tf_model, model_configuration))
 }
 
-
 impl ClassifierWrapper<PreprocessorResult, Probability> for TFClassifierWrapper<Probability> {
     fn run(&self, preprocessor_result: &PreprocessorResult) -> Result<Probability> {
         let feature_processor = DeepFeatureProcessor::new(self.intent_config.clone(),
@@ -114,10 +113,8 @@ mod test {
 
     use file_path;
     use config::{AssistantConfig, FileBasedAssistantConfig};
-    use preprocessing::preprocess;
-    use testutils::parse_json;
-    use testutils::create_array;
-    use testutils::assert_epsilon_eq;
+    use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
+    use testutils::{parse_json, create_array, assert_epsilon_eq};
     use super::{ClassifierWrapper, TFClassifierWrapper};
 
     #[derive(Deserialize)]
@@ -143,9 +140,10 @@ mod test {
 
             let intent_classifier = TFClassifierWrapper::new_intent_classifier(intent_config).unwrap();
 
+            let preprocessor = DeepPreprocessor::new(Lang::EN).unwrap();
             for test in tests {
                 // TODO: Build PreprocessorResult from test instead of running the preprocessor
-                let preprocess_result = preprocess(&test.text).unwrap();
+                let preprocess_result = preprocessor.run(&test.text).unwrap();
                 let result = intent_classifier.run(&preprocess_result).unwrap();
                 assert_epsilon_eq(&arr2(&[[result]]), &create_array(&test.output), 1e-6);
             }
@@ -156,8 +154,8 @@ mod test {
     #[ignore]
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn tokens_classifier_works() {
-        let preprocessor_result = preprocess("Book me a table for two people at Le Chalet \
-                                              Savoyard").unwrap();
+        let preprocessor = DeepPreprocessor::new(Lang::EN).unwrap();
+        let preprocessor_result = preprocessor.run("Book me a table for two people at Le Chalet Savoyard").unwrap();
 
         let intent_config = FileBasedAssistantConfig::default().get_intent_configuration("BookRestaurant").unwrap();
 

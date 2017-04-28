@@ -7,31 +7,29 @@ description = "Rust implementation of the Queries SDK"
 build = "build.rs"
 
 [dependencies]
+queries-utils = { path = "../queries-utils" }
+queries-preprocessor = { path = "../queries-preprocessor" }
 error-chain = { version = "0.10", default-features=false }
-itertools = "0.5"
+itertools = "0.6"
 fst = "0.1"
-serde = "0.9"
-serde_derive = "0.9"
-serde_json = "0.9"
+serde = "1.0"
+serde_derive = "1.0"
 ndarray = "0.9"
-unicode-normalization = "0.1"
 regex = "0.1"
 lazy_static = "0.2"
 protobuf = "1.2"
 rayon = "0.6"
 tensorflow = "0.3"
 bencher = "0.1"
-csv = "0.15.0"
+csv = "0.15"
 yolo = "*"
 zip = { version = "0.2", default-features = false }
-rustling-ontology = { git = "ssh://git@github.com/snipsco/rustling-ontology.git", branch = "develop" }
+
+[dev-dependencies]
+serde_json = "1.0"
 
 [build-dependencies]
 glob = "0.2"
-
-[[bench]]
-name = "preprocess"
-harness = false
 
 [[bench]]
 name = "intent_classif"
