@@ -2,12 +2,11 @@ error_chain! {
     foreign_links {
         Io(::std::io::Error);
         NdArray(::ndarray::ShapeError);
-        Serde(::serde_json::Error);
         Protobuf(::protobuf::ProtobufError);
         Csv(::csv::Error);
         Zip(::zip::result::ZipError);
         Fst(::fst::Error);
-        Rustling(::rustling_ontology::RustlingError);
+        Preprocessor(::preprocessing::Error);
     }
 }
 

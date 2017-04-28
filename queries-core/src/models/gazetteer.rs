@@ -24,7 +24,9 @@ pub struct HashSetGazetteer {
 #[cfg(test)]
 impl HashSetGazetteer {
     pub fn new(r: &mut Read) -> Result<HashSetGazetteer> {
-        let vec: Vec<String> = serde_json::from_reader(r)?;
+        let vec: Vec<String> = serde_json::from_reader(r)
+            .map_err(|err| format!("could not parse json: {:?}", err))
+            .unwrap();
         Ok(HashSetGazetteer { values: HashSet::from_iter(vec) })
     }
 }

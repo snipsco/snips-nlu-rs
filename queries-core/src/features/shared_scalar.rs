@@ -27,22 +27,20 @@ pub fn get_message_length(preprocessor_result: &PreprocessorResult,
 
 #[cfg(test)]
 mod test {
-    use std::ops::Range;
     use std::path;
-
-    use super::ngram_matcher;
-    //use super::get_message_length;
-    use super::has_gazetteer_hits;
-
-    use preprocessing::{NormalizedToken, PreprocessorResult};
-    use preprocessing::convert_byte_index;
-    use models::gazetteer::HashSetGazetteer;
 
     use serde_json;
 
+    use preprocessing::{NormalizedToken, PreprocessorResult};
+    use models::gazetteer::HashSetGazetteer;
     use testutils::parse_json;
+    use utils::convert_byte_range;
 
-    #[derive(Debug, Deserialize)]
+    use super::ngram_matcher;
+    use super::has_gazetteer_hits;
+    //use super::get_message_length;
+
+    #[derive(Debug, PartialEq, Clone, Deserialize)]
     struct TestDescription {
         //description: String,
         input: Input,
@@ -50,13 +48,13 @@ mod test {
         output: f32,
     }
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Debug, PartialEq, Clone, Deserialize)]
     struct Input {
         text: String,
         tokens: Vec<Token>,
     }
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Debug, PartialEq, Clone, Deserialize)]
     struct Token {
         #[serde(rename = "startIndex")]
         start_index: usize,
@@ -67,7 +65,7 @@ mod test {
         entity: Option<String>,
     }
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Debug, PartialEq, Clone, Deserialize)]
     struct Arg {
         //#[serde(rename = "type")]
         //kind: String,
@@ -75,7 +73,7 @@ mod test {
         value: Data,
     }
 
-    #[derive(Debug, Deserialize)]
+    #[derive(Debug, PartialEq, Clone, Deserialize)]
     #[serde(untagged)]
     enum Data {
         StringValue(String),
@@ -84,19 +82,13 @@ mod test {
     }
 
     impl Token {
-        fn to_normalized_token(&self, base_string: &str) -> NormalizedToken {
+        fn to_normalized_token(self, base_string: &str) -> NormalizedToken {
             NormalizedToken {
-                value: self.value.clone(),
-                normalized_value: self.normalized.clone(),
-                range: Range {
-                    start: convert_byte_index(base_string, self.start_index),
-                    end: convert_byte_index(base_string, self.end_index),
-                },
-                char_range: Range {
-                    start: self.start_index,
-                    end: self.end_index,
-                },
-                entity: self.entity.clone(),
+                value: self.value,
+                normalized_value: self.normalized,
+                range: convert_byte_range(base_string, self.start_index..self.end_index),
+                char_range: self.start_index..self.end_index,
+                entity: self.entity,
             }
         }
     }
@@ -120,7 +112,8 @@ mod test {
             for parsed_test in parsed_tests {
                 let input_text = parsed_test.input.text.to_string();
                 let normalized_tokens: Vec<NormalizedToken> = parsed_test.input.tokens
-                    .iter()
+                    .clone()
+                    .into_iter()
                     .map(|test_token| test_token.to_normalized_token(&parsed_test.input.text))
                     .collect();
 

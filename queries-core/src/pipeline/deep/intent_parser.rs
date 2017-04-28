@@ -5,7 +5,7 @@ use rayon::prelude::*;
 
 use errors::*;
 
-use preprocessing::preprocess;
+use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
 use config::AssistantConfig;
 
 use pipeline::{ClassifierWrapper, IntentClassifierResult, IntentParser, Slots};
@@ -13,6 +13,7 @@ use super::intent_configuration::IntentConfiguration;
 use super::slot_filler::compute_slots;
 
 pub struct DeepIntentParser {
+    preprocessor: DeepPreprocessor,
     classifiers: HashMap<String, IntentConfiguration>,
 }
 
@@ -26,7 +27,10 @@ impl DeepIntentParser {
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
 
-        Ok(DeepIntentParser { classifiers: classifiers })
+        let lang: Lang = Lang::EN;
+        let preprocessor = DeepPreprocessor::new(lang)?;
+
+        Ok(DeepIntentParser { preprocessor: preprocessor, classifiers: classifiers })
     }
 }
 
@@ -37,7 +41,7 @@ impl IntentParser for DeepIntentParser {
                   -> Result<Vec<IntentClassifierResult>> {
         ensure!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "probability_threshold must be between 0.0 and 1.0");
 
-        let preprocessor_result = preprocess(input)?;
+        let preprocessor_result = self.preprocessor.run(input)?;
 
         let mut probabilities: Vec<IntentClassifierResult> = self.classifiers
             .par_iter()
@@ -62,7 +66,7 @@ impl IntentParser for DeepIntentParser {
     }
 
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
-        let preprocessor_result = preprocess(input)?;
+        let preprocessor_result = self.preprocessor.run(input)?;
 
         let intent_configuration = self.classifiers
             .get(intent_name)

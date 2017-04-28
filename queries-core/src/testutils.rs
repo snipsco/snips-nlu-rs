@@ -1,5 +1,4 @@
-use std::io::prelude::*;
-use std::fs::File;
+use std::fs;
 
 use serde_json;
 use serde::Deserialize;
@@ -7,13 +6,11 @@ use ndarray::prelude::*;
 
 use file_path;
 
-pub fn parse_json<T: Deserialize>(file_name: &str) -> T {
-    let mut f = File::open(file_path(file_name))
+pub fn parse_json<'a, T: for<'de> Deserialize<'de>>(file_name: &str) -> T {
+    let f = fs::File::open(file_path(file_name))
         .map_err(|_| format!("could not open {:?}", file_name))
         .unwrap();
-    let mut s = String::new();
-    assert!(f.read_to_string(&mut s).is_ok());
-    serde_json::from_str::<T>(&s)
+    serde_json::from_reader(f)
         .map_err(|err| format!("could not parse json in {:?}\n{:?}", file_name, err))
         .unwrap()
 }

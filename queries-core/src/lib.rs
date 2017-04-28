@@ -1,3 +1,5 @@
+extern crate queries_preprocessor as preprocessing;
+extern crate queries_utils as utils;
 extern crate csv;
 #[macro_use]
 extern crate error_chain;
@@ -9,26 +11,24 @@ extern crate ndarray;
 extern crate protobuf;
 extern crate rayon;
 extern crate regex;
-extern crate rustling_ontology;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
-extern crate serde_json;
 extern crate tensorflow;
-extern crate unicode_normalization;
 extern crate yolo;
 extern crate zip;
+
+#[cfg(test)]
+extern crate serde_json;
 
 use std::env;
 use std::path;
 
-pub use errors::*;
-
 pub use config::AssistantConfig;
 pub use config::BinaryBasedAssistantConfig;
 pub use config::FileBasedAssistantConfig;
+pub use errors::*;
 pub use models::gazetteer::GazetteerKey;
-pub use preprocessing::preprocess;
 pub use pipeline::deep::intent_parser::DeepIntentParser;
 pub use pipeline::IntentClassifierResult;
 pub use pipeline::IntentParser;
@@ -40,7 +40,6 @@ mod testutils;
 
 pub mod errors;
 pub mod pipeline;
-pub mod preprocessing;
 mod config;
 mod features;
 mod models;
