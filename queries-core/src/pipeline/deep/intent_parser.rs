@@ -4,33 +4,36 @@ use std::collections::HashMap;
 use rayon::prelude::*;
 
 use errors::*;
-
-use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
 use config::AssistantConfig;
-
 use pipeline::{ClassifierWrapper, IntentClassifierResult, IntentParser, Slots};
+use preprocessing::{DeepPreprocessor, Preprocessor, PreprocessorResult, Lang};
 use super::intent_configuration::IntentConfiguration;
 use super::slot_filler::compute_slots;
+use yolo::Yolo;
 
 pub struct DeepIntentParser {
-    preprocessor: DeepPreprocessor,
+    preprocessors: HashMap<Lang, DeepPreprocessor>,
     classifiers: HashMap<String, IntentConfiguration>,
 }
 
 impl DeepIntentParser {
     pub fn new(assistant_config: &AssistantConfig) -> Result<DeepIntentParser> {
         let mut classifiers = HashMap::new();
+        let mut preprocessors = HashMap::new();
 
         for ref c in assistant_config.get_available_intents_names()? {
             let intent_config = assistant_config.get_intent_configuration(c)?;
             let intent = IntentConfiguration::new(intent_config)?;
+
+            if !preprocessors.contains_key(&intent.language) {
+                // Preprocessor is heavy to build, ensure we don't build it multiple time.
+                preprocessors.insert(intent.language, DeepPreprocessor::new(intent.language)?);
+            }
+
             classifiers.insert(intent.intent_name.to_string(), intent);
         }
 
-        let lang: Lang = Lang::EN;
-        let preprocessor = DeepPreprocessor::new(lang)?;
-
-        Ok(DeepIntentParser { preprocessor: preprocessor, classifiers: classifiers })
+        Ok(DeepIntentParser { preprocessors: preprocessors, classifiers: classifiers })
     }
 }
 
@@ -39,14 +42,22 @@ impl IntentParser for DeepIntentParser {
                   input: &str,
                   probability_threshold: f32)
                   -> Result<Vec<IntentClassifierResult>> {
-        ensure!(probability_threshold >= 0.0 && probability_threshold <= 1.0, "probability_threshold must be between 0.0 and 1.0");
+        ensure!(probability_threshold >= 0.0 && probability_threshold <= 1.0,
+                "probability_threshold must be between 0.0 and 1.0");
 
-        let preprocessor_result = self.preprocessor.run(input)?;
+        let preprocessor_results: Result<HashMap<Lang, PreprocessorResult>> = self.preprocessors
+            .iter()
+            .map(|(lang, preprocessor)| Ok((*lang, preprocessor.run(input)?)))
+            .collect();
+        let preprocessor_results = preprocessor_results?;
 
         let mut probabilities: Vec<IntentClassifierResult> = self.classifiers
             .par_iter()
             .map(|(name, intent_configuration)| {
+                let language = intent_configuration.language;
+                let preprocessor_result = preprocessor_results.get(&language).yolo();
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
+
                 IntentClassifierResult {
                     name: name.to_string(),
                     probability: probability.unwrap_or_else(|e| {
@@ -66,11 +77,14 @@ impl IntentParser for DeepIntentParser {
     }
 
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
-        let preprocessor_result = self.preprocessor.run(input)?;
-
         let intent_configuration = self.classifiers
             .get(intent_name)
             .ok_or(format!("intent {:?} not found", intent_name))?;
+
+        let language = &intent_configuration.language;
+        let preprocessor = self.preprocessors.get(language).yolo();
+        let preprocessor_result = preprocessor.run(input)?;
+
         let predictions = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
 
         let slot_names = &intent_configuration.slot_names;
