@@ -112,7 +112,7 @@ mod test {
     use ndarray::arr2;
 
     use config::{AssistantConfig, FileBasedAssistantConfig};
-    use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
+    use preprocessing::{DeepPreprocessor, Preprocessor};
     use testutils::{create_array, assert_epsilon_eq};
     use utils::{file_path, parse_json};
     use super::{ClassifierWrapper, TFClassifierWrapper};
@@ -140,7 +140,7 @@ mod test {
 
             let intent_classifier = TFClassifierWrapper::new_intent_classifier(intent_config).unwrap();
 
-            let preprocessor = DeepPreprocessor::new(Lang::EN).unwrap();
+            let preprocessor = DeepPreprocessor::new("en").unwrap();
             for test in tests {
                 // TODO: Build PreprocessorResult from test instead of running the preprocessor
                 let preprocess_result = preprocessor.run(&test.text).unwrap();
@@ -154,7 +154,7 @@ mod test {
     #[ignore]
     // QKFIX: Temporarily ignore this test, waiting for update of protobufs
     fn tokens_classifier_works() {
-        let preprocessor = DeepPreprocessor::new(Lang::EN).unwrap();
+        let preprocessor = DeepPreprocessor::new("en").unwrap();
         let preprocessor_result = preprocessor.run("Book me a table for two people at Le Chalet Savoyard").unwrap();
 
         let intent_config = FileBasedAssistantConfig::default().get_intent_configuration("BookRestaurant").unwrap();

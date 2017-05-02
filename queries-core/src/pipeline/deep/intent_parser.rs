@@ -6,14 +6,14 @@ use rayon::prelude::*;
 use errors::*;
 use config::AssistantConfig;
 use pipeline::{ClassifierWrapper, IntentClassifierResult, IntentParser, Slots};
-use preprocessing::{DeepPreprocessor, Preprocessor, PreprocessorResult, Lang};
+use preprocessing::{DeepPreprocessor, Preprocessor, PreprocessorResult};
 use super::intent_configuration::IntentConfiguration;
 use super::slot_filler::compute_slots;
 use yolo::Yolo;
 
 pub struct DeepIntentParser {
-    preprocessors: HashMap<Lang, DeepPreprocessor>,
     classifiers: HashMap<String, IntentConfiguration>,
+    preprocessors: HashMap<String, DeepPreprocessor>,
 }
 
 impl DeepIntentParser {
@@ -27,7 +27,7 @@ impl DeepIntentParser {
 
             if !preprocessors.contains_key(&intent.language) {
                 // Preprocessor is heavy to build, ensure we don't build it multiple time.
-                preprocessors.insert(intent.language, DeepPreprocessor::new(intent.language)?);
+                preprocessors.insert(intent.language.clone(), DeepPreprocessor::new(&intent.language)?);
             }
 
             classifiers.insert(intent.intent_name.to_string(), intent);
@@ -45,17 +45,17 @@ impl IntentParser for DeepIntentParser {
         ensure!(probability_threshold >= 0.0 && probability_threshold <= 1.0,
                 "probability_threshold must be between 0.0 and 1.0");
 
-        let preprocessor_results: Result<HashMap<Lang, PreprocessorResult>> = self.preprocessors
+        let preprocessor_results: Result<HashMap<&str, PreprocessorResult>> = self.preprocessors
             .iter()
-            .map(|(lang, preprocessor)| Ok((*lang, preprocessor.run(input)?)))
+            .map(|(lang, preprocessor)| Ok((&**lang, preprocessor.run(input)?)))
             .collect();
         let preprocessor_results = preprocessor_results?;
 
         let mut probabilities: Vec<IntentClassifierResult> = self.classifiers
             .par_iter()
             .map(|(name, intent_configuration)| {
-                let language = intent_configuration.language;
-                let preprocessor_result = preprocessor_results.get(&language).yolo();
+                let language = &intent_configuration.language;
+                let preprocessor_result = preprocessor_results.get::<str>(language).yolo();
                 let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
 
                 IntentClassifierResult {
