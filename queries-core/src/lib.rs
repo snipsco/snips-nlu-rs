@@ -21,9 +21,6 @@ extern crate zip;
 #[cfg(test)]
 extern crate serde_json;
 
-use std::env;
-use std::path;
-
 pub use config::AssistantConfig;
 pub use config::BinaryBasedAssistantConfig;
 pub use config::FileBasedAssistantConfig;
@@ -45,11 +42,3 @@ mod features;
 mod models;
 mod postprocessing;
 mod protos;
-
-pub fn file_path(file_name: &str) -> path::PathBuf {
-    if env::var("DINGHY").is_ok() {
-        env::current_exe().unwrap().parent().unwrap().join("test_data/data").join(file_name)
-    } else {
-        path::PathBuf::from("../data").join(file_name)
-    }
-}
