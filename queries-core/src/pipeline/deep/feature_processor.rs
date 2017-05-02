@@ -104,7 +104,7 @@ mod test {
     use protobuf;
 
     use config::{AssistantConfig, FileBasedAssistantConfig};
-    use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
+    use preprocessing::{DeepPreprocessor, Preprocessor};
     use protos::model_configuration::ModelConfiguration;
     use testutils::create_transposed_array;
     use utils::{file_path, parse_json};
@@ -140,7 +140,7 @@ mod test {
                 .unwrap();
             let pb_intent_config = intent_config.get_pb_config().unwrap();
 
-            let preprocessor = DeepPreprocessor::new(Lang::EN).unwrap();
+            let preprocessor = DeepPreprocessor::new("en").unwrap();
 
             let test = |test_filename, pb_model_config: ModelConfiguration| {
                 let tests: Vec<TestDescription> =

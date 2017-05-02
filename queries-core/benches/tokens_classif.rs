@@ -12,7 +12,7 @@ use yolo::Yolo;
 use queries_core::{AssistantConfig, FileBasedAssistantConfig};
 use queries_core::pipeline::deep::tf_classifier_wrapper::TFClassifierWrapper;
 use queries_core::pipeline::ClassifierWrapper;
-use queries_preprocessor::{DeepPreprocessor, Preprocessor, Lang};
+use queries_preprocessor::{DeepPreprocessor, Preprocessor};
 
 fn get_tokens_classifier(classifier: &str) -> TFClassifierWrapper<Array1<usize>> {
     let root_dir = queries_core::file_path("untracked");
@@ -37,7 +37,7 @@ macro_rules! run_classifier {
     ($name:ident, $classifier:expr, $input:expr) => {
         fn $name(bench: &mut Bencher) {
             let classifier = get_tokens_classifier($classifier);
-            let preprocessor_result = DeepPreprocessor::new(Lang::EN).yolo().run($input).yolo();
+            let preprocessor_result = DeepPreprocessor::new("en").yolo().run($input).yolo();
 
             bench.iter(|| {
                 let _ = classifier.run(&preprocessor_result);
