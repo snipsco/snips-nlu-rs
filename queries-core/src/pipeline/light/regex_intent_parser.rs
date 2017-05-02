@@ -46,13 +46,12 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>) -> Result<
 impl IntentParser for RegexIntentParser {
     fn get_intent(&self,
                   input: &str,
-                  probability_threshold: f32,
-                  entities: &str) -> Result<Vec<IntentClassifierResult>> {
+                  probability_threshold: f32) -> Result<Vec<IntentClassifierResult>> {
         let intents = self.regexes_per_intent.keys();
         let mut total_nb_entities = 0;
         let mut entities_per_intent = Vec::with_capacity(intents.len());
         for intent_name in intents {
-            let entities = self.get_entities(input, intent_name, entities)?;
+            let entities = self.get_entities(input, intent_name)?;
             total_nb_entities += entities.len();
             entities_per_intent.push((intent_name, entities));
         }
@@ -77,10 +76,7 @@ impl IntentParser for RegexIntentParser {
         Ok(results)
     }
 
-    fn get_entities(&self,
-                    input: &str,
-                    intent_name: &str,
-                    entities: &str) -> Result<Slots> {
+    fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
         let regexes = self.regexes_per_intent
             .get(intent_name)
             .ok_or(format!("intent {:?} not found", intent_name))?;
