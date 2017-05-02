@@ -123,7 +123,7 @@ impl Gazetteer for FstGazetteer {
 #[cfg(test)]
 mod tests {
     use std::fs::File;
-    use file_path;
+    use utils::file_path;
     use super::{HashSetGazetteer, FstGazetteerFactory, Gazetteer, GazetteerKey};
 
     #[test]

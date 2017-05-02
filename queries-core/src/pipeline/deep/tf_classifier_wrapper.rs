@@ -111,10 +111,10 @@ mod test {
 
     use ndarray::arr2;
 
-    use file_path;
     use config::{AssistantConfig, FileBasedAssistantConfig};
     use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
-    use testutils::{parse_json, create_array, assert_epsilon_eq};
+    use testutils::{create_array, assert_epsilon_eq};
+    use utils::{file_path, parse_json};
     use super::{ClassifierWrapper, TFClassifierWrapper};
 
     #[derive(Deserialize)]

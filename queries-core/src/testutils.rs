@@ -1,19 +1,4 @@
-use std::fs;
-
-use serde_json;
-use serde::Deserialize;
 use ndarray::prelude::*;
-
-use file_path;
-
-pub fn parse_json<'a, T: for<'de> Deserialize<'de>>(file_name: &str) -> T {
-    let f = fs::File::open(file_path(file_name))
-        .map_err(|_| format!("could not open {:?}", file_name))
-        .unwrap();
-    serde_json::from_reader(f)
-        .map_err(|err| format!("could not parse json in {:?}\n{:?}", file_name, err))
-        .unwrap()
-}
 
 pub fn assert_epsilon_eq(a: &Array2<f32>, b: &Array2<f32>, epsilon: f32) {
     for (index, elem_a) in a.indexed_iter() {

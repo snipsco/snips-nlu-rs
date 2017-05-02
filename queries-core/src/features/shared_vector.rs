@@ -117,7 +117,7 @@ mod test {
 
     use preprocessing::{NormalizedToken, PreprocessorResult};
     use models::gazetteer::HashSetGazetteer;
-    use testutils::parse_json;
+    use utils::parse_json;
     use utils::convert_byte_range;
 
     use super::has_gazetteer_hits;

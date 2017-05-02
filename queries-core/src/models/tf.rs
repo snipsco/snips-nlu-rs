@@ -297,7 +297,7 @@ mod test {
                      Classifier,
                      viterbi_decode};
     use testutils::{epsilon_eq, assert_epsilon_eq};
-    use ::file_path;
+    use utils::file_path;
 
     #[test]
     fn tf_classifier_run_works() {

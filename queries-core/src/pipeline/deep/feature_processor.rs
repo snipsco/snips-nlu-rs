@@ -103,11 +103,11 @@ mod test {
 
     use protobuf;
 
-    use file_path;
     use config::{AssistantConfig, FileBasedAssistantConfig};
     use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
     use protos::model_configuration::ModelConfiguration;
-    use testutils::{parse_json, create_transposed_array};
+    use testutils::create_transposed_array;
+    use utils::{file_path, parse_json};
     use super::{FeatureProcessor, DeepFeatureProcessor};
 
     #[derive(Deserialize, Debug)]
