@@ -31,6 +31,7 @@ pub use pipeline::IntentClassifierResult;
 pub use pipeline::IntentParser;
 pub use pipeline::Probability;
 pub use pipeline::SlotValue;
+pub use utils::file_path;
 
 #[cfg(test)]
 mod testutils;
