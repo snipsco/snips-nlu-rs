@@ -16,7 +16,7 @@ use models::gazetteer::{Gazetteer, FstGazetteerFactory, GazetteerKey};
 use protos::intent_configuration::IntentConfiguration;
 
 #[cfg(test)]
-use file_path;
+use utils::file_path;
 
 static GAZETTEER_FST: &'static str = "gazetteers/words.fst";
 static GAZETTEER_HEADER: &'static str = "gazetteers/header.txt";
@@ -262,14 +262,14 @@ impl<R: Read + Seek + Send + 'static> IntentConfig for BinaryBasedIntentConfig<R
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use std::fs;
     use std::path;
-    use super::{BinaryBasedAssistantConfig, AssistantConfig};
 
-    use file_path;
+    use utils::file_path;
+
+    use super::{BinaryBasedAssistantConfig, AssistantConfig};
 
     #[test]
     fn can_decode() {
