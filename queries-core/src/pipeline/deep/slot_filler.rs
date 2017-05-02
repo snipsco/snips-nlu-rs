@@ -34,7 +34,7 @@ mod test {
 
     use ndarray::prelude::*;
 
-    use preprocessing::{DeepPreprocessor, Preprocessor, Lang};
+    use preprocessing::{DeepPreprocessor, Preprocessor};
     use super::SlotValue;
     use super::compute_slots;
 
@@ -51,7 +51,7 @@ mod test {
             vec![SlotValue { value: "Chartier".to_string(), range: Range { start: 32, end: 40 } }],
         ];
 
-        let preprocessor = DeepPreprocessor::new(Lang::EN).unwrap();
+        let preprocessor = DeepPreprocessor::new("en").unwrap();
         let preprocess_result = preprocessor.run(text).unwrap();
         let slots = compute_slots(&preprocess_result, expected.len(), &tokens_predictions);
         assert_eq!(slots, expected);
