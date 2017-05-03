@@ -16,7 +16,11 @@ pub fn compute_slots(preprocessor_result: &PreprocessorResult,
         let ref mut tokens = result[tokens_predictions[i] - 1];
 
         if tokens.is_empty() || (i > 0 && tokens_predictions[i] != tokens_predictions[i - 1]) {
-            tokens.push(SlotValue { value: token.value.to_string(), range: token.char_range.clone() });
+            tokens.push(SlotValue {
+                value: token.value.to_string(),
+                range: token.char_range.clone(),
+                entity: None // TODO: retrieve entity from an ontology
+            });
         } else {
             let existing_token = tokens.last_mut().unwrap(); // checked
             let ref mut existing_token_value = existing_token.value;
