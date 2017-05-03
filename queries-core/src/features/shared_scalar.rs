@@ -83,11 +83,12 @@ mod test {
 
     impl Token {
         fn to_normalized_token(self, base_string: &str) -> NormalizedToken {
+            let range = self.start_index..self.end_index;
             NormalizedToken {
                 value: self.value,
                 normalized_value: self.normalized,
-                range: convert_byte_range(base_string, self.start_index..self.end_index),
-                char_range: self.start_index..self.end_index,
+                range: convert_byte_range(base_string, &range),
+                char_range: range,
                 entity: self.entity,
             }
         }
