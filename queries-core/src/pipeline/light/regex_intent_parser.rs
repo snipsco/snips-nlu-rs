@@ -1,11 +1,13 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
+use std::ops::Range;
 
 use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
 use errors::*;
 use pipeline::{IntentClassifierResult, IntentParser, Slots, SlotValue};
+use preprocessing::light::tokenize;
 
 pub struct RegexIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
@@ -31,11 +33,7 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>) -> Result<
         .map(|(intent, patterns)| {
             let regexes: Result<_> = patterns
                 .into_iter()
-                .map(|p| {
-                    let mut rb = RegexBuilder::new(&p);
-                    rb.case_insensitive(true);
-                    Ok(rb.build()?)
-                })
+                .map(|p| Ok(RegexBuilder::new(&p).case_insensitive(true).build()?))
                 .collect();
             Ok((intent, regexes?))
         }).
@@ -81,7 +79,7 @@ impl IntentParser for RegexIntentParser {
             .get(intent_name)
             .ok_or(format!("intent {:?} not found", intent_name))?;
 
-        let mut result = hashmap![];
+        let mut result = vec![];
         for regex in regexes {
             for caps in regex.captures_iter(input) {
                 caps.iter()
@@ -103,10 +101,7 @@ impl IntentParser for RegexIntentParser {
                         (slot_name, SlotValue { value: value.into(), range: range })
                     })
                     .foreach(|(slot_name, slot_value)| {
-                        result
-                            .entry(slot_name.to_string())
-                            .or_insert_with(|| vec![])
-                            .push(slot_value);
+                        result.push((slot_name.to_string(), slot_value));
                     });
             }
         }
@@ -114,8 +109,34 @@ impl IntentParser for RegexIntentParser {
     }
 }
 
-fn deduplicate_overlapping_slots(slots: Slots) -> Slots {
-    slots
+fn are_overlapping(r1: &Range<usize>, r2: &Range<usize>) -> bool {
+    r1.end > r2.start && r1.start < r2.end
+}
+
+fn deduplicate_overlapping_slots(slots: Vec<(String, SlotValue)>) -> Slots {
+    let mut deduped: Vec<(String, SlotValue)> = vec![];
+    let mut result = hashmap![];
+
+    for (key, value) in slots {
+        if let Some(index) = deduped.iter().position(|&(_, ref ev)| are_overlapping(&value.range, &ev.range)) {
+            fn extract_counts(v: &SlotValue) -> (usize, usize) {
+                (tokenize(&v.value).len(), v.value.chars().count())
+            }
+            let (existing_token_count, existing_char_count) = extract_counts(&deduped[index].1);
+            let (token_count, char_count) = extract_counts(&value);
+
+            if token_count > existing_token_count
+                || (token_count == existing_token_count && char_count > existing_char_count) {
+                deduped[index] = (key, value);
+            } else {}
+        } else {
+            deduped.push((key, value));
+        }
+    }
+    deduped.into_iter().fold(result, |mut hm, (slot_name, slot_value)| {
+        hm.entry(slot_name).or_insert_with(|| vec![]).push(slot_value);
+        hm
+    })
 }
 
 #[cfg(test)]
@@ -136,7 +157,7 @@ mod tests {
             ],
             "dummy_intent_2".to_string() => vec![
                 r"^This is a (?P<group_0>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query from another intent$".to_string()
-            ],
+            ]
         ]
     }
 
@@ -166,7 +187,7 @@ mod tests {
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
-        let intent = parser.get_intent(text, 1.0, "[]").unwrap();
+        let intent = parser.get_intent(text, 1.0).unwrap();
 
         // Then
         let expected_intent = IntentClassifierResult {
@@ -184,7 +205,7 @@ mod tests {
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
-        let slots = parser.get_entities(text, "dummy_intent_1", "[]").unwrap();
+        let slots = parser.get_entities(text, "dummy_intent_1").unwrap();
 
         // Then
         let expected_slots = hashmap![
@@ -194,15 +215,16 @@ mod tests {
         assert_eq!(slots, expected_slots);
     }
 
+    // TODO test will fail if you inverse lines s3 and s4 (same as in python)
     #[test]
     fn test_should_deduplicate_overlapping_slots() {
         // Given
-        let slots = hashmap![
-            "s1".to_string() => vec![SlotValue { value: "non_overlapping1".to_string(), range: 3..7 }], // entity: e
-            "s2".to_string() => vec![SlotValue { value: "aaaaaaa".to_string(), range: 9..16 }], // entity: e1
-            "s3".to_string() => vec![SlotValue { value: "bbbbbbbb".to_string(), range: 10..18 }], // entity: e1
-            "s4".to_string() => vec![SlotValue { value: "b cccc".to_string(), range: 17..23 }], // entity: e1
-            "s5".to_string() => vec![SlotValue { value: "non_overlapping2".to_string(), range: 50..60 }], // entity: e
+        let slots = vec![
+            ("s1".to_string(), SlotValue { value: "non_overlapping1".to_string(), range: 3..7 }), //entity: e
+            ("s2".to_string(), SlotValue { value: "aaaaaaa".to_string(), range: 9..16 }), //entity: e1
+            ("s3".to_string(), SlotValue { value: "bbbbbbbb".to_string(), range: 10..18 }), //entity: e1
+            ("s4".to_string(), SlotValue { value: "b cccc".to_string(), range: 17..23 }), //entity: e1
+            ("s5".to_string(), SlotValue { value: "non_overlapping2".to_string(), range: 50..60 }), //entity: e
         ];
 
         // When
