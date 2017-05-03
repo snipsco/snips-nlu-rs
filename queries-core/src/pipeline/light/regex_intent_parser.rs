@@ -5,6 +5,7 @@ use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
 use errors::*;
+use super::configuration::RegexIntentParserConfiguration;
 use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots, SlotValue};
 use preprocessing::light::tokenize;
 
@@ -15,13 +16,11 @@ pub struct RegexIntentParser {
 }
 
 impl RegexIntentParser {
-    pub fn new(patterns: HashMap<String, Vec<String>>,
-               group_names_to_slot_names: HashMap<String, String>,
-               slot_names_to_entities: HashMap<String, String>) -> Result<Self> {
+    pub fn new(configuration: RegexIntentParserConfiguration) -> Result<Self> {
         Ok(RegexIntentParser {
-            regexes_per_intent: compile_regexes_per_intent(patterns)?,
-            group_names_to_slot_names: group_names_to_slot_names,
-            slot_names_to_entities: slot_names_to_entities,
+            regexes_per_intent: compile_regexes_per_intent(configuration.regexes_per_intent)?,
+            group_names_to_slot_names: configuration.group_names_to_slot_names,
+            slot_names_to_entities: configuration.slot_names_to_entities,
         })
     }
 }
@@ -139,49 +138,45 @@ fn deduplicate_overlapping_slots(slots: Vec<(String, SlotValue)>) -> Slots {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashMap;
-
+    use pipeline::light::configuration::RegexIntentParserConfiguration;
     use super::RegexIntentParser;
     use super::deduplicate_overlapping_slots;
     use pipeline::{IntentParser, IntentClassifierResult, SlotValue};
 
-    fn patterns() -> HashMap<String, Vec<String>> {
-        hashmap![
-            "dummy_intent_1".to_string() => vec![
-                r"^This is a (?P<group_1>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query with another (?P<group_2>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)$".to_string(),
-                r"^(?P<group_5>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1)$".to_string(),
-                r"^This is another (?P<group_3>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.) query.$".to_string(),
-                r"^This is another (?P<group_4>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)?$".to_string(),
+    fn test_configuration() -> RegexIntentParserConfiguration {
+        RegexIntentParserConfiguration {
+            language: "en".to_string(),
+            regexes_per_intent: hashmap![
+                "dummy_intent_1".to_string() => vec![
+                    r"^This is a (?P<group_1>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query with another (?P<group_2>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)$".to_string(),
+                    r"^(?P<group_5>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1)$".to_string(),
+                    r"^This is another (?P<group_3>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.) query.$".to_string(),
+                    r"^This is another (?P<group_4>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)?$".to_string(),
+                ],
+                "dummy_intent_2".to_string() => vec![
+                    r"^This is a (?P<group_0>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query from another intent$".to_string()
+                ]
             ],
-            "dummy_intent_2".to_string() => vec![
-                r"^This is a (?P<group_0>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query from another intent$".to_string()
-            ]
-        ]
-    }
-
-    fn group_names_to_slot_names() -> HashMap<String, String> {
-        hashmap![
-            "group_0".to_string() => "dummy_slot_name".to_string(),
-            "group_1".to_string() => "dummy_slot_name".to_string(),
-            "group_2".to_string() => "dummy_slot_name2".to_string(),
-            "group_3".to_string() => "dummy_slot_name2".to_string(),
-            "group_4".to_string() => "dummy_slot_name3".to_string(),
-            "group_5".to_string() => "dummy_slot_name".to_string(),
-        ]
-    }
-
-    fn slot_names_to_entities() -> HashMap<String, String> {
-        hashmap![
-            "dummy_slot_name".to_string() => "dummy_entity_1".to_string(),
-            "dummy_slot_name3".to_string() => "dummy_entity_2".to_string(),
-            "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
-        ]
+            group_names_to_slot_names: hashmap![
+                "group_0".to_string() => "dummy_slot_name".to_string(),
+                "group_1".to_string() => "dummy_slot_name".to_string(),
+                "group_2".to_string() => "dummy_slot_name2".to_string(),
+                "group_3".to_string() => "dummy_slot_name2".to_string(),
+                "group_4".to_string() => "dummy_slot_name3".to_string(),
+                "group_5".to_string() => "dummy_slot_name".to_string(),
+            ],
+            slot_names_to_entities: hashmap![
+                "dummy_slot_name".to_string() => "dummy_entity_1".to_string(),
+                "dummy_slot_name3".to_string() => "dummy_entity_2".to_string(),
+                "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
+            ],
+        }
     }
 
     #[test]
     fn test_should_get_intent() {
         // Given
-        let parser = RegexIntentParser::new(patterns(), group_names_to_slot_names(), slot_names_to_entities()).unwrap();
+        let parser = RegexIntentParser::new(test_configuration()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -199,7 +194,7 @@ mod tests {
     #[test]
     fn test_should_get_entities() {
         // Given
-        let parser = RegexIntentParser::new(patterns(), group_names_to_slot_names(), slot_names_to_entities()).unwrap();
+        let parser = RegexIntentParser::new(test_configuration()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
