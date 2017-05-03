@@ -94,14 +94,14 @@ impl IntentParser for RegexIntentParser {
                     })
                     .map(|(a_match, group_name)| {
                         let range = a_match.start()..a_match.end();
-                        let value = a_match.as_str();
-                        let slot_name = &self.group_names_to_slot_names[group_name];
-                        let entity = &self.slot_names_to_entities[slot_name];
+                        let value = a_match.as_str().into();
+                        let slot_name = self.group_names_to_slot_names[group_name].to_string();
+                        let entity = Some(self.slot_names_to_entities[&slot_name].to_string());
 
-                        (slot_name, SlotValue { value: value.into(), range: range })
+                        (slot_name, SlotValue { value, range, entity })
                     })
                     .foreach(|(slot_name, slot_value)| {
-                        result.push((slot_name.to_string(), slot_value));
+                        result.push((slot_name, slot_value));
                     });
             }
         }
