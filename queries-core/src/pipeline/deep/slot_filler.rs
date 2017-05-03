@@ -30,8 +30,6 @@ pub fn compute_slots(preprocessor_result: &PreprocessorResult,
 
 #[cfg(test)]
 mod test {
-    use std::ops::Range;
-
     use ndarray::prelude::*;
 
     use preprocessing::{DeepPreprocessor, Preprocessor};
@@ -47,8 +45,8 @@ mod test {
 
         let expected = vec![
             vec![],
-            vec![SlotValue { value: "for tomorrow".to_string(), range: Range { start: 16, end: 28 } }],
-            vec![SlotValue { value: "Chartier".to_string(), range: Range { start: 32, end: 40 } }],
+            vec![SlotValue { value: "for tomorrow".to_string(), range: 16..28 }],
+            vec![SlotValue { value: "Chartier".to_string(), range: 32..40 }],
         ];
 
         let preprocessor = DeepPreprocessor::new("en").unwrap();
