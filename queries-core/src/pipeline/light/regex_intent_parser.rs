@@ -114,8 +114,7 @@ fn are_overlapping(r1: &Range<usize>, r2: &Range<usize>) -> bool {
 }
 
 fn deduplicate_overlapping_slots(slots: Vec<(String, SlotValue)>) -> Slots {
-    let mut deduped: Vec<(String, SlotValue)> = vec![];
-    let mut result = hashmap![];
+    let mut deduped: Vec<(String, SlotValue)> = Vec::with_capacity(slots.len());
 
     for (key, value) in slots {
         if let Some(index) = deduped.iter().position(|&(_, ref ev)| are_overlapping(&value.range, &ev.range)) {
@@ -133,8 +132,10 @@ fn deduplicate_overlapping_slots(slots: Vec<(String, SlotValue)>) -> Slots {
             deduped.push((key, value));
         }
     }
-    deduped.into_iter().fold(result, |mut hm, (slot_name, slot_value)| {
-        hm.entry(slot_name).or_insert_with(|| vec![]).push(slot_value);
+    const ESTIMATED_MAX_SLOT: usize = 10;
+    const ESTIMATED_MAX_SLOTVALUES: usize = 5;
+    deduped.into_iter().fold(HashMap::with_capacity(ESTIMATED_MAX_SLOT), |mut hm, (slot_name, slot_value)| {
+        hm.entry(slot_name).or_insert_with(|| Vec::with_capacity(ESTIMATED_MAX_SLOTVALUES)).push(slot_value);
         hm
     })
 }
