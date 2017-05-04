@@ -7,8 +7,6 @@ extern crate fst;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
-extern crate maplit;
 extern crate ndarray;
 extern crate protobuf;
 extern crate rayon;
@@ -22,6 +20,9 @@ extern crate zip;
 
 #[cfg(test)]
 extern crate serde_json;
+#[cfg(test)]
+#[macro_use]
+extern crate maplit;
 
 pub use config::AssistantConfig;
 pub use config::BinaryBasedAssistantConfig;
