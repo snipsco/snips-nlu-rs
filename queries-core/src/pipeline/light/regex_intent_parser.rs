@@ -6,7 +6,7 @@ use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
 use errors::*;
-use pipeline::{IntentClassifierResult, IntentParser, Slots, SlotValue};
+use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots, SlotValue};
 use preprocessing::light::tokenize;
 
 pub struct RegexIntentParser {
@@ -41,6 +41,19 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>) -> Result<
 }
 
 impl IntentParser for RegexIntentParser {
+    fn parse(&self, input: &str, probability_threshold: f32) -> Result<IntentParserResult> {
+        let classif_results = self.get_intent(input, probability_threshold)?;
+
+        if let Some(best_classif) = classif_results.first() {
+            let intent_name = best_classif.intent_name.to_string();
+            let slots = self.get_entities(input, &intent_name)?;
+
+            Ok(IntentParserResult { input: input.to_string(), intent_name, slots })
+        } else {
+            Ok(IntentParserResult::default())
+        }
+    }
+
     fn get_intent(&self,
                   input: &str,
                   probability_threshold: f32) -> Result<Vec<IntentClassifierResult>> {
@@ -62,7 +75,7 @@ impl IntentParser for RegexIntentParser {
             .into_iter()
             .map(|(intent_name, entities)| {
                 IntentClassifierResult {
-                    name: intent_name.to_string(),
+                    intent_name: intent_name.to_string(),
                     probability: entities.len() as f32 / total_nb_entities as f32,
                 }
             })
