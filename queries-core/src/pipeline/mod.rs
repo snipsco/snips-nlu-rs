@@ -16,7 +16,7 @@ type BoxedClassifier = Box<::models::tf::Classifier + Send + Sync>;
 pub struct SlotValue {
     value: String,
     range: Range<usize>,
-    entity: Option<String>,
+    entity: String,
 }
 
 type Slots = HashMap<String, Vec<SlotValue>>;
