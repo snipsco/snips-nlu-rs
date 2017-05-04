@@ -5,6 +5,7 @@ use errors::*;
 
 pub mod deep;
 pub mod light;
+pub mod crf;
 pub mod combined;
 
 pub type Probability = f32;
