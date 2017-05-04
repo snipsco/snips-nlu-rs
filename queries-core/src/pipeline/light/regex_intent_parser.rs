@@ -36,10 +36,9 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>) -> Result<
                 .map(|p| Ok(RegexBuilder::new(&p).case_insensitive(true).build()?))
                 .collect();
             Ok((intent, regexes?))
-        }).
-        collect()
+        })
+        .collect()
 }
-
 
 impl IntentParser for RegexIntentParser {
     fn get_intent(&self,
@@ -96,7 +95,7 @@ impl IntentParser for RegexIntentParser {
                         let range = a_match.start()..a_match.end();
                         let value = a_match.as_str().into();
                         let slot_name = self.group_names_to_slot_names[group_name].to_string();
-                        let entity = Some(self.slot_names_to_entities[&slot_name].to_string());
+                        let entity = self.slot_names_to_entities[&slot_name].to_string();
 
                         (slot_name, SlotValue { value, range, entity })
                     })
@@ -210,8 +209,8 @@ mod tests {
 
         // Then
         let expected_slots = hashmap![
-            "dummy_slot_name".to_string() => vec![SlotValue { value: "dummy_a".to_string(), range: 10..17 }], // dummy_entity_1
-            "dummy_slot_name2".to_string() => vec![SlotValue { value: "dummy_c".to_string(), range: 37..44 }], // dummy_entity_2
+            "dummy_slot_name".to_string() => vec![SlotValue { value: "dummy_a".to_string(), range: 10..17, entity: "dummy_entity_1".to_string() }],
+            "dummy_slot_name2".to_string() => vec![SlotValue { value: "dummy_c".to_string(), range: 37..44, entity: "dummy_entity_2".to_string() }],
         ];
         assert_eq!(slots, expected_slots);
     }
@@ -221,11 +220,11 @@ mod tests {
     fn test_should_deduplicate_overlapping_slots() {
         // Given
         let slots = vec![
-            ("s1".to_string(), SlotValue { value: "non_overlapping1".to_string(), range: 3..7 }), //entity: e
-            ("s2".to_string(), SlotValue { value: "aaaaaaa".to_string(), range: 9..16 }), //entity: e1
-            ("s3".to_string(), SlotValue { value: "bbbbbbbb".to_string(), range: 10..18 }), //entity: e1
-            ("s4".to_string(), SlotValue { value: "b cccc".to_string(), range: 17..23 }), //entity: e1
-            ("s5".to_string(), SlotValue { value: "non_overlapping2".to_string(), range: 50..60 }), //entity: e
+            ("s1".to_string(), SlotValue { value: "non_overlapping1".to_string(), range: 3..7, entity: "e".to_string() }),
+            ("s2".to_string(), SlotValue { value: "aaaaaaa".to_string(), range: 9..16, entity: "e1".to_string() }),
+            ("s3".to_string(), SlotValue { value: "bbbbbbbb".to_string(), range: 10..18, entity: "e1".to_string() }),
+            ("s4".to_string(), SlotValue { value: "b cccc".to_string(), range: 17..23, entity: "e1".to_string() }),
+            ("s5".to_string(), SlotValue { value: "non_overlapping2".to_string(), range: 50..60, entity: "e".to_string() }),
         ];
 
         // When
@@ -233,9 +232,9 @@ mod tests {
 
         // Then
         let expected_slots = hashmap![
-            "s1".to_string() => vec![SlotValue { value: "non_overlapping1".to_string(), range: 3..7 }], // entity: e
-            "s4".to_string() => vec![SlotValue { value: "b cccc".to_string(), range: 17..23 }], // entity: e1
-            "s5".to_string() => vec![SlotValue { value: "non_overlapping2".to_string(), range: 50..60 }], // entity: e
+            "s1".to_string() => vec![SlotValue { value: "non_overlapping1".to_string(), range: 3..7, entity: "e".to_string() }],
+            "s4".to_string() => vec![SlotValue { value: "b cccc".to_string(), range: 17..23, entity: "e1".to_string() }],
+            "s5".to_string() => vec![SlotValue { value: "non_overlapping2".to_string(), range: 50..60, entity: "e".to_string() }],
         ];
         assert_eq!(deduplicated_slots, expected_slots);
     }
