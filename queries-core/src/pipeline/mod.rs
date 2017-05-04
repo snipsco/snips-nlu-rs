@@ -12,6 +12,19 @@ type Prediction = usize;
 
 type BoxedClassifier = Box<::models::tf::Classifier + Send + Sync>;
 
+#[derive(Serialize, Debug, Default, PartialEq)]
+pub struct IntentParserResult {
+    pub input: String,
+    pub intent_name: String,
+    pub slots: Slots,
+}
+
+#[derive(Serialize, Debug, PartialEq)]
+pub struct IntentClassifierResult {
+    pub intent_name: String,
+    pub probability: Probability,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SlotValue {
     value: String,
@@ -21,13 +34,8 @@ pub struct SlotValue {
 
 type Slots = HashMap<String, Vec<SlotValue>>;
 
-#[derive(Serialize, Debug, PartialEq)]
-pub struct IntentClassifierResult {
-    pub name: String,
-    pub probability: Probability,
-}
-
 pub trait IntentParser {
+    fn parse(&self, input: &str, probability_threshold: f32) -> Result<IntentParserResult>;
     fn get_intent(&self, input: &str, probability_threshold: f32) -> Result<Vec<IntentClassifierResult>>;
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots>;
 }
