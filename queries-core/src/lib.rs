@@ -44,5 +44,6 @@ pub mod pipeline;
 mod config;
 mod features;
 mod models;
+mod nlu_engine;
 mod postprocessing;
 mod protos;
