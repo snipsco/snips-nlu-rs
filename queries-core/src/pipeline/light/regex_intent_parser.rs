@@ -204,7 +204,7 @@ mod tests {
 
         // Then
         let expected_intent = IntentClassifierResult {
-            name: "dummy_intent_1".to_string(),
+            intent_name: "dummy_intent_1".to_string(),
             probability: 1.0
         };
 
