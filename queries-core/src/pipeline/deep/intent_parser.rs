@@ -44,12 +44,7 @@ impl DeepIntentParser {
 
 impl IntentParser for DeepIntentParser {
     fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>> {
-        let preprocessor_results: Result<_> = self.preprocessors
-            .iter()
-            .map(|(lang, preprocessor)| Ok((&**lang, preprocessor.run(input)?)))
-            .collect();
-        let preprocessor_results = preprocessor_results?;
-
+        let preprocessor_results = compute_preprocessor_results(input, &self.preprocessors)?;
         let classif_results = get_intent(&preprocessor_results, &self.classifiers, probability_threshold)?;
 
         if let Some(best_classif) = classif_results.first() {
@@ -77,12 +72,8 @@ impl IntentParser for DeepIntentParser {
         ensure!(probability_threshold >= 0.0 && probability_threshold <= 1.0,
                 "probability_threshold must be between 0.0 and 1.0");
 
-        let preprocessor_results: Result<_> = self.preprocessors
-            .iter()
-            .map(|(lang, preprocessor)| Ok((&**lang, preprocessor.run(input)?)))
-            .collect();
-
-        get_intent(&preprocessor_results?, &self.classifiers, probability_threshold)
+        let preprocessor_results = compute_preprocessor_results(input, &self.preprocessors)?;
+        get_intent(&preprocessor_results, &self.classifiers, probability_threshold)
     }
 
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
@@ -97,6 +88,15 @@ impl IntentParser for DeepIntentParser {
 
         get_entities(&preprocessor_result, &intent_configuration)
     }
+}
+
+fn compute_preprocessor_results<'a>(input: &str,
+                                    preprocessors: &'a HashMap<String, DeepPreprocessor>)
+                                    -> Result<HashMap<&'a str, PreprocessorResult>> {
+    preprocessors
+        .iter()
+        .map(|(lang, preprocessor)| Ok((&**lang, preprocessor.run(input)?)))
+        .collect()
 }
 
 fn get_intent(preprocessor_results: &HashMap<&str, PreprocessorResult>,
