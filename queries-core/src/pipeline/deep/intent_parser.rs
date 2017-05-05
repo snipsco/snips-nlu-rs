@@ -49,6 +49,7 @@ impl IntentParser for DeepIntentParser {
 
         if let Some(best_classif) = classif_results.first() {
             let intent_name = best_classif.intent_name.to_string();
+            let likelihood = best_classif.probability;
             let intent_configuration = self.classifiers.get(&intent_name).yolo();
 
             let language = &intent_configuration.language;
@@ -56,7 +57,7 @@ impl IntentParser for DeepIntentParser {
 
             let slots = get_entities(&preprocessor_result, intent_configuration)?;
 
-            Ok(Some(IntentParserResult { input: input.to_string(), intent_name, slots }))
+            Ok(Some(IntentParserResult { input: input.to_string(), likelihood, intent_name, slots }))
         } else {
             Ok(None)
         }
