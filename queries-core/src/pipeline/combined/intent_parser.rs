@@ -1,29 +1,19 @@
 use std::collections::HashMap;
 
-use config::{AssistantConfig, FileBasedAssistantConfig};
 use errors::*;
 use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots};
-use pipeline::{deep, light};
 
-pub struct NLUEngine {
-    config: Box<AssistantConfig>,
+pub struct CombinedIntentParser {
     parsers: Vec<Box<IntentParser>>,
 }
 
-impl NLUEngine {
-    pub fn new(config: Box<AssistantConfig>) -> Result<Self> {
-        Ok(NLUEngine { parsers: init_parsers(&*config), config })
+impl CombinedIntentParser {
+    pub fn new(parsers: Vec<Box<IntentParser>>) -> Self {
+        CombinedIntentParser { parsers }
     }
 }
 
-fn init_parsers(config: &AssistantConfig) -> Vec<Box<IntentParser>> {
-    vec![
-        Box::new(deep::IntentParser::new(&*config).unwrap()),
-        Box::new(light::IntentParser::new(HashMap::new(), HashMap::new(), HashMap::new()).unwrap()),
-    ]
-}
-
-impl IntentParser for NLUEngine {
+impl IntentParser for CombinedIntentParser {
     fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>> {
         for p in self.parsers.iter() {
             let result = p.parse(input, probability_threshold)?;
