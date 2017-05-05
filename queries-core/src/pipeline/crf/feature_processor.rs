@@ -4,8 +4,9 @@ use config::ArcBoxedIntentConfig;
 use itertools::Itertools;
 use pipeline::FeatureProcessor;
 use preprocessing::Token;
-use protos::feature::Feature;
+use protos::feature::{Feature, Feature_Vector_Type};
 
+use super::features;
 
 struct FeatureFunction {
     function: Box<Fn(&Vec<Token>, usize) -> Option<(String, String)>>,
@@ -44,14 +45,24 @@ fn offset_key(&(ref key, ref value): &(String, String), offset: i32) -> (String,
 
 impl CrfFeatureProcessor {
     fn new(config: ArcBoxedIntentConfig, features: &[Feature]) -> CrfFeatureProcessor {
-        let functions = features.iter().flat_map(|f| get_feature_functions(f)).collect();
+        let functions = features.iter().map(|f| get_feature_function(f)).collect();
 
         CrfFeatureProcessor { functions }
     }
 }
 
-fn get_feature_functions(f: &Feature) -> Vec<FeatureFunction> {
-    unimplemented!()
+fn get_feature_function(f: &Feature) -> FeatureFunction {
+    let function: Box<Fn(&Vec<Token>, usize) -> Option<(String, String)>> =
+        match f.get_vector_type() {
+            // TODO use proper type from protobuf
+            Feature_Vector_Type::IS_FIRST_WORD => Box::new(|_, i| features::is_first(i)),
+            Feature_Vector_Type::IS_LAST_WORD => Box::new(|t, i| features::is_last(t, i)), // TODO feature key should not be computed each time
+            _ => panic!()
+        };
+
+    let offsets = None; // TODO get that from protobuf when added
+
+    FeatureFunction { function, offsets }
 }
 
 
