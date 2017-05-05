@@ -41,16 +41,16 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>) -> Result<
 }
 
 impl IntentParser for RegexIntentParser {
-    fn parse(&self, input: &str, probability_threshold: f32) -> Result<IntentParserResult> {
+    fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>> {
         let classif_results = self.get_intent(input, probability_threshold)?;
 
         if let Some(best_classif) = classif_results.first() {
             let intent_name = best_classif.intent_name.to_string();
             let slots = self.get_entities(input, &intent_name)?;
 
-            Ok(IntentParserResult { input: input.to_string(), intent_name, slots })
+            Ok(Some(IntentParserResult { input: input.to_string(), intent_name, slots }))
         } else {
-            Ok(IntentParserResult::default())
+            Ok(None)
         }
     }
 

@@ -38,7 +38,7 @@ impl DeepIntentParser {
 }
 
 impl IntentParser for DeepIntentParser {
-    fn parse(&self, input: &str, probability_threshold: f32) -> Result<IntentParserResult> {
+    fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>> {
         let preprocessor_results: Result<_> = self.preprocessors
             .iter()
             .map(|(lang, preprocessor)| Ok((&**lang, preprocessor.run(input)?)))
@@ -56,9 +56,9 @@ impl IntentParser for DeepIntentParser {
 
             let slots = get_entities(&preprocessor_result, intent_configuration)?;
 
-            Ok(IntentParserResult { input: input.to_string(), intent_name, slots })
+            Ok(Some(IntentParserResult { input: input.to_string(), intent_name, slots }))
         } else {
-            Ok(IntentParserResult::default())
+            Ok(None)
         }
     }
 
