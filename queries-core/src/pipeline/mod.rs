@@ -16,6 +16,7 @@ type BoxedClassifier = Box<::models::tf::Classifier + Send + Sync>;
 #[derive(Serialize, Debug, Default, PartialEq)]
 pub struct IntentParserResult {
     pub input: String,
+    pub likelihood: f32,
     pub intent_name: String,
     pub slots: Slots,
 }
