@@ -27,7 +27,7 @@ pub struct IntentClassifierResult {
     pub probability: Probability,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct SlotValue {
     value: String,
     range: Range<usize>,
