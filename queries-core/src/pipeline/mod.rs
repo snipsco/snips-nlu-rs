@@ -32,10 +32,10 @@ pub struct SlotValue {
     entity: String,
 }
 
-type Slots = HashMap<String, Vec<SlotValue>>;
+pub type Slots = HashMap<String, Vec<SlotValue>>;
 
 pub trait IntentParser {
-    fn parse(&self, input: &str, probability_threshold: f32) -> Result<IntentParserResult>;
+    fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>>;
     fn get_intent(&self, input: &str, probability_threshold: f32) -> Result<Vec<IntentClassifierResult>>;
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots>;
 }
