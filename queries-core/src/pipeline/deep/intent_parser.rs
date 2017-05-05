@@ -12,16 +12,20 @@ use super::slot_filler::compute_slots;
 use yolo::Yolo;
 
 pub struct DeepIntentParser {
-    classifiers: HashMap<String, IntentConfiguration>,
+    classifiers: Vec<IntentConfiguration>,
+    classifiers_hash: HashMap<String, usize>,
     preprocessors: HashMap<String, DeepPreprocessor>,
 }
 
 impl DeepIntentParser {
     pub fn new(assistant_config: &AssistantConfig) -> Result<DeepIntentParser> {
-        let mut classifiers = HashMap::new();
+        let available_intents = assistant_config.get_available_intents_names()?;
+
+        let mut classifiers_hash = HashMap::with_capacity(available_intents.len());
+        let mut classifiers = Vec::with_capacity(available_intents.len());
         let mut preprocessors = HashMap::new();
 
-        for ref c in assistant_config.get_available_intents_names()? {
+        for (index, ref c) in available_intents.iter().enumerate() {
             let intent_config = assistant_config.get_intent_configuration(c)?;
             let intent = IntentConfiguration::new(intent_config)?;
 
@@ -30,10 +34,11 @@ impl DeepIntentParser {
                 preprocessors.insert(intent.language.clone(), DeepPreprocessor::new(&intent.language)?);
             }
 
-            classifiers.insert(intent.intent_name.to_string(), intent);
+            classifiers_hash.insert(intent.intent_name.to_string(), index);
+            classifiers[index] = intent;
         }
 
-        Ok(DeepIntentParser { preprocessors: preprocessors, classifiers: classifiers })
+        Ok(DeepIntentParser { preprocessors, classifiers, classifiers_hash })
     }
 }
 
@@ -50,7 +55,9 @@ impl IntentParser for DeepIntentParser {
         if let Some(best_classif) = classif_results.first() {
             let intent_name = best_classif.intent_name.to_string();
             let likelihood = best_classif.probability;
-            let intent_configuration = self.classifiers.get(&intent_name).yolo();
+
+            let intent_configuration_index = self.classifiers_hash.get(&intent_name).yolo();
+            let intent_configuration = &self.classifiers[*intent_configuration_index];
 
             let language = &intent_configuration.language;
             let preprocessor_result = preprocessor_results.get::<str>(language).yolo();
@@ -79,9 +86,10 @@ impl IntentParser for DeepIntentParser {
     }
 
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
-        let intent_configuration = self.classifiers
+        let intent_configuration_index = self.classifiers_hash
             .get(intent_name)
             .ok_or(format!("intent {:?} not found", intent_name))?;
+        let intent_configuration = &self.classifiers[*intent_configuration_index];
 
         let language = &intent_configuration.language;
         let preprocessor = self.preprocessors.get(language).yolo();
@@ -92,7 +100,7 @@ impl IntentParser for DeepIntentParser {
 }
 
 fn get_intent(preprocessor_results: &HashMap<&str, PreprocessorResult>,
-              classifiers: &HashMap<String, IntentConfiguration>,
+              classifiers: &[IntentConfiguration],
               probability_threshold: f32)
               -> Result<Vec<IntentClassifierResult>> {
     assert!(probability_threshold >= 0.0 && probability_threshold <= 1.0,
@@ -100,7 +108,7 @@ fn get_intent(preprocessor_results: &HashMap<&str, PreprocessorResult>,
 
     let mut probabilities: Vec<IntentClassifierResult> = classifiers
         .par_iter()
-        .map(|(_, intent_configuration)| {
+        .map(|intent_configuration| {
             let language = &intent_configuration.language;
             let intent_name = &intent_configuration.intent_name;
             let preprocessor_result = preprocessor_results.get::<str>(language).yolo();
