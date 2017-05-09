@@ -11,6 +11,7 @@ pub fn is_last(t: &[Token], i: usize) -> Option<String> {
     if i == t.len() - 1 { Some("1".to_string()) } else { None }
 }
 
+// TODO add stemization & gazetteer support
 pub fn ngram(t: &[Token], i: usize, n: usize) -> Option<String> {
     // TODO we should precompute the ascii lowercase value somewhere, perhaps use NormalizedToken ?
     if i + n > t.len() { None } else {

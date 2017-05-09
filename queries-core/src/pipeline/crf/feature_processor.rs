@@ -1,6 +1,3 @@
-use std::rc::Rc;
-
-use config::ArcBoxedIntentConfig;
 use itertools::Itertools;
 use pipeline::FeatureProcessor;
 use preprocessing::Token;
@@ -12,7 +9,6 @@ struct FeatureFunction {
     function: Box<Fn(&[Token], usize) -> Option<String>>,
     offsets: Vec<(i32, String)>,
 }
-
 
 impl FeatureFunction {
     fn new<T: 'static>(key: String, offsets: Vec<i32>, function: T) -> FeatureFunction
@@ -26,7 +22,7 @@ impl FeatureFunction {
     }
 }
 
-struct CrfFeatureProcessor {
+pub struct CrfFeatureProcessor {
     functions: Vec<FeatureFunction>
 }
 
@@ -48,7 +44,8 @@ impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for CrfFeatureProc
 }
 
 impl CrfFeatureProcessor {
-    fn new(config: ArcBoxedIntentConfig, features: &[Feature]) -> CrfFeatureProcessor {
+    // TODO add a `GazetteerProvider` to this signature
+    pub fn new(features: &[Feature]) -> CrfFeatureProcessor {
         let functions = features.iter().map(|f| get_feature_function(f)).collect();
 
         CrfFeatureProcessor { functions }
