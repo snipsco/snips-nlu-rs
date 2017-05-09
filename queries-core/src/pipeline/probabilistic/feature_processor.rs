@@ -22,11 +22,11 @@ impl FeatureFunction {
     }
 }
 
-pub struct CrfFeatureProcessor {
+pub struct ProbabilisticFeatureProcessor {
     functions: Vec<FeatureFunction>
 }
 
-impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for CrfFeatureProcessor {
+impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for ProbabilisticFeatureProcessor {
     fn compute_features(&self, input: &Vec<Token>) -> Vec<Vec<(String, String)>> {
         self.functions.iter().fold(vec![vec![]; input.len()], |mut acc, f| {
             (0..input.len()).foreach(|i| {
@@ -43,12 +43,12 @@ impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for CrfFeatureProc
     }
 }
 
-impl CrfFeatureProcessor {
+impl ProbabilisticFeatureProcessor {
     // TODO add a `GazetteerProvider` to this signature
-    pub fn new(features: &[Feature]) -> CrfFeatureProcessor {
+    pub fn new(features: &[Feature]) -> ProbabilisticFeatureProcessor {
         let functions = features.iter().map(|f| get_feature_function(f)).collect();
 
-        CrfFeatureProcessor { functions }
+        ProbabilisticFeatureProcessor { functions }
     }
 }
 
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn compute_features_works() {
-        let fp = CrfFeatureProcessor {
+        let fp = ProbabilisticFeatureProcessor {
             functions: vec![FeatureFunction::new("Toto".to_string(), vec![0],
                                                  |_, i|
                                                      if i == 0 { None } else {
@@ -98,7 +98,7 @@ mod tests {
 
     #[test]
     fn offset_works() {
-        let fp = CrfFeatureProcessor {
+        let fp = ProbabilisticFeatureProcessor {
             functions: vec![FeatureFunction::new("Toto".to_string(), vec![-2, 0, 2, 4],
                                                  |x, i|
                                                      if i == 0 { None } else {
