@@ -3,9 +3,10 @@ use std::ops::Range;
 
 use errors::*;
 
+pub mod combined;
 pub mod deep;
 pub mod light;
-pub mod combined;
+pub mod probabilistic;
 
 pub type Probability = f32;
 
