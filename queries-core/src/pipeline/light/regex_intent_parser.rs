@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::ops::Range;
 
@@ -57,34 +56,19 @@ impl IntentParser for RegexIntentParser {
 
     fn get_intent(&self,
                   input: &str,
-                  probability_threshold: f32) -> Result<Vec<IntentClassifierResult>> {
-        let intents = self.regexes_per_intent.keys();
-        let mut total_nb_entities = 0;
-        let mut entities_per_intent = Vec::with_capacity(intents.len());
-        for intent_name in intents {
-            let entities = self.get_entities(input, intent_name)?;
-            total_nb_entities += entities.len();
-            entities_per_intent.push((intent_name, entities));
-        }
+                  _: f32) -> Result<Vec<IntentClassifierResult>> {
+        let result = self.regexes_per_intent
+           .iter()
+           .find(|&(_, regexes)| regexes.iter().find(|r| r.is_match(input)).is_some())
+           .map(|(intent_name, _)| {
+               IntentClassifierResult { intent_name: intent_name.to_string(), probability: 1.0 }
+           });
 
-        // TODO: handle intents without slots
-        if total_nb_entities == 0 {
-            bail!("No intent found for given input \"{}\"", input)
+        if let Some(best_classif) = result {
+            Ok(vec![best_classif])
+        } else {
+            Ok(vec![])
         }
-
-        let results = entities_per_intent
-            .into_iter()
-            .map(|(intent_name, entities)| {
-                IntentClassifierResult {
-                    intent_name: intent_name.to_string(),
-                    probability: entities.len() as f32 / total_nb_entities as f32,
-                }
-            })
-            .filter(|r| r.probability >= probability_threshold)
-            .sorted_by(|a, b| {
-                a.probability.partial_cmp(&b.probability).unwrap_or(Ordering::Equal).reverse()
-            });
-        Ok(results)
     }
 
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
