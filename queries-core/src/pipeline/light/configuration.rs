@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
-use protos;
+use protos::PBRegexIntentParserConfiguration;
 
 pub struct RegexIntentParserConfiguration {
     pub language: String,
@@ -10,8 +10,8 @@ pub struct RegexIntentParserConfiguration {
     pub slot_names_to_entities: HashMap<String, String>,
 }
 
-impl From<protos::RegexIntentParserConfiguration> for RegexIntentParserConfiguration {
-    fn from(pb_config: protos::RegexIntentParserConfiguration) -> RegexIntentParserConfiguration {
+impl From<PBRegexIntentParserConfiguration> for RegexIntentParserConfiguration {
+    fn from(pb_config: PBRegexIntentParserConfiguration) -> RegexIntentParserConfiguration {
         let mut pb_config = pb_config;
 
         let regexes_per_intent_iter = pb_config

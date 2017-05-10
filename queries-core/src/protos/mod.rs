@@ -83,8 +83,8 @@ pub mod regex_intent_parser_configuration {
     include!(concat!(env!("OUT_DIR"), "/protos/regex_intent_parser_configuration.rs"));
 }
 
-pub use self::regex_intent_parser_configuration::RegexIntentParserConfiguration;
-pub use self::regex_intent_parser_configuration::RegexIntentModelConfiguration;
+pub use self::regex_intent_parser_configuration::RegexIntentParserConfiguration as PBRegexIntentParserConfiguration;
+pub use self::regex_intent_parser_configuration::RegexIntentModelConfiguration as PBRegexIntentModelConfiguration;
 
 #[allow(unknown_lints)]
 #[allow(clippy)]
@@ -103,4 +103,4 @@ pub mod entity {
     include!(concat!(env!("OUT_DIR"), "/protos/entity.rs"));
 }
 
-pub use self::entity::Entity;
+pub use self::entity::Entity as PBEntity;
