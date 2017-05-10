@@ -51,12 +51,13 @@ pub trait Classifier {
         let x = array_to_tensor(features)?;
         let result: Result<Tensor<f32>> = {
             let mut step = StepWithGraph::new();
-            let mut locked =
-                self.state().lock().map_err(|_| "Can not take lock on TensorFlow. Mutex poisoned")?;
+            let mut locked = self.state()
+                .lock()
+                .map_err(|_| "Can not take lock on TensorFlow. Mutex poisoned")?;
             let (ref mut session, ref graph) = *locked;
             step.add_input(&graph.operation_by_name_required(self.input_node())?, 0, &x);
-            let res =
-                step.request_output(&graph.operation_by_name_required(self.output_node())?, 0);
+            let res = step.request_output(&graph.operation_by_name_required(self.output_node())?,
+                                          0);
 
             session.run(&mut step)?;
 
@@ -81,7 +82,8 @@ fn tensor_to_array(tensor: &Tensor<f32>) -> Result<Array2<f32>> {
     let shape = tensor.dims();
     let mut vec = Vec::with_capacity(tensor.len());
     vec.extend_from_slice(&tensor.data());
-    let array = Array::from_vec(vec).into_shape((shape[0] as usize, shape[1] as usize))?;
+    let array = Array::from_vec(vec)
+        .into_shape((shape[0] as usize, shape[1] as usize))?;
 
     Ok(array)
 }
@@ -142,14 +144,15 @@ impl TensorFlowClassifier {
         let mut proto = Vec::new();
         model.read_to_end(&mut proto)?;
 
-        graph.import_graph_def(&proto, &ImportGraphDefOptions::new())?;
+        graph
+            .import_graph_def(&proto, &ImportGraphDefOptions::new())?;
         let session = Session::new(&SessionOptions::new(), &graph)?;
 
         Ok(TensorFlowClassifier {
-            state: sync::Mutex::new((session, graph)),
-            input_node_name: input_node_name,
-            output_node_name: output_node_name,
-        })
+               state: sync::Mutex::new((session, graph)),
+               input_node_name: input_node_name,
+               output_node_name: output_node_name,
+           })
     }
 }
 
@@ -159,9 +162,10 @@ impl Classifier for TensorFlowClassifier {
         let num_classes = logits.cols();
         if num_classes > 1 {
             for mut row in logits.outer_iter_mut() {
-                let max = *(row.iter()
-                    .max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less))
-                    .unwrap());
+                let max =
+                    *(row.iter()
+                          .max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less))
+                          .unwrap());
                 for value in row.iter_mut() {
                     *value = (*value - max).exp()
                 }
@@ -181,7 +185,9 @@ impl Classifier for TensorFlowClassifier {
         let logits = self.run(features)?;
         let num_classes = logits.cols();
         let predictions: Array1<usize> = if num_classes > 1 {
-            Array::from_iter(logits.outer_iter().map(|row| {
+            Array::from_iter(logits
+                                 .outer_iter()
+                                 .map(|row| {
                 let mut index = 0;
                 let mut max_value = f32::NEG_INFINITY;
                 for (j, &value) in row.iter().enumerate() {
@@ -193,8 +199,7 @@ impl Classifier for TensorFlowClassifier {
                 index
             }))
         } else {
-            Array::from_iter(logits.iter()
-                .map(|value| (*value > 0.) as usize))
+            Array::from_iter(logits.iter().map(|value| (*value > 0.) as usize))
         };
 
         Ok(predictions)
@@ -224,12 +229,14 @@ impl TensorFlowCRFClassifier {
         let mut proto = Vec::new();
         model.read_to_end(&mut proto)?;
 
-        graph.import_graph_def(&proto, &ImportGraphDefOptions::new())?;
+        graph
+            .import_graph_def(&proto, &ImportGraphDefOptions::new())?;
         let mut session = Session::new(&SessionOptions::new(), &graph)?;
 
         let result: Result<Tensor<f32>> = {
             let mut step = StepWithGraph::new();
-            let node = &graph.operation_by_name_required(transition_matrix_node_name)?;
+            let node = &graph
+                            .operation_by_name_required(transition_matrix_node_name)?;
             let res = step.request_output(node, 0);
 
             session.run(&mut step)?;
@@ -239,12 +246,12 @@ impl TensorFlowCRFClassifier {
         let transition_matrix = tensor_to_array(&(result?));
 
         Ok(TensorFlowCRFClassifier {
-            state: sync::Mutex::new((session, graph)),
-            transition_matrix: transition_matrix?,
-            num_classes: num_classes,
-            input_node_name: input_node_name,
-            output_node_name: output_node_name,
-        })
+               state: sync::Mutex::new((session, graph)),
+               transition_matrix: transition_matrix?,
+               num_classes: num_classes,
+               input_node_name: input_node_name,
+               output_node_name: output_node_name,
+           })
     }
 }
 
@@ -292,10 +299,7 @@ mod test {
 
     use ndarray::prelude::*;
 
-    use models::tf::{TensorFlowClassifier,
-                     TensorFlowCRFClassifier,
-                     Classifier,
-                     viterbi_decode};
+    use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier, Classifier, viterbi_decode};
     use testutils::{epsilon_eq, assert_epsilon_eq};
     use utils::file_path;
 
@@ -304,18 +308,17 @@ mod test {
         let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
-        let model = TensorFlowClassifier::new(&mut model_file,
-                                              "inputs".to_string(),
-                                              "logits".to_string()).unwrap();
+        let model =
+            TensorFlowClassifier::new(&mut model_file, "inputs".to_string(), "logits".to_string())
+                .unwrap();
 
         // Data
-        let x = arr2(&[[0.1, 0.1, 0.1],
-                       [0.3, 0.5, 0.8]]);
+        let x = arr2(&[[0.1, 0.1, 0.1], [0.3, 0.5, 0.8]]);
         // TensorFlow
         let logits_tf = model.run(&x.view()).unwrap();
 
         // ndarray
-        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+        let w = arr2(&[[0.2, 0.3, 0.5, 0.7, 0.11],
                        [0.13, 0.17, 0.19, 0.23, 0.29],
                        [0.31, 0.37, 0.41, 0.43, 0.47]]);
         let logits_nd = x.dot(&w);
@@ -329,26 +332,25 @@ mod test {
         let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
-        let model = TensorFlowClassifier::new(&mut model_file,
-                                              "inputs".to_string(),
-                                              "logits".to_string()).unwrap();
+        let model =
+            TensorFlowClassifier::new(&mut model_file, "inputs".to_string(), "logits".to_string())
+                .unwrap();
 
         // Data
-        let x = arr2(&[[0.1, 0.1, 0.1],
-                       [0.3, 0.5, 0.8]]);
+        let x = arr2(&[[0.1, 0.1, 0.1], [0.3, 0.5, 0.8]]);
         // TensorFlow
         let proba_tf = model.predict_proba(&x.view()).unwrap();
 
         // ndarray
-        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+        let w = arr2(&[[0.2, 0.3, 0.5, 0.7, 0.11],
                        [0.13, 0.17, 0.19, 0.23, 0.29],
                        [0.31, 0.37, 0.41, 0.43, 0.47]]);
         let mut proba_nd = x.dot(&w);
         // TODO: Have the softmax function below in an utils
         for mut row in proba_nd.outer_iter_mut() {
             let max = *(row.iter()
-                .max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less))
-                .unwrap());
+                            .max_by(|a, b| a.partial_cmp(b).unwrap_or(cmp::Ordering::Less))
+                            .unwrap());
             for value in row.iter_mut() {
                 *value = (*value - max).exp()
             }
@@ -373,23 +375,24 @@ mod test {
         let filename = file_path("tests/models/tf/graph_multiclass_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
-        let model = TensorFlowClassifier::new(&mut model_file,
-                                              "inputs".to_string(),
-                                              "logits".to_string()).unwrap();
+        let model =
+            TensorFlowClassifier::new(&mut model_file, "inputs".to_string(), "logits".to_string())
+                .unwrap();
 
         // Data
-        let x = arr2(&[[0.1, 0.1, 0.1],
-                       [0.3, 0.5, 0.8]]);
+        let x = arr2(&[[0.1, 0.1, 0.1], [0.3, 0.5, 0.8]]);
         // TensorFlow
         let predictions_tf = model.predict(&x.view()).unwrap();
 
         // ndarray
-        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+        let w = arr2(&[[0.2, 0.3, 0.5, 0.7, 0.11],
                        [0.13, 0.17, 0.19, 0.23, 0.29],
                        [0.31, 0.37, 0.41, 0.43, 0.47]]);
         let logits_nd = x.dot(&w);
         // TODO: Have the argmax function below in an utils
-        let predictions_nd = Array1::<usize>::from_iter(logits_nd.outer_iter().map(|row| {
+        let predictions_nd = Array1::<usize>::from_iter(logits_nd
+                                                            .outer_iter()
+                                                            .map(|row| {
             let mut index = 0;
             let mut max_value = f32::NEG_INFINITY;
             for (j, &value) in row.iter().enumerate() {
@@ -412,20 +415,17 @@ mod test {
         let filename = file_path("tests/models/tf/graph_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
-        let model = TensorFlowClassifier::new(&mut model_file,
-                                              "inputs".to_string(),
-                                              "logits".to_string()).unwrap();
+        let model =
+            TensorFlowClassifier::new(&mut model_file, "inputs".to_string(), "logits".to_string())
+                .unwrap();
 
         // Data
-        let x = arr2(&[[0.1, 0.1, 0.1],
-                       [0.3, 0.5, 0.8]]);
+        let x = arr2(&[[0.1, 0.1, 0.1], [0.3, 0.5, 0.8]]);
         // TensorFlow
         let proba_tf = model.predict_proba(&x.view()).unwrap();
 
         // ndarray
-        let w = arr2(&[[0.2],
-                       [0.3],
-                       [0.5]]);
+        let w = arr2(&[[0.2], [0.3], [0.5]]);
         let mut proba_nd = x.dot(&w);
         // TODO: Have the sigmoid function below in an utils
         for mut value in proba_nd.iter_mut() {
@@ -445,24 +445,21 @@ mod test {
         let filename = file_path("tests/models/tf/graph_logistic_regression.pb");
         let model_path = path::PathBuf::from(filename);
         let mut model_file = Box::new(File::open(model_path).unwrap());
-        let model = TensorFlowClassifier::new(&mut model_file,
-                                              "inputs".to_string(),
-                                              "logits".to_string()).unwrap();
+        let model =
+            TensorFlowClassifier::new(&mut model_file, "inputs".to_string(), "logits".to_string())
+                .unwrap();
 
         // Data
-        let x = arr2(&[[0.1, 0.1, 0.1],
-                       [0.3, 0.5, 0.8]]);
+        let x = arr2(&[[0.1, 0.1, 0.1], [0.3, 0.5, 0.8]]);
         // TensorFlow
         let predictions_tf = model.predict(&x.view()).unwrap();
 
         // ndarray
-        let w = arr2(&[[0.2],
-                       [0.3],
-                       [0.5]]);
+        let w = arr2(&[[0.2], [0.3], [0.5]]);
         let logits_nd = x.dot(&w);
         // TODO: Have the round function below in an utils
-        let predictions_nd = Array1::<usize>::from_iter(logits_nd.iter()
-                .map(|value| (*value > 0.) as usize));
+        let predictions_nd =
+            Array1::<usize>::from_iter(logits_nd.iter().map(|value| (*value > 0.) as usize));
 
         assert_eq!(predictions_tf.shape(), &[2]);
         for (index, value) in predictions_tf.indexed_iter() {
@@ -473,15 +470,12 @@ mod test {
     #[test]
     fn tf_viterbi_decode_works() {
         // TODO: Move this test and viterbi_decode to an utils
-        let unary_potentials = arr2(&[[  2.0,  -3.0,   5.0],
-                                      [ -7.0,  11.0, -13.0],
-                                      [ 17.0, -19.0,  23.0],
-                                      [-29.0,  31.0, -37.0]]);
-        let transition_matrix = arr2(&[[ -1.0,  1.0,  -2.0],
-                                       [  3.0, -5.0,   8.0],
-                                       [-13.0, 21.0, -34.0]]);
-        let viterbi_sequence = viterbi_decode(&unary_potentials,
-                                              &transition_matrix).unwrap();
+        let unary_potentials = arr2(&[[2.0, -3.0, 5.0],
+                                      [-7.0, 11.0, -13.0],
+                                      [17.0, -19.0, 23.0],
+                                      [-29.0, 31.0, -37.0]]);
+        let transition_matrix = arr2(&[[-1.0, 1.0, -2.0], [3.0, -5.0, 8.0], [-13.0, 21.0, -34.0]]);
+        let viterbi_sequence = viterbi_decode(&unary_potentials, &transition_matrix).unwrap();
         let expected_sequence = arr1(&[2, 1, 2, 1]);
 
         for (index, value) in viterbi_sequence.indexed_iter() {
@@ -498,20 +492,20 @@ mod test {
                                                  5,
                                                  "inputs".to_string(),
                                                  "logits".to_string(),
-                                                 "psi").unwrap();
+                                                 "psi")
+                .unwrap();
 
         // Data
-        let x = arr2(&[[0.1, 0.1, 0.1],
-                       [0.3, 0.5, 0.8]]);
+        let x = arr2(&[[0.1, 0.1, 0.1], [0.3, 0.5, 0.8]]);
         // TensorFlow
         let predictions_tf = model.predict(&x.view()).unwrap();
 
         // ndarray
-        let w = arr2(&[[ 0.2,  0.3,  0.5,  0.7, 0.11],
+        let w = arr2(&[[0.2, 0.3, 0.5, 0.7, 0.11],
                        [0.13, 0.17, 0.19, 0.23, 0.29],
                        [0.31, 0.37, 0.41, 0.43, 0.47]]);
-        let psi = arr2(&[[ 0.0,  1.0,  2.0,  3.0,  4.0],
-                         [ 5.0,  6.0,  7.0,  8.0,  9.0],
+        let psi = arr2(&[[0.0, 1.0, 2.0, 3.0, 4.0],
+                         [5.0, 6.0, 7.0, 8.0, 9.0],
                          [10.0, 11.0, 12.0, 13.0, 14.0],
                          [15.0, 16.0, 17.0, 18.0, 19.0],
                          [20.0, 21.0, 22.0, 23.0, 24.0]]);
