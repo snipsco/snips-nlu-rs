@@ -13,7 +13,7 @@ use zip;
 
 use errors::*;
 use models::gazetteer::{Gazetteer, FstGazetteerFactory, GazetteerKey};
-use protos::intent_configuration::IntentConfiguration;
+use protos::PBIntentConfiguration;
 
 #[cfg(test)]
 use utils::file_path;
@@ -29,9 +29,9 @@ pub trait AssistantConfig {
 pub trait IntentConfig: Send + Sync {
     fn get_file(&self, file_name: &path::Path) -> Result<Box<Read>>;
     fn get_gazetteer(&self, name: &str) -> Result<Box<Gazetteer>>;
-    fn get_pb_config(&self) -> Result<IntentConfiguration> {
+    fn get_pb_config(&self) -> Result<PBIntentConfiguration> {
         let reader = &mut Self::get_file(&self, path::Path::new("config.pb"))?;
-        Ok(protobuf::parse_from_reader::<IntentConfiguration>(reader)?)
+        Ok(protobuf::parse_from_reader::<PBIntentConfiguration>(reader)?)
     }
 }
 

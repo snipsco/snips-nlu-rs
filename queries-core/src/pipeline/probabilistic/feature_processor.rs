@@ -1,7 +1,8 @@
 use itertools::Itertools;
+
 use pipeline::FeatureProcessor;
 use preprocessing::Token;
-use protos::feature::{Feature, Feature_Vector_Type};
+use protos::{PBFeature, PBFeature_Vector_Type};
 
 use super::features;
 
@@ -45,20 +46,20 @@ impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for ProbabilisticF
 
 impl ProbabilisticFeatureProcessor {
     // TODO add a `GazetteerProvider` to this signature
-    pub fn new(features: &[Feature]) -> ProbabilisticFeatureProcessor {
+    pub fn new(features: &[PBFeature]) -> ProbabilisticFeatureProcessor {
         let functions = features.iter().map(|f| get_feature_function(f)).collect();
 
         ProbabilisticFeatureProcessor { functions }
     }
 }
 
-fn get_feature_function(f: &Feature) -> FeatureFunction {
+fn get_feature_function(f: &PBFeature) -> FeatureFunction {
     let offsets = vec![0]; // TODO read this from protobuf when added
     match f.get_vector_type() {
         // TODO use proper type from protobuf
-        Feature_Vector_Type::IS_FIRST_WORD => FeatureFunction::new("is_first".to_string(), offsets, |_, i| features::is_first(i)),
-        Feature_Vector_Type::IS_LAST_WORD => FeatureFunction::new("is_last".to_string(), offsets, |t, i| features::is_last(t, i)),
-        Feature_Vector_Type::NGRAM_MATCHER => {
+        PBFeature_Vector_Type::IS_FIRST_WORD => FeatureFunction::new("is_first".to_string(), offsets, |_, i| features::is_first(i)),
+        PBFeature_Vector_Type::IS_LAST_WORD => FeatureFunction::new("is_last".to_string(), offsets, |t, i| features::is_last(t, i)),
+        PBFeature_Vector_Type::NGRAM_MATCHER => {
             let n = f.get_arguments()[0].get_scalar() as usize; // TODO use proper arg + type
             FeatureFunction::new(format!("ngram_{}", n), offsets, move |t, i| features::ngram(t, i, n))
         }
