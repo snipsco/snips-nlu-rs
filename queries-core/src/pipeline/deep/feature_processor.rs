@@ -6,16 +6,16 @@ use config::ArcBoxedIntentConfig;
 use config::IntentConfig;
 use features::{shared_scalar, shared_vector};
 use preprocessing::PreprocessorResult;
-use protos::feature::{Feature, Feature_Scalar_Type, Feature_Vector_Type, Feature_Argument};
+use protos::{PBFeature, PBFeature_Scalar_Type, PBFeature_Vector_Type, PBFeature_Argument};
 
 pub struct DeepFeatureProcessor<'a> {
     intent_config: ArcBoxedIntentConfig,
-    feature_functions: &'a [Feature],
+    feature_functions: &'a [PBFeature],
 }
 
 impl<'a> DeepFeatureProcessor<'a> {
     pub fn new(intent_config: ArcBoxedIntentConfig,
-               features: &'a [Feature])
+               features: &'a [PBFeature])
                -> DeepFeatureProcessor<'a> {
         DeepFeatureProcessor {
             intent_config: intent_config,
@@ -41,7 +41,7 @@ impl<'a> FeatureProcessor<PreprocessorResult, Array2<f32>> for DeepFeatureProces
     }
 }
 
-impl Feature {
+impl PBFeature {
     fn compute(&self, intent_config: &IntentConfig, input: &PreprocessorResult) -> Result<Vec<f32>> {
         let arguments = self.get_arguments();
 
@@ -56,18 +56,18 @@ impl Feature {
 
     fn get_shared_scalar(intent_config: &IntentConfig,
                          input: &PreprocessorResult,
-                         feature_type: &Feature_Scalar_Type,
-                         arguments: &[Feature_Argument])
+                         feature_type: &PBFeature_Scalar_Type,
+                         arguments: &[PBFeature_Argument])
                          -> Result<Vec<f32>> {
         Ok(match *feature_type {
-            Feature_Scalar_Type::HAS_GAZETTEER_HITS => {
+            PBFeature_Scalar_Type::HAS_GAZETTEER_HITS => {
                 let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
                 shared_scalar::has_gazetteer_hits(input, gazetteer)
             }
-            Feature_Scalar_Type::NGRAM_MATCHER => {
+            PBFeature_Scalar_Type::NGRAM_MATCHER => {
                 shared_scalar::ngram_matcher(input, arguments[0].get_str())
             }
-            Feature_Scalar_Type::GET_MESSAGE_LENGTH => {
+            PBFeature_Scalar_Type::GET_MESSAGE_LENGTH => {
                 let normalization = arguments[0].get_scalar();
                 shared_scalar::get_message_length(input, normalization)
             }
@@ -76,22 +76,22 @@ impl Feature {
 
     fn get_shared_vector(intent_config: &IntentConfig,
                          input: &PreprocessorResult,
-                         feature_type: &Feature_Vector_Type,
-                         arguments: &[Feature_Argument])
+                         feature_type: &PBFeature_Vector_Type,
+                         arguments: &[PBFeature_Argument])
                          -> Result<Vec<f32>> {
         Ok(match *feature_type {
-            Feature_Vector_Type::HAS_GAZETTEER_HITS => {
+            PBFeature_Vector_Type::HAS_GAZETTEER_HITS => {
                 let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
                 shared_vector::has_gazetteer_hits(input, gazetteer)
             }
-            Feature_Vector_Type::NGRAM_MATCHER => {
+            PBFeature_Vector_Type::NGRAM_MATCHER => {
                 shared_vector::ngram_matcher(input, arguments[0].get_str())
             }
-            Feature_Vector_Type::IS_CAPITALIZED => shared_vector::is_capitalized(input),
-            Feature_Vector_Type::IS_FIRST_WORD => shared_vector::is_first_word(input),
-            Feature_Vector_Type::IS_LAST_WORD => shared_vector::is_last_word(input),
-            Feature_Vector_Type::CONTAINS_POSSESSIVE => shared_vector::contains_possessive(input),
-            Feature_Vector_Type::CONTAINS_DIGITS => shared_vector::contains_digits(input),
+            PBFeature_Vector_Type::IS_CAPITALIZED => shared_vector::is_capitalized(input),
+            PBFeature_Vector_Type::IS_FIRST_WORD => shared_vector::is_first_word(input),
+            PBFeature_Vector_Type::IS_LAST_WORD => shared_vector::is_last_word(input),
+            PBFeature_Vector_Type::CONTAINS_POSSESSIVE => shared_vector::contains_possessive(input),
+            PBFeature_Vector_Type::CONTAINS_DIGITS => shared_vector::contains_digits(input),
         })
     }
 }
@@ -105,7 +105,7 @@ mod test {
 
     use config::{AssistantConfig, FileBasedAssistantConfig};
     use preprocessing::{DeepPreprocessor, Preprocessor};
-    use protos::model_configuration::ModelConfiguration;
+    use protos::PBModelConfiguration;
     use testutils::create_transposed_array;
     use utils::{file_path, parse_json};
     use super::{FeatureProcessor, DeepFeatureProcessor};
@@ -142,7 +142,7 @@ mod test {
 
             let preprocessor = DeepPreprocessor::new("en").unwrap();
 
-            let test = |test_filename, pb_model_config: ModelConfiguration| {
+            let test = |test_filename, pb_model_config: PBModelConfiguration| {
                 let tests: Vec<TestDescription> =
                     parse_json(path.join(test_filename).to_str().unwrap());
                 for test in tests {
@@ -172,12 +172,12 @@ mod test {
 
             {
                 let mut classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
-                let pb_model_config: ModelConfiguration = protobuf::parse_from_reader(&mut classifier_config).unwrap();
+                let pb_model_config: PBModelConfiguration = protobuf::parse_from_reader(&mut classifier_config).unwrap();
                 test("intent_classifier.json", pb_model_config);
             }
             {
                 let mut classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
-                let pb_model_config: ModelConfiguration = protobuf::parse_from_reader(&mut classifier_config).unwrap();
+                let pb_model_config: PBModelConfiguration = protobuf::parse_from_reader(&mut classifier_config).unwrap();
                 test("entity_extraction.json", pb_model_config);
             }
         }

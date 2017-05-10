@@ -15,6 +15,11 @@ pub mod feature {
     include!(concat!(env!("OUT_DIR"), "/protos/feature.rs"));
 }
 
+pub use self::feature::Feature as PBFeature;
+pub use self::feature::Feature_Scalar_Type as PBFeature_Scalar_Type;
+pub use self::feature::Feature_Vector_Type as PBFeature_Vector_Type;
+pub use self::feature::Feature_Argument as PBFeature_Argument;
+
 #[allow(unknown_lints)]
 #[allow(clippy)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -31,6 +36,8 @@ pub mod feature {
 pub mod slot {
     include!(concat!(env!("OUT_DIR"), "/protos/slot.rs"));
 }
+
+pub use self::slot::Slot as PBSlot;
 
 #[allow(unknown_lints)]
 #[allow(clippy)]
@@ -49,6 +56,8 @@ pub mod intent_configuration {
     include!(concat!(env!("OUT_DIR"), "/protos/intent_configuration.rs"));
 }
 
+pub use self::intent_configuration::IntentConfiguration as PBIntentConfiguration;
+
 #[allow(unknown_lints)]
 #[allow(clippy)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -65,6 +74,8 @@ pub mod intent_configuration {
 pub mod model_configuration {
     include!(concat!(env!("OUT_DIR"), "/protos/model_configuration.rs"));
 }
+
+pub use self::model_configuration::ModelConfiguration as PBModelConfiguration;
 
 #[allow(unknown_lints)]
 #[allow(clippy)]
