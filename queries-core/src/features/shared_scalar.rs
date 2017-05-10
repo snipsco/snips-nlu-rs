@@ -4,7 +4,10 @@ use models::gazetteer::Gazetteer;
 pub fn has_gazetteer_hits(preprocessor_result: &PreprocessorResult,
                           gazetteer: Box<Gazetteer>)
                           -> Vec<f32> {
-    if preprocessor_result.normalized_ngrams.iter().any(|ngram| gazetteer.contains(&ngram.0)) {
+    if preprocessor_result
+           .normalized_ngrams
+           .iter()
+           .any(|ngram| gazetteer.contains(&ngram.0)) {
         vec![1.0]
     } else {
         vec![0.0]
@@ -12,7 +15,10 @@ pub fn has_gazetteer_hits(preprocessor_result: &PreprocessorResult,
 }
 
 pub fn ngram_matcher(preprocessor_result: &PreprocessorResult, ngram_to_check: &str) -> Vec<f32> {
-    if preprocessor_result.formatted_ngrams.iter().any(|ngram| ngram.0 == ngram_to_check) {
+    if preprocessor_result
+           .formatted_ngrams
+           .iter()
+           .any(|ngram| ngram.0 == ngram_to_check) {
         vec![1.0]
     } else {
         vec![0.0]
@@ -112,7 +118,9 @@ mod test {
 
             for parsed_test in parsed_tests {
                 let input_text = parsed_test.input.text.to_string();
-                let normalized_tokens: Vec<NormalizedToken> = parsed_test.input.tokens
+                let normalized_tokens: Vec<NormalizedToken> = parsed_test
+                    .input
+                    .tokens
                     .clone()
                     .into_iter()
                     .map(|test_token| test_token.to_normalized_token(&parsed_test.input.text))
@@ -125,16 +133,25 @@ mod test {
     }
 
     fn has_gazetteer_hits_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
-        let values = if let Data::StringArray(ref v) = test.args[0].value { v } else { panic!() };
+        let values = if let Data::StringArray(ref v) = test.args[0].value {
+            v
+        } else {
+            panic!()
+        };
 
-        let gazetteer = HashSetGazetteer::new(&mut serde_json::to_string(values).unwrap().as_bytes()).unwrap();
+        let gazetteer =
+            HashSetGazetteer::new(&mut serde_json::to_string(values).unwrap().as_bytes()).unwrap();
 
         let result = has_gazetteer_hits(&preprocessor_result, Box::new(gazetteer));
         assert_eq!(result, vec![test.output])
     }
 
     fn ngram_matcher_works(test: &TestDescription, preprocessor_result: &PreprocessorResult) {
-        let ngram = if let Data::StringValue(ref value) = test.args[0].value { value } else { panic!() };
+        let ngram = if let Data::StringValue(ref value) = test.args[0].value {
+            value
+        } else {
+            panic!()
+        };
         let result = ngram_matcher(&preprocessor_result, &ngram);
         assert_eq!(result, vec![test.output])
     }

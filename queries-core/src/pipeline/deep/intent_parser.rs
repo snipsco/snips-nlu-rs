@@ -31,21 +31,28 @@ impl DeepIntentParser {
 
             if !preprocessors.contains_key(&intent.language) {
                 // Preprocessor is heavy to build, ensure we don't build it multiple time.
-                preprocessors.insert(intent.language.clone(), DeepPreprocessor::new(&intent.language)?);
+                preprocessors.insert(intent.language.clone(),
+                                     DeepPreprocessor::new(&intent.language)?);
             }
 
             classifiers_hash.insert(intent.intent_name.to_string(), index);
             classifiers[index] = intent;
         }
 
-        Ok(DeepIntentParser { preprocessors, classifiers, classifiers_hash })
+        Ok(DeepIntentParser {
+               preprocessors,
+               classifiers,
+               classifiers_hash,
+           })
     }
 }
 
 impl IntentParser for DeepIntentParser {
     fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>> {
         let preprocessor_results = compute_preprocessor_results(input, &self.preprocessors)?;
-        let classif_results = get_intent(&preprocessor_results, &self.classifiers, probability_threshold)?;
+        let classif_results = get_intent(&preprocessor_results,
+                                         &self.classifiers,
+                                         probability_threshold)?;
 
         if let Some(best_classif) = classif_results.first() {
             let intent_name = best_classif.intent_name.to_string();
@@ -59,7 +66,12 @@ impl IntentParser for DeepIntentParser {
 
             let slots = get_entities(&preprocessor_result, intent_configuration)?;
 
-            Ok(Some(IntentParserResult { input: input.to_string(), likelihood, intent_name, slots }))
+            Ok(Some(IntentParserResult {
+                        input: input.to_string(),
+                        likelihood,
+                        intent_name,
+                        slots,
+                    }))
         } else {
             Ok(None)
         }
@@ -73,7 +85,9 @@ impl IntentParser for DeepIntentParser {
                 "probability_threshold must be between 0.0 and 1.0");
 
         let preprocessor_results = compute_preprocessor_results(input, &self.preprocessors)?;
-        get_intent(&preprocessor_results, &self.classifiers, probability_threshold)
+        get_intent(&preprocessor_results,
+                   &self.classifiers,
+                   probability_threshold)
     }
 
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
@@ -112,12 +126,16 @@ fn get_intent(preprocessor_results: &HashMap<&str, PreprocessorResult>,
             let language = &intent_configuration.language;
             let intent_name = &intent_configuration.intent_name;
             let preprocessor_result = preprocessor_results.get::<str>(language).yolo();
-            let probability = intent_configuration.intent_classifier.run(&preprocessor_result);
+            let probability = intent_configuration
+                .intent_classifier
+                .run(&preprocessor_result);
 
             IntentClassifierResult {
                 intent_name: intent_name.to_string(),
                 probability: probability.unwrap_or_else(|e| {
-                    println!("could not run intent classifier for {} : {:?}", intent_name, e);
+                    println!("could not run intent classifier for {} : {:?}",
+                             intent_name,
+                             e);
                     -1.0
                 }),
             }
@@ -126,8 +144,11 @@ fn get_intent(preprocessor_results: &HashMap<&str, PreprocessorResult>,
         .collect();
 
     probabilities.sort_by(|a, b| {
-        a.probability.partial_cmp(&b.probability).unwrap_or(Ordering::Equal).reverse()
-    });
+                              a.probability
+                                  .partial_cmp(&b.probability)
+                                  .unwrap_or(Ordering::Equal)
+                                  .reverse()
+                          });
 
     Ok(probabilities)
 }
@@ -135,7 +156,9 @@ fn get_intent(preprocessor_results: &HashMap<&str, PreprocessorResult>,
 fn get_entities(preprocessor_result: &PreprocessorResult,
                 intent_configuration: &IntentConfiguration)
                 -> Result<Slots> {
-    let predictions = intent_configuration.tokens_classifier.run(&preprocessor_result)?;
+    let predictions = intent_configuration
+        .tokens_classifier
+        .run(&preprocessor_result)?;
 
     let slot_names = &intent_configuration.slot_names;
     let slot_values = &compute_slots(&preprocessor_result, slot_names.len(), &predictions);

@@ -18,23 +18,24 @@ pub struct RegexIntentParser {
 impl RegexIntentParser {
     pub fn new(configuration: RegexIntentParserConfiguration) -> Result<Self> {
         Ok(RegexIntentParser {
-            regexes_per_intent: compile_regexes_per_intent(configuration.regexes_per_intent)?,
-            group_names_to_slot_names: configuration.group_names_to_slot_names,
-            slot_names_to_entities: configuration.slot_names_to_entities,
-        })
+               regexes_per_intent: compile_regexes_per_intent(configuration.regexes_per_intent)?,
+               group_names_to_slot_names: configuration.group_names_to_slot_names,
+               slot_names_to_entities: configuration.slot_names_to_entities,
+           })
     }
 }
 
-fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>) -> Result<HashMap<String, Vec<Regex>>> {
+fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>)
+                              -> Result<HashMap<String, Vec<Regex>>> {
     patterns
         .into_iter()
         .map(|(intent, patterns)| {
-            let regexes: Result<_> = patterns
-                .into_iter()
-                .map(|p| Ok(RegexBuilder::new(&p).case_insensitive(true).build()?))
-                .collect();
-            Ok((intent, regexes?))
-        })
+                 let regexes: Result<_> = patterns
+                     .into_iter()
+                     .map(|p| Ok(RegexBuilder::new(&p).case_insensitive(true).build()?))
+                     .collect();
+                 Ok((intent, regexes?))
+             })
         .collect()
 }
 
@@ -47,21 +48,27 @@ impl IntentParser for RegexIntentParser {
             let likelihood = best_classif.probability;
             let slots = self.get_entities(input, &intent_name)?;
 
-            Ok(Some(IntentParserResult { input: input.to_string(), likelihood, intent_name, slots }))
+            Ok(Some(IntentParserResult {
+                        input: input.to_string(),
+                        likelihood,
+                        intent_name,
+                        slots,
+                    }))
         } else {
             Ok(None)
         }
     }
 
-    fn get_intent(&self,
-                  input: &str,
-                  _: f32) -> Result<Vec<IntentClassifierResult>> {
+    fn get_intent(&self, input: &str, _: f32) -> Result<Vec<IntentClassifierResult>> {
         let result = self.regexes_per_intent
-           .iter()
-           .find(|&(_, regexes)| regexes.iter().find(|r| r.is_match(input)).is_some())
-           .map(|(intent_name, _)| {
-               IntentClassifierResult { intent_name: intent_name.to_string(), probability: 1.0 }
-           });
+            .iter()
+            .find(|&(_, regexes)| regexes.iter().find(|r| r.is_match(input)).is_some())
+            .map(|(intent_name, _)| {
+                     IntentClassifierResult {
+                         intent_name: intent_name.to_string(),
+                         probability: 1.0,
+                     }
+                 });
 
         if let Some(best_classif) = result {
             Ok(vec![best_classif])
@@ -81,24 +88,27 @@ impl IntentParser for RegexIntentParser {
                 caps.iter()
                     .zip(regex.capture_names())
                     .skip(1)
-                    .filter_map(|(opt_match, opt_group_name)| {
-                        if let (Some(a_match), Some(group_name)) = (opt_match, opt_group_name) {
-                            Some((a_match, group_name))
-                        } else {
-                            None
-                        }
-                    })
+                    .filter_map(|(opt_match, opt_group_name)| if let (Some(a_match),
+                                                                      Some(group_name)) =
+                        (opt_match, opt_group_name) {
+                                    Some((a_match, group_name))
+                                } else {
+                                    None
+                                })
                     .map(|(a_match, group_name)| {
                         let range = a_match.start()..a_match.end();
                         let value = a_match.as_str().into();
                         let slot_name = self.group_names_to_slot_names[group_name].to_string();
                         let entity = self.slot_names_to_entities[&slot_name].to_string();
 
-                        (slot_name, SlotValue { value, range, entity })
+                        (slot_name,
+                         SlotValue {
+                             value,
+                             range,
+                             entity,
+                         })
                     })
-                    .foreach(|(slot_name, slot_value)| {
-                        result.push((slot_name, slot_value));
-                    });
+                    .foreach(|(slot_name, slot_value)| { result.push((slot_name, slot_value)); });
             }
         }
         Ok(deduplicate_overlapping_slots(result))
@@ -113,27 +123,36 @@ fn deduplicate_overlapping_slots(slots: Vec<(String, SlotValue)>) -> Slots {
     let mut deduped: Vec<(String, SlotValue)> = Vec::with_capacity(slots.len());
 
     for (key, value) in slots {
-        if let Some(index) = deduped.iter().position(|&(_, ref ev)| are_overlapping(&value.range, &ev.range)) {
+        if let Some(index) =
+            deduped
+                .iter()
+                .position(|&(_, ref ev)| are_overlapping(&value.range, &ev.range)) {
             fn extract_counts(v: &SlotValue) -> (usize, usize) {
                 (tokenize(&v.value).len(), v.value.chars().count())
             }
             let (existing_token_count, existing_char_count) = extract_counts(&deduped[index].1);
             let (token_count, char_count) = extract_counts(&value);
 
-            if token_count > existing_token_count
-                || (token_count == existing_token_count && char_count > existing_char_count) {
+            if token_count > existing_token_count ||
+               (token_count == existing_token_count && char_count > existing_char_count) {
                 deduped[index] = (key, value);
-            } else {}
+            } else {
+            }
         } else {
             deduped.push((key, value));
         }
     }
     const ESTIMATED_MAX_SLOT: usize = 10;
     const ESTIMATED_MAX_SLOTVALUES: usize = 5;
-    deduped.into_iter().fold(HashMap::with_capacity(ESTIMATED_MAX_SLOT), |mut hm, (slot_name, slot_value)| {
-        hm.entry(slot_name).or_insert_with(|| Vec::with_capacity(ESTIMATED_MAX_SLOTVALUES)).push(slot_value);
-        hm
-    })
+    deduped
+        .into_iter()
+        .fold(HashMap::with_capacity(ESTIMATED_MAX_SLOT),
+              |mut hm, (slot_name, slot_value)| {
+                  hm.entry(slot_name)
+                      .or_insert_with(|| Vec::with_capacity(ESTIMATED_MAX_SLOTVALUES))
+                      .push(slot_value);
+                  hm
+              })
 }
 
 #[cfg(test)]
@@ -185,7 +204,7 @@ mod tests {
         // Then
         let expected_intent = IntentClassifierResult {
             intent_name: "dummy_intent_1".to_string(),
-            probability: 1.0
+            probability: 1.0,
         };
 
         assert_eq!(intent[0], expected_intent);
@@ -212,13 +231,36 @@ mod tests {
     #[test]
     fn test_should_deduplicate_overlapping_slots() {
         // Given
-        let slots = vec![
-            ("s1".to_string(), SlotValue { value: "non_overlapping1".to_string(), range: 3..7, entity: "e".to_string() }),
-            ("s2".to_string(), SlotValue { value: "aaaaaaa".to_string(), range: 9..16, entity: "e1".to_string() }),
-            ("s3".to_string(), SlotValue { value: "bbbbbbbb".to_string(), range: 10..18, entity: "e1".to_string() }),
-            ("s4".to_string(), SlotValue { value: "b cccc".to_string(), range: 17..23, entity: "e1".to_string() }),
-            ("s5".to_string(), SlotValue { value: "non_overlapping2".to_string(), range: 50..60, entity: "e".to_string() }),
-        ];
+        let slots = vec![("s1".to_string(),
+                          SlotValue {
+                              value: "non_overlapping1".to_string(),
+                              range: 3..7,
+                              entity: "e".to_string(),
+                          }),
+                         ("s2".to_string(),
+                          SlotValue {
+                              value: "aaaaaaa".to_string(),
+                              range: 9..16,
+                              entity: "e1".to_string(),
+                          }),
+                         ("s3".to_string(),
+                          SlotValue {
+                              value: "bbbbbbbb".to_string(),
+                              range: 10..18,
+                              entity: "e1".to_string(),
+                          }),
+                         ("s4".to_string(),
+                          SlotValue {
+                              value: "b cccc".to_string(),
+                              range: 17..23,
+                              entity: "e1".to_string(),
+                          }),
+                         ("s5".to_string(),
+                          SlotValue {
+                              value: "non_overlapping2".to_string(),
+                              range: 50..60,
+                              entity: "e".to_string(),
+                          })];
 
         // When
         let deduplicated_slots = deduplicate_overlapping_slots(slots);
