@@ -12,15 +12,14 @@ use super::feature_processor::DeepFeatureProcessor;
 use pipeline::BoxedClassifier;
 use pipeline::ClassifierWrapper;
 use config::ArcBoxedIntentConfig;
-use protos::model_configuration::ModelConfiguration;
-use protos::intent_configuration::IntentConfiguration;
+use protos::{PBIntentConfiguration, PBModelConfiguration};
 use models::tf::{TensorFlowClassifier, TensorFlowCRFClassifier};
 use preprocessing::PreprocessorResult;
 use postprocessing;
 
 pub struct TFClassifierWrapper<T> {
     intent_config: ArcBoxedIntentConfig,
-    intent_model: ModelConfiguration,
+    intent_model: PBModelConfiguration,
     classifier: BoxedClassifier,
     phantom: PhantomData<T>
 }
@@ -67,13 +66,13 @@ impl TFClassifierWrapper<TFClassifierWrapper<Array1<Prediction>>> {
     }
 }
 
-fn get_model_file<F>(intent_config: &ArcBoxedIntentConfig, path_extractor: F) -> Result<(Box<Read>, ModelConfiguration)>
-    where F: Fn(&IntentConfiguration) -> &str {
+fn get_model_file<F>(intent_config: &ArcBoxedIntentConfig, path_extractor: F) -> Result<(Box<Read>, PBModelConfiguration)>
+    where F: Fn(&PBIntentConfiguration) -> &str {
     let pb_config = intent_config.get_pb_config()?;
     let path_str = path_extractor(&pb_config);
     let model_path = path::Path::new(&path_str);
     let mut model_file = intent_config.get_file(&model_path)?;
-    let model_configuration = protobuf::parse_from_reader::<ModelConfiguration>(&mut model_file)?;
+    let model_configuration = protobuf::parse_from_reader::<PBModelConfiguration>(&mut model_file)?;
     let tf_model = intent_config.get_file(path::Path::new(&model_configuration.get_model_path()))?;
     Ok((tf_model, model_configuration))
 }
