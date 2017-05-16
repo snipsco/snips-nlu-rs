@@ -25,9 +25,7 @@ fn main() {
         .arg(format!("--proto_path={}", proto_dir.to_str().unwrap()))
         .args(&proto_files)
         .status()
-        .unwrap_or_else(|e| {
-            panic!("failed to execute protoc: {}", e)
-        });
+        .unwrap_or_else(|e| panic!("failed to execute protoc: {}", e));
 
     if !protoc_status.success() {
         panic!("An error occured with protoc: {}", protoc_status)
@@ -44,9 +42,7 @@ fn main() {
         .arg("s/#!.*//")
         .args(&generated_files)
         .status()
-        .unwrap_or_else(|e| {
-            panic!("Failed to execute perl: {}", e)
-        });
+        .unwrap_or_else(|e| panic!("Failed to execute perl: {}", e));
 
     if !perl_status.success() {
         panic!("An error occured with perl: {}", perl_status)

@@ -39,15 +39,17 @@ pub type Slots = HashMap<String, Vec<SlotValue>>;
 
 pub trait IntentParser {
     fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>>;
-    fn get_intent(&self, input: &str, probability_threshold: f32) -> Result<Vec<IntentClassifierResult>>;
+    fn get_intent(&self,
+                  input: &str,
+                  probability_threshold: f32)
+                  -> Result<Vec<IntentClassifierResult>>;
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots>;
 }
 
 trait FeatureProcessor<I, O> {
-    fn compute_features(&self, input : &I) -> O;
+    fn compute_features(&self, input: &I) -> O;
 }
 
 pub trait ClassifierWrapper<I, O> {
-    fn run(&self, input : &I) -> Result<O>;
+    fn run(&self, input: &I) -> Result<O>;
 }
-

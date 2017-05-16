@@ -16,14 +16,19 @@ pub struct IntentConfiguration {
 impl IntentConfiguration {
     pub fn new(intent_config: ArcBoxedIntentConfig) -> Result<IntentConfiguration> {
         let data = intent_config.get_pb_config()?;
-        let slots = data.get_slots().iter().map(|s| s.get_name().to_string()).collect();
+        let slots = data.get_slots()
+            .iter()
+            .map(|s| s.get_name().to_string())
+            .collect();
 
         Ok(IntentConfiguration {
-            language: data.get_language().to_string(),
-            intent_classifier: TFClassifierWrapper::new_intent_classifier(intent_config.clone())?,
-            tokens_classifier: TFClassifierWrapper::new_tokens_classifier(intent_config.clone())?,
-            intent_name: data.name.clone(),
-            slot_names: slots,
-        })
+               language: data.get_language().to_string(),
+               intent_classifier: TFClassifierWrapper::new_intent_classifier(intent_config
+                                                                                 .clone())?,
+               tokens_classifier: TFClassifierWrapper::new_tokens_classifier(intent_config
+                                                                                 .clone())?,
+               intent_name: data.name.clone(),
+               slot_names: slots,
+           })
     }
 }
