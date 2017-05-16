@@ -34,6 +34,7 @@ pub use pipeline::light::regex_intent_parser::RegexIntentParser;
 pub use pipeline::combined::intent_parser::CombinedIntentParser;
 pub use pipeline::IntentClassifierResult;
 pub use pipeline::IntentParser;
+pub use pipeline::IntentParserResult;
 pub use pipeline::Probability;
 pub use pipeline::SlotValue;
 pub use utils::file_path;
