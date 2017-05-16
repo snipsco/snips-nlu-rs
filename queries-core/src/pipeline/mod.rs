@@ -30,9 +30,9 @@ pub struct IntentClassifierResult {
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct SlotValue {
-    value: String,
-    range: Range<usize>,
-    entity: String,
+    pub value: String,
+    pub range: Range<usize>,
+    pub entity: String,
 }
 
 pub type Slots = HashMap<String, Vec<SlotValue>>;
