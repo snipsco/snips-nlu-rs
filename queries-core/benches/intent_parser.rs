@@ -16,9 +16,7 @@ fn get_intent_parser() -> queries_core::DeepIntentParser {
 }
 
 fn load_parser(bench: &mut Bencher) {
-    bench.iter(|| {
-        let _ = get_intent_parser();
-    });
+    bench.iter(|| { let _ = get_intent_parser(); });
 }
 
 macro_rules! run_parser {
@@ -35,11 +33,10 @@ macro_rules! run_parser {
 }
 
 run_parser!(run_book_restaurant,
-"Book me a table for four people at Le Chalet Savoyard tonight");
+            "Book me a table for four people at Le Chalet Savoyard tonight");
 run_parser!(run_get_weather,
-"What will be the weather tomorrow in Paris ?");
-run_parser!(run_play_music,
-"Give me some psychedelic hip-hop please");
+            "What will be the weather tomorrow in Paris ?");
+run_parser!(run_play_music, "Give me some psychedelic hip-hop please");
 
 benchmark_group!(load, load_parser);
 benchmark_group!(run, run_book_restaurant, run_get_weather, run_play_music);

@@ -42,7 +42,10 @@ impl<'a> FeatureProcessor<PreprocessorResult, Array2<f32>> for DeepFeatureProces
 }
 
 impl PBFeature {
-    fn compute(&self, intent_config: &IntentConfig, input: &PreprocessorResult) -> Result<Vec<f32>> {
+    fn compute(&self,
+               intent_config: &IntentConfig,
+               input: &PreprocessorResult)
+               -> Result<Vec<f32>> {
         let arguments = self.get_arguments();
 
         if self.has_scalar_type() {
@@ -60,18 +63,18 @@ impl PBFeature {
                          arguments: &[PBFeature_Argument])
                          -> Result<Vec<f32>> {
         Ok(match *feature_type {
-            PBFeature_Scalar_Type::HAS_GAZETTEER_HITS => {
-                let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
-                shared_scalar::has_gazetteer_hits(input, gazetteer)
-            }
-            PBFeature_Scalar_Type::NGRAM_MATCHER => {
-                shared_scalar::ngram_matcher(input, arguments[0].get_str())
-            }
-            PBFeature_Scalar_Type::GET_MESSAGE_LENGTH => {
-                let normalization = arguments[0].get_scalar();
-                shared_scalar::get_message_length(input, normalization)
-            }
-        })
+               PBFeature_Scalar_Type::HAS_GAZETTEER_HITS => {
+                   let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
+                   shared_scalar::has_gazetteer_hits(input, gazetteer)
+               }
+               PBFeature_Scalar_Type::NGRAM_MATCHER => {
+                   shared_scalar::ngram_matcher(input, arguments[0].get_str())
+               }
+               PBFeature_Scalar_Type::GET_MESSAGE_LENGTH => {
+                   let normalization = arguments[0].get_scalar();
+                   shared_scalar::get_message_length(input, normalization)
+               }
+           })
     }
 
     fn get_shared_vector(intent_config: &IntentConfig,
@@ -80,19 +83,21 @@ impl PBFeature {
                          arguments: &[PBFeature_Argument])
                          -> Result<Vec<f32>> {
         Ok(match *feature_type {
-            PBFeature_Vector_Type::HAS_GAZETTEER_HITS => {
-                let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
-                shared_vector::has_gazetteer_hits(input, gazetteer)
-            }
-            PBFeature_Vector_Type::NGRAM_MATCHER => {
-                shared_vector::ngram_matcher(input, arguments[0].get_str())
-            }
-            PBFeature_Vector_Type::IS_CAPITALIZED => shared_vector::is_capitalized(input),
-            PBFeature_Vector_Type::IS_FIRST_WORD => shared_vector::is_first_word(input),
-            PBFeature_Vector_Type::IS_LAST_WORD => shared_vector::is_last_word(input),
-            PBFeature_Vector_Type::CONTAINS_POSSESSIVE => shared_vector::contains_possessive(input),
-            PBFeature_Vector_Type::CONTAINS_DIGITS => shared_vector::contains_digits(input),
-        })
+               PBFeature_Vector_Type::HAS_GAZETTEER_HITS => {
+                   let gazetteer = intent_config.get_gazetteer(arguments[0].get_gazetteer())?;
+                   shared_vector::has_gazetteer_hits(input, gazetteer)
+               }
+               PBFeature_Vector_Type::NGRAM_MATCHER => {
+                   shared_vector::ngram_matcher(input, arguments[0].get_str())
+               }
+               PBFeature_Vector_Type::IS_CAPITALIZED => shared_vector::is_capitalized(input),
+               PBFeature_Vector_Type::IS_FIRST_WORD => shared_vector::is_first_word(input),
+               PBFeature_Vector_Type::IS_LAST_WORD => shared_vector::is_last_word(input),
+               PBFeature_Vector_Type::CONTAINS_POSSESSIVE => {
+                   shared_vector::contains_possessive(input)
+               }
+               PBFeature_Vector_Type::CONTAINS_DIGITS => shared_vector::contains_digits(input),
+           })
     }
 }
 
@@ -171,13 +176,19 @@ mod test {
             };
 
             {
-                let mut classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_intent_classifier_path())).unwrap();
-                let pb_model_config: PBModelConfiguration = protobuf::parse_from_reader(&mut classifier_config).unwrap();
+                let mut classifier_config = intent_config
+                    .get_file(path::Path::new(pb_intent_config.get_intent_classifier_path()))
+                    .unwrap();
+                let pb_model_config: PBModelConfiguration =
+                    protobuf::parse_from_reader(&mut classifier_config).unwrap();
                 test("intent_classifier.json", pb_model_config);
             }
             {
-                let mut classifier_config = intent_config.get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path())).unwrap();
-                let pb_model_config: PBModelConfiguration = protobuf::parse_from_reader(&mut classifier_config).unwrap();
+                let mut classifier_config = intent_config
+                    .get_file(path::Path::new(pb_intent_config.get_tokens_classifier_path()))
+                    .unwrap();
+                let pb_model_config: PBModelConfiguration =
+                    protobuf::parse_from_reader(&mut classifier_config).unwrap();
                 test("entity_extraction.json", pb_model_config);
             }
         }
