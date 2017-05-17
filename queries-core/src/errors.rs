@@ -7,5 +7,6 @@ error_chain! {
         Fst(::fst::Error);
         Preprocessor(::preprocessing::Error);
         Regex(::regex::Error);
+        Crfsuite(::crfsuite::Error);
     }
 }
