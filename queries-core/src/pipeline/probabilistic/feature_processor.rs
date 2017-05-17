@@ -113,7 +113,7 @@ mod tests {
             })],
         };
 
-        let computed_features = fp.compute_features(&tokenize("hello world how are you ?"));
+        let computed_features = fp.compute_features(&tokenize("hello world how are you ?").as_slice());
 
         assert_eq!(computed_features.len(), 6);
         assert_eq!(computed_features[0], vec![]);
@@ -140,7 +140,7 @@ mod tests {
             })],
         };
 
-        let computed_features = fp.compute_features(&tokenize("hello world how are you ?"));
+        let computed_features = fp.compute_features(&tokenize("hello world how are you ?").as_slice());
         assert_eq!(computed_features,
                    vec![vec![("Toto[+2]".to_string(), "how".to_string()),
                              ("Toto[+4]".to_string(), "you".to_string())],
