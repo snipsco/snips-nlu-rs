@@ -36,9 +36,9 @@ pub struct ProbabilisticFeatureProcessor {
     functions: Vec<FeatureFunction>,
 }
 
-impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for ProbabilisticFeatureProcessor {
+impl <'a> FeatureProcessor<&'a [Token], Vec<Vec<(String, String)>>> for ProbabilisticFeatureProcessor {
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn compute_features(&self, input: &Vec<Token>) -> Vec<Vec<(String, String)>> {
+    fn compute_features(&self, input: & &'a [Token]) -> Vec<Vec<(String, String)>> {
         self.functions
             .iter()
             .fold(vec![vec![]; input.len()], |mut acc, f| {

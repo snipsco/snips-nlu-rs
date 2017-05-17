@@ -1,5 +1,8 @@
 extern crate queries_preprocessor as preprocessing;
 extern crate queries_utils as utils;
+
+extern crate crfsuite;
+
 extern crate csv;
 #[macro_use]
 extern crate error_chain;
