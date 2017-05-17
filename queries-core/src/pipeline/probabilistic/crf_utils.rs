@@ -195,11 +195,31 @@ fn positive_tagging(tagging_scheme: TaggingScheme, slot_name: &str, slot_size: u
     }
 }
 
-fn negative_taggin(size: usize) -> Vec<String> {
+fn negative_tagging(size: usize) -> Vec<String> {
     vec![OUTSIDE.to_string(); size]
 }
 
-//fn utterance_to_sample(query_data: ?, tagging_scheme: TaggingScheme) -> HashMap<String, Vec<String>> {
-    //unimplemented!()
-//}
+fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: TaggingScheme) -> &str {
+    match tagging_scheme {
+        TaggingScheme::IO => INSIDE_PREFIX,
+        TaggingScheme::BIO => {
+            if index == indexes[0] {
+                BEGINNING_PREFIX
+            } else {
+                INSIDE_PREFIX
+            }
+        },
+        TaggingScheme::BILOU => {
+            if indexes.len() == 1 {
+                UNIT_PREFIX
+            } else if index == indexes[0] {
+                BEGINNING_PREFIX
+            } else if index == *indexes.last().unwrap() {
+                LAST_PREFIX
+            } else {
+                INSIDE_PREFIX
+            }
+        }
+    }
+}
 
