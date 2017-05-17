@@ -115,8 +115,7 @@ mod tests {
 
         let computed_features = fp.compute_features(&tokenize("hello world how are you ?"));
 
-
-        assert_eq!(computed_features.len(), 5);
+        assert_eq!(computed_features.len(), 6);
         assert_eq!(computed_features[0], vec![]);
         for i in 1..5 {
             assert_eq!(computed_features[i],
@@ -142,18 +141,21 @@ mod tests {
         };
 
         let computed_features = fp.compute_features(&tokenize("hello world how are you ?"));
-
         assert_eq!(computed_features,
                    vec![vec![("Toto[+2]".to_string(), "how".to_string()),
                              ("Toto[+4]".to_string(), "you".to_string())],
                         vec![("Toto".to_string(), "world".to_string()),
                              ("Toto[+2]".to_string(), "are".to_string()),
+                             ("Toto[+4]".to_string(), "?".to_string()),
                              ("Tutu[+2]".to_string(), "Foobar".to_string())],
                         vec![("Toto".to_string(), "how".to_string()),
                              ("Toto[+2]".to_string(), "you".to_string())],
                         vec![("Toto[-2]".to_string(), "world".to_string()),
-                             ("Toto".to_string(), "are".to_string())],
+                             ("Toto".to_string(), "are".to_string()),
+                             ("Toto[+2]".to_string(), "?".to_string())],
                         vec![("Toto[-2]".to_string(), "how".to_string()),
-                             ("Toto".to_string(), "you".to_string())]]);
+                             ("Toto".to_string(), "you".to_string())],
+                        vec![("Toto[-2]".to_string(), "are".to_string()),
+                             ("Toto".to_string(), "?".to_string())]]);
     }
 }
