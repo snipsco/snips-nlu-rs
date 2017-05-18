@@ -1,97 +1,57 @@
 use ndarray::prelude::*;
-
-pub trait Classifier {
-    fn new(weights: Array2<f32>) -> Self;
-    fn run(&self, features: &Array2<f32>) -> Array2<f32>;
-}
-
-pub struct LogisticRegression {
-    weights: Array2<f32>,
-}
-
-fn sigmoid(d: f32) -> f32 {
-    1.0 / (1.0 + (-d).exp())
-}
-
-impl Classifier for LogisticRegression {
-    fn new(weights: Array2<f32>) -> Self {
-        Self { weights }
-    }
-
-    fn run(&self, features: &Array2<f32>) -> Array2<f32> {
-        let intercept = Array::from_elem((1, features.dim().1), 1.0);
-        let intercepted_features = stack![Axis(0), intercept, *features];
-        let mut result = self.weights.dot(&intercepted_features);
-        result.mapv_inplace(sigmoid);
-        result
-    }
-}
+use errors::*;
 
 pub struct MulticlassLogisticRegression {
+    // A matrix with shape (f, c)
+    // f = number of features
+    // c = number of classes
     weights: Array2<f32>,
 }
 
-impl Classifier for MulticlassLogisticRegression {
-    fn new(weights: Array2<f32>) -> Self {
-        Self { weights }
+impl MulticlassLogisticRegression {
+    pub fn new(intercept: Array1<f32>, weights: Array2<f32>) -> Result<Self> {
+        let nb_classes = intercept.dim();
+        let reshaped_intercept = intercept.into_shape((1, nb_classes))?;
+        let weights_with_intercept = stack![Axis(0), reshaped_intercept, weights];
+        Ok(Self { weights: weights_with_intercept })
     }
 
-    fn run(&self, features: &Array2<f32>) -> Array2<f32> {
-        let intercept = Array::from_elem((1, features.dim().1), 1.0);
-        let intercepted_features = stack![Axis(0), intercept, *features];
-        let mut result = self.weights.dot(&intercepted_features);
+    pub fn run(&self, features: &ArrayView1<f32>) -> Result<Array1<f32>> {
+        let nb_features = features.dim();
+        let (_, nb_classes) = self.weights.dim();
+
+        let reshaped_features = features.into_shape((1, nb_features))?;
+        let reshaped_features = stack![Axis(1), array![[1.]], reshaped_features];
+        let mut result = reshaped_features.dot(&self.weights).into_shape(nb_classes)?;
         result.mapv_inplace(|e| e.exp());
-        let divider = result.map_axis(Axis(0), |v| v.scalar_sum());
-        result /= &divider;
-        result
+        let divider = result.scalar_sum();
+        result /= divider;
+        Ok(result)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Classifier;
-    use super::LogisticRegression;
     use super::MulticlassLogisticRegression;
-    use utils::parse_json;
-    use testutils::assert_epsilon_eq;
-    use testutils::create_array;
-    use testutils::create_transposed_array;
-
-    #[derive(Deserialize)]
-    struct TestDescription {
-        //description: String,
-        input: InputDescription,
-        output: Vec<Vec<f32>>,
-    }
-
-    #[derive(Deserialize)]
-    struct InputDescription {
-        weights: Vec<Vec<f32>>,
-        features: Vec<Vec<f32>>,
-    }
+    use testutils::assert_epsilon_eq_array1;
 
     #[test]
-    fn logisitic_regression_works() {
-        do_test::<LogisticRegression>("snips-sdk-tests/models/logistic_regression_predictions.\
-                                       json");
-    }
+    fn multiclass_logistic_regression_works() {
+        // Given
+        let intercept = array![0.98, 0.32, -0.76];
+        let weights = array![[ 2.5, -0.6,  0.5],
+                             [ 1.2,  2.2, -2.7],
+                             [ 1.5,  0.1, -3.2],
+                             [-0.9, -2.4,  1.8]];
 
-    #[test]
-    fn multiclass_logisitic_regression_works() {
-        do_test::<MulticlassLogisticRegression>("snips-sdk-tests/models/\
-                                                 multi_class_logistic_regression_predictions.json");
-    }
+        let features = array![0.4, -2.3, 1.9, 1.3];
+        let regression = MulticlassLogisticRegression::new(intercept, weights).unwrap();
 
-    fn do_test<T: Classifier>(file_name: &str) {
-        let descs: Vec<TestDescription> = parse_json(file_name);
-        assert!(descs.len() != 0);
-        for desc in descs {
-            let w = create_array(&desc.input.weights);
-            let f = create_transposed_array(&desc.input.features);
-            let reg = T::new(w);
-            let result = reg.run(&f);
-            let expected_result = create_transposed_array(&desc.output);
-            assert_epsilon_eq(&expected_result, &result, 1e-6);
-        }
+        // When
+        let predictions = regression.run(&features.view()).unwrap();
+
+        // Then
+        let expected_predictions = array![2.66969214e-01, 3.98406851e-05, 7.32990945e-01];
+        assert_epsilon_eq_array1(&predictions, &expected_predictions, 1e-06);
     }
 }
