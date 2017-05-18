@@ -8,6 +8,7 @@ extern crate csv;
 extern crate error_chain;
 extern crate fst;
 extern crate itertools;
+#[macro_use]
 extern crate ndarray;
 extern crate regex;
 extern crate serde;
