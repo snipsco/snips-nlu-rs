@@ -364,7 +364,7 @@ mod tests {
             // When
             let slots = tags_to_slots(&data.text,
                                       &tokenize(&data.text),
-                                      &data.tags.iter().map(|s| &**s).collect_vec(),
+                                      &data.tags,
                                       TaggingScheme::IO,
                                       &intent_slots_mapping);
             // Then
@@ -528,7 +528,7 @@ mod tests {
             // When
             let slots = tags_to_slots(&data.text,
                                       &tokenize(&data.text),
-                                      &data.tags.iter().map(|s| &**s).collect_vec(),
+                                      &data.tags,
                                       TaggingScheme::BIO,
                                       &intent_slots_mapping);
             // Then
@@ -726,7 +726,7 @@ mod tests {
             // When
             let slots = tags_to_slots(&data.text,
                                       &tokenize(&data.text),
-                                      &data.tags.iter().map(|s| &**s).collect_vec(),
+                                      &data.tags,
                                       TaggingScheme::BILOU,
                                       &intent_slots_mapping);
             // Then
@@ -837,21 +837,21 @@ mod tests {
     fn test_is_start_of_bio_slot() {
         // Given
         let tags = &[
-            OUTSIDE,
-            BEGINNING_PREFIX,
-            INSIDE_PREFIX,
-            OUTSIDE,
-            INSIDE_PREFIX,
-            OUTSIDE,
-            BEGINNING_PREFIX,
-            OUTSIDE,
-            INSIDE_PREFIX,
-            BEGINNING_PREFIX,
-            OUTSIDE,
-            BEGINNING_PREFIX,
-            BEGINNING_PREFIX,
-            INSIDE_PREFIX,
-            INSIDE_PREFIX
+            OUTSIDE.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            INSIDE_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            INSIDE_PREFIX.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
         ];
 
         // When
@@ -886,21 +886,21 @@ mod tests {
     fn test_is_end_of_bio_slot() {
         // Given
         let tags = &[
-            OUTSIDE,
-            BEGINNING_PREFIX,
-            INSIDE_PREFIX,
-            OUTSIDE,
-            INSIDE_PREFIX,
-            OUTSIDE,
-            BEGINNING_PREFIX,
-            OUTSIDE,
-            INSIDE_PREFIX,
-            BEGINNING_PREFIX,
-            OUTSIDE,
-            BEGINNING_PREFIX,
-            BEGINNING_PREFIX,
-            INSIDE_PREFIX,
-            INSIDE_PREFIX
+            OUTSIDE.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            INSIDE_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            INSIDE_PREFIX.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
         ];
 
         // When
@@ -935,23 +935,23 @@ mod tests {
     fn test_start_of_bilou_slot() {
         // Given
         let tags = &[
-            OUTSIDE,
-            LAST_PREFIX,
-            UNIT_PREFIX,
-            BEGINNING_PREFIX,
-            UNIT_PREFIX,
-            INSIDE_PREFIX,
-            LAST_PREFIX,
-            LAST_PREFIX,
-            UNIT_PREFIX,
-            UNIT_PREFIX,
-            LAST_PREFIX,
-            OUTSIDE,
-            LAST_PREFIX,
-            BEGINNING_PREFIX,
-            INSIDE_PREFIX,
-            INSIDE_PREFIX,
-            LAST_PREFIX
+            OUTSIDE.to_string(),
+            LAST_PREFIX.to_string(),
+            UNIT_PREFIX.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            UNIT_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            LAST_PREFIX.to_string(),
+            LAST_PREFIX.to_string(),
+            UNIT_PREFIX.to_string(),
+            UNIT_PREFIX.to_string(),
+            LAST_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            LAST_PREFIX.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            LAST_PREFIX.to_string(),
         ];
 
         // When
@@ -988,25 +988,25 @@ mod tests {
     fn test_is_end_of_bilou_slot() {
         // Given
         let tags = &[
-            OUTSIDE,
-            LAST_PREFIX,
-            UNIT_PREFIX,
-            BEGINNING_PREFIX,
-            UNIT_PREFIX,
-            INSIDE_PREFIX,
-            LAST_PREFIX,
-            LAST_PREFIX,
-            UNIT_PREFIX,
-            UNIT_PREFIX,
-            LAST_PREFIX,
-            OUTSIDE,
-            INSIDE_PREFIX,
-            BEGINNING_PREFIX,
-            OUTSIDE,
-            BEGINNING_PREFIX,
-            INSIDE_PREFIX,
-            INSIDE_PREFIX,
-            LAST_PREFIX
+            OUTSIDE.to_string(),
+            LAST_PREFIX.to_string(),
+            UNIT_PREFIX.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            UNIT_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            LAST_PREFIX.to_string(),
+            LAST_PREFIX.to_string(),
+            UNIT_PREFIX.to_string(),
+            UNIT_PREFIX.to_string(),
+            LAST_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            INSIDE_PREFIX.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            OUTSIDE.to_string(),
+            BEGINNING_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            INSIDE_PREFIX.to_string(),
+            LAST_PREFIX.to_string(),
         ];
 
         // When
