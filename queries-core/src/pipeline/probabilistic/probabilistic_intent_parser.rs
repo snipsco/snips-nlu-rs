@@ -4,18 +4,21 @@ use errors::*;
 use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots, SlotValue};
 use super::intent_classifier::IntentClassifier;
 use super::tagger::Tagger;
+use super::crf_utils;
 use preprocessing::light::tokenize;
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: IntentClassifier,
-    tagger_per_intent: HashMap<String, Tagger>,
+    slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
+    taggers: HashMap<String, Tagger>,
 }
 
 impl ProbabilisticIntentParser {
     pub fn new() -> Result<Self> {
         Ok(ProbabilisticIntentParser {
                intent_classifier: IntentClassifier {},
-               tagger_per_intent: HashMap::new(),
+               slot_name_to_entity_mapping: HashMap::new(),
+               taggers: HashMap::new(),
            })
     }
 }
@@ -30,17 +33,37 @@ impl IntentParser for ProbabilisticIntentParser {
     }
 
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
-        let tagger = self.tagger_per_intent
+        let tagger = self.taggers
             .get(intent_name)
-            .ok_or(format!("intent {:?} not found", intent_name))?;
+            .ok_or(format!("intent {:?} not found in taggers", intent_name))?;
+
+        let intent_slots_mapping = self.slot_name_to_entity_mapping
+            .get(intent_name)
+            .ok_or(format!("intent {:?} not found in slots name mapping", intent_name))?;
 
         let tokens = tokenize(input);
         if tokens.is_empty() {
             return Ok(HashMap::new());
         }
 
-        let tags = tagger.get_tags(&tokens);
+        let tags = tagger.get_tags(&tokens)?;
+        let slots = crf_utils::tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping);
 
-        unimplemented!()
+        Ok(convert_vec_slots_to_hashmap(slots))
     }
+}
+
+fn convert_vec_slots_to_hashmap(slots: Vec<(String, SlotValue)>) -> Slots {
+    const ESTIMATED_MAX_SLOT: usize = 10;
+    const ESTIMATED_MAX_SLOTVALUES: usize = 5;
+
+    slots
+        .into_iter()
+        .fold(HashMap::with_capacity(ESTIMATED_MAX_SLOT),
+              |mut hm, (slot_name, slot_value)| {
+                  hm.entry(slot_name)
+                      .or_insert_with(|| Vec::with_capacity(ESTIMATED_MAX_SLOTVALUES))
+                      .push(slot_value);
+                  hm
+        })
 }
