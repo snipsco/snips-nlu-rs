@@ -13,6 +13,7 @@ const LAST_PREFIX: &str = "L-";
 const UNIT_PREFIX: &str = "U-";
 const OUTSIDE: &str = "O";
 
+#[derive(Copy, Clone, Debug)]
 pub enum TaggingScheme {
     IO,
     BIO,
@@ -29,7 +30,7 @@ fn tag_name_to_slot_name(tag: &str) -> &str {
     &tag[2..]
 }
 
-fn is_start_of_io_slot(tags: &[&str], i: usize) -> bool {
+fn is_start_of_io_slot(tags: &[String], i: usize) -> bool {
     if i == 0 {
         tags[i] != OUTSIDE
     } else if tags[i] == OUTSIDE {
@@ -39,7 +40,7 @@ fn is_start_of_io_slot(tags: &[&str], i: usize) -> bool {
     }
 }
 
-fn is_end_of_io_slot(tags: &[&str], i: usize) -> bool {
+fn is_end_of_io_slot(tags: &[String], i: usize) -> bool {
     if i + 1 == tags.len() {
         tags[i] != OUTSIDE
     } else if tags[i] == OUTSIDE {
@@ -49,7 +50,7 @@ fn is_end_of_io_slot(tags: &[&str], i: usize) -> bool {
     }
 }
 
-fn is_start_of_bio_slot(tags: &[&str], i: usize) -> bool {
+fn is_start_of_bio_slot(tags: &[String], i: usize) -> bool {
     if i == 0 {
         tags[i] != OUTSIDE
     } else if tags[i] == OUTSIDE {
@@ -63,7 +64,7 @@ fn is_start_of_bio_slot(tags: &[&str], i: usize) -> bool {
     }
 }
 
-fn is_end_of_bio_slot(tags: &[&str], i: usize) -> bool {
+fn is_end_of_bio_slot(tags: &[String], i: usize) -> bool {
     if i + 1 == tags.len() {
         tags[i] != OUTSIDE
     } else if tags[i] == OUTSIDE {
@@ -75,7 +76,7 @@ fn is_end_of_bio_slot(tags: &[&str], i: usize) -> bool {
     }
 }
 
-fn is_start_of_bilou_slot(tags: &[&str], i: usize) -> bool {
+fn is_start_of_bilou_slot(tags: &[String], i: usize) -> bool {
     if i == 0 {
         tags[i] != OUTSIDE
     } else if tags[i] == OUTSIDE {
@@ -95,7 +96,7 @@ fn is_start_of_bilou_slot(tags: &[&str], i: usize) -> bool {
     }
 }
 
-fn is_end_of_bilou_slot(tags: &[&str], i: usize) -> bool {
+fn is_end_of_bilou_slot(tags: &[String], i: usize) -> bool {
     if i + 1 == tags.len() {
         tags[i] != OUTSIDE
     } else if tags[i] == OUTSIDE {
@@ -120,13 +121,13 @@ struct SlotRange {
     range: Range<usize>,
 }
 
-fn _tags_to_slots<F1, F2>(tags: &[&str],
+fn _tags_to_slots<F1, F2>(tags: &[String],
                           tokens: &[Token],
                           is_start_of_slot: F1,
                           is_end_of_slot: F2)
                           -> Vec<SlotRange>
-    where F1: Fn(&[&str], usize) -> bool,
-          F2: Fn(&[&str], usize) -> bool
+    where F1: Fn(&[String], usize) -> bool,
+          F2: Fn(&[String], usize) -> bool
 {
     let mut slots: Vec<SlotRange> = Vec::with_capacity(tags.len());
 
@@ -146,12 +147,12 @@ fn _tags_to_slots<F1, F2>(tags: &[&str],
     slots
 }
 
-fn tags_to_slots(text: &str,
-                 tokens: &[Token],
-                 tags: &[&str],
-                 tagging_scheme: TaggingScheme,
-                 intent_slots_mapping: &HashMap<String, String>)
-                 -> Vec<(String, SlotValue)> {
+pub fn tags_to_slots(text: &str,
+                     tokens: &[Token],
+                     tags: &[String],
+                     tagging_scheme: TaggingScheme,
+                     intent_slots_mapping: &HashMap<String, String>)
+                     -> Vec<(String, SlotValue)> {
     let slots = match tagging_scheme {
         TaggingScheme::IO => _tags_to_slots(tags, tokens, is_start_of_io_slot, is_end_of_io_slot),
         TaggingScheme::BIO => _tags_to_slots(tags, tokens, is_start_of_bio_slot, is_end_of_bio_slot),
@@ -207,7 +208,7 @@ fn negative_tagging(size: usize) -> Vec<String> {
     vec![OUTSIDE.to_string(); size]
 }
 
-fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: TaggingScheme) -> &str {
+pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: TaggingScheme) -> &str {
     match tagging_scheme {
         TaggingScheme::IO => INSIDE_PREFIX,
         TaggingScheme::BIO => {
