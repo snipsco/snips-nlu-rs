@@ -14,12 +14,11 @@ extern crate regex;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+extern crate serde_json;
 extern crate tensorflow;
 extern crate yolo;
 extern crate zip;
 
-#[cfg(test)]
-extern crate serde_json;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;

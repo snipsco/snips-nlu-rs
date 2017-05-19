@@ -14,6 +14,7 @@ itertools = "0.6"
 fst = "0.1"
 serde = "1.0"
 serde_derive = "1.0"
+serde_json = "1.0"
 ndarray = "0.9"
 regex = "0.2"
 lazy_static = "0.2"
@@ -27,7 +28,6 @@ zip = { version = "0.2", default-features = false }
 
 [dev-dependencies]
 bencher = "0.1"
-serde_json = "1.0"
 
 [build-dependencies]
 glob = "0.2"
