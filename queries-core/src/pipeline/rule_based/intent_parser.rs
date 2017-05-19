@@ -5,19 +5,19 @@ use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
 use errors::*;
-use super::configuration::RegexIntentParserConfiguration;
+use super::configuration::RuleBasedParserConfiguration;
 use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots, SlotValue};
 use preprocessing::light::tokenize;
 
-pub struct RegexIntentParser {
+pub struct RuleBasedIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, String>,
     slot_names_to_entities: HashMap<String, String>,
 }
 
-impl RegexIntentParser {
-    pub fn new(configuration: RegexIntentParserConfiguration) -> Result<Self> {
-        Ok(RegexIntentParser {
+impl RuleBasedIntentParser {
+    pub fn new(configuration: RuleBasedParserConfiguration) -> Result<Self> {
+        Ok(RuleBasedIntentParser {
                regexes_per_intent: compile_regexes_per_intent(configuration.regexes_per_intent)?,
                group_names_to_slot_names: configuration.group_names_to_slot_names,
                slot_names_to_entities: configuration.slot_names_to_entities,
@@ -39,7 +39,7 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>)
         .collect()
 }
 
-impl IntentParser for RegexIntentParser {
+impl IntentParser for RuleBasedIntentParser {
     fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>> {
         let classif_results = self.get_intent(input, probability_threshold)?;
 
@@ -157,13 +157,13 @@ fn deduplicate_overlapping_slots(slots: Vec<(String, SlotValue)>) -> Slots {
 
 #[cfg(test)]
 mod tests {
-    use pipeline::light::configuration::RegexIntentParserConfiguration;
-    use super::RegexIntentParser;
+    use pipeline::rule_based::configuration::RuleBasedParserConfiguration;
+    use super::RuleBasedIntentParser;
     use super::deduplicate_overlapping_slots;
     use pipeline::{IntentParser, IntentClassifierResult, SlotValue};
 
-    fn test_configuration() -> RegexIntentParserConfiguration {
-        RegexIntentParserConfiguration {
+    fn test_configuration() -> RuleBasedParserConfiguration {
+        RuleBasedParserConfiguration {
             language: "en".to_string(),
             regexes_per_intent: hashmap![
                 "dummy_intent_1".to_string() => vec![
@@ -195,7 +195,7 @@ mod tests {
     #[test]
     fn test_should_get_intent() {
         // Given
-        let parser = RegexIntentParser::new(test_configuration()).unwrap();
+        let parser = RuleBasedIntentParser::new(test_configuration()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -213,7 +213,7 @@ mod tests {
     #[test]
     fn test_should_get_entities() {
         // Given
-        let parser = RegexIntentParser::new(test_configuration()).unwrap();
+        let parser = RuleBasedIntentParser::new(test_configuration()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
