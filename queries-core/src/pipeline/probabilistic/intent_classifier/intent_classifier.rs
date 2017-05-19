@@ -5,13 +5,11 @@ use ndarray::prelude::*;
 use errors::*;
 use models::logreg::MulticlassLogisticRegression;
 use pipeline::IntentClassifierResult;
-use super::feature_processor::FeatureProcessor;
+use super::featurizer::Featurizer;
 
 pub struct IntentClassifier {
     intent_list: Vec<Option<String>>,
-    intercept: Array1<f32>,
-    coeff: Array2<f32>,
-    featurizer: FeatureProcessor,
+    featurizer: Option<Featurizer>,
     logreg: MulticlassLogisticRegression,
 }
 
@@ -21,7 +19,7 @@ impl IntentClassifier {
     }
 
     pub fn get_intent(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
-        if input.is_empty() || self.intent_list.is_empty() {
+        if input.is_empty() || self.intent_list.is_empty() || self.featurizer.is_none() {
             return Ok(vec![]);
         }
 
@@ -33,10 +31,10 @@ impl IntentClassifier {
             }
         }
 
+        // TODO: add stemming
         let stemmed_text = input;
-
-        let x = self.featurizer.transform(stemmed_text);
-        let probabilities = self.logreg.run(&x.view())?;
+        let features = self.featurizer.as_ref().unwrap().transform(stemmed_text)?; // checked
+        let probabilities = self.logreg.run(&features.view())?;
 
         let (index_predicted, best_probability) = argmax(&probabilities);
 
