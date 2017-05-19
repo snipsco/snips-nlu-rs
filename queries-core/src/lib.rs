@@ -30,7 +30,7 @@ pub use config::FileBasedAssistantConfig;
 pub use errors::*;
 pub use models::gazetteer::GazetteerKey;
 pub use pipeline::deep::intent_parser::DeepIntentParser;
-pub use pipeline::light::regex_intent_parser::RegexIntentParser;
+pub use pipeline::rule_based::intent_parser::RuleBasedIntentParser;
 pub use pipeline::combined::intent_parser::CombinedIntentParser;
 pub use pipeline::IntentClassifierResult;
 pub use pipeline::IntentParser;
