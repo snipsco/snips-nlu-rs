@@ -3,15 +3,15 @@ use std::iter::FromIterator;
 
 use protos::PBRegexIntentParserConfiguration;
 
-pub struct RegexIntentParserConfiguration {
+pub struct RuleBasedParserConfiguration {
     pub language: String,
     pub regexes_per_intent: HashMap<String, Vec<String>>,
     pub group_names_to_slot_names: HashMap<String, String>,
     pub slot_names_to_entities: HashMap<String, String>,
 }
 
-impl From<PBRegexIntentParserConfiguration> for RegexIntentParserConfiguration {
-    fn from(pb_config: PBRegexIntentParserConfiguration) -> RegexIntentParserConfiguration {
+impl From<PBRegexIntentParserConfiguration> for RuleBasedParserConfiguration {
+    fn from(pb_config: PBRegexIntentParserConfiguration) -> RuleBasedParserConfiguration {
         let mut pb_config = pb_config;
 
         let regexes_per_intent_iter = pb_config
@@ -27,7 +27,7 @@ impl From<PBRegexIntentParserConfiguration> for RegexIntentParserConfiguration {
             .into_iter()
             .map(|(slot_name, entity)| (slot_name, entity.name));
 
-        RegexIntentParserConfiguration {
+        RuleBasedParserConfiguration {
             language: pb_config.take_language(),
             regexes_per_intent: HashMap::from_iter(regexes_per_intent_iter),
             group_names_to_slot_names: pb_config.take_group_names_to_slot_names(),
