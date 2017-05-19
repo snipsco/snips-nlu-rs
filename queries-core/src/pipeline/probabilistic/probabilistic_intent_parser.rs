@@ -16,7 +16,7 @@ pub struct ProbabilisticIntentParser {
 impl ProbabilisticIntentParser {
     pub fn new() -> Result<Self> {
         Ok(ProbabilisticIntentParser {
-               intent_classifier: IntentClassifier {},
+               intent_classifier: IntentClassifier::new(),
                slot_name_to_entity_mapping: HashMap::new(),
                taggers: HashMap::new(),
            })
@@ -29,7 +29,7 @@ impl IntentParser for ProbabilisticIntentParser {
     }
 
     fn get_intent(&self, input: &str, _: f32) -> Result<Vec<IntentClassifierResult>> {
-        Ok(self.intent_classifier.get_intent(input))
+        self.intent_classifier.get_intent(input)
     }
 
     fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
