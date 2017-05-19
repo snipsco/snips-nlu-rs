@@ -1,4 +1,4 @@
 mod intent_classifier;
-mod feature_processor;
+mod featurizer;
 
 pub use self::intent_classifier::IntentClassifier;

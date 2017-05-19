@@ -49,6 +49,8 @@ impl IntentParser for ProbabilisticIntentParser {
         let tags = tagger.get_tags(&tokens)?;
         let slots = crf_utils::tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping);
 
+        // TODO: Augment slots with builtin entities
+
         Ok(convert_vec_slots_to_hashmap(slots))
     }
 }

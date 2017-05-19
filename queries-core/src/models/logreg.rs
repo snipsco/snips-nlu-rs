@@ -2,7 +2,7 @@ use ndarray::prelude::*;
 use errors::*;
 
 pub struct MulticlassLogisticRegression {
-    // A matrix with shape (f, c)
+    // matrix with shape (f, c)
     // f = number of features
     // c = number of classes
     weights: Array2<f32>,
