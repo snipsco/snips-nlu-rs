@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use errors::*;
+use super::configuration::NLUConfiguration;
 use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots};
 
 pub struct CombinedIntentParser {
@@ -8,8 +9,8 @@ pub struct CombinedIntentParser {
 }
 
 impl CombinedIntentParser {
-    pub fn new(parsers: Vec<Box<IntentParser>>) -> Self {
-        CombinedIntentParser { parsers }
+    pub fn new(configuration: IntentClassifierResult) -> Self {
+        CombinedIntentParser { parsers: vec![] }
     }
 }
 
