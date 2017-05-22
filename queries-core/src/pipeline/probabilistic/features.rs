@@ -33,7 +33,7 @@ pub fn ngram(t: &[Token], i: usize, n: usize) -> Option<String> {
 mod tests {
     use super::*;
 
-    use preprocessing::light::tokenize;
+    use preprocessing::tokenize;
 
     #[test]
     fn ngram_works() {

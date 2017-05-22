@@ -7,7 +7,7 @@ use regex::{Regex, RegexBuilder};
 use errors::*;
 use super::configuration::RuleBasedParserConfiguration;
 use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots, SlotValue};
-use preprocessing::light::tokenize;
+use preprocessing::tokenize;
 
 pub struct RuleBasedIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
