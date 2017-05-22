@@ -235,7 +235,7 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
 mod tests {
     use itertools::Itertools;
 
-    use preprocessing::light::tokenize;
+    use preprocessing::tokenize;
     use super::*;
 
     struct Test {
