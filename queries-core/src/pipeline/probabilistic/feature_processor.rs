@@ -37,25 +37,20 @@ pub struct ProbabilisticFeatureProcessor {
 }
 
 impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for ProbabilisticFeatureProcessor {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     fn compute_features(&self, input: &Vec<Token>) -> Vec<Vec<(String, String)>> {
         self.functions
             .iter()
             .fold(vec![vec![]; input.len()], |mut acc, f| {
-                (0..input.len()).foreach(|i| if let Some(value) = (f.function)(input, i) {
-                                             f.offsets
-                                                 .iter()
-                                                 .foreach(|&(offset, ref key)| if i as i32 -
-                                                                                  offset >=
-                                                                                  0 &&
-                                                                                  i as i32 -
-                                                                                  offset <
-                                                                                  input.len() as
-                                                                                  i32 {
-                                                              acc[(i as i32 - offset) as usize]
-                                                                  .push((key.clone(),
-                                                                         value.clone()));
-                                                          })
-                                         });
+                (0..input.len()).foreach(|i| {
+                    if let Some(value) = (f.function)(input, i) {
+                        f.offsets.iter().foreach(|&(offset, ref key)| {
+                            if i as i32 - offset >= 0 && i as i32 - offset < input.len() as i32 {
+                                acc[(i as i32 - offset) as usize].push((key.clone(), value.clone()));
+                            }
+                        });
+                    }
+                });
                 acc
             })
     }
