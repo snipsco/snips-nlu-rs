@@ -2,15 +2,22 @@ use rustling_ontology::{Lang, Parser, DimensionKind, build_parser, ParsingContex
 use std::ops::Range;
 use errors::*;
 
+pub struct RustlingParser {
+    parser: Parser,
+}
+
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct RustlingEntity {
     pub value: String,
-    pub range: Range<usize>,
+    pub range: Range<usize>,// Byte range
     pub kind: EntityKind,
 }
 
-pub struct RustlingParser {
-    parser: Parser,
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub enum EntityKind {
+    Time,
+    Duration,
+    Number,
 }
 
 impl RustlingParser {
@@ -42,14 +49,16 @@ impl RustlingParser {
     }
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
-pub enum EntityKind {
-    Time,
-    Duration,
-    Number,
-}
-
 impl EntityKind {
+
+    fn identifier(&self) -> String {
+        match self {
+            EntityKind::Time => "snips/datetime",
+            EntityKind::Number => "snips/number",
+            EntityKind::Duration => "snips/duration",
+        }
+    }
+
     fn from_rustling_output(v: &Output) -> Option<EntityKind> {
         match v {
             &Output::Time(_) => Some(EntityKind::Time),
