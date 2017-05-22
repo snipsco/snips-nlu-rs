@@ -7,10 +7,11 @@ extern crate error_chain;
 
 extern crate serde_json;
 
+use std::fs;
 use std::ffi::{CStr, CString};
 use std::sync::Mutex;
-use std::slice;
-use std::io::Cursor;
+//use std::slice;
+//use std::io::Cursor;
 
 use libc::c_char;
 use libc::c_float;
@@ -21,6 +22,7 @@ mod errors {
     error_chain! {
           foreign_links {
                 Core(::queries_core::Error);
+                Io(::std::io::Error);
                 Serde(::serde_json::Error);
                 Utf8Error(::std::str::Utf8Error);
                 NulError(::std::ffi::NulError);
@@ -37,7 +39,7 @@ mod errors {
 use errors::*;
 
 #[repr(C)]
-pub struct Opaque(std::sync::Mutex<queries_core::DeepIntentParser>);
+pub struct Opaque(std::sync::Mutex<queries_core::SnipsIntentParser>);
 
 #[repr(C)]
 pub enum QUERIESRESULT {
@@ -89,12 +91,21 @@ pub extern "C" fn intent_parser_create_from_dir(root_dir: *const c_char,
     wrap!(create_from_dir(root_dir, client));
 }
 
-#[no_mangle]
+/*#[no_mangle]
 pub extern "C" fn intent_parser_create_from_binary(binary: *const libc::c_uchar,
                                                    binary_size: libc::c_uint,
                                                    client: *mut *mut Opaque)
                                                    -> QUERIESRESULT {
     wrap!(create_from_binary(binary, binary_size, client));
+}*/
+
+#[no_mangle]
+pub extern "C" fn intent_parser_run_parse(client: *mut Opaque,
+                                          input: *const c_char,
+                                          probability_threshold: c_float,
+                                          result_json: *mut *mut c_char)
+                                          -> QUERIESRESULT {
+    wrap!(run_parse(client, input, probability_threshold, result_json))
 }
 
 #[no_mangle]
@@ -136,17 +147,17 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let file_configuration = queries_core::FileBasedAssistantConfig::new(root_dir)?;
-
-    let intent_parser = queries_core::DeepIntentParser::new(&file_configuration)?;
+    let file = fs::File::open(root_dir)?;
+    let configuration = serde_json::from_reader(file)?;
+    let intent_parser = queries_core::SnipsIntentParser::new(configuration)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
     Ok(())
 }
 
-fn create_from_binary(binary: *const libc::c_uchar,
-                      binary_size: libc::c_uint,
+/*fn create_from_binary(binary: *const libc::c_uchar,
+                  binary_size: libc::c_uint,
                       client: *mut *mut Opaque)
                       -> Result<()> {
     let slice = unsafe { slice::from_raw_parts(binary, binary_size as usize) };
@@ -154,12 +165,26 @@ fn create_from_binary(binary: *const libc::c_uchar,
     let file_configuration =
         queries_core::BinaryBasedAssistantConfig::new(Cursor::new(slice.to_owned()))?;
 
-    let intent_parser = queries_core::DeepIntentParser::new(&file_configuration)?;
+    let intent_parser = queries_core::SnipsIntentParser::new(&file_configuration)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
     Ok(())
+}*/
+
+fn run_parse(client: *mut Opaque,
+                             input: *const c_char,
+                             probability_threshold: c_float,
+                             result_json: *mut *mut c_char)
+                             -> Result<()> {
+    let input = get_str!(input);
+    let intent_parser = get_intent_parser!(client);
+
+    let results = intent_parser.parse(input, probability_threshold)?;
+
+    point_to_string(result_json, serde_json::to_string(&results)?)
 }
+
 
 fn run_intent_classification(client: *mut Opaque,
                              input: *const c_char,

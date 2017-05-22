@@ -1,4 +1,5 @@
-pub mod intent_parser;
+mod intent_parser;
 mod configuration;
 
-pub use self::intent_parser::RuleBasedIntentParser as IntentParser;
+pub use self::configuration::RuleBasedParserConfiguration;
+pub use self::intent_parser::RuleBasedIntentParser;

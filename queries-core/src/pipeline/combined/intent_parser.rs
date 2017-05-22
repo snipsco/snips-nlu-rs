@@ -1,19 +1,23 @@
 use std::collections::HashMap;
 
 use errors::*;
+use super::configuration::SnipsConfiguration;
 use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots};
+use pipeline::rule_based::RuleBasedIntentParser;
 
-pub struct CombinedIntentParser {
+pub struct SnipsIntentParser {
     parsers: Vec<Box<IntentParser>>,
 }
 
-impl CombinedIntentParser {
-    pub fn new(parsers: Vec<Box<IntentParser>>) -> Self {
-        CombinedIntentParser { parsers }
+impl SnipsIntentParser {
+    pub fn new(configuration: SnipsConfiguration) -> Result<Self> {
+        let rule_based_parser = RuleBasedIntentParser::new(configuration.model.rule_based_parser)?;
+
+        Ok(SnipsIntentParser { parsers: vec![Box::new(rule_based_parser)]})
     }
 }
 
-impl IntentParser for CombinedIntentParser {
+impl IntentParser for SnipsIntentParser {
     fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>> {
         for p in self.parsers.iter() {
             let result = p.parse(input, probability_threshold)?;
