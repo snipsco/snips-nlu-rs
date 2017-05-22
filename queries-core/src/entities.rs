@@ -35,19 +35,18 @@ impl RustlingParser {
             .iter()
             .filter_map(|m| {
                 EntityKind::from_rustling_output(&m.value)
-                    .map(|e| {
+                    .map(|kind| {
                         RustlingEntity {
                             value: sentence[m.byte_range.0..m.byte_range.1].into(),
                             range: m.byte_range.0..m.byte_range.1,
                             char_range: m.char_range.0..m.char_range.1, 
-                            kind: e
+                            kind: kind,
                         }
                     })
             })
             .collect::<Vec<_>>();
         entities.sort_by_key(|e| e.range.start);
         Ok(entities)
-
     }
 }
 
