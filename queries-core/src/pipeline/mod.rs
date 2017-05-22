@@ -37,7 +37,7 @@ pub struct SlotValue {
 
 pub type Slots = HashMap<String, Vec<SlotValue>>;
 
-pub trait IntentParser {
+pub trait IntentParser: Send + Sync {
     fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>>;
     fn get_intent(&self,
                   input: &str,
