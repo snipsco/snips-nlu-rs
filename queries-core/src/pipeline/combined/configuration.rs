@@ -1,8 +1,8 @@
-use pipeline::rule_based::configuration::RuleBasedParserConfiguration;
-use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
+use pipeline::rule_based::RuleBasedParserConfiguration;
+use pipeline::probabilistic::ProbabilisticParserConfiguration;
 
 #[derive(Debug, Deserialize)]
-pub struct NLUConfiguration {
+pub struct SnipsConfiguration {
     pub model: Model,
 }
 
@@ -14,13 +14,13 @@ pub struct Model {
 
 #[cfg(test)]
 mod tests {
-    use super::NLUConfiguration;
+    use super::SnipsConfiguration;
 
     use utils;
 
     #[test]
     fn deserialization_works() {
-        let retrieved: NLUConfiguration = utils::parse_json("tests/nlu_engine_sample.json");
+        let retrieved: SnipsConfiguration = utils::parse_json("tests/nlu_engine_sample.json");
         println!("{:?}", retrieved);
     }
 }
