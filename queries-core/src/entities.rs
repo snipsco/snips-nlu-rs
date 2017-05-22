@@ -40,7 +40,7 @@ impl RustlingParser {
                             value: sentence[m.byte_range.0..m.byte_range.1].into(),
                             range: m.byte_range.0..m.byte_range.1,
                             char_range: m.char_range.0..m.char_range.1, 
-                            kind: kind,
+                            kind,
                         }
                     })
             })
