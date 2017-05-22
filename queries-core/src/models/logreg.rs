@@ -1,10 +1,14 @@
 use ndarray::prelude::*;
 use errors::*;
 
+/// The multiclass probability estimates are derived from binary (one-vs.-rest)
+/// estimates by simple normalization
 pub struct MulticlassLogisticRegression {
-    // matrix with shape (f, c)
-    // f = number of features
-    // c = number of classes
+    /// matrix with shape (f, c)
+    /// ------------------------
+    ///
+    /// - f = number of features
+    /// - c = number of classes
     weights: Array2<f32>,
 }
 
@@ -23,12 +27,17 @@ impl MulticlassLogisticRegression {
         let reshaped_features = features.into_shape((1, nb_features))?;
         let reshaped_features = stack![Axis(1), array![[1.]], reshaped_features];
         let mut result = reshaped_features.dot(&self.weights).into_shape(nb_classes)?;
-        result.mapv_inplace(|e| e.exp());
+        result.mapv_inplace(|x| logit(x));
         let divider = result.scalar_sum();
         result /= divider;
         Ok(result)
     }
 }
+
+fn logit(x: f32) -> f32 {
+    1. / (1. + (-x).exp())
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -51,7 +60,7 @@ mod tests {
         let predictions = regression.run(&features.view()).unwrap();
 
         // Then
-        let expected_predictions = array![2.66969214e-01, 3.98406851e-05, 7.32990945e-01];
+        let expected_predictions = array![0.4493038, 0.0002318, 0.5504642];
         assert_epsilon_eq_array1(&predictions, &expected_predictions, 1e-06);
     }
 }
