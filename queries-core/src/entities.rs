@@ -9,7 +9,8 @@ pub struct RustlingParser {
 #[derive(Serialize, Debug, Clone, PartialEq)]
 pub struct RustlingEntity {
     pub value: String,
-    pub range: Range<usize>,// Byte range
+    pub range: Range<usize>,
+    pub char_range: Range<usize>,
     pub kind: EntityKind,
 }
 
@@ -37,7 +38,8 @@ impl RustlingParser {
                     .map(|e| {
                         RustlingEntity {
                             value: sentence[m.byte_range.0..m.byte_range.1].into(),
-                            range: Range { start: m.byte_range.0, end: m.byte_range.1 },
+                            range: m.byte_range.0..m.byte_range.1,
+                            char_range: m.char_range.0..m.char_range.1, 
                             kind: e
                         }
                     })
@@ -51,8 +53,8 @@ impl RustlingParser {
 
 impl EntityKind {
 
-    fn identifier(&self) -> String {
-        match self {
+    pub fn identifier(&self) -> &str {
+        match *self {
             EntityKind::Time => "snips/datetime",
             EntityKind::Number => "snips/number",
             EntityKind::Duration => "snips/duration",
@@ -60,12 +62,12 @@ impl EntityKind {
     }
 
     fn from_rustling_output(v: &Output) -> Option<EntityKind> {
-        match v {
-            &Output::Time(_) => Some(EntityKind::Time),
-            &Output::TimeInterval(_) => Some(EntityKind::Time),
-            &Output::Integer(_) => Some(EntityKind::Number),
-            &Output::Float(_) => Some(EntityKind::Number),
-            &Output::Duration(_) => Some(EntityKind::Duration),
+        match *v {
+            Output::Time(_) => Some(EntityKind::Time),
+            Output::TimeInterval(_) => Some(EntityKind::Time),
+            Output::Integer(_) => Some(EntityKind::Number),
+            Output::Float(_) => Some(EntityKind::Number),
+            Output::Duration(_) => Some(EntityKind::Duration),
             _ => None
         }
     }
@@ -79,12 +81,12 @@ mod test {
     fn test_entities_extraction() {
         let parser = RustlingParser::new(Lang::EN).unwrap();
         assert_eq!(vec![
-                    RustlingEntity { value: "two".into(), range: Range { start: 23, end: 26 }, kind: EntityKind::Number },
-                    RustlingEntity { value: "tomorrow".into(), range: Range { start: 34, end: 42 }, kind: EntityKind::Time },
+                    RustlingEntity { value: "two".into(), range: 23..26, char_range: 23..26, kind: EntityKind::Number },
+                    RustlingEntity { value: "tomorrow".into(), range: 34..42, char_range: 34..42, kind: EntityKind::Time },
                 ], parser.extract_entities("Book me restaurant for two people tomorrow").unwrap());
 
         assert_eq!(vec![
-                    RustlingEntity { value: "two weeks".into(), range: Range { start: 19, end: 28 }, kind: EntityKind::Duration },
+                    RustlingEntity { value: "two weeks".into(), range: 19..28, char_range: 19..28, kind: EntityKind::Duration },
                 ], parser.extract_entities("The weather during two weeks").unwrap());
     }
 }
