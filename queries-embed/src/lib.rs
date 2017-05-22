@@ -173,10 +173,10 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> R
 }*/
 
 fn run_parse(client: *mut Opaque,
-                             input: *const c_char,
-                             probability_threshold: c_float,
-                             result_json: *mut *mut c_char)
-                             -> Result<()> {
+             input: *const c_char,
+             probability_threshold: c_float,
+             result_json: *mut *mut c_char)
+             -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 

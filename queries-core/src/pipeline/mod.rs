@@ -4,15 +4,8 @@ use std::ops::Range;
 use errors::*;
 
 pub mod combined;
-pub mod deep;
 pub mod rule_based;
 pub mod probabilistic;
-
-pub type Probability = f32;
-
-type Prediction = usize;
-
-type BoxedClassifier = Box<::models::tf::Classifier + Send + Sync>;
 
 #[derive(Serialize, Debug, Default, PartialEq)]
 pub struct IntentParserResult {
@@ -25,7 +18,7 @@ pub struct IntentParserResult {
 #[derive(Serialize, Debug, PartialEq)]
 pub struct IntentClassifierResult {
     pub intent_name: String,
-    pub probability: Probability,
+    pub probability: f32,
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq)]
@@ -48,8 +41,4 @@ pub trait IntentParser: Send + Sync {
 
 trait FeatureProcessor<I, O> {
     fn compute_features(&self, input: &I) -> O;
-}
-
-pub trait ClassifierWrapper<I, O> {
-    fn run(&self, input: &I) -> Result<O>;
 }

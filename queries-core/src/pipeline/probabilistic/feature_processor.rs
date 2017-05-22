@@ -1,9 +1,10 @@
 use itertools::Itertools;
 
 use pipeline::FeatureProcessor;
+use pipeline::probabilistic::configuration::Feature;
 use preprocessing::Token;
-use protos::{PBFeature, PBFeature_Vector_Type};
 
+use errors::*;
 use super::features;
 
 struct FeatureFunction {
@@ -62,34 +63,39 @@ impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for ProbabilisticF
 
 impl ProbabilisticFeatureProcessor {
     // TODO add a `GazetteerProvider` to this signature
-    pub fn new(features: &[PBFeature]) -> ProbabilisticFeatureProcessor {
-        let functions = features.iter().map(|f| get_feature_function(f)).collect();
+    pub fn new(features: &[Feature]) -> Result<ProbabilisticFeatureProcessor> {
+        let functions: Result<Vec<FeatureFunction>> =
+            features.iter().map(|f| get_feature_function(f)).collect();
 
-        ProbabilisticFeatureProcessor { functions }
+        Ok(ProbabilisticFeatureProcessor { functions: functions? })
     }
 }
 
-fn get_feature_function(f: &PBFeature) -> FeatureFunction {
-    let offsets = vec![0]; // TODO read this from protobuf when added
-    match f.get_vector_type() {
+fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
+    let offsets = f.offsets.clone();
+    match &*f.factory_name {
         // TODO use proper type from protobuf
-        PBFeature_Vector_Type::IS_FIRST_WORD => {
-            FeatureFunction::new("is_first".to_string(),
-                                 offsets,
-                                 |_, i| features::is_first(i))
+        "is_first" => {
+            Ok(FeatureFunction::new("is_first".to_string(),
+                                    offsets,
+                                    |_, i| features::is_first(i)))
         }
-        PBFeature_Vector_Type::IS_LAST_WORD => {
-            FeatureFunction::new("is_last".to_string(),
-                                 offsets,
-                                 |t, i| features::is_last(t, i))
+        "is_last" => {
+            Ok(FeatureFunction::new("is_last".to_string(),
+                                    offsets,
+                                    |t, i| features::is_last(t, i)))
         }
-        PBFeature_Vector_Type::NGRAM_MATCHER => {
-            let n = f.get_arguments()[0].get_scalar() as usize; // TODO use proper arg + type
-            FeatureFunction::new(format!("ngram_{}", n),
-                                 offsets,
-                                 move |t, i| features::ngram(t, i, n))
+        "get_ngram_fn" => {
+            let n = f.args
+                .get("n")
+                .ok_or("can't retrieve 'n' parameter")?
+                .as_u64()
+                .ok_or("'n' isn't an u64")? as usize;
+            Ok(FeatureFunction::new(format!("ngram_{}", n),
+                                    offsets,
+                                    move |t, i| features::ngram(t, i, n)))
         }
-        _ => panic!(),
+        _ => bail!("Feature {} not implemented", f.factory_name),
     }
 }
 
@@ -100,7 +106,7 @@ mod tests {
 
     use pipeline::FeatureProcessor;
 
-    use preprocessing::light::tokenize;
+    use preprocessing::tokenize;
 
     #[test]
     fn compute_features_works() {

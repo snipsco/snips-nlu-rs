@@ -13,7 +13,7 @@ impl SnipsIntentParser {
     pub fn new(configuration: SnipsConfiguration) -> Result<Self> {
         let rule_based_parser = RuleBasedIntentParser::new(configuration.model.rule_based_parser)?;
 
-        Ok(SnipsIntentParser { parsers: vec![Box::new(rule_based_parser)]})
+        Ok(SnipsIntentParser { parsers: vec![Box::new(rule_based_parser)] })
     }
 }
 
