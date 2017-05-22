@@ -14,18 +14,32 @@ pub struct Featurizer {
 }
 
 impl Featurizer {
-    pub fn new() -> Self {
-        unimplemented!()
+    pub fn new(best_features: Array1<usize>,
+               vocabulary: HashMap<String, usize>,
+               idf_diag_elements: Vec<f32>,
+               stop_words: HashSet<String>) -> Self {
+        let dimension = idf_diag_elements.len();
+        let mut idf_diag: Array2<f32> = Array::zeros((dimension, dimension));
+        for (i, diag_el) in idf_diag_elements.into_iter().enumerate() {
+            idf_diag[[i, i]] = diag_el
+        }
+        Self {
+            best_features,
+            vocabulary,
+            idf_diag,
+            stop_words
+        }
     }
 
     pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
-        let words: Vec<String> = tokenize(input).into_iter().filter_map(|t|
+        let ref normalized_input = input.to_lowercase();
+        let words = tokenize(normalized_input).into_iter().filter_map(|t|
             if !self.stop_words.contains(&t.value) {
                 Some(t.value)
             } else {
                 None
             }
-        ).collect();
+        );
         let vocabulary_size = self.vocabulary.values().max().unwrap() + 1;
         let mut words_count: Array2<f32> = Array::zeros((1, vocabulary_size));
         for word in words {
@@ -33,7 +47,9 @@ impl Featurizer {
                 words_count[[0, *word_idx]] += 1.;
             }
         }
-        let mut weighted_words_count = words_count.dot(&self.idf_diag).subview(Axis(0), 0).to_owned();
+        let mut weighted_words_count = words_count.dot(&self.idf_diag)
+            .subview(Axis(0), 0)
+            .to_owned();
         let l2_norm: f32 = weighted_words_count.iter().fold(0., |norm, v| norm + v * v).sqrt();
         weighted_words_count = weighted_words_count
             .map(|c|
@@ -58,26 +74,28 @@ mod tests {
     #[test]
     fn transform_works() {
         // Given
-        let best_features = array![0, 1, 3, 5];
+        let best_features = array![0, 1, 2, 3, 6];
         let vocabulary = hashmap![
-            "beautiful".to_string() => 0,
-            "bird".to_string() => 1,
-            "hello".to_string() => 2,
-            "here".to_string() => 3,
-            "you".to_string() => 4,
-            "world".to_string() => 5,
+            "awful".to_string() => 0,
+            "beautiful".to_string() => 1,
+            "bird".to_string() => 2,
+            "blue".to_string() => 3,
+            "hello".to_string() => 4,
+            "nice".to_string() => 5,
+            "world".to_string() => 6
         ];
 
-        let stop_words = hashset!["this".to_string(), "is".to_string()];
+        let stop_words = hashset!["the".to_string(), "is".to_string()];
 
-        let idf_diag = array![[0.34, 0., 0., 0., 0., 0.],
-                              [0., 0.97, 0., 0., 0., 0.],
-                              [0., 0., 1.21, 0., 0., 0.],
-                              [0., 0., 0., 1.07, 0., 0.],
-                              [0., 0., 0., 0., 0.54, 0.],
-                              [0., 0., 0., 0., 0., 0.88]];
+        let idf_diag = array![[2.252762968495368, 0., 0., 0., 0., 0., 0.],
+                              [0., 2.252762968495368, 0., 0., 0., 0., 0.],
+                              [0., 0., 1.5596157879354227, 0., 0., 0., 0.],
+                              [0., 0., 0., 2.252762968495368, 0., 0., 0.],
+                              [0., 0., 0., 0., 1.8472978603872037, 0., 0.],
+                              [0., 0., 0., 0., 0., 1.8472978603872037, 0.],
+                              [0., 0., 0., 0., 0., 0., 1.5596157879354227]];
 
-        let features_processor = Featurizer {
+        let featurizer = Featurizer {
             best_features,
             vocabulary,
             idf_diag,
@@ -85,10 +103,10 @@ mod tests {
         };
 
         // When
-        let features = features_processor.transform("hello this bird is a beautiful bird").unwrap();
+        let features = featurizer.transform("hello this bird is a beautiful bird").unwrap();
 
         // Then
-        let expected_features = array![0.1470869484, 0.8392608234, 0., 0.];
+        let expected_features = array![0., 0.527808526514, 0.730816799167, 0., 0.];
         assert_epsilon_eq_array1(&features, &expected_features, 1e-6);
     }
 }
