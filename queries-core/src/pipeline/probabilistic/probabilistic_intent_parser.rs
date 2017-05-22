@@ -5,7 +5,7 @@ use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots, 
 use super::intent_classifier::IntentClassifier;
 use super::tagger::Tagger;
 use super::crf_utils;
-use preprocessing::light::tokenize;
+use preprocessing::tokenize;
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: IntentClassifier,

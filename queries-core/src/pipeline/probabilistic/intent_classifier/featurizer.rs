@@ -4,7 +4,7 @@ use std::collections::{HashMap, HashSet};
 use ndarray::prelude::*;
 
 use errors::*;
-use preprocessing::light::tokenize;
+use preprocessing::tokenize;
 
 pub struct Featurizer {
     best_features: Array1<usize>,
