@@ -1,5 +1,7 @@
-use rustling_ontology::{Lang, Parser, DimensionKind, build_parser, ParsingContext, Output};
 use std::ops::Range;
+
+use rustling_ontology::{Lang, Parser, DimensionKind, build_parser, ParsingContext, Output};
+
 use errors::*;
 
 pub struct RustlingParser {

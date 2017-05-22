@@ -38,7 +38,9 @@ pub use utils::file_path;
 mod testutils;
 
 pub mod errors;
+mod config;
+mod entities;
+mod features;
 mod models;
 mod pipeline;
 mod protos;
-mod entities;
