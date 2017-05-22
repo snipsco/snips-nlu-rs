@@ -21,6 +21,7 @@ mod tests {
     #[test]
     fn deserialization_works() {
         let retrieved: SnipsConfiguration = utils::parse_json("tests/nlu_engine_sample.json");
-        println!("{:?}", retrieved);
+        assert_eq!("en", retrieved.model.rule_based_parser.language);
+        assert_eq!("en", retrieved.model.probabilistic_parser.language_code);
     }
 }
