@@ -1,3 +1,5 @@
 mod features;
-pub mod configuration;
-pub mod feature_processor;
+mod configuration;
+mod feature_processor;
+
+pub use self::configuration::ProbabilisticParserConfiguration;
