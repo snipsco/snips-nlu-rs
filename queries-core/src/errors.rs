@@ -7,6 +7,7 @@ error_chain! {
         Fst(::fst::Error);
         Preprocessor(::preprocessing::Error);
         Regex(::regex::Error);
+        Rustling(::rustling_ontology::RustlingError);
         Crfsuite(::crfsuite::Error);
         Base64(::base64::DecodeError);
         PackedResources(::resources_packed::Error);

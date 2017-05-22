@@ -13,6 +13,7 @@ extern crate queries_preprocessor as preprocessing;
 extern crate queries_resources_packed as resources_packed;
 extern crate queries_utils as utils;
 extern crate regex;
+extern crate rustling_ontology;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -39,3 +40,5 @@ mod testutils;
 pub mod errors;
 mod models;
 mod pipeline;
+mod protos;
+mod entities;
