@@ -10,3 +10,9 @@ error_chain! {
         Crfsuite(::crfsuite::Error);
     }
 }
+
+impl<T> ::std::convert::From<::std::sync::PoisonError<T>> for Error {
+    fn from(pe: ::std::sync::PoisonError<T>) -> Error {
+        format!("Poisoning error: {:?}", pe).into()
+    }
+}

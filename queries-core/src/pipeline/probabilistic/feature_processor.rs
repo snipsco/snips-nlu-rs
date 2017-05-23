@@ -8,13 +8,13 @@ use errors::*;
 use super::features;
 
 struct FeatureFunction {
-    function: Box<Fn(&[Token], usize) -> Option<String>>,
+    function: Box<Fn(&[Token], usize) -> Option<String> + Send + Sync>,
     offsets: Vec<(i32, String)>,
 }
 
 impl FeatureFunction {
-    fn new<T: 'static>(key: String, offsets: Vec<i32>, function: T) -> FeatureFunction
-        where T: Fn(&[Token], usize) -> Option<String>
+    fn new<T>(key: String, offsets: Vec<i32>, function: T) -> FeatureFunction
+        where T: Fn(&[Token], usize) -> Option<String> + Send + Sync + 'static
     {
         let offsets = offsets
             .into_iter()
@@ -27,8 +27,7 @@ impl FeatureFunction {
                       })
                  })
             .collect();
-        let function = Box::new(function);
-        FeatureFunction { offsets, function }
+        FeatureFunction { offsets, function: Box::new(function) }
     }
 }
 
