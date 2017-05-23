@@ -33,7 +33,7 @@ impl RustlingParser {
     pub fn extract_entities(&self, sentence: &str) -> Result<Vec<RustlingEntity>> {
         let context = ParsingContext::default();
         let kind_order = vec![DimensionKind::Number, DimensionKind::Time, DimensionKind::Duration];
-        let mut entities = self.parser.parse_with_kind_order(sentence, &context, &kind_order)?
+        let mut entities = self.parser.parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order)?
             .iter()
             .filter_map(|m| {
                 EntityKind::from_rustling_output(&m.value)
