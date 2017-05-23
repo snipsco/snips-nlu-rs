@@ -1,11 +1,13 @@
 use std::collections::HashMap;
+use std::iter::FromIterator;
 
 use errors::*;
-use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slots, SlotValue};
+use pipeline::{IntentClassifierResult, IntentParser, Slot};
 use super::intent_classifier::IntentClassifier;
 use super::tagger::Tagger;
 use super::crf_utils;
 use preprocessing::tokenize;
+use super::configuration::ProbabilisticParserConfiguration;
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: IntentClassifier,
@@ -14,25 +16,27 @@ pub struct ProbabilisticIntentParser {
 }
 
 impl ProbabilisticIntentParser {
-    pub fn new() -> Result<Self> {
+    pub fn new(config: ProbabilisticParserConfiguration) -> Result<Self> {
+        let taggers: Result<Vec<_>> = config.taggers.into_iter()
+            .map(|(intent_name, tagger_config)| Ok((intent_name, Tagger::new(tagger_config)?)))
+            .collect();
+
+        let taggers_map: HashMap<String, Tagger> = HashMap::from_iter(taggers?);
+        let intent_classifier = IntentClassifier::new(config.intent_classifier)?;
         Ok(ProbabilisticIntentParser {
-               intent_classifier: IntentClassifier::new(),
-               slot_name_to_entity_mapping: HashMap::new(),
-               taggers: HashMap::new(),
-           })
+            intent_classifier,
+            slot_name_to_entity_mapping: config.slot_name_to_entity_mapping,
+            taggers: taggers_map,
+        })
     }
 }
 
 impl IntentParser for ProbabilisticIntentParser {
-    fn parse(&self, input: &str, probability_threshold: f32) -> Result<Option<IntentParserResult>> {
-        unimplemented!()
-    }
-
-    fn get_intent(&self, input: &str, _: f32) -> Result<Vec<IntentClassifierResult>> {
+    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
         self.intent_classifier.get_intent(input)
     }
 
-    fn get_entities(&self, input: &str, intent_name: &str) -> Result<Slots> {
+    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
         let tagger = self.taggers
             .get(intent_name)
             .ok_or(format!("intent {:?} not found in taggers", intent_name))?;
@@ -43,7 +47,7 @@ impl IntentParser for ProbabilisticIntentParser {
 
         let tokens = tokenize(input);
         if tokens.is_empty() {
-            return Ok(HashMap::new());
+            return Ok(vec![]);
         }
 
         let tags = tagger.get_tags(&tokens)?;
@@ -51,21 +55,6 @@ impl IntentParser for ProbabilisticIntentParser {
 
         // TODO: Augment slots with builtin entities
 
-        Ok(convert_vec_slots_to_hashmap(slots))
+        Ok(slots)
     }
-}
-
-fn convert_vec_slots_to_hashmap(slots: Vec<(String, SlotValue)>) -> Slots {
-    const ESTIMATED_MAX_SLOT: usize = 10;
-    const ESTIMATED_MAX_SLOTVALUES: usize = 5;
-
-    slots
-        .into_iter()
-        .fold(HashMap::with_capacity(ESTIMATED_MAX_SLOT),
-              |mut hm, (slot_name, slot_value)| {
-                  hm.entry(slot_name)
-                      .or_insert_with(|| Vec::with_capacity(ESTIMATED_MAX_SLOTVALUES))
-                      .push(slot_value);
-                  hm
-        })
 }
