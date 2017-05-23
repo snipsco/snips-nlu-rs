@@ -1,10 +1,11 @@
-#[macro_use(s)]
 use std::collections::{HashMap, HashSet};
 
 use ndarray::prelude::*;
 
 use errors::*;
 use preprocessing::tokenize;
+use pipeline::probabilistic::configuration::FeaturizerConfiguration;
+use std::iter::FromIterator;
 
 pub struct Featurizer {
     best_features: Array1<usize>,
@@ -14,15 +15,19 @@ pub struct Featurizer {
 }
 
 impl Featurizer {
-    pub fn new(best_features: Array1<usize>,
-               vocabulary: HashMap<String, usize>,
-               idf_diag_elements: Vec<f32>,
-               stop_words: HashSet<String>) -> Self {
-        let dimension = idf_diag_elements.len();
+    pub fn new(config: FeaturizerConfiguration) -> Self {
+        let best_features = Array::from_iter(config.best_features);
+        let vocabulary = config.tfidf_vectorizer_vocab;
+        let dimension = config.tfidf_vectorizer_idf_diag.len();
         let mut idf_diag: Array2<f32> = Array::zeros((dimension, dimension));
-        for (i, diag_el) in idf_diag_elements.into_iter().enumerate() {
-            idf_diag[[i, i]] = diag_el
+        for (i, diag_el) in config.tfidf_vectorizer_idf_diag.into_iter().enumerate() {
+            idf_diag[[i, i]] = diag_el;
         }
+
+        let stop_words = config.tfidf_vectorizer_stop_words
+            .map(HashSet::from_iter)
+            .unwrap_or(HashSet::new());
+
         Self {
             best_features,
             vocabulary,

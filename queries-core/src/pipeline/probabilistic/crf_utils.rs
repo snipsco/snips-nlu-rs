@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use yolo::Yolo;
 
-use pipeline::SlotValue;
+use pipeline::Slot;
 use preprocessing::Token;
 use utils::convert_char_range;
 
@@ -20,6 +20,7 @@ pub enum TaggingScheme {
     BILOU,
 }
 
+#[cfg(test)]
 impl TaggingScheme {
     fn all() -> Vec<TaggingScheme> {
         vec![TaggingScheme::IO, TaggingScheme::BIO, TaggingScheme::BILOU]
@@ -138,9 +139,9 @@ fn _tags_to_slots<F1, F2>(tags: &[String],
         }
         if is_end_of_slot(tags, i) {
             slots.push(SlotRange {
-                           range: tokens[current_slot_start].range.start..tokens[i].range.end,
-                           slot_name: tag_name_to_slot_name(tag).to_string(),
-                       });
+                range: tokens[current_slot_start].range.start..tokens[i].range.end,
+                slot_name: tag_name_to_slot_name(tag).to_string(),
+            });
             current_slot_start = i;
         }
     }
@@ -152,60 +153,24 @@ pub fn tags_to_slots(text: &str,
                      tags: &[String],
                      tagging_scheme: TaggingScheme,
                      intent_slots_mapping: &HashMap<String, String>)
-                     -> Vec<(String, SlotValue)> {
-    let slots = match tagging_scheme {
+                     -> Vec<Slot> {
+    let slot_ranges = match tagging_scheme {
         TaggingScheme::IO => _tags_to_slots(tags, tokens, is_start_of_io_slot, is_end_of_io_slot),
         TaggingScheme::BIO => _tags_to_slots(tags, tokens, is_start_of_bio_slot, is_end_of_bio_slot),
         TaggingScheme::BILOU => _tags_to_slots(tags, tokens, is_start_of_bilou_slot, is_end_of_bilou_slot),
     };
 
-    slots
+    slot_ranges
         .into_iter()
-        .map(|s| {
-            let slot_value = SlotValue {
+        .map(|s|
+            Slot {
                 range: convert_char_range(text, &s.range),
                 value: text[s.range].to_string(),
                 entity: intent_slots_mapping[&s.slot_name].to_string(),
-            };
-
-            (s.slot_name, slot_value)
-        })
+                slot_name: s.slot_name
+            }
+        )
         .collect()
-}
-
-fn positive_tagging(tagging_scheme: TaggingScheme, slot_name: &str, slot_size: usize) -> Vec<String> {
-    match tagging_scheme {
-        TaggingScheme::IO => {
-            vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size]
-        },
-        TaggingScheme::BIO => {
-            if slot_size > 0 {
-                let mut v1 = vec![format!("{}{}", BEGINNING_PREFIX, slot_name)];
-                let mut v2 = vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size - 1];
-                v1.append(&mut v2);
-                v1
-            } else {
-                vec![]
-            }
-        },
-        TaggingScheme::BILOU => {
-            match slot_size {
-                0 => vec![],
-                1 => vec![format!("{}{}", UNIT_PREFIX, slot_name)],
-                _ => {
-                    let mut v1 = vec![format!("{}{}", BEGINNING_PREFIX, slot_name)];
-                    let mut v2 = vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size - 2];
-                    v1.append(&mut v2);
-                    v1.push(format!("{}{}", LAST_PREFIX, slot_name));
-                    v1
-                }
-            }
-        }
-    }
-}
-
-fn negative_tagging(size: usize) -> Vec<String> {
-    vec![OUTSIDE.to_string(); size]
 }
 
 pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: TaggingScheme) -> &str {
@@ -217,7 +182,7 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
             } else {
                 INSIDE_PREFIX
             }
-        },
+        }
         TaggingScheme::BILOU => {
             if indexes.len() == 1 {
                 UNIT_PREFIX
@@ -232,6 +197,7 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
     }
 }
 
+#[cfg(test)]
 mod tests {
     use itertools::Itertools;
 
@@ -241,7 +207,7 @@ mod tests {
     struct Test {
         text: String,
         tags: Vec<String>,
-        expected_slots: Vec<(String, SlotValue)>,
+        expected_slots: Vec<Slot>,
     }
 
     #[test]
@@ -273,12 +239,12 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name),
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 7..16,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string()
+                    }
                 ]
             },
             Test {
@@ -290,24 +256,24 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 7..11,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
                 text: "bird".to_string(),
                 tags: vec![format!("{}{}", INSIDE_PREFIX, slot_name)],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -317,12 +283,12 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..9,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -335,12 +301,12 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name),
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..25,
                         value: "light blue bird blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -350,12 +316,12 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name),
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..10,
                         value: "bird birdy".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             }
         ];
@@ -401,12 +367,12 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 7..16,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -418,24 +384,24 @@ mod tests {
                     format!("{}{}", BEGINNING_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 7..11,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
                 text: "bird".to_string(),
                 tags: vec![format!("{}{}", BEGINNING_PREFIX, slot_name)],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -445,12 +411,12 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..9,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -463,18 +429,18 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name),
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..15,
                         value: "light blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 16..25,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -484,18 +450,18 @@ mod tests {
                     format!("{}{}", BEGINNING_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 5..10,
                         value: "birdy".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -508,18 +474,18 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name),
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..9,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 14..24,
                         value: "white bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             }
         ];
@@ -565,12 +531,12 @@ mod tests {
                     format!("{}{}", LAST_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 7..16,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -582,24 +548,24 @@ mod tests {
                     format!("{}{}", UNIT_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 7..11,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
                 text: "bird".to_string(),
                 tags: vec![format!("{}{}", UNIT_PREFIX, slot_name)],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -609,12 +575,12 @@ mod tests {
                     format!("{}{}", LAST_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..9,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -627,18 +593,18 @@ mod tests {
                     format!("{}{}", LAST_PREFIX, slot_name),
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..15,
                         value: "light blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 16..25,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -648,18 +614,18 @@ mod tests {
                     format!("{}{}", UNIT_PREFIX, slot_name)
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 5..10,
                         value: "birdy".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -672,24 +638,24 @@ mod tests {
                     format!("{}{}", INSIDE_PREFIX, slot_name),
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..10,
                         value: "light bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 11..15,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 16..25,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             },
             Test {
@@ -700,24 +666,24 @@ mod tests {
                     format!("{}{}", UNIT_PREFIX, slot_name),
                 ],
                 expected_slots: vec![
-                    (slot_name.to_string(),
-                    SlotValue {
+                    Slot {
                         range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 5..9,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    }),
-                    (slot_name.to_string(),
-                    SlotValue {
+                        slot_name: slot_name.to_string(),
+                    },
+                    Slot {
                         range: 10..14,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
-                    })
+                        slot_name: slot_name.to_string(),
+                    }
                 ]
             }
         ];
@@ -732,105 +698,6 @@ mod tests {
             // Then
             assert_eq!(slots, data.expected_slots);
         }
-    }
-
-    #[test]
-    fn test_positive_tagging_should_handle_zero_length() {
-        // Given
-        let slot_name = "animal";
-        let slot_size = 0;
-
-        // When
-        let mut tags = vec![];
-        for scheme in TaggingScheme::all() {
-            tags.push(positive_tagging(scheme, slot_name, slot_size));
-        }
-
-        // Then
-        let expected_tags: Vec<Vec<String>> = vec![vec![]; TaggingScheme::all().len()];
-        assert_eq!(tags, expected_tags);
-    }
-
-    #[test]
-    fn test_negative_tagging() {
-        // Given
-        let size = 3;
-
-        // When
-        let tagging = negative_tagging(size);
-
-        // Then
-        let expected_tagging = [OUTSIDE, OUTSIDE, OUTSIDE];
-        assert_eq!(tagging, expected_tagging);
-    }
-
-    #[test]
-    fn test_positive_tagging_with_io() {
-        // Given
-        let tagging_scheme = TaggingScheme::IO;
-        let slot_name = "animal";
-        let slot_size = 3;
-
-        // When
-        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
-
-        // Then
-        let t = format!("{}{}", INSIDE_PREFIX, slot_name);
-        let expected_tags = vec![t; 3];
-        assert_eq!(tags, expected_tags);
-    }
-
-    #[test]
-    fn test_positive_tagging_with_bio() {
-        // Given
-        let tagging_scheme = TaggingScheme::BIO;
-        let slot_name = "animal";
-        let slot_size = 3;
-
-        // When
-        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
-
-        // Then
-        let expected_tags = vec![
-            format!("{}{}", BEGINNING_PREFIX, slot_name),
-            format!("{}{}", INSIDE_PREFIX, slot_name),
-            format!("{}{}", INSIDE_PREFIX, slot_name),
-        ];
-        assert_eq!(tags, expected_tags);
-    }
-
-    #[test]
-    fn test_positive_tagging_with_bilou() {
-        // Given
-        let tagging_scheme = TaggingScheme::BILOU;
-        let slot_name = "animal";
-        let slot_size = 3;
-
-        // When
-        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
-
-        // Then
-        let expected_tags = vec![
-            format!("{}{}", BEGINNING_PREFIX, slot_name),
-            format!("{}{}", INSIDE_PREFIX, slot_name),
-            format!("{}{}", LAST_PREFIX, slot_name),
-        ];
-        assert_eq!(tags, expected_tags);
-    }
-
-    #[test]
-    fn test_positive_tagging_with_bilou_unit() {
-        // Given
-        let tagging_scheme = TaggingScheme::BILOU;
-        let slot_name = "animal";
-        let slot_size = 1;
-
-        // When
-        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
-
-        // Then
-        let expected_tags = vec![format!("{}{}", UNIT_PREFIX, slot_name)];
-        assert_eq!(tags, expected_tags);
     }
 
     #[test]

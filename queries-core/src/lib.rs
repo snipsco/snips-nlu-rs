@@ -24,12 +24,10 @@ extern crate maplit;
 
 pub use errors::*;
 pub use models::gazetteer::GazetteerKey;
-pub use pipeline::rule_based::RuleBasedIntentParser;
-pub use pipeline::combined::SnipsIntentParser;
+pub use pipeline::nlu_engine::SnipsNLUEngine;
 pub use pipeline::IntentClassifierResult;
-pub use pipeline::IntentParser;
 pub use pipeline::IntentParserResult;
-pub use pipeline::SlotValue;
+pub use pipeline::Slot;
 pub use utils::file_path;
 
 #[cfg(test)]

@@ -1,61 +1,67 @@
-use std::f32;
-
 use ndarray::prelude::*;
 
 use errors::*;
 use models::logreg::MulticlassLogisticRegression;
 use pipeline::IntentClassifierResult;
 use super::featurizer::Featurizer;
+use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
+use utils::argmax;
 
 pub struct IntentClassifier {
     intent_list: Vec<Option<String>>,
     featurizer: Option<Featurizer>,
-    logreg: MulticlassLogisticRegression,
+    logreg: Option<MulticlassLogisticRegression>,
 }
 
 impl IntentClassifier {
-    pub fn new() -> Self {
-        unimplemented!()
+    pub fn new(config: IntentClassifierConfiguration) -> Result<Self> {
+        let featurizer = config.featurizer.map(Featurizer::new);
+        let logreg =
+            if let (Some(intercept), Some(coeffs)) = (config.intercept, config.coeffs) {
+                let arr_intercept = Array::from_vec(intercept);
+                let nb_classes = arr_intercept.dim();
+                let nb_features = coeffs[0].len();
+                // Note: the deserialized coeffs matrix is transposed
+                let arr_weights = Array::from_shape_fn((nb_features, nb_classes), |(i, j)| coeffs[j][i]);
+                MulticlassLogisticRegression::new(arr_intercept, arr_weights).map(Some)
+            } else {
+                Ok(None)
+            }?;
+
+        Ok(Self {
+            intent_list: config.intent_list,
+            featurizer,
+            logreg
+        })
     }
 
-    pub fn get_intent(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
-        if input.is_empty() || self.intent_list.is_empty() || self.featurizer.is_none() {
-            return Ok(vec![]);
+    pub fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
+        if input.is_empty() || self.intent_list.is_empty() || self.featurizer.is_none() ||
+            self.logreg.is_none() {
+            return Ok(None);
         }
 
         if self.intent_list.len() == 1 {
             return if let Some(ref intent_name) = self.intent_list[0] {
-                Ok(vec![IntentClassifierResult { intent_name: intent_name.clone(), probability: 1.0 }])
+                Ok(Some(IntentClassifierResult { intent_name: intent_name.clone(), probability: 1.0 }))
             } else {
-                Ok(vec![])
+                Ok(None)
             }
         }
 
         // TODO: add stemming
         let stemmed_text = input;
         let features = self.featurizer.as_ref().unwrap().transform(stemmed_text)?; // checked
-        let probabilities = self.logreg.run(&features.view())?;
+        let probabilities = self.logreg.as_ref().unwrap().run(&features.view())?; // checked
 
         let (index_predicted, best_probability) = argmax(&probabilities);
 
         if let Some(ref intent_name) = self.intent_list[index_predicted] {
-            Ok(vec![IntentClassifierResult { intent_name: intent_name.clone(), probability: best_probability }])
+            Ok(Some(IntentClassifierResult { intent_name: intent_name.clone(), probability: best_probability }))
         } else {
-            Ok(vec![])
+            Ok(None)
         }
     }
-}
-
-fn argmax(arr: &Array1<f32>) -> (usize, f32) {
-    let mut index = 0;
-    let mut max_value = f32::NEG_INFINITY;
-    for (j, &value) in arr.iter().enumerate() {
-        if value > max_value {
-            index = j;
-            max_value = value;
-        }
-    }
-    (index, max_value)
 }
 
 #[cfg(test)]
@@ -65,12 +71,12 @@ mod tests {
     use ndarray::*;
     use models::logreg::MulticlassLogisticRegression;
     use pipeline::IntentClassifierResult;
-    use testutils::assert_epsilon_eq_array1;
+    use pipeline::probabilistic::configuration::FeaturizerConfiguration;
 
     #[test]
     fn get_intent_works() {
         // Given
-        let best_features = array![1,2,15,17,19,20,21,22,28,30,36,37,44,45,47,54,55,68,72,73,82,92,93,96,97,100,101];
+        let best_features = vec![1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92, 93, 96, 97, 100, 101];
         let vocabulary = hashmap![
             "!".to_string() => 0,
             "12".to_string() => 1,
@@ -186,8 +192,6 @@ mod tests {
             "wow".to_string() => 111,
             "you".to_string() => 112,
         ];
-
-        let stop_words = hashset![];
 
         let diag_elements = vec![
             3.56494935746,
@@ -311,7 +315,15 @@ mod tests {
             None
         ];
 
-        let featurizer = Featurizer::new(best_features, vocabulary, diag_elements, stop_words);
+        let config = FeaturizerConfiguration {
+            language_code: "en".to_string(),
+            tfidf_vectorizer_idf_diag: diag_elements,
+            best_features: best_features,
+            tfidf_vectorizer_vocab: vocabulary,
+            tfidf_vectorizer_stop_words: None
+        };
+
+        let featurizer = Featurizer::new(config);
 
         let intercept = array![-0.6769558144299883, -0.6587242944035958, 0.22680835693804338];
 
@@ -407,11 +419,15 @@ mod tests {
 
         let coeffs: Array2<f32> = Array::from_shape_fn((27, 3), |(i, j)| coeffs_vec[j][i]);
         let logreg = MulticlassLogisticRegression::new(intercept, coeffs).unwrap();
-        let classifier = IntentClassifier { intent_list, featurizer: Some(featurizer), logreg };
+        let classifier = IntentClassifier {
+            intent_list,
+            featurizer: Some(featurizer),
+            logreg: Some(logreg)
+        };
 
         // When
         let classification_result = classifier.get_intent("Make me two cups of tea");
-        let ref actual_result = classification_result.unwrap()[0];
+        let ref actual_result = classification_result.unwrap().unwrap();
         let expected_result = IntentClassifierResult {
             intent_name: "MakeTea".to_string(),
             probability: 0.581595659694
