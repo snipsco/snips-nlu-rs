@@ -1,11 +1,14 @@
-extern crate queries_preprocessor as preprocessing;
-extern crate queries_utils as utils;
+extern crate base64;
+extern crate crfsuite;
 extern crate csv;
 #[macro_use]
 extern crate error_chain;
 extern crate fst;
 extern crate itertools;
+#[macro_use]
 extern crate ndarray;
+extern crate queries_preprocessor as preprocessing;
+extern crate queries_utils as utils;
 extern crate regex;
 extern crate serde;
 #[macro_use]
@@ -20,12 +23,10 @@ extern crate maplit;
 
 pub use errors::*;
 pub use models::gazetteer::GazetteerKey;
-pub use pipeline::rule_based::RuleBasedIntentParser;
-pub use pipeline::combined::SnipsIntentParser;
+pub use pipeline::nlu_engine::SnipsNLUEngine;
 pub use pipeline::IntentClassifierResult;
-pub use pipeline::IntentParser;
 pub use pipeline::IntentParserResult;
-pub use pipeline::SlotValue;
+pub use pipeline::Slot;
 pub use utils::file_path;
 
 #[cfg(test)]

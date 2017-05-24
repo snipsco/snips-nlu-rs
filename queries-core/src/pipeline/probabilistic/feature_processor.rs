@@ -8,13 +8,13 @@ use errors::*;
 use super::features;
 
 struct FeatureFunction {
-    function: Box<Fn(&[Token], usize) -> Option<String>>,
+    function: Box<Fn(&[Token], usize) -> Option<String> + Send + Sync>,
     offsets: Vec<(i32, String)>,
 }
 
 impl FeatureFunction {
-    fn new<T: 'static>(key: String, offsets: Vec<i32>, function: T) -> FeatureFunction
-        where T: Fn(&[Token], usize) -> Option<String>
+    fn new<T>(key: String, offsets: Vec<i32>, function: T) -> FeatureFunction
+        where T: Fn(&[Token], usize) -> Option<String> + Send + Sync + 'static
     {
         let offsets = offsets
             .into_iter()
@@ -27,8 +27,7 @@ impl FeatureFunction {
                       })
                  })
             .collect();
-        let function = Box::new(function);
-        FeatureFunction { offsets, function }
+        FeatureFunction { offsets, function: Box::new(function) }
     }
 }
 
@@ -36,9 +35,9 @@ pub struct ProbabilisticFeatureProcessor {
     functions: Vec<FeatureFunction>,
 }
 
-impl FeatureProcessor<Vec<Token>, Vec<Vec<(String, String)>>> for ProbabilisticFeatureProcessor {
+impl <'a> FeatureProcessor<&'a [Token], Vec<Vec<(String, String)>>> for ProbabilisticFeatureProcessor {
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn compute_features(&self, input: &Vec<Token>) -> Vec<Vec<(String, String)>> {
+    fn compute_features(&self, input: & &'a [Token]) -> Vec<Vec<(String, String)>> {
         self.functions
             .iter()
             .fold(vec![vec![]; input.len()], |mut acc, f| {
@@ -113,10 +112,9 @@ mod tests {
             })],
         };
 
-        let computed_features = fp.compute_features(&tokenize("hello world how are you ?"));
+        let computed_features = fp.compute_features(&tokenize("hello world how are you ?").as_slice());
 
-
-        assert_eq!(computed_features.len(), 5);
+        assert_eq!(computed_features.len(), 6);
         assert_eq!(computed_features[0], vec![]);
         for i in 1..5 {
             assert_eq!(computed_features[i],
@@ -141,19 +139,22 @@ mod tests {
             })],
         };
 
-        let computed_features = fp.compute_features(&tokenize("hello world how are you ?"));
-
+        let computed_features = fp.compute_features(&tokenize("hello world how are you ?").as_slice());
         assert_eq!(computed_features,
                    vec![vec![("Toto[+2]".to_string(), "how".to_string()),
                              ("Toto[+4]".to_string(), "you".to_string())],
                         vec![("Toto".to_string(), "world".to_string()),
                              ("Toto[+2]".to_string(), "are".to_string()),
+                             ("Toto[+4]".to_string(), "?".to_string()),
                              ("Tutu[+2]".to_string(), "Foobar".to_string())],
                         vec![("Toto".to_string(), "how".to_string()),
                              ("Toto[+2]".to_string(), "you".to_string())],
                         vec![("Toto[-2]".to_string(), "world".to_string()),
-                             ("Toto".to_string(), "are".to_string())],
+                             ("Toto".to_string(), "are".to_string()),
+                             ("Toto[+2]".to_string(), "?".to_string())],
                         vec![("Toto[-2]".to_string(), "how".to_string()),
-                             ("Toto".to_string(), "you".to_string())]]);
+                             ("Toto".to_string(), "you".to_string())],
+                        vec![("Toto[-2]".to_string(), "are".to_string()),
+                             ("Toto".to_string(), "?".to_string())]]);
     }
 }
