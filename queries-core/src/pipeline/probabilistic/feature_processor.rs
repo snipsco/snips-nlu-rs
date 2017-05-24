@@ -19,13 +19,13 @@ impl FeatureFunction {
         let offsets = offsets
             .into_iter()
             .map(|i| {
-                     (i,
-                      if i == 0 {
-                          key.clone()
-                      } else {
-                          format!("{}[{:+}]", key, i)
-                      })
+                (i,
+                 if i == 0 {
+                     key.clone()
+                 } else {
+                     format!("{}[{:+}]", key, i)
                  })
+            })
             .collect();
         FeatureFunction { offsets, function: Box::new(function) }
     }
@@ -35,9 +35,9 @@ pub struct ProbabilisticFeatureProcessor {
     functions: Vec<FeatureFunction>,
 }
 
-impl <'a> FeatureProcessor<&'a [Token], Vec<Vec<(String, String)>>> for ProbabilisticFeatureProcessor {
+impl<'a> FeatureProcessor<&'a [Token], Vec<Vec<(String, String)>>> for ProbabilisticFeatureProcessor {
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn compute_features(&self, input: & &'a [Token]) -> Vec<Vec<(String, String)>> {
+    fn compute_features(&self, input: &&'a [Token]) -> Vec<Vec<(String, String)>> {
         self.functions
             .iter()
             .fold(vec![vec![]; input.len()], |mut acc, f| {
@@ -69,6 +69,11 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
     let offsets = f.offsets.clone();
     match &*f.factory_name {
         // TODO use proper type from protobuf
+        "is_digit" => {
+            Ok(FeatureFunction::new("is_digit".to_string(),
+                                    offsets,
+                                    |t, i| features::is_digit(&t[i].value)))
+        }
         "is_first" => {
             Ok(FeatureFunction::new("is_first".to_string(),
                                     offsets,
@@ -88,6 +93,36 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
             Ok(FeatureFunction::new(format!("ngram_{}", n),
                                     offsets,
                                     move |t, i| features::ngram(t, i, n)))
+        }
+        "get_shape_ngram_fn" => {
+            let n = f.args
+                .get("n")
+                .ok_or("can't retrieve 'n' parameter")?
+                .as_u64()
+                .ok_or("'n' isn't an u64")? as usize;
+            Ok(FeatureFunction::new(format!("shape_ngram_{}", n),
+                                    offsets,
+                                    move |t, i| features::shape(t, i, n)))
+        }
+        "get_prefix_fn" => {
+            let n = f.args
+                .get("n")
+                .ok_or("can't retrieve 'n' parameter")?
+                .as_u64()
+                .ok_or("'n' isn't an u64")? as usize;
+            Ok(FeatureFunction::new(format!("prefix-{}", n),
+                                    offsets,
+                                    move |t, i| features::prefix(&t[i].value, n)))
+        }
+        "get_suffix_fn" => {
+            let n = f.args
+                .get("n")
+                .ok_or("can't retrieve 'n' parameter")?
+                .as_u64()
+                .ok_or("'n' isn't an u64")? as usize;
+            Ok(FeatureFunction::new(format!("suffix-{}", n),
+                                    offsets,
+                                    move |t, i| features::suffix(&t[i].value, n)))
         }
         _ => bail!("Feature {} not implemented", f.factory_name),
     }
@@ -118,7 +153,7 @@ mod tests {
         assert_eq!(computed_features[0], vec![]);
         for i in 1..5 {
             assert_eq!(computed_features[i],
-                       vec![("Toto".to_string(), "Foobar".to_string())]);
+            vec![("Toto".to_string(), "Foobar".to_string())]);
         }
     }
 
@@ -133,28 +168,28 @@ mod tests {
                                                      Some(x[i].value.clone())
                                                  }),
                             FeatureFunction::new("Tutu".to_string(), vec![2], |_, i| if i != 3 {
-                None
-            } else {
-                Some("Foobar".to_string())
-            })],
+                                None
+                            } else {
+                                Some("Foobar".to_string())
+                            })],
         };
 
         let computed_features = fp.compute_features(&tokenize("hello world how are you ?").as_slice());
         assert_eq!(computed_features,
-                   vec![vec![("Toto[+2]".to_string(), "how".to_string()),
-                             ("Toto[+4]".to_string(), "you".to_string())],
-                        vec![("Toto".to_string(), "world".to_string()),
-                             ("Toto[+2]".to_string(), "are".to_string()),
-                             ("Toto[+4]".to_string(), "?".to_string()),
-                             ("Tutu[+2]".to_string(), "Foobar".to_string())],
-                        vec![("Toto".to_string(), "how".to_string()),
-                             ("Toto[+2]".to_string(), "you".to_string())],
-                        vec![("Toto[-2]".to_string(), "world".to_string()),
-                             ("Toto".to_string(), "are".to_string()),
-                             ("Toto[+2]".to_string(), "?".to_string())],
-                        vec![("Toto[-2]".to_string(), "how".to_string()),
-                             ("Toto".to_string(), "you".to_string())],
-                        vec![("Toto[-2]".to_string(), "are".to_string()),
-                             ("Toto".to_string(), "?".to_string())]]);
+        vec![vec![("Toto[+2]".to_string(), "how".to_string()),
+                  ("Toto[+4]".to_string(), "you".to_string())],
+             vec![("Toto".to_string(), "world".to_string()),
+                  ("Toto[+2]".to_string(), "are".to_string()),
+                  ("Toto[+4]".to_string(), "?".to_string()),
+                  ("Tutu[+2]".to_string(), "Foobar".to_string())],
+             vec![("Toto".to_string(), "how".to_string()),
+                  ("Toto[+2]".to_string(), "you".to_string())],
+             vec![("Toto[-2]".to_string(), "world".to_string()),
+                  ("Toto".to_string(), "are".to_string()),
+                  ("Toto[+2]".to_string(), "?".to_string())],
+             vec![("Toto[-2]".to_string(), "how".to_string()),
+                  ("Toto".to_string(), "you".to_string())],
+             vec![("Toto[-2]".to_string(), "are".to_string()),
+                  ("Toto".to_string(), "?".to_string())]]);
     }
 }
