@@ -71,4 +71,10 @@ mod tests {
     fn brown_clusters_works() {
         assert_eq!(brown_clusters("en", "groovy").unwrap().unwrap(), "11111000111111")
     }
+
+    #[test]
+    fn gazetteers_works() {
+        assert_eq!(gazetteer_hits("en", "top_10000_words", "car").unwrap(), true);
+        assert_eq!(gazetteer_hits("en", "top_10000_words", "qsmldkfjdk").unwrap(), false)
+    }
 }
