@@ -67,7 +67,7 @@ impl Featurizer {
         let selected_features = Array::from_iter(
             (0..self.best_features.len()).map(|fi| weighted_words_count[self.best_features[fi]])
         );
-        return Ok(selected_features);
+        Ok(selected_features)
     }
 }
 

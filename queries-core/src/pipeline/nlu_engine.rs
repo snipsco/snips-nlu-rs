@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
 use errors::*;
 use super::configuration::SnipsConfiguration;
-use pipeline::{IntentClassifierResult, IntentParser, IntentParserResult, Slot};
+use pipeline::{IntentParser, IntentParserResult, Slot};
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use super::configuration::Entity;
@@ -17,28 +18,24 @@ impl SnipsNLUEngine {
         let mut parsers: Vec<Box<IntentParser>> = Vec::with_capacity(2);
         let model = configuration.model;
         if let Some(config) = model.rule_based_parser {
-            parsers.push(Box::new(RuleBasedIntentParser::new(config)?));
+            parsers.push(Box::new(RuleBasedIntentParser::new(config)?))
         };
         if let Some(config) = model.probabilistic_parser {
-            parsers.push(Box::new(ProbabilisticIntentParser::new(config)?));
+            parsers.push(Box::new(ProbabilisticIntentParser::new(config)?))
         };
         Ok(SnipsNLUEngine { parsers, entities: configuration.entities })
     }
 
-    pub fn parse(&self, input: &str, intent: Option<&str>) -> Result<IntentParserResult> {
+    pub fn parse(&self, input: &str, intents_filter: Option<&[&str]>) -> Result<IntentParserResult> {
         if self.parsers.is_empty() {
             return Ok(IntentParserResult { input: input.to_string(), intent: None, slots: None });
         }
+        let set_intents: Option<HashSet<String>> = intents_filter.map(|intent_list|
+            HashSet::from_iter(intent_list.iter().map(|name| name.to_string()))
+        );
+
         for parser in self.parsers.iter() {
-            let classification_result =
-                if let Some(intent_name) = intent {
-                    Some(IntentClassifierResult {
-                        intent_name: intent_name.to_string(),
-                        probability: 1.0
-                    })
-                } else {
-                    parser.get_intent(input)?
-                };
+            let classification_result = parser.get_intent(input, set_intents.as_ref())?;
             if let Some(classification_result) = classification_result {
                 let valid_slots = parser
                     .get_slots(input, &classification_result.intent_name)?

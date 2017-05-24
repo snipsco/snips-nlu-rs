@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
 use itertools::Itertools;
@@ -40,8 +40,15 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>)
 }
 
 impl IntentParser for RuleBasedIntentParser {
-    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
+    fn get_intent(&self, input: &str, intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
         Ok(self.regexes_per_intent.iter()
+            .filter(|&(intent, _)|
+                if let Some(intent_set) = intents {
+                    intent_set.contains(intent)
+                } else {
+                    true
+                }
+            )
             .find(|&(_, regexes)| regexes.iter().find(|r| r.is_match(input)).is_some())
             .map(|(intent_name, _)| {
                 IntentClassifierResult {
@@ -159,7 +166,7 @@ mod tests {
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
-        let intent = parser.get_intent(text).unwrap().unwrap();
+        let intent = parser.get_intent(text, None).unwrap().unwrap();
 
         // Then
         let expected_intent = IntentClassifierResult {

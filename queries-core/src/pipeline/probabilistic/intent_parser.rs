@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 use errors::*;
@@ -32,8 +32,31 @@ impl ProbabilisticIntentParser {
 }
 
 impl IntentParser for ProbabilisticIntentParser {
-    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
-        self.intent_classifier.get_intent(input)
+    fn get_intent(&self, input: &str,
+                  intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
+        if let Some(intents_set) = intents {
+            if intents_set.len() == 1 {
+                Ok(Some(
+                    IntentClassifierResult {
+                        intent_name: intents_set.into_iter().next().unwrap().to_string(),
+                        probability: 1.0
+                    }
+                ))
+            } else {
+                let result = self.intent_classifier.get_intent(input)?;
+                if let Some(res) = result {
+                    if intents_set.contains(&res.intent_name) {
+                        Ok(Some(res))
+                    } else {
+                        Ok(None)
+                    }
+                } else {
+                    Ok(result)
+                }
+            }
+        } else {
+            self.intent_classifier.get_intent(input)
+        }
     }
 
     fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
