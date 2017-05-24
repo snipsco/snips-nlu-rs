@@ -8,6 +8,7 @@ error_chain! {
         Preprocessor(::preprocessing::Error);
         Regex(::regex::Error);
         Crfsuite(::crfsuite::Error);
+        Base64(::base64::DecodeError);
     }
 }
 

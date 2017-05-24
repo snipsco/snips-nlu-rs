@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use yolo::Yolo;
 
+use errors::*;
 use pipeline::Slot;
 use preprocessing::Token;
 use utils::convert_char_range;
@@ -18,6 +19,17 @@ pub enum TaggingScheme {
     IO,
     BIO,
     BILOU,
+}
+
+impl TaggingScheme {
+    pub fn from_u8(i: u8) -> Result<TaggingScheme> {
+        match i {
+            0 => Ok(TaggingScheme::IO),
+            1 => Ok(TaggingScheme::BIO),
+            2 => Ok(TaggingScheme::BILOU),
+            _ => Err(format!("Unknown tagging scheme identifier: {}", i))?
+        }
+    }
 }
 
 #[cfg(test)]
