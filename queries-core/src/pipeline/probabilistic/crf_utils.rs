@@ -185,25 +185,25 @@ pub fn tags_to_slots(text: &str,
         .collect()
 }
 
-pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: TaggingScheme) -> &str {
-    match tagging_scheme {
-        TaggingScheme::IO => INSIDE_PREFIX,
+pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: &TaggingScheme) -> String {
+    match *tagging_scheme {
+        TaggingScheme::IO => INSIDE_PREFIX.to_string(),
         TaggingScheme::BIO => {
             if index == indexes[0] {
-                BEGINNING_PREFIX
+                BEGINNING_PREFIX.to_string()
             } else {
-                INSIDE_PREFIX
+                INSIDE_PREFIX.to_string()
             }
         }
         TaggingScheme::BILOU => {
             if indexes.len() == 1 {
-                UNIT_PREFIX
+                UNIT_PREFIX.to_string()
             } else if index == indexes[0] {
-                BEGINNING_PREFIX
+                BEGINNING_PREFIX.to_string()
             } else if index == *indexes.last().yolo() {
-                LAST_PREFIX
+                LAST_PREFIX.to_string()
             } else {
-                INSIDE_PREFIX
+                INSIDE_PREFIX.to_string()
             }
         }
     }
