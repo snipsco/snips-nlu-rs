@@ -1,9 +1,10 @@
 extern crate csv;
-
 #[macro_use]
 extern crate error_chain;
 extern crate itertools;
-
+#[macro_use]
+extern crate lazy_static;
+extern crate queries_preprocessor;
 
 mod errors {
     error_chain! {
@@ -110,5 +111,81 @@ pub mod word_clusters {
         pub fn brown_clusters() -> Result<HashMap<String, String>> {
             super::parse_clusters(&include_bytes!("../snips-nlu-resources/en/brown_clusters.txt")[..])
         }
+    }
+}
+
+pub mod gazetteer {
+    use std::collections::HashSet;
+    use std::io::{BufRead, BufReader, Read};
+
+    use itertools::Itertools;
+
+    use errors::*;
+    use queries_preprocessor::tokenize;
+
+
+    fn parse_gazetteer<R: Read, F>(gazetteer_reader: R, stem_fn: F) -> Result<HashSet<String>>
+        where F: Fn(String) -> String {
+        let reader = BufReader::new(gazetteer_reader);
+        let mut result = HashSet::new();
+
+        for line in reader.lines() {
+            let normalized = line?.trim().to_lowercase();
+            if !normalized.is_empty() {
+                let tokens = tokenize(&normalized);
+                result.insert(tokens.into_iter().map(|t| stem_fn(t.value)).join(" "));
+            }
+        }
+        Ok(result)
+    }
+
+    pub mod en {
+        use std::collections::{HashMap, HashSet};
+        use errors::*;
+        use stems;
+
+        fn stem_en(input: String) -> String {
+            lazy_static! {
+                static ref STEMS_EN: HashMap<String, String> = stems::en().unwrap();
+            }
+            STEMS_EN.get(&input).unwrap_or(&input).to_string()
+        }
+
+        fn no_stem(input: String) -> String {
+            input
+        }
+
+        macro_rules! create_gazetteer {
+            ($gazetteer_name:ident) => {
+                pub fn $gazetteer_name() -> Result<HashSet<String>> {
+                    super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/en/", stringify!($gazetteer_name), ".txt"))[..],
+                                           no_stem)
+                }
+            };
+            ($function_name:ident, $gazetteer_name:ident, $stem:ident) => {
+                pub fn $function_name() -> Result<HashSet<String>> {
+                    super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/en/", stringify!($gazetteer_name), ".txt"))[..],
+                                           $stem)
+                }
+            };
+        }
+
+        create_gazetteer!(top_10000_nouns);
+        create_gazetteer!(cities_us);
+        create_gazetteer!(cities_world);
+        create_gazetteer!(countries);
+        create_gazetteer!(states_us);
+        create_gazetteer!(stop_words);
+        create_gazetteer!(street_identifier);
+        create_gazetteer!(top_10000_words);
+
+        create_gazetteer!(top_10000_nouns_stem, top_10000_nouns, stem_en);
+        create_gazetteer!(cities_us_stem, cities_us, stem_en);
+        create_gazetteer!(cities_world_stem, cities_world, stem_en);
+        create_gazetteer!(countries_stem, countries, stem_en);
+        create_gazetteer!(states_us_stem, states_us, stem_en);
+        create_gazetteer!(stop_words_stem, stop_words, stem_en);
+        create_gazetteer!(street_identifier_stem, street_identifier, stem_en);
+        create_gazetteer!(top_10000_words_stem, top_10000_words, stem_en);
     }
 }
