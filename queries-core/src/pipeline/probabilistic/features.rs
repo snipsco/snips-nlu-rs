@@ -21,10 +21,7 @@ pub fn ngram(t: &[Token], i: usize, n: usize) -> Option<String> {
     if i + n > t.len() {
         None
     } else {
-        Some(t[i..i + n]
-                 .iter()
-                 .map(|t| t.value.to_ascii_lowercase())
-                 .join(" "))
+        Some(t[i..i + n].iter().map(|t| t.value.to_ascii_lowercase()).join(" "))
     }
 }
 

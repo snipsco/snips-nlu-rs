@@ -14,9 +14,6 @@ use std::sync::Mutex;
 //use std::io::Cursor;
 
 use libc::c_char;
-use libc::c_float;
-
-use queries_core::IntentParser;
 
 mod errors {
     error_chain! {
@@ -39,7 +36,7 @@ mod errors {
 use errors::*;
 
 #[repr(C)]
-pub struct Opaque(std::sync::Mutex<queries_core::SnipsIntentParser>);
+pub struct Opaque(std::sync::Mutex<queries_core::SnipsNLUEngine>);
 
 #[repr(C)]
 pub enum QUERIESRESULT {
@@ -85,9 +82,9 @@ macro_rules! get_str_vec {
 }
 
 #[no_mangle]
-pub extern "C" fn intent_parser_create_from_dir(root_dir: *const c_char,
-                                                client: *mut *mut Opaque)
-                                                -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const c_char,
+                                             client: *mut *mut Opaque)
+                                             -> QUERIESRESULT {
     wrap!(create_from_dir(root_dir, client));
 }
 
@@ -100,34 +97,15 @@ pub extern "C" fn intent_parser_create_from_binary(binary: *const libc::c_uchar,
 }*/
 
 #[no_mangle]
-pub extern "C" fn intent_parser_run_parse(client: *mut Opaque,
-                                          input: *const c_char,
-                                          probability_threshold: c_float,
-                                          result_json: *mut *mut c_char)
-                                          -> QUERIESRESULT {
-    wrap!(run_parse(client, input, probability_threshold, result_json))
+pub extern "C" fn nlu_engine_run_parse(client: *mut Opaque,
+                                       input: *const c_char,
+                                       result_json: *mut *mut c_char)
+                                       -> QUERIESRESULT {
+    wrap!(run_parse(client, input, result_json))
 }
 
 #[no_mangle]
-pub extern "C" fn intent_parser_run_intent_classification(client: *mut Opaque,
-                                                          input: *const c_char,
-                                                          probability_threshold: c_float,
-                                                          result_json: *mut *mut c_char)
-                                                          -> QUERIESRESULT {
-    wrap!(run_intent_classification(client, input, probability_threshold, result_json))
-}
-
-#[no_mangle]
-pub extern "C" fn intent_parser_run_tokens_classification(client: *mut Opaque,
-                                                          input: *const c_char,
-                                                          intent_name: *const c_char,
-                                                          result_json: *mut *mut c_char)
-                                                          -> QUERIESRESULT {
-    wrap!(run_tokens_classification(client, input, intent_name, result_json))
-}
-
-#[no_mangle]
-pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_destroy_string(string: *mut libc::c_char) -> QUERIESRESULT {
     unsafe {
         let _string: CString = CString::from_raw(string);
     }
@@ -136,7 +114,7 @@ pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUE
 }
 
 #[no_mangle]
-pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> QUERIESRESULT {
     unsafe {
         let _parser: Box<Opaque> = Box::from_raw(client);
     }
@@ -149,7 +127,7 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> R
 
     let file = fs::File::open(root_dir)?;
     let configuration = serde_json::from_reader(file)?;
-    let intent_parser = queries_core::SnipsIntentParser::new(configuration)?;
+    let intent_parser = queries_core::SnipsNLUEngine::new(configuration)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -174,44 +152,16 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> R
 
 fn run_parse(client: *mut Opaque,
              input: *const c_char,
-             probability_threshold: c_float,
              result_json: *mut *mut c_char)
              -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 
-    let results = intent_parser.parse(input, probability_threshold)?;
+    let results = intent_parser.parse(input, None)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
 
-
-fn run_intent_classification(client: *mut Opaque,
-                             input: *const c_char,
-                             probability_threshold: c_float,
-                             result_json: *mut *mut c_char)
-                             -> Result<()> {
-    let input = get_str!(input);
-    let intent_parser = get_intent_parser!(client);
-
-    let results = intent_parser.get_intent(input, probability_threshold)?;
-
-    point_to_string(result_json, serde_json::to_string(&results)?)
-}
-
-fn run_tokens_classification(client: *mut Opaque,
-                             input: *const c_char,
-                             intent_name: *const c_char,
-                             result_json: *mut *mut c_char)
-                             -> Result<()> {
-    let input = get_str!(input);
-    let intent_name = get_str!(intent_name);
-    let intent_parser = get_intent_parser!(client);
-
-    let result = intent_parser.get_entities(input, intent_name)?;
-
-    point_to_string(result_json, serde_json::to_string(&result)?)
-}
 
 fn point_to_string(pointer: *mut *mut libc::c_char, string: String) -> Result<()> {
     let cs = CString::new(string.as_bytes())?;
