@@ -14,25 +14,14 @@ pub struct SnipsNLUEngine {
 
 impl SnipsNLUEngine {
     pub fn new(configuration: SnipsConfiguration) -> Result<Self> {
+        let mut parsers: Vec<Box<IntentParser>> = Vec::with_capacity(2);
         let model = configuration.model;
-        let rule_based_parser =
-            if let Some(config) = model.rule_based_parser {
-                Some(RuleBasedIntentParser::new(config)?)
-            } else {
-                None
-            };
-        let probabilistic_parser =
-            if let Some(config) = model.probabilistic_parser {
-                Some(ProbabilisticIntentParser::new(config)?)
-            } else {
-                None
-            };
-
-        let parsers: Vec<Box<IntentParser>> = vec![
-            rule_based_parser.map(|p| Box::new(p) as _),
-            probabilistic_parser.map(|p| Box::new(p) as _)
-        ].into_iter().filter_map(|p| p).collect();
-
+        if let Some(config) = model.rule_based_parser {
+            parsers.push(Box::new(RuleBasedIntentParser::new(config)?));
+        };
+        if let Some(config) = model.probabilistic_parser {
+            parsers.push(Box::new(ProbabilisticIntentParser::new(config)?));
+        };
         Ok(SnipsNLUEngine { parsers, entities: configuration.entities })
     }
 
