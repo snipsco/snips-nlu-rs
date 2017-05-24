@@ -1,6 +1,11 @@
 use std::ascii::AsciiExt;
+use std::collections::HashSet;
+use std::iter::FromIterator;
+
 use itertools::Itertools;
 use preprocessing::Token;
+use preprocessing::compute_all_ngrams;
+use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape};
 
 
@@ -51,13 +56,47 @@ pub fn shape(tokens: &[Token], token_index: usize, ngram_size: usize) -> Option<
 
 
 // TODO add stemization & gazetteer support
-pub fn ngram(t: &[Token], i: usize, n: usize) -> Option<String> {
+pub fn ngram(tokens: &[Token], token_index: usize, ngram_size: usize) -> Option<String> {
     // TODO we should precompute the ascii lowercase value somewhere, perhaps use NormalizedToken ?
-    if i + n > t.len() {
+    if token_index + ngram_size > tokens.len() {
         None
     } else {
-        Some(t[i..i + n].iter().map(|t| t.value.to_ascii_lowercase()).join(" "))
+        Some(
+            tokens[token_index..token_index + ngram_size]
+                .iter()
+                .map(|t| t.value.to_ascii_lowercase())
+                .join(" ")
+        )
     }
+}
+
+pub fn is_in_collection(tokens: &[Token],
+                        token_index: usize,
+                        collection: &Vec<String>,
+                        tagging_scheme: &TaggingScheme) -> Option<String> {
+    let normalized_collection: HashSet<String> = HashSet::from_iter(
+        collection.iter().map(|item| item.to_lowercase())
+    );
+
+    let normalized_tokens = tokens
+        .iter()
+        .map(|t| &*t.value)
+        .collect_vec();
+
+    let mut filtered_ngrams: Vec<(String, Vec<usize>)> = compute_all_ngrams(&normalized_tokens, normalized_tokens.len())
+        .into_iter()
+        .filter(|ngram_indexes| ngram_indexes.1.iter().any(|index| *index == token_index))
+        .collect();
+
+    filtered_ngrams.sort_by_key(|ngrams| -(ngrams.1.len() as i64));
+
+    for (ngram, indexes) in filtered_ngrams {
+        if normalized_collection.contains(&ngram) {
+            return Some(get_scheme_prefix(token_index, &indexes, tagging_scheme));
+        }
+    }
+
+    None
 }
 
 
@@ -141,5 +180,33 @@ mod tests {
                 assert_eq!(ngram(&tokens, i, n + 1), *expected_ngram)
             }
         }
+    }
+
+    #[test]
+    fn is_in_collection_works() {
+        // Given
+        let tokens = tokenize("I love this beautiful blue bird !");
+        let collection = vec![
+            "bird".to_string(),
+            "blue bird".to_string(),
+            "beautiful blue bird".to_string()
+        ];
+        let tagging_scheme = TaggingScheme::BIO;
+
+        // When
+        let actual_results = vec![
+            is_in_collection(&tokens, 2, &collection, &tagging_scheme),
+            is_in_collection(&tokens, 3, &collection, &tagging_scheme),
+            is_in_collection(&tokens, 4, &collection, &tagging_scheme)
+        ];
+
+        // Then
+        let expected_results = vec![
+            None,
+            Some("B-".to_string()),
+            Some("I-".to_string())
+        ];
+
+        assert_eq!(actual_results, expected_results);
     }
 }
