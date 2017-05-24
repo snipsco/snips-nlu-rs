@@ -919,4 +919,33 @@ mod tests {
 
         assert_eq!(ends_of_bilou, expected_ends);
     }
+
+    #[test]
+    fn get_scheme_prefix_works() {
+        // Given
+        let indexes = vec![3, 4, 5];
+
+        // When
+        let actual_results = vec![
+            get_scheme_prefix(5, &indexes, &TaggingScheme::IO),
+            get_scheme_prefix(3, &indexes, &TaggingScheme::BIO),
+            get_scheme_prefix(4, &indexes, &TaggingScheme::BIO),
+            get_scheme_prefix(3, &indexes, &TaggingScheme::BILOU),
+            get_scheme_prefix(4, &indexes, &TaggingScheme::BILOU),
+            get_scheme_prefix(5, &indexes, &TaggingScheme::BILOU),
+            get_scheme_prefix(1, &vec![1], &TaggingScheme::BILOU),
+        ];
+
+        // Then
+        let expected_results = vec![
+            "I-".to_string(),
+            "B-".to_string(),
+            "I-".to_string(),
+            "B-".to_string(),
+            "I-".to_string(),
+            "L-".to_string(),
+            "U-".to_string(),
+        ];
+        assert_eq!(actual_results, expected_results);
+    }
 }
