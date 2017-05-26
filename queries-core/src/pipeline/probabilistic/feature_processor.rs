@@ -6,6 +6,7 @@ use preprocessing::Token;
 
 use errors::*;
 use super::features;
+use super::crf_utils::TaggingScheme;
 
 struct FeatureFunction {
     function: Box<Fn(&[Token], usize) -> Option<String> + Send + Sync>,
@@ -123,6 +124,39 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
             Ok(FeatureFunction::new(format!("suffix-{}", n),
                                     offsets,
                                     move |t, i| features::suffix(&t[i].value, n)))
+        }
+        "get_token_is_in_fn" => {
+            let tokens_collection: Result<Vec<String>> = f.args
+                .get("tokens_collection")
+                .ok_or("can't retrieve 'tokens_collection' parameter")?
+                .as_array()
+                .ok_or("'tokens_collection' isn't an array")?
+                .iter()
+                .map(|v|
+                    v.as_str()
+                        .map(|s| s.to_string())
+                        .ok_or(format!("'{}' is not a string", v).into()))
+                .collect();
+
+            let tokens_collection = tokens_collection?;
+
+            let collection_name = f.args
+                .get("collection_name")
+                .ok_or("can't retrieve 'collection_name' parameter")?
+                .as_str()
+                .ok_or("'collection_name' isn't a string")?;
+            let tagging_scheme_code = f.args
+                .get("tagging_scheme_code")
+                .ok_or("can't retrieve 'tagging_scheme_code' parameter")?
+                .as_u64()
+                .ok_or("'tagging_scheme_code' isn't a u64")? as u8;
+
+            let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
+
+            Ok(FeatureFunction::new(
+                format!("token_is_in_{}", collection_name),
+                offsets,
+                move |t, i| features::is_in_collection(t, i, &tokens_collection, &tagging_scheme)))
         }
         _ => bail!("Feature {} not implemented", f.factory_name),
     }
