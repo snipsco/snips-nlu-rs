@@ -1,0 +1,13 @@
+[package]
+name = "queries-resources-packed"
+version = "0.1.0"
+authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
+build = "build.rs"
+
+[dependencies]
+error-chain = { version = "0.10", default-features = false }
+phf = "0.7.21"
+
+[build-dependencies]
+queries-resources = { path = "../queries-resources"}
+phf_codegen = "0.7.21"
