@@ -1,0 +1,12 @@
+[package]
+name = "queries-resources"
+version = "0.1.0"
+authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
+
+[dependencies]
+csv = "0.15"
+error-chain = { version = "0.10", default-features = false }
+itertools = "0.6"
+lazy_static = "0.2"
+queries-preprocessor = { path = "../queries-preprocessor" }
+
