@@ -9,6 +9,7 @@ mod errors {
 }
 
 use errors::*;
+pub use errors::Error;
 
 include!(concat!(env!("OUT_DIR"), "/phf.rs"));
 
@@ -26,9 +27,12 @@ pub fn stem(language: &str, word: &str) -> Result<String> {
     }
 }
 
-pub fn brown_clusters(language: &str, word: &str) -> Result<Option<String>> {
+pub fn word_cluster(cluster_name: &str, language: &str, word: &str) -> Result<Option<String>> {
     match language {
-        "en" => Ok(WORD_CLUSTERS_EN_BROWN_CLUSTERS.get(word).map(|c| c.to_string())),
+        "en" => match cluster_name {
+            "brown_clusters" => Ok(WORD_CLUSTERS_EN_BROWN_CLUSTERS.get(word).map(|c| c.to_string())),
+            _ => bail!("word cluster '{}' not supported for language {}", cluster_name, language)
+        },
         _ => bail!("brown clusters not supported for {} language", language)
     }
 }
@@ -69,7 +73,7 @@ mod tests {
 
     #[test]
     fn brown_clusters_works() {
-        assert_eq!(brown_clusters("en", "groovy").unwrap().unwrap(), "11111000111111")
+        assert_eq!(brown_clusters("brown_clusters", "en", "groovy").unwrap().unwrap(), "11111000111111")
     }
 
     #[test]
