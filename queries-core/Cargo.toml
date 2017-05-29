@@ -9,7 +9,7 @@ description = "Rust implementation of the Queries SDK"
 queries-utils = { path = "../queries-utils" }
 queries-preprocessor = { path = "../queries-preprocessor" }
 queries-resources-packed = { path = "../queries-resources-packed" }
-crfsuite = { git="ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "50ff9d408d77982f53e5624df131fa2df4374f2d" }
+crfsuite = { git="ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "0737b3b9dfc9022f1812adfebbca25b6c67edbe9" }
 error-chain = { version = "0.10", default-features = false }
 base64 = "0.5.2"
 itertools = "0.6"

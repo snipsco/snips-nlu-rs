@@ -20,7 +20,7 @@ impl Tagger {
     pub fn new(config: TaggerConfiguration) -> Result<Tagger> {
         let tagging_scheme = TaggingScheme::from_u8(config.tagging_scheme)?;
         let feature_processor = ProbabilisticFeatureProcessor::new(&config.features_signatures)?;
-        let converted_data = &decode(&config.crf_model_data)?;
+        let converted_data = decode(&config.crf_model_data)?;
         let tagger = CRFTagger::create_from_memory(converted_data)?;
         Ok(Self { tagging_scheme, tagger: sync::Mutex::new(tagger), feature_processor })
     }
