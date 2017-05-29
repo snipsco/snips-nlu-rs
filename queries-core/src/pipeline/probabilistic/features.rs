@@ -2,7 +2,11 @@ use itertools::Itertools;
 use preprocessing::Token;
 use preprocessing::compute_all_ngrams;
 use models::gazetteer::Gazetteer;
+#[cfg(test)]
+use models::gazetteer::HashSetGazetteer;
 use models::stemmer::Stemmer;
+#[cfg(test)]
+use models::stemmer::StaticMapStemmer;
 use resources_packed::word_cluster;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape};
@@ -200,36 +204,14 @@ mod tests {
 
         for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
             for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
-                assert_eq!(ngram(&tokens, i, n + 1), *expected_ngram)
+                let actual_ngrams = ngram(
+                    &tokens,
+                    i,
+                    n + 1,
+                    None as Option<&StaticMapStemmer>,
+                    None as Option<&HashSetGazetteer>);
+                assert_eq!(*expected_ngram, actual_ngrams)
             }
         }
-    }
-
-    #[test]
-    fn is_in_collection_works() {
-        // Given
-        let tokens = tokenize("I love this beautiful blue bird !");
-        let collection = vec![
-            "bird".to_string(),
-            "blue bird".to_string(),
-            "beautiful blue bird".to_string()
-        ];
-        let tagging_scheme = TaggingScheme::BIO;
-
-        // When
-        let actual_results = vec![
-            is_in_collection(&tokens, 2, &collection, &tagging_scheme),
-            is_in_collection(&tokens, 3, &collection, &tagging_scheme),
-            is_in_collection(&tokens, 4, &collection, &tagging_scheme)
-        ];
-
-        // Then
-        let expected_results = vec![
-            None,
-            Some("B-".to_string()),
-            Some("I-".to_string())
-        ];
-
-        assert_eq!(actual_results, expected_results);
     }
 }

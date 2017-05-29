@@ -73,7 +73,7 @@ mod tests {
 
     #[test]
     fn brown_clusters_works() {
-        assert_eq!(brown_clusters("brown_clusters", "en", "groovy").unwrap().unwrap(), "11111000111111")
+        assert_eq!(word_cluster("brown_clusters", "en", "groovy").unwrap().unwrap(), "11111000111111")
     }
 
     #[test]
