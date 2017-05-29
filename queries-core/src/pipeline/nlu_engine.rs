@@ -73,3 +73,38 @@ impl SnipsNLUEngine {
         Ok(IntentParserResult { input: input.to_string(), intent: None, slots: None })
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use super::*;
+    use super::super::configuration::SnipsConfiguration;
+
+    use pipeline::IntentClassifierResult;
+    use utils;
+
+
+    #[test]
+    fn it_works() {
+        let configuration: SnipsConfiguration = utils::parse_json("tests/coffee_engine.json");
+        let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
+        let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
+
+        assert_eq!(IntentParserResult {
+            input: "Make me two cups of coffee please".to_string(),
+            intent: Some(IntentClassifierResult {
+                intent_name: "MakeCoffee".to_string(),
+                probability: 0.541058
+            }),
+            slots: Some(vec![Slot {
+                value: "two".to_string(),
+                range: 8..11,
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string()
+            }])
+        }, result)
+    }
+}
+
