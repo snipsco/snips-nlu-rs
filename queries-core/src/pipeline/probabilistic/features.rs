@@ -1,10 +1,9 @@
-use std::ascii::AsciiExt;
-use std::collections::HashSet;
-use std::iter::FromIterator;
-
 use itertools::Itertools;
 use preprocessing::Token;
 use preprocessing::compute_all_ngrams;
+use models::gazetteer::Gazetteer;
+use models::stemmer::Stemmer;
+use resources_packed::word_cluster;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape};
 
@@ -56,47 +55,71 @@ pub fn shape(tokens: &[Token], token_index: usize, ngram_size: usize) -> Option<
 
 
 // TODO add stemization & gazetteer support
-pub fn ngram(tokens: &[Token], token_index: usize, ngram_size: usize) -> Option<String> {
-    // TODO we should precompute the ascii lowercase value somewhere, perhaps use NormalizedToken ?
+pub fn ngram<S: Stemmer, G: Gazetteer>(tokens: &[Token],
+                                       token_index: usize,
+                                       ngram_size: usize,
+                                       stemmer: Option<&S>,
+                                       common_words_gazetteer: Option<&G>) -> Option<String> {
+    // TODO we should precompute the lowercase value somewhere, perhaps use NormalizedToken ?
     if token_index + ngram_size > tokens.len() {
         None
     } else {
         Some(
             tokens[token_index..token_index + ngram_size]
                 .iter()
-                .map(|t| t.value.to_ascii_lowercase())
+                .map(|token| {
+                    let lowercased_value = token.value.to_lowercase();
+                    let stemmed_value = stemmer
+                        .map_or(lowercased_value.to_string(), |s| s.stem(&lowercased_value));
+                    common_words_gazetteer
+                        .map_or(stemmed_value.clone(), |g|
+                            if g.contains(&stemmed_value) {
+                                stemmed_value.clone()
+                            } else {
+                                "rare_word".to_string()
+                            }
+                        )
+                })
                 .join(" ")
         )
     }
 }
 
-pub fn is_in_collection(tokens: &[Token],
-                        token_index: usize,
-                        collection: &Vec<String>,
-                        tagging_scheme: &TaggingScheme) -> Option<String> {
-    let normalized_collection: HashSet<String> = HashSet::from_iter(
-        collection.iter().map(|item| item.to_lowercase())
-    );
-
-    let normalized_tokens = tokens
-        .iter()
-        .map(|t| &*t.value)
-        .collect_vec();
-
-    let mut filtered_ngrams: Vec<(String, Vec<usize>)> = compute_all_ngrams(&normalized_tokens, normalized_tokens.len())
+pub fn is_in_gazetteer<S: Stemmer, G: Gazetteer>(tokens: &[Token],
+                                                 token_index: usize,
+                                                 gazetteer: &G,
+                                                 stemmer: Option<&S>,
+                                                 tagging_scheme: &TaggingScheme) -> Option<String> {
+    let normalized_tokens = normalize_tokens(tokens, stemmer);
+    let normalized_tokens_ref = normalized_tokens.iter().map(|t| &**t).collect_vec();
+    let mut filtered_ngrams = compute_all_ngrams(&*normalized_tokens_ref, normalized_tokens_ref.len())
         .into_iter()
         .filter(|ngram_indexes| ngram_indexes.1.iter().any(|index| *index == token_index))
-        .collect();
+        .collect_vec();
 
     filtered_ngrams.sort_by_key(|ngrams| -(ngrams.1.len() as i64));
 
-    for (ngram, indexes) in filtered_ngrams {
-        if normalized_collection.contains(&ngram) {
-            return Some(get_scheme_prefix(token_index, &indexes, tagging_scheme));
-        }
-    }
+    filtered_ngrams.iter()
+        .find(|ngrams| gazetteer.contains(&ngrams.0))
+        .map(|ngrams| get_scheme_prefix(token_index, &ngrams.1, tagging_scheme))
+}
 
-    None
+pub fn get_word_cluster(tokens: &[Token],
+                        token_index: usize,
+                        cluster_name: &str,
+                        language_code: &str) -> Option<String> {
+    if token_index >= tokens.len() {
+        None
+    } else {
+        word_cluster(cluster_name, language_code, &tokens[token_index].value.to_lowercase()).unwrap()
+    }
+}
+
+fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<String> {
+    tokens.iter()
+        .map(|t|
+            stemmer.map_or(t.value.to_lowercase(), |s| s.stem(&t.value.to_lowercase()))
+        ).collect_vec()
 }
 
 

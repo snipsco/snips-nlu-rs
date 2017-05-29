@@ -9,6 +9,7 @@ error_chain! {
         Regex(::regex::Error);
         Crfsuite(::crfsuite::Error);
         Base64(::base64::DecodeError);
+        PackedResources(::resources_packed::Error);
     }
 }
 

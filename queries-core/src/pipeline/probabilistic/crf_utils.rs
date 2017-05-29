@@ -40,7 +40,8 @@ impl TaggingScheme {
 }
 
 fn tag_name_to_slot_name(tag: &str) -> &str {
-    &tag[2..]
+    let bytes_offset: usize = tag.to_string().char_indices().nth(2).unwrap().0;
+    &tag[bytes_offset..]
 }
 
 fn is_start_of_io_slot(tags: &[String], i: usize) -> bool {
