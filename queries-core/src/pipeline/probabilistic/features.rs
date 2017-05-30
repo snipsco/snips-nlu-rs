@@ -7,6 +7,7 @@ use models::gazetteer::HashSetGazetteer;
 use models::stemmer::Stemmer;
 #[cfg(test)]
 use models::stemmer::StaticMapStemmer;
+use models::word_clusterer::WordClusterer;
 use resources_packed::word_cluster;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape};
@@ -58,7 +59,6 @@ pub fn shape(tokens: &[Token], token_index: usize, ngram_size: usize) -> Option<
 }
 
 
-// TODO add stemization & gazetteer support
 pub fn ngram<S: Stemmer, G: Gazetteer>(tokens: &[Token],
                                        token_index: usize,
                                        ngram_size: usize,
@@ -108,14 +108,19 @@ pub fn is_in_gazetteer<S: Stemmer, G: Gazetteer>(tokens: &[Token],
         .map(|ngrams| get_scheme_prefix(token_index, &ngrams.1, tagging_scheme))
 }
 
-pub fn get_word_cluster(tokens: &[Token],
-                        token_index: usize,
-                        cluster_name: &str,
-                        language_code: &str) -> Option<String> {
+pub fn get_word_cluster<C: WordClusterer, S: Stemmer>(tokens: &[Token],
+                                                      token_index: usize,
+                                                      word_clusterer: &C,
+                                                      stemmer: Option<&S>) -> Option<String> {
     if token_index >= tokens.len() {
         None
     } else {
-        word_cluster(cluster_name, language_code, &tokens[token_index].value.to_lowercase()).unwrap()
+        let normalized_token = if let Some(_stemmer) = stemmer {
+            _stemmer.stem(&tokens[token_index].value.to_lowercase())
+        } else {
+            tokens[token_index].value.to_lowercase()
+        };
+        word_clusterer.get_cluster(&normalized_token)
     }
 }
 
@@ -187,7 +192,7 @@ mod tests {
 
     #[test]
     fn ngram_works() {
-        let tokens = tokenize("I love house music");
+        let tokens = tokenize("I love House Music");
 
         let expected_ngrams = vec![vec![Some("i".to_string()),
                                         Some("love".to_string()),
@@ -213,5 +218,178 @@ mod tests {
                 assert_eq!(*expected_ngram, actual_ngrams)
             }
         }
+    }
+
+    #[test]
+    fn ngram_works_with_common_words_gazetteer() {
+        // Given
+        let tokens = tokenize("I love House Music");
+        let common_words_gazetteer = HashSetGazetteer::from(
+          vec![
+              "i".to_string(),
+              "love".to_string(),
+              "music".to_string()
+          ].into_iter()
+        );
+
+        // Then
+        let expected_ngrams = vec![vec![Some("i".to_string()),
+                                        Some("love".to_string()),
+                                        Some("rare_word".to_string()),
+                                        Some("music".to_string())],
+                                   vec![Some("i love".to_string()),
+                                        Some("love rare_word".to_string()),
+                                        Some("rare_word music".to_string()),
+                                        None],
+                                   vec![Some("i love rare_word".to_string()),
+                                        Some("love rare_word music".to_string()),
+                                        None,
+                                        None]];
+
+        for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
+            for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
+                let actual_ngrams = ngram(
+                    &tokens,
+                    i,
+                    n + 1,
+                    None as Option<&StaticMapStemmer>,
+                    Some(&common_words_gazetteer));
+                assert_eq!(*expected_ngram, actual_ngrams)
+            }
+        }
+    }
+
+    #[test]
+    fn ngram_works_with_stemmer() {
+        // Given
+        let tokens = tokenize("I love House Music");
+        struct TestStemmer;
+        impl Stemmer for TestStemmer {
+            fn stem(&self, value: &str) -> String {
+                if value == "house" {
+                    "hous".to_string()
+                } else {
+                    value.to_string()
+                }
+            }
+        }
+
+        let stemmer = TestStemmer {};
+
+        // Then
+        let expected_ngrams = vec![vec![Some("i".to_string()),
+                                        Some("love".to_string()),
+                                        Some("hous".to_string()),
+                                        Some("music".to_string())],
+                                   vec![Some("i love".to_string()),
+                                        Some("love hous".to_string()),
+                                        Some("hous music".to_string()),
+                                        None],
+                                   vec![Some("i love hous".to_string()),
+                                        Some("love hous music".to_string()),
+                                        None,
+                                        None]];
+
+        for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
+            for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
+                let actual_ngrams = ngram(
+                    &tokens,
+                    i,
+                    n + 1,
+                    Some(&stemmer),
+                    None as Option<&HashSetGazetteer>);
+                assert_eq!(*expected_ngram, actual_ngrams)
+            }
+        }
+    }
+
+    #[test]
+    fn is_in_gazetteer_works() {
+        // Given
+        let gazetteer = HashSetGazetteer::from(
+            vec![
+                "bird".to_string(),
+                "blue bird".to_string(),
+                "beautiful blue bird".to_string()
+            ].into_iter()
+        );
+        let tagging_scheme = TaggingScheme::BILOU;
+        let tokens = tokenize("I love this beautiful blue Bird !");
+        let token_index = 5;
+
+        // When
+        let actual_result = is_in_gazetteer(
+            &tokens,
+            token_index,
+            &gazetteer,
+            None as Option<&StaticMapStemmer>,
+            &tagging_scheme);
+
+        // Then
+        assert_eq!(Some("L-".to_string()), actual_result)
+    }
+
+    #[test]
+    fn is_in_gazetteer_works_with_stemming() {
+        // Given
+        struct TestStemmer;
+        impl Stemmer for TestStemmer {
+            fn stem(&self, value: &str) -> String {
+                if value == "birds" {
+                    "bird".to_string()
+                } else {
+                    value.to_string()
+                }
+            }
+        }
+
+        let stemmer = TestStemmer {};
+        let gazetteer = HashSetGazetteer::from(
+            vec![
+                "bird".to_string(),
+                "blue bird".to_string(),
+                "beautiful blue bird".to_string()
+            ].into_iter()
+        );
+
+        let tagging_scheme = TaggingScheme::BILOU;
+        let tokens = tokenize("I love Blue Birds !");
+        let token_index = 3;
+
+        // When
+        let actual_result = is_in_gazetteer(
+            &tokens,
+            token_index,
+            &gazetteer,
+            Some(&stemmer),
+            &tagging_scheme);
+
+        // Then
+        assert_eq!(Some("L-".to_string()), actual_result)
+    }
+
+    #[test]
+    fn get_word_cluster_works() {
+        // Given
+        struct TestWordClusterer;
+        impl WordClusterer for TestWordClusterer {
+            fn get_cluster(&self, word: &str) -> Option<String> {
+                if word == "bird" {
+                    Some("010101".to_string())
+                } else {
+                    None
+                }
+            }
+        }
+
+        let word_clusterer = TestWordClusterer {};
+        let tokens = tokenize("I love this bird");
+        let token_index = 3;
+
+        // When
+        let actual_result = get_word_cluster(&tokens, token_index, &word_clusterer, None as Option<&StaticMapStemmer>);
+
+        // Then
+        assert_eq!(Some("010101".to_string()), actual_result);
     }
 }

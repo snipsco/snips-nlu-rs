@@ -11,6 +11,7 @@ use super::features;
 use super::crf_utils::TaggingScheme;
 use models::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
 use models::stemmer::StaticMapStemmer;
+use models::word_clusterer::StaticMapWordClusterer;
 
 struct FeatureFunction {
     function: Box<Fn(&[Token], usize) -> Option<String> + Send + Sync>,
@@ -100,7 +101,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
                 None
             };
             let stemmer = if use_stemming {
-                Some(StaticMapStemmer::new(language_code.to_string())?)
+                Some(StaticMapStemmer::new(language_code)?)
             } else {
                 None
             };
@@ -152,7 +153,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
             let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
             let tokens_gazetteer = HashSetGazetteer::from(tokens_collection.into_iter());
             let stemmer = if use_stemming {
-                Some(StaticMapStemmer::new(language_code.to_string())?)
+                Some(StaticMapStemmer::new(language_code)?)
             } else {
                 None
             };
@@ -175,7 +176,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
             let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
             let gazetteer = StaticMapGazetteer::new(&gazetteer_name, &language_code, use_stemming)?;
             let stemmer = if use_stemming {
-                Some(StaticMapStemmer::new(language_code.to_string())?)
+                Some(StaticMapStemmer::new(language_code)?)
             } else {
                 None
             };
@@ -193,6 +194,14 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
         "get_word_cluster_fn" => {
             let cluster_name = parse_as_string(&f.args, "cluster_name")?;
             let language_code = parse_as_string(&f.args, "language_code")?;
+            let use_stemming = parse_as_bool(&f.args, "use_stemming")?;
+            let word_clusterer = StaticMapWordClusterer::new(language_code.clone(),
+                                                             cluster_name.clone())?;
+            let stemmer = if use_stemming {
+                Some(StaticMapStemmer::new(language_code)?)
+            } else {
+                None
+            };
 
             Ok(FeatureFunction::new(
                 format!("word_cluster_{}", cluster_name),
@@ -200,8 +209,8 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
                 move |tokens, token_index|
                     features::get_word_cluster(tokens,
                                                token_index,
-                                               &cluster_name,
-                                               &language_code)))
+                                               &word_clusterer,
+                                               stemmer.as_ref())))
         }
         _ => bail!("Feature {} not implemented", f.factory_name),
     }
