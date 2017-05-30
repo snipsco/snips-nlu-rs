@@ -92,7 +92,7 @@ pub fn is_in_gazetteer<S: Stemmer, G: Gazetteer>(tokens: &[Token],
                                                  token_index: usize,
                                                  gazetteer: &G,
                                                  stemmer: Option<&S>,
-                                                 tagging_scheme: &TaggingScheme) -> Option<String> {
+                                                 tagging_scheme: TaggingScheme) -> Option<String> {
     let normalized_tokens = normalize_tokens(tokens, stemmer);
     let normalized_tokens_ref = normalized_tokens.iter().map(|t| &**t).collect_vec();
     let mut filtered_ngrams = compute_all_ngrams(&*normalized_tokens_ref, normalized_tokens_ref.len())
@@ -104,7 +104,7 @@ pub fn is_in_gazetteer<S: Stemmer, G: Gazetteer>(tokens: &[Token],
 
     filtered_ngrams.iter()
         .find(|ngrams| gazetteer.contains(&ngrams.0))
-        .map(|ngrams| get_scheme_prefix(token_index, &ngrams.1, tagging_scheme))
+        .map(|ngrams| get_scheme_prefix(token_index, &ngrams.1, tagging_scheme).to_string())
 }
 
 pub fn get_word_cluster<C: WordClusterer, S: Stemmer>(tokens: &[Token],
@@ -314,7 +314,7 @@ mod tests {
             token_index,
             &gazetteer,
             None as Option<&StaticMapStemmer>,
-            &tagging_scheme);
+            tagging_scheme);
 
         // Then
         assert_eq!(Some("L-".to_string()), actual_result)
@@ -353,7 +353,7 @@ mod tests {
             token_index,
             &gazetteer,
             Some(&stemmer),
-            &tagging_scheme);
+            tagging_scheme);
 
         // Then
         assert_eq!(Some("L-".to_string()), actual_result)

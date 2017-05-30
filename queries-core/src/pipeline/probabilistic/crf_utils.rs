@@ -179,25 +179,25 @@ pub fn tags_to_slots(text: &str,
         .collect()
 }
 
-pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: &TaggingScheme) -> String {
-    match *tagging_scheme {
-        TaggingScheme::IO => INSIDE_PREFIX.to_string(),
+pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: TaggingScheme) -> &str {
+    match tagging_scheme {
+        TaggingScheme::IO => INSIDE_PREFIX,
         TaggingScheme::BIO => {
             if index == indexes[0] {
-                BEGINNING_PREFIX.to_string()
+                BEGINNING_PREFIX
             } else {
-                INSIDE_PREFIX.to_string()
+                INSIDE_PREFIX
             }
         }
         TaggingScheme::BILOU => {
             if indexes.len() == 1 {
-                UNIT_PREFIX.to_string()
+                UNIT_PREFIX
             } else if index == indexes[0] {
-                BEGINNING_PREFIX.to_string()
+                BEGINNING_PREFIX
             } else if index == *indexes.last().yolo() {
-                LAST_PREFIX.to_string()
+                LAST_PREFIX
             } else {
-                INSIDE_PREFIX.to_string()
+                INSIDE_PREFIX
             }
         }
     }
@@ -921,13 +921,13 @@ mod tests {
 
         // When
         let actual_results = vec![
-            get_scheme_prefix(5, &indexes, &TaggingScheme::IO),
-            get_scheme_prefix(3, &indexes, &TaggingScheme::BIO),
-            get_scheme_prefix(4, &indexes, &TaggingScheme::BIO),
-            get_scheme_prefix(3, &indexes, &TaggingScheme::BILOU),
-            get_scheme_prefix(4, &indexes, &TaggingScheme::BILOU),
-            get_scheme_prefix(5, &indexes, &TaggingScheme::BILOU),
-            get_scheme_prefix(1, &vec![1], &TaggingScheme::BILOU),
+            get_scheme_prefix(5, &indexes, TaggingScheme::IO).to_string(),
+            get_scheme_prefix(3, &indexes, TaggingScheme::BIO).to_string(),
+            get_scheme_prefix(4, &indexes, TaggingScheme::BIO).to_string(),
+            get_scheme_prefix(3, &indexes, TaggingScheme::BILOU).to_string(),
+            get_scheme_prefix(4, &indexes, TaggingScheme::BILOU).to_string(),
+            get_scheme_prefix(5, &indexes, TaggingScheme::BILOU).to_string(),
+            get_scheme_prefix(1, &vec![1], TaggingScheme::BILOU).to_string(),
         ];
 
         // Then
