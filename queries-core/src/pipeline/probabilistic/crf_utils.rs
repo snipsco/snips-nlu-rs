@@ -32,15 +32,8 @@ impl TaggingScheme {
     }
 }
 
-#[cfg(test)]
-impl TaggingScheme {
-    fn all() -> Vec<TaggingScheme> {
-        vec![TaggingScheme::IO, TaggingScheme::BIO, TaggingScheme::BILOU]
-    }
-}
-
 fn tag_name_to_slot_name(tag: &str) -> &str {
-    let bytes_offset: usize = tag.to_string().char_indices().nth(2).unwrap().0;
+    let (bytes_offset, _) = tag.to_string().char_indices().nth(2).unwrap();
     &tag[bytes_offset..]
 }
 

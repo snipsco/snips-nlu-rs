@@ -38,7 +38,6 @@ impl Gazetteer for StaticMapGazetteer {
     }
 }
 
-/// Toy version of a gazetteer wrapping a hashmap, that can easily be used in tests
 pub struct HashSetGazetteer {
     values: HashSet<String>,
 }
