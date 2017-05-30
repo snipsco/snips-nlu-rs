@@ -13,7 +13,7 @@ impl StaticMapStemmer {
     pub fn new(language: String) -> Result<Self> {
         // Hack to check if stemming is supported in this language
         resource_stem(&language, "")?;
-        Ok(Self { language })
+        Ok(Self { language: language })
     }
 }
 
