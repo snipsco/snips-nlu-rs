@@ -114,8 +114,8 @@ pub fn get_word_cluster<C: WordClusterer, S: Stemmer>(tokens: &[Token],
     if token_index >= tokens.len() {
         None
     } else {
-        let normalized_token = if let Some(_stemmer) = stemmer {
-            _stemmer.stem(&tokens[token_index].value.to_lowercase())
+        let normalized_token = if let Some(stemmer) = stemmer {
+            stemmer.stem(&tokens[token_index].value.to_lowercase())
         } else {
             tokens[token_index].value.to_lowercase()
         };
@@ -189,6 +189,18 @@ mod tests {
         assert_eq!(actual_result, expected_result)
     }
 
+    fn assert_ngrams_eq<S: Stemmer, G: Gazetteer>(expected_ngrams: Vec<Vec<Option<String>>>,
+                                                  tokens: &[Token],
+                                                  stemmer: Option<&S>,
+                                                  gazetteer: Option<&G>) {
+        for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
+            for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
+                let actual_ngrams = ngram(tokens, i, n + 1, stemmer, gazetteer);
+                assert_eq!(*expected_ngram, actual_ngrams)
+            }
+        }
+    }
+
     #[test]
     fn ngram_works() {
         let tokens = tokenize("I love House Music");
@@ -206,29 +218,23 @@ mod tests {
                                         None,
                                         None]];
 
-        for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
-            for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
-                let actual_ngrams = ngram(
-                    &tokens,
-                    i,
-                    n + 1,
-                    None as Option<&StaticMapStemmer>,
-                    None as Option<&HashSetGazetteer>);
-                assert_eq!(*expected_ngram, actual_ngrams)
-            }
-        }
+        assert_ngrams_eq(expected_ngrams,
+                         &tokens,
+                         None as Option<&StaticMapStemmer>,
+                         None as Option<&HashSetGazetteer>);
     }
+
 
     #[test]
     fn ngram_works_with_common_words_gazetteer() {
         // Given
         let tokens = tokenize("I love House Music");
         let common_words_gazetteer = HashSetGazetteer::from(
-          vec![
-              "i".to_string(),
-              "love".to_string(),
-              "music".to_string()
-          ].into_iter()
+            vec![
+                "i".to_string(),
+                "love".to_string(),
+                "music".to_string()
+            ].into_iter()
         );
 
         // Then
@@ -245,17 +251,10 @@ mod tests {
                                         None,
                                         None]];
 
-        for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
-            for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
-                let actual_ngrams = ngram(
-                    &tokens,
-                    i,
-                    n + 1,
-                    None as Option<&StaticMapStemmer>,
-                    Some(&common_words_gazetteer));
-                assert_eq!(*expected_ngram, actual_ngrams)
-            }
-        }
+        assert_ngrams_eq(expected_ngrams,
+                         &tokens,
+                         None as Option<&StaticMapStemmer>,
+                         Some(&common_words_gazetteer));
     }
 
     #[test]
@@ -289,17 +288,10 @@ mod tests {
                                         None,
                                         None]];
 
-        for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
-            for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
-                let actual_ngrams = ngram(
-                    &tokens,
-                    i,
-                    n + 1,
-                    Some(&stemmer),
-                    None as Option<&HashSetGazetteer>);
-                assert_eq!(*expected_ngram, actual_ngrams)
-            }
-        }
+        assert_ngrams_eq(expected_ngrams,
+                         &tokens,
+                         Some(&stemmer),
+                         None as Option<&HashSetGazetteer>);
     }
 
     #[test]

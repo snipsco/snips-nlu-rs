@@ -74,7 +74,6 @@ impl ProbabilisticFeatureProcessor {
 fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
     let offsets = f.offsets.clone();
     match &*f.factory_name {
-        // TODO use proper type from protobuf
         "is_digit" => {
             Ok(FeatureFunction::new("is_digit".to_string(),
                                     offsets,
@@ -100,11 +99,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
             } else {
                 None
             };
-            let stemmer = if use_stemming {
-                Some(StaticMapStemmer::new(language_code)?)
-            } else {
-                None
-            };
+            let stemmer = get_stemmer(language_code, use_stemming)?;
 
             Ok(FeatureFunction::new(
                 format!("ngram_{}", n),
@@ -131,20 +126,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
                                     move |t, i| features::suffix(&t[i].value, n)))
         }
         "get_token_is_in_fn" => {
-            let tokens_collection: Result<Vec<String>> = f.args
-                .get("tokens_collection")
-                .ok_or("can't retrieve 'tokens_collection' parameter")?
-                .as_array()
-                .ok_or("'tokens_collection' isn't an array")?
-                .iter()
-                .map(|v|
-                    v.as_str()
-                        .map(|s| s.to_string())
-                        .ok_or(format!("'{}' is not a string", v).into()))
-                .collect();
-
-            let tokens_collection = tokens_collection?;
-
+            let tokens_collection = parse_as_vec_string(&f.args, "tokens_collection")?;
             let collection_name = parse_as_string(&f.args, "collection_name")?;
             let language_code = parse_as_string(&f.args, "language_code")?;
             let tagging_scheme_code = parse_as_u64(&f.args, "tagging_scheme_code")? as u8;
@@ -152,11 +134,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
 
             let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
             let tokens_gazetteer = HashSetGazetteer::from(tokens_collection.into_iter());
-            let stemmer = if use_stemming {
-                Some(StaticMapStemmer::new(language_code)?)
-            } else {
-                None
-            };
+            let stemmer = get_stemmer(language_code, use_stemming)?;
 
             Ok(FeatureFunction::new(
                 format!("token_is_in_{}", collection_name),
@@ -175,11 +153,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
             let use_stemming = parse_as_bool(&f.args, "use_stemming")?;
             let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
             let gazetteer = StaticMapGazetteer::new(&gazetteer_name, &language_code, use_stemming)?;
-            let stemmer = if use_stemming {
-                Some(StaticMapStemmer::new(language_code)?)
-            } else {
-                None
-            };
+            let stemmer = get_stemmer(language_code, use_stemming)?;
 
             Ok(FeatureFunction::new(
                 format!("is_in_gazetteer_{}", gazetteer_name),
@@ -197,11 +171,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
             let use_stemming = parse_as_bool(&f.args, "use_stemming")?;
             let word_clusterer = StaticMapWordClusterer::new(language_code.clone(),
                                                              cluster_name.clone())?;
-            let stemmer = if use_stemming {
-                Some(StaticMapStemmer::new(language_code)?)
-            } else {
-                None
-            };
+            let stemmer = get_stemmer(language_code, use_stemming)?;
 
             Ok(FeatureFunction::new(
                 format!("word_cluster_{}", cluster_name),
@@ -233,6 +203,20 @@ fn parse_as_opt_string(args: &HashMap<String, serde_json::Value>, arg_name: &str
     )
 }
 
+fn parse_as_vec_string(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<Vec<String>> {
+    args.get(arg_name)
+        .ok_or(format!("can't retrieve '{}' parameter", arg_name))?
+        .as_array()
+        .ok_or(format!("'{}' isn't an array", arg_name))?
+        .iter()
+        .map(|v|
+            Ok(v.as_str()
+                .ok_or(format!("'{}' is not a string", v))?
+                .to_string())
+        )
+        .collect()
+}
+
 fn parse_as_bool(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<bool> {
     Ok(args.get(arg_name)
         .ok_or(format!("can't retrieve '{}' parameter", arg_name))?
@@ -247,6 +231,14 @@ fn parse_as_u64(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Re
         .as_u64()
         .ok_or(format!("'{}' isn't a u64", arg_name))?
     )
+}
+
+fn get_stemmer(language_code: String, use_stemming: bool) -> Result<Option<StaticMapStemmer>> {
+    if use_stemming {
+        Ok(Some(StaticMapStemmer::new(language_code)?))
+    } else {
+        Ok(None)
+    }
 }
 
 
