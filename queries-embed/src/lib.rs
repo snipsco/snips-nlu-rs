@@ -7,7 +7,6 @@ extern crate error_chain;
 
 extern crate serde_json;
 
-use std::fs;
 use std::ffi::{CStr, CString};
 use std::sync::Mutex;
 //use std::slice;
@@ -125,9 +124,8 @@ pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> QUERIESRESUL
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let file = fs::File::open(root_dir)?;
-    let configuration = serde_json::from_reader(file)?;
-    let intent_parser = queries_core::SnipsNLUEngine::new(configuration)?;
+    let assistant_config = queries_core::FileBasedConfiguration::new(root_dir)?;
+    let intent_parser = queries_core::SnipsNLUEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 

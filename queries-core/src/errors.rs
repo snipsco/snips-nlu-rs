@@ -10,6 +10,7 @@ error_chain! {
         Crfsuite(::crfsuite::Error);
         Base64(::base64::DecodeError);
         PackedResources(::resources_packed::Error);
+        SerdeJson(::serde_json::Error);
     }
 }
 
