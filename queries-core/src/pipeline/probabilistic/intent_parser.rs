@@ -12,7 +12,7 @@ use super::configuration::ProbabilisticParserConfiguration;
 pub struct ProbabilisticIntentParser {
     intent_classifier: IntentClassifier,
     slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
-    taggers: HashMap<String, Tagger>,
+    taggers: HashMap<String, Tagger>
 }
 
 impl ProbabilisticIntentParser {

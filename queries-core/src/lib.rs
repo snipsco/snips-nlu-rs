@@ -38,6 +38,6 @@ pub use utils::file_path;
 mod testutils;
 
 pub mod errors;
-mod entities;
+mod builtin_entities;
 mod models;
 mod pipeline;
