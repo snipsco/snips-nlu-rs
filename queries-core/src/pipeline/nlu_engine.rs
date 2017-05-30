@@ -2,10 +2,10 @@ use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 use errors::*;
-use super::configuration::SnipsConfiguration;
 use pipeline::{IntentParser, IntentParserResult, Slot};
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
+use super::assistant_config::AssistantConfiguration;
 use super::configuration::Entity;
 
 pub struct SnipsNLUEngine {
@@ -14,16 +14,19 @@ pub struct SnipsNLUEngine {
 }
 
 impl SnipsNLUEngine {
-    pub fn new(configuration: SnipsConfiguration) -> Result<Self> {
+    pub fn new<T: AssistantConfiguration + 'static>(assistant_configuration: T) -> Result<Self> {
+        let nlu_config = assistant_configuration.into_nlu_engine_configuration();
+
         let mut parsers: Vec<Box<IntentParser>> = Vec::with_capacity(2);
-        let model = configuration.model;
+
+        let model = nlu_config.model;
         if let Some(config) = model.rule_based_parser {
             parsers.push(Box::new(RuleBasedIntentParser::new(config)?))
         };
         if let Some(config) = model.probabilistic_parser {
             parsers.push(Box::new(ProbabilisticIntentParser::new(config)?))
         };
-        Ok(SnipsNLUEngine { parsers, entities: configuration.entities })
+        Ok(SnipsNLUEngine { parsers, entities: nlu_config.entities })
     }
 
     pub fn parse(&self, input: &str, intents_filter: Option<&[&str]>) -> Result<IntentParserResult> {

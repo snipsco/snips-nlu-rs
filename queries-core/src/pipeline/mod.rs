@@ -6,8 +6,8 @@ use errors::*;
 pub mod rule_based;
 pub mod probabilistic;
 pub mod nlu_engine;
+pub mod assistant_config;
 mod configuration;
-
 
 #[derive(Serialize, Debug, Default, PartialEq)]
 pub struct IntentParserResult {

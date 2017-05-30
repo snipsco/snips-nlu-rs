@@ -2,7 +2,6 @@ use std::collections::HashMap;
 
 use serde_json;
 
-
 #[derive(Debug, Deserialize)]
 pub struct ProbabilisticParserConfiguration {
     pub language_code: String,

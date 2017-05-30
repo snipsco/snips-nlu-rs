@@ -11,7 +11,6 @@ use models::word_clusterer::WordClusterer;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape};
 
-
 pub fn is_digit(string: &str) -> Option<String> {
     if string.chars().all(|c| c.is_digit(10)) {
         Some("1".to_string())
@@ -129,7 +128,6 @@ fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<St
             stemmer.map_or(t.value.to_lowercase(), |s| s.stem(&t.value.to_lowercase()))
         ).collect_vec()
 }
-
 
 #[cfg(test)]
 mod tests {
