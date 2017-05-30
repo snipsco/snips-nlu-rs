@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let configuration: SnipsConfiguration = utils::parse_json("tests/coffee_engine.json");
+        let configuration: SnipsConfiguration = utils::parse_json("tests/beverage_engine.json");
         let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
 
@@ -96,7 +96,7 @@ mod tests {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
                 intent_name: "MakeCoffee".to_string(),
-                probability: 0.541058
+                probability: 0.48639014
             }),
             slots: Some(vec![Slot {
                 value: "two".to_string(),
@@ -107,4 +107,3 @@ mod tests {
         }, result)
     }
 }
-
