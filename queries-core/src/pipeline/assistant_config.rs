@@ -5,7 +5,7 @@ use serde_json;
 use errors::*;
 use super::configuration::NLUEngineConfiguration;
 
-const NLU_CONFIGURATION_FILENAME: &str = "nlu_engine.json";
+const NLU_CONFIGURATION_FILENAME: &str = "trained_assistant.json";
 
 pub trait AssistantConfiguration {
     fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration;
