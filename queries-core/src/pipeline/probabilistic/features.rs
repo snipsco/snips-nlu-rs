@@ -8,7 +8,6 @@ use models::stemmer::Stemmer;
 #[cfg(test)]
 use models::stemmer::StaticMapStemmer;
 use models::word_clusterer::WordClusterer;
-use resources_packed::word_cluster;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape};
 
