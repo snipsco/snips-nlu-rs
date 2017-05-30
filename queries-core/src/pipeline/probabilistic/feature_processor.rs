@@ -74,116 +74,132 @@ impl ProbabilisticFeatureProcessor {
 fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
     let offsets = f.offsets.clone();
     match &*f.factory_name {
-        "is_digit" => {
-            Ok(FeatureFunction::new("is_digit".to_string(),
-                                    offsets,
-                                    |t, i| features::is_digit(&t[i].value)))
-        }
-        "is_first" => {
-            Ok(FeatureFunction::new("is_first".to_string(),
-                                    offsets,
-                                    |_, i| features::is_first(i)))
-        }
-        "is_last" => {
-            Ok(FeatureFunction::new("is_last".to_string(),
-                                    offsets,
-                                    |t, i| features::is_last(t, i)))
-        }
-        "get_ngram_fn" => {
-            let n = parse_as_u64(&f.args, "n")? as usize;
-            let language_code = parse_as_string(&f.args, "language_code")?;
-            let common_words_gazetteer_name = parse_as_opt_string(&f.args, "common_words_gazetteer_name")?;
-            let use_stemming = parse_as_bool(&f.args, "use_stemming")?;
-            let common_words_gazetteer = if let Some(name) = common_words_gazetteer_name {
-                Some(StaticMapGazetteer::new(&name, &language_code, use_stemming)?)
-            } else {
-                None
-            };
-            let stemmer = get_stemmer(language_code, use_stemming)?;
-
-            Ok(FeatureFunction::new(
-                format!("ngram_{}", n),
-                offsets,
-                move |tokens, token_index|
-                    features::ngram(tokens, token_index, n, stemmer.as_ref(), common_words_gazetteer.as_ref())))
-        }
-        "get_shape_ngram_fn" => {
-            let n = parse_as_u64(&f.args, "n")? as usize;
-            Ok(FeatureFunction::new(format!("shape_ngram_{}", n),
-                                    offsets,
-                                    move |t, i| features::shape(t, i, n)))
-        }
-        "get_prefix_fn" => {
-            let n = parse_as_u64(&f.args, "n")? as usize;
-            Ok(FeatureFunction::new(format!("prefix-{}", n),
-                                    offsets,
-                                    move |t, i| features::prefix(&t[i].value, n)))
-        }
-        "get_suffix_fn" => {
-            let n = parse_as_u64(&f.args, "n")? as usize;
-            Ok(FeatureFunction::new(format!("suffix-{}", n),
-                                    offsets,
-                                    move |t, i| features::suffix(&t[i].value, n)))
-        }
-        "get_token_is_in_fn" => {
-            let tokens_collection = parse_as_vec_string(&f.args, "tokens_collection")?;
-            let collection_name = parse_as_string(&f.args, "collection_name")?;
-            let language_code = parse_as_string(&f.args, "language_code")?;
-            let tagging_scheme_code = parse_as_u64(&f.args, "tagging_scheme_code")? as u8;
-            let use_stemming = parse_as_bool(&f.args, "use_stemming")?;
-
-            let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
-            let tokens_gazetteer = HashSetGazetteer::from(tokens_collection.into_iter());
-            let stemmer = get_stemmer(language_code, use_stemming)?;
-
-            Ok(FeatureFunction::new(
-                format!("token_is_in_{}", collection_name),
-                offsets,
-                move |tokens, token_index|
-                    features::is_in_gazetteer(tokens,
-                                              token_index,
-                                              &tokens_gazetteer,
-                                              stemmer.as_ref(),
-                                              tagging_scheme)))
-        }
-        "get_is_in_gazetteer_fn" => {
-            let gazetteer_name = parse_as_string(&f.args, "gazetteer_name")?;
-            let language_code = parse_as_string(&f.args, "language_code")?;
-            let tagging_scheme_code = parse_as_u64(&f.args, "tagging_scheme_code")? as u8;
-            let use_stemming = parse_as_bool(&f.args, "use_stemming")?;
-            let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
-            let gazetteer = StaticMapGazetteer::new(&gazetteer_name, &language_code, use_stemming)?;
-            let stemmer = get_stemmer(language_code, use_stemming)?;
-
-            Ok(FeatureFunction::new(
-                format!("is_in_gazetteer_{}", gazetteer_name),
-                offsets,
-                move |tokens, token_index|
-                    features::is_in_gazetteer(tokens,
-                                              token_index,
-                                              &gazetteer,
-                                              stemmer.as_ref(),
-                                              tagging_scheme)))
-        }
-        "get_word_cluster_fn" => {
-            let cluster_name = parse_as_string(&f.args, "cluster_name")?;
-            let language_code = parse_as_string(&f.args, "language_code")?;
-            let use_stemming = parse_as_bool(&f.args, "use_stemming")?;
-            let word_clusterer = StaticMapWordClusterer::new(language_code.clone(),
-                                                             cluster_name.clone())?;
-            let stemmer = get_stemmer(language_code, use_stemming)?;
-
-            Ok(FeatureFunction::new(
-                format!("word_cluster_{}", cluster_name),
-                offsets,
-                move |tokens, token_index|
-                    features::get_word_cluster(tokens,
-                                               token_index,
-                                               &word_clusterer,
-                                               stemmer.as_ref())))
-        }
+        "is_digit" => is_digit_feature_function(offsets),
+        "is_first" => is_first_feature_function(offsets),
+        "is_last" => is_last_feature_function(offsets),
+        "get_ngram_fn" => ngram_feature_function(&f.args, offsets),
+        "get_shape_ngram_fn" => shape_ngram_feature_function(&f.args, offsets),
+        "get_prefix_fn" => prefix_feature_function(&f.args, offsets),
+        "get_suffix_fn" => suffix_feature_function(&f.args, offsets),
+        "get_token_is_in_fn" => token_is_in_feature_function(&f.args, offsets),
+        "get_is_in_gazetteer_fn" => is_in_gazetteer_feature_function(&f.args, offsets),
+        "get_word_cluster_fn" => word_cluster_feature_function(&f.args, offsets),
         _ => bail!("Feature {} not implemented", f.factory_name),
     }
+}
+
+fn is_digit_feature_function(offsets: Vec<i32>) -> Result<FeatureFunction> {
+    Ok(FeatureFunction::new("is_digit".to_string(), offsets, |t, i| features::is_digit(&t[i].value)))
+}
+
+fn is_first_feature_function(offsets: Vec<i32>) -> Result<FeatureFunction> {
+    Ok(FeatureFunction::new("is_first".to_string(), offsets, |_, i| features::is_first(i)))
+}
+
+fn is_last_feature_function(offsets: Vec<i32>) -> Result<FeatureFunction> {
+    Ok(FeatureFunction::new("is_last".to_string(), offsets, |t, i| features::is_last(t, i)))
+}
+
+fn ngram_feature_function(args: &HashMap<String, serde_json::Value>,
+                          offsets: Vec<i32>) -> Result<FeatureFunction> {
+    let n = parse_as_u64(args, "n")? as usize;
+    let language_code = parse_as_string(args, "language_code")?;
+    let common_words_gazetteer_name = parse_as_opt_string(args, "common_words_gazetteer_name")?;
+    let use_stemming = parse_as_bool(args, "use_stemming")?;
+    let common_words_gazetteer = if let Some(name) = common_words_gazetteer_name {
+        Some(StaticMapGazetteer::new(&name, &language_code, use_stemming)?)
+    } else {
+        None
+    };
+    let stemmer = get_stemmer(language_code, use_stemming)?;
+    Ok(FeatureFunction::new(
+        format!("ngram_{}", n),
+        offsets,
+        move |tokens, token_index|
+            features::ngram(tokens, token_index, n, stemmer.as_ref(), common_words_gazetteer.as_ref())))
+}
+
+fn shape_ngram_feature_function(args: &HashMap<String, serde_json::Value>,
+                                offsets: Vec<i32>) -> Result<FeatureFunction> {
+    let n = parse_as_u64(args, "n")? as usize;
+    Ok(FeatureFunction::new(format!("shape_ngram_{}", n),
+                            offsets,
+                            move |t, i| features::shape(t, i, n)))
+}
+
+fn prefix_feature_function(args: &HashMap<String, serde_json::Value>,
+                           offsets: Vec<i32>) -> Result<FeatureFunction> {
+    let n = parse_as_u64(args, "n")? as usize;
+    Ok(FeatureFunction::new(format!("prefix-{}", n),
+                            offsets,
+                            move |t, i| features::prefix(&t[i].value, n)))
+}
+
+fn suffix_feature_function(args: &HashMap<String, serde_json::Value>,
+                           offsets: Vec<i32>) -> Result<FeatureFunction> {
+    let n = parse_as_u64(args, "n")? as usize;
+    Ok(FeatureFunction::new(format!("suffix-{}", n),
+                            offsets,
+                            move |t, i| features::suffix(&t[i].value, n)))
+}
+
+fn token_is_in_feature_function(args: &HashMap<String, serde_json::Value>,
+                                offsets: Vec<i32>) -> Result<FeatureFunction> {
+    let tokens_collection = parse_as_vec_string(args, "tokens_collection")?;
+    let collection_name = parse_as_string(args, "collection_name")?;
+    let language_code = parse_as_string(args, "language_code")?;
+    let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
+    let use_stemming = parse_as_bool(args, "use_stemming")?;
+    let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
+    let tokens_gazetteer = HashSetGazetteer::from(tokens_collection.into_iter());
+    let stemmer = get_stemmer(language_code, use_stemming)?;
+    Ok(FeatureFunction::new(
+        format!("token_is_in_{}", collection_name),
+        offsets,
+        move |tokens, token_index|
+            features::is_in_gazetteer(tokens,
+                                      token_index,
+                                      &tokens_gazetteer,
+                                      stemmer.as_ref(),
+                                      tagging_scheme)))
+}
+
+fn is_in_gazetteer_feature_function(args: &HashMap<String, serde_json::Value>,
+                                    offsets: Vec<i32>) -> Result<FeatureFunction> {
+    let gazetteer_name = parse_as_string(args, "gazetteer_name")?;
+    let language_code = parse_as_string(args, "language_code")?;
+    let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
+    let use_stemming = parse_as_bool(args, "use_stemming")?;
+    let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
+    let gazetteer = StaticMapGazetteer::new(&gazetteer_name, &language_code, use_stemming)?;
+    let stemmer = get_stemmer(language_code, use_stemming)?;
+    Ok(FeatureFunction::new(
+        format!("is_in_gazetteer_{}", gazetteer_name),
+        offsets,
+        move |tokens, token_index|
+            features::is_in_gazetteer(tokens,
+                                      token_index,
+                                      &gazetteer,
+                                      stemmer.as_ref(),
+                                      tagging_scheme)))
+}
+
+fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
+                                 offsets: Vec<i32>) -> Result<FeatureFunction> {
+    let cluster_name = parse_as_string(args, "cluster_name")?;
+    let language_code = parse_as_string(args, "language_code")?;
+    let use_stemming = parse_as_bool(args, "use_stemming")?;
+    let word_clusterer = StaticMapWordClusterer::new(language_code.clone(),
+                                                     cluster_name.clone())?;
+    let stemmer = get_stemmer(language_code, use_stemming)?;
+    Ok(FeatureFunction::new(
+        format!("word_cluster_{}", cluster_name),
+        offsets,
+        move |tokens, token_index|
+            features::get_word_cluster(tokens,
+                                       token_index,
+                                       &word_clusterer,
+                                       stemmer.as_ref())))
 }
 
 fn parse_as_string(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<String> {
