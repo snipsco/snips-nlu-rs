@@ -6,8 +6,11 @@ extern crate error_chain;
 extern crate fst;
 extern crate itertools;
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate ndarray;
 extern crate queries_preprocessor as preprocessing;
+extern crate queries_resources_packed as resources_packed;
 extern crate queries_utils as utils;
 extern crate regex;
 extern crate serde;

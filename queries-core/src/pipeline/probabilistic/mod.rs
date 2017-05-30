@@ -1,6 +1,7 @@
 mod crf_utils;
 mod features;
 mod configuration;
+mod features_utils;
 mod intent_classifier;
 mod intent_parser;
 mod tagger;
