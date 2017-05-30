@@ -4,7 +4,7 @@ use pipeline::rule_based::RuleBasedParserConfiguration;
 use pipeline::probabilistic::ProbabilisticParserConfiguration;
 
 #[derive(Debug, Deserialize)]
-pub struct SnipsConfiguration {
+pub struct NLUEngineConfiguration {
     pub model: Model,
     pub entities: HashMap<String, Entity>
 }
@@ -23,13 +23,13 @@ pub struct Entity {
 
 #[cfg(test)]
 mod tests {
-    use super::SnipsConfiguration;
+    use super::NLUEngineConfiguration;
 
     use utils;
 
     #[test]
     fn deserialization_works() {
-        let retrieved: SnipsConfiguration = utils::parse_json("tests/nlu_engine_sample.json");
+        let retrieved: NLUEngineConfiguration = utils::parse_json("tests/nlu_engine_sample.json");
         assert_eq!("en", retrieved.model.rule_based_parser.unwrap().language);
         assert_eq!("en", retrieved.model.probabilistic_parser.unwrap().language_code);
     }
