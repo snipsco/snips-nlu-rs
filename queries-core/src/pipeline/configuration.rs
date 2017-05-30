@@ -29,7 +29,7 @@ mod tests {
 
     #[test]
     fn deserialization_works() {
-        let retrieved: NLUEngineConfiguration = utils::parse_json("tests/nlu_engine_sample.json");
+        let retrieved: NLUEngineConfiguration = utils::parse_json("tests/assistants/sample/trained_assistant.json");
         assert_eq!("en", retrieved.model.rule_based_parser.unwrap().language);
         assert_eq!("en", retrieved.model.probabilistic_parser.unwrap().language_code);
     }
