@@ -77,22 +77,18 @@ impl SnipsNLUEngine {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
-    use super::*;
-    use super::super::configuration::SnipsConfiguration;
-
-    use pipeline::IntentClassifierResult;
     use utils;
 
+    use super::*;
+    use pipeline::assistant_config::FileBasedConfiguration;
+    use pipeline::IntentClassifierResult;
 
     #[test]
     fn it_works() {
-        let configuration: SnipsConfiguration = utils::parse_json("tests/beverage_engine.json");
-        let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
+        let assistant_config = FileBasedConfiguration::new(utils::file_path("tests/assistants/beverage")).unwrap();
+        let nlu_engine = SnipsNLUEngine::new(assistant_config).unwrap();
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
 
         assert_eq!(IntentParserResult {
