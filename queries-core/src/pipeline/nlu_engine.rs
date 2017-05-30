@@ -5,7 +5,7 @@ use errors::*;
 use pipeline::{IntentParser, IntentParserResult, Slot};
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
-use super::assistant_config::AssistantConfiguration;
+use super::assistant_config::NLUEngineConfigurationConvertible;
 use super::configuration::Entity;
 
 pub struct SnipsNLUEngine {
@@ -14,8 +14,8 @@ pub struct SnipsNLUEngine {
 }
 
 impl SnipsNLUEngine {
-    pub fn new<T: AssistantConfiguration + 'static>(assistant_configuration: T) -> Result<Self> {
-        let nlu_config = assistant_configuration.into_nlu_engine_configuration();
+    pub fn new<T: NLUEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
+        let nlu_config = configuration.into_nlu_engine_configuration();
 
         let mut parsers: Vec<Box<IntentParser>> = Vec::with_capacity(2);
 
@@ -82,13 +82,13 @@ mod tests {
     use utils;
 
     use super::*;
-    use pipeline::assistant_config::FileBasedConfiguration;
+    use pipeline::configuration::NLUEngineConfiguration;
     use pipeline::IntentClassifierResult;
 
     #[test]
     fn it_works() {
-        let assistant_config = FileBasedConfiguration::new(utils::file_path("tests/assistants/beverage")).unwrap();
-        let nlu_engine = SnipsNLUEngine::new(assistant_config).unwrap();
+        let configuration: NLUEngineConfiguration = utils::parse_json("tests/configurations/beverage_engine.json");
+        let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
 
         assert_eq!(IntentParserResult {
