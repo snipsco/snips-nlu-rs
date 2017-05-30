@@ -144,7 +144,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
                                               token_index,
                                               &tokens_gazetteer,
                                               stemmer.as_ref(),
-                                              &tagging_scheme)))
+                                              tagging_scheme)))
         }
         "get_is_in_gazetteer_fn" => {
             let gazetteer_name = parse_as_string(&f.args, "gazetteer_name")?;
@@ -163,7 +163,7 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
                                               token_index,
                                               &gazetteer,
                                               stemmer.as_ref(),
-                                              &tagging_scheme)))
+                                              tagging_scheme)))
         }
         "get_word_cluster_fn" => {
             let cluster_name = parse_as_string(&f.args, "cluster_name")?;
