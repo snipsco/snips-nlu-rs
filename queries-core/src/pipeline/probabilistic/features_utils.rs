@@ -1,4 +1,7 @@
+use std::str;
+use std::iter::FromIterator;
 use regex::{Regex, RegexBuilder};
+use preprocessing::Token;
 
 pub fn get_word_chunk(word: String, chunk_size: usize, chunk_start: usize, reverse: bool) -> Option<String> {
     if reverse && chunk_size > chunk_start {
@@ -28,6 +31,21 @@ pub fn get_shape(string: &str) -> String {
     } else {
         "xX".to_string()
     }
+}
+
+pub fn initial_string_from_tokens(tokens: &[Token]) -> String {
+    let mut current_index = 0;
+    let mut chunks: Vec<String> = vec![];
+    for token in tokens {
+        if token.char_range.start > current_index {
+            let nb_spaces = token.char_range.start - current_index;
+            let spaces = String::from_iter(vec![' '; nb_spaces].into_iter());
+            chunks.push(spaces);
+        }
+        chunks.push(token.value.clone());
+        current_index = token.char_range.end;
+    }
+    chunks.join("")
 }
 
 #[cfg(test)]
@@ -92,6 +110,37 @@ mod tests {
         // Then
         let expected_shapes = vec!["xxx", "Xxx", "XXX", "xX", "xX"];
         assert_eq!(actual_shapes, expected_shapes)
+    }
 
+    #[test]
+    fn initial_string_from_tokens_works() {
+        // Given
+
+        let tokens = vec![
+            Token {
+                value: "hello".to_string(),
+                range: 0..5,
+                char_range: 0..5,
+                entity: None
+            },
+            Token {
+                value: "world".to_string(),
+                range: 9..14,
+                char_range: 9..14,
+                entity: None
+            },
+            Token {
+                value: "!!!".to_string(),
+                range: 17..20,
+                char_range: 17..20,
+                entity: None
+            }
+        ];
+
+        // When
+        let result = initial_string_from_tokens(&tokens);
+
+        // Then
+        assert_eq!("hello    world   !!!", &result);
     }
 }

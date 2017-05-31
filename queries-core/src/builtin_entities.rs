@@ -1,10 +1,10 @@
 use std::sync::{Mutex, Arc};
 use std::ops::Range;
 use std::collections::HashMap;
-
-use rustling_ontology::{Lang, Parser, DimensionKind, build_parser, ParsingContext, Output, dims};
+use utils::ranges_overlap;
 
 use errors::*;
+use rustling_ontology::{Lang, Parser, DimensionKind, build_parser, ParsingContext, Output};
 
 pub struct RustlingParser {
     parser: Parser,
@@ -18,11 +18,17 @@ pub struct RustlingEntity {
     pub kind: EntityKind,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Copy, Serialize, Debug, Clone, PartialEq)]
 pub enum EntityKind {
     Time,
     Duration,
     Number,
+}
+
+impl EntityKind {
+    fn all() -> Vec<EntityKind> {
+        vec![EntityKind::Time, EntityKind::Duration, EntityKind::Number]
+    }
 }
 
 impl RustlingParser {
@@ -67,6 +73,13 @@ impl EntityKind {
             EntityKind::Number => "snips/number",
             EntityKind::Duration => "snips/duration",
         }
+    }
+
+    pub fn from_identifier(identifier: &str) -> Result<EntityKind> {
+        Self::all()
+            .into_iter()
+            .find(|kind| kind.identifier() == identifier)
+            .ok_or(format!("Unknown EntityKind identifier: {}", identifier).into())
     }
 
     fn from_rustling_output(v: &Output) -> Option<EntityKind> {

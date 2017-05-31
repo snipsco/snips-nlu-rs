@@ -10,7 +10,7 @@ use errors::*;
 use super::configuration::RuleBasedParserConfiguration;
 use pipeline::{IntentClassifierResult, IntentParser, Slot};
 use preprocessing::{tokenize, tokenize_light};
-use utils::{substring_with_char_range, suffix_from_char_index};
+use utils::{substring_with_char_range, suffix_from_char_index, ranges_overlap};
 use builtin_entities::RustlingParser;
 use rustling_ontology::Lang;
 
@@ -108,17 +108,13 @@ impl IntentParser for RuleBasedIntentParser {
     }
 }
 
-fn are_overlapping(r1: &Range<usize>, r2: &Range<usize>) -> bool {
-    r1.end > r2.start && r1.start < r2.end
-}
-
 fn deduplicate_overlapping_slots(slots: Vec<Slot>) -> Vec<Slot> {
     let mut deduped: Vec<Slot> = Vec::with_capacity(slots.len());
 
     for slot in slots {
         let conflicting_slot_index = deduped
             .iter()
-            .position(|existing_slot| are_overlapping(&slot.range, &existing_slot.range));
+            .position(|existing_slot| ranges_overlap(&slot.range, &existing_slot.range));
 
         if let Some(index) = conflicting_slot_index {
             fn extract_counts(v: &Slot) -> (usize, usize) {
