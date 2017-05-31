@@ -37,10 +37,11 @@ impl RustlingParser {
             .clone()
     }
 
-    pub fn extract_entities(&self, sentence: &str) -> Result<Vec<RustlingEntity>> {
+    pub fn extract_entities(&self, sentence: &str) -> Vec<RustlingEntity> {
         let context = ParsingContext::default();
         let kind_order = vec![DimensionKind::Number, DimensionKind::Time, DimensionKind::Duration];
-        let mut entities = self.parser.parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order)?
+        let mut entities = self.parser.parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order)
+            .unwrap_or(Vec::new())
             .iter()
             .filter_map(|m| {
                 EntityKind::from_rustling_output(&m.value)
@@ -55,7 +56,7 @@ impl RustlingParser {
             })
             .collect::<Vec<_>>();
         entities.sort_by_key(|e| e.range.start);
-        Ok(entities)
+        entities
     }
 }
 
@@ -90,10 +91,10 @@ mod test {
         assert_eq!(vec![
             RustlingEntity { value: "two".into(), range: 23..26, char_range: 23..26, kind: EntityKind::Number },
             RustlingEntity { value: "tomorrow".into(), range: 34..42, char_range: 34..42, kind: EntityKind::Time },
-        ], parser.extract_entities("Book me restaurant for two people tomorrow").unwrap());
+        ], parser.extract_entities("Book me restaurant for two people tomorrow"));
 
         assert_eq!(vec![
             RustlingEntity { value: "two weeks".into(), range: 19..28, char_range: 19..28, kind: EntityKind::Duration },
-        ], parser.extract_entities("The weather during two weeks").unwrap());
+        ], parser.extract_entities("The weather during two weeks"));
     }
 }
