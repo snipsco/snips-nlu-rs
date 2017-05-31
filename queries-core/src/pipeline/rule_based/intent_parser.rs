@@ -137,7 +137,7 @@ fn deduplicate_overlapping_slots(slots: Vec<Slot>) -> Vec<Slot> {
 
 fn replace_builtin_entities(text: &str,
                             parser: &RustlingParser) -> (HashMap<Range<usize>, Range<usize>>, String) {
-    let builtin_entities = parser.extract_entities(text);
+    let builtin_entities = parser.extract_entities(text, None);
     if builtin_entities.len() == 0 {
         return (HashMap::new(), text.to_string())
     }
