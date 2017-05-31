@@ -62,6 +62,7 @@ impl RustlingParser {
             })
             .collect::<Vec<_>>();
         entities.sort_by_key(|e| e.range.start);
+        entities.dedup_by(|e1, e2| ranges_overlap(&e1.range, &e2.range));
         entities
     }
 }
