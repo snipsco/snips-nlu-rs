@@ -13,6 +13,7 @@ extern crate queries_preprocessor as preprocessing;
 extern crate queries_resources_packed as resources_packed;
 extern crate queries_utils as utils;
 extern crate regex;
+extern crate rustling_ontology;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -27,7 +28,7 @@ extern crate maplit;
 pub use errors::*;
 pub use models::gazetteer::GazetteerKey;
 pub use pipeline::nlu_engine::SnipsNLUEngine;
-pub use pipeline::assistant_config::{AssistantConfiguration, FileBasedConfiguration};
+pub use pipeline::assistant_config::{NLUEngineConfigurationConvertible, FileBasedConfiguration};
 pub use pipeline::IntentClassifierResult;
 pub use pipeline::IntentParserResult;
 pub use pipeline::Slot;
@@ -37,5 +38,6 @@ pub use utils::file_path;
 mod testutils;
 
 pub mod errors;
+mod builtin_entities;
 mod models;
 mod pipeline;
