@@ -9,7 +9,9 @@ use models::stemmer::Stemmer;
 use models::stemmer::StaticMapStemmer;
 use models::word_clusterer::WordClusterer;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
-use super::features_utils::{get_word_chunk, get_shape};
+use super::features_utils::{get_word_chunk, get_shape, initial_string_from_tokens};
+use builtin_entities::{EntityKind, RustlingParser};
+use utils::ranges_overlap;
 
 pub fn is_digit(string: &str) -> Option<String> {
     if string.chars().all(|c| c.is_digit(10)) {
@@ -111,15 +113,34 @@ pub fn get_word_cluster<C: WordClusterer, S: Stemmer>(tokens: &[Token],
                                                       word_clusterer: &C,
                                                       stemmer: Option<&S>) -> Option<String> {
     if token_index >= tokens.len() {
-        None
-    } else {
-        let normalized_token = if let Some(stemmer) = stemmer {
-            stemmer.stem(&tokens[token_index].value.to_lowercase())
-        } else {
-            tokens[token_index].value.to_lowercase()
-        };
-        word_clusterer.get_cluster(&normalized_token)
+        return None;
     }
+    let normalized_token = if let Some(stemmer) = stemmer {
+        stemmer.stem(&tokens[token_index].value.to_lowercase())
+    } else {
+        tokens[token_index].value.to_lowercase()
+    };
+    word_clusterer.get_cluster(&normalized_token)
+}
+
+pub fn get_builtin_entities_annotation(tokens: &[Token],
+                                       token_index: usize,
+                                       parser: &RustlingParser,
+                                       builtin_entity_kind: EntityKind,
+                                       tagging_scheme: TaggingScheme) -> Option<String> {
+    if token_index >= tokens.len() {
+        return None;
+    }
+    let text = initial_string_from_tokens(tokens);
+    parser.extract_entities(&text, Some(vec![builtin_entity_kind]).as_ref())
+        .into_iter()
+        .find(|e| ranges_overlap(&e.char_range, &tokens[token_index].char_range))
+        .map(|e| {
+            let entity_token_indexes = (0..tokens.len())
+                .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.char_range))
+                .collect_vec();
+            get_scheme_prefix(token_index, &entity_token_indexes, tagging_scheme).to_string()
+        })
 }
 
 fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<String> {
@@ -134,6 +155,7 @@ mod tests {
     use super::*;
 
     use preprocessing::tokenize;
+    use rustling_ontology::Lang;
 
     #[test]
     fn is_digit_works() {
@@ -380,5 +402,24 @@ mod tests {
 
         // Then
         assert_eq!(Some("010101".to_string()), actual_result);
+    }
+
+    #[test]
+    fn get_builtin_annotation_works() {
+        // Given
+        let tokens = tokenize("Let's meet tomorrow at 9pm ok ?");
+        let token_index = 5; // 9pm
+        let tagging_scheme = TaggingScheme::BILOU;
+        let parser = RustlingParser::get(Lang::EN);
+
+        // When
+        let actual_annotation = get_builtin_entities_annotation(&tokens,
+                                                                token_index,
+                                                                &*parser,
+                                                                EntityKind::Time,
+                                                                tagging_scheme);
+
+        // Then
+        assert_eq!(Some("L-".to_string()), actual_annotation)
     }
 }

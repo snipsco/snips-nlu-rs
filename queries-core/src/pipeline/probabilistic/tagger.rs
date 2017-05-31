@@ -29,4 +29,11 @@ impl Tagger {
         let features = self.feature_processor.compute_features(&tokens);
         Ok(self.tagger.lock()?.tag(&features)?)
     }
+
+    pub fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
+        let features = self.feature_processor.compute_features(&tokens);
+        let tagger = self.tagger.lock()?;
+        tagger.set(&features)?;
+        Ok(tagger.probability(tags)?)
+    }
 }
