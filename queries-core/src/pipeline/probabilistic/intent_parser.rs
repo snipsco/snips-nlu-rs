@@ -4,8 +4,10 @@ use std::ops::Range;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use errors::*;
 use itertools::Itertools;
+use rustling_ontology::Lang;
+
+use errors::*;
 use pipeline::{IntentClassifierResult, IntentParser, Slot};
 use super::intent_classifier::IntentClassifier;
 use super::tagger::Tagger;
@@ -14,7 +16,6 @@ use utils::ranges_overlap;
 use preprocessing::{Token, tokenize};
 use super::configuration::ProbabilisticParserConfiguration;
 use builtin_entities::{EntityKind, RustlingEntity, RustlingParser};
-use rustling_ontology::Lang;
 
 
 pub struct ProbabilisticIntentParser {
@@ -90,18 +91,20 @@ impl IntentParser for ProbabilisticIntentParser {
             .filter(|s| EntityKind::from_identifier(&s.entity).is_err())
             .collect();
 
-        let builtin_slots: Vec<String> = intent_slots_mapping.into_iter()
+        let builtin_slots: Vec<(String, EntityKind)> = intent_slots_mapping.into_iter()
             .filter_map(|(slot_name, entity)|
-                EntityKind::from_identifier(entity).ok().map(|_| slot_name.clone()))
+                EntityKind::from_identifier(entity).ok().map(|kind| (slot_name.clone(), kind)))
             .collect();
 
         if builtin_slots.is_empty() {
             return Ok(slots);
         }
 
-        let builtin_entity_kinds: Vec<EntityKind> = builtin_slots.iter()
-            .map(|s| EntityKind::from_identifier(intent_slots_mapping.get(s).unwrap()).unwrap())
-            .collect();
+        let mut builtin_entity_kinds: Vec<EntityKind> = builtin_slots.iter()
+            .map(|&(_, kind)| kind)
+            .collect_vec();
+
+        builtin_entity_kinds.dedup_by_key(|kind| *kind);
 
         let builtin_entities = self.builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
 
@@ -115,16 +118,7 @@ fn augment_slots(text: &str,
                  tagger: &Tagger,
                  intent_slots_mapping: &HashMap<String, String>,
                  builtin_entities: Vec<RustlingEntity>,
-                 missing_slots: Vec<String>) -> Result<Vec<Slot>> {
-    let entity_kind_slots_mapping: HashMap<String, EntityKind> = HashMap::from_iter(
-        intent_slots_mapping.iter()
-            .filter_map(|(slot_name, entity_label)|
-                if let Some(kind) = EntityKind::from_identifier(entity_label).ok() {
-                    Some((slot_name.clone(), kind))
-                } else {
-                    None
-                })
-    );
+                 missing_slots: Vec<(String, EntityKind)>) -> Result<Vec<Slot>> {
     let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
     let grouped_entities = builtin_entities.into_iter().group_by(|e| e.kind);
 
@@ -132,7 +126,13 @@ fn augment_slots(text: &str,
         let spans_ranges = group.map(|e| e.char_range).collect_vec();
         let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
         let related_slots = missing_slots.iter()
-            .filter(|s| *entity_kind_slots_mapping.get(*s).unwrap() == entity_kind)
+            .filter_map(|&(ref slot_name, kind)|
+                if kind == entity_kind {
+                    Some(slot_name.clone())
+                } else {
+                    None
+                }
+            )
             .collect_vec();
         let mut reversed_slots = related_slots.clone();
         reversed_slots.reverse();
