@@ -35,7 +35,7 @@ pub fn get_shape(string: &str) -> String {
 
 pub fn initial_string_from_tokens(tokens: &[Token]) -> String {
     let mut current_index = 0;
-    let mut chunks: Vec<String> = vec![];
+    let mut chunks: Vec<String> = Vec::with_capacity(2 * tokens.len() - 1);
     for token in tokens {
         if token.char_range.start > current_index {
             let nb_spaces = token.char_range.start - current_index;
@@ -115,7 +115,6 @@ mod tests {
     #[test]
     fn initial_string_from_tokens_works() {
         // Given
-
         let tokens = vec![
             Token {
                 value: "hello".to_string(),

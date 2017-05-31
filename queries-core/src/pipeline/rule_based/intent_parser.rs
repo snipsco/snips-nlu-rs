@@ -152,7 +152,7 @@ fn replace_builtin_entities(text: &str,
         let prefix_text = substring_with_char_range(text, &(current_ix..entity.char_range.start));
         let entity_text = get_builtin_entity_name(entity.kind.identifier());
         processed_text = format!("{}{}{}", processed_text, prefix_text, entity_text);
-        offset += entity_text.chars().count() as i16 - entity.value.chars().count() as i16;
+        offset += entity_text.chars().count() as i16 - entity.char_range.clone().count() as i16;
         let range_end = (entity.char_range.end as i16 + offset) as usize;
         let new_range = range_start..range_end;
         current_ix = entity.char_range.end;
