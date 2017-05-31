@@ -128,7 +128,7 @@ fn augment_slots(text: &str,
         let related_slots = missing_slots.iter()
             .filter_map(|&(ref slot_name, kind)|
                 if kind == entity_kind {
-                    Some(slot_name.clone())
+                    Some(slot_name)
                 } else {
                     None
                 }
