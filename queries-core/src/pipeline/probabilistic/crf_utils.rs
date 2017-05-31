@@ -178,6 +178,37 @@ pub fn tags_to_slots(text: &str,
         .collect()
 }
 
+pub fn positive_tagging(tagging_scheme: TaggingScheme, slot_name: &str, slot_size: usize) -> Vec<String> {
+    match tagging_scheme {
+        TaggingScheme::IO => {
+            vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size]
+        },
+        TaggingScheme::BIO => {
+            if slot_size > 0 {
+                let mut v1 = vec![format!("{}{}", BEGINNING_PREFIX, slot_name)];
+                let mut v2 = vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size - 1];
+                v1.append(&mut v2);
+                v1
+            } else {
+                vec![]
+            }
+        },
+        TaggingScheme::BILOU => {
+            match slot_size {
+                0 => vec![],
+                1 => vec![format!("{}{}", UNIT_PREFIX, slot_name)],
+                _ => {
+                    let mut v1 = vec![format!("{}{}", BEGINNING_PREFIX, slot_name)];
+                    let mut v2 = vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size - 2];
+                    v1.append(&mut v2);
+                    v1.push(format!("{}{}", LAST_PREFIX, slot_name));
+                    v1
+                }
+            }
+        }
+    }
+}
+
 pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: TaggingScheme) -> &str {
     match tagging_scheme {
         TaggingScheme::IO => INSIDE_PREFIX,
@@ -940,5 +971,74 @@ mod tests {
             "U-".to_string(),
         ];
         assert_eq!(actual_results, expected_results);
+    }
+
+    #[test]
+    fn test_positive_tagging_with_io() {
+        // Given
+        let tagging_scheme = TaggingScheme::IO;
+        let slot_name = "animal";
+        let slot_size = 3;
+
+        // When
+        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
+
+        // Then
+        let t = format!("{}{}", INSIDE_PREFIX, slot_name);
+        let expected_tags = vec![t; 3];
+        assert_eq!(tags, expected_tags);
+    }
+
+    #[test]
+    fn test_positive_tagging_with_bio() {
+        // Given
+        let tagging_scheme = TaggingScheme::BIO;
+        let slot_name = "animal";
+        let slot_size = 3;
+
+        // When
+        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
+
+        // Then
+        let expected_tags = vec![
+            format!("{}{}", BEGINNING_PREFIX, slot_name),
+            format!("{}{}", INSIDE_PREFIX, slot_name),
+            format!("{}{}", INSIDE_PREFIX, slot_name),
+        ];
+        assert_eq!(tags, expected_tags);
+    }
+
+    #[test]
+    fn test_positive_tagging_with_bilou() {
+        // Given
+        let tagging_scheme = TaggingScheme::BILOU;
+        let slot_name = "animal";
+        let slot_size = 3;
+
+        // When
+        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
+
+        // Then
+        let expected_tags = vec![
+            format!("{}{}", BEGINNING_PREFIX, slot_name),
+            format!("{}{}", INSIDE_PREFIX, slot_name),
+            format!("{}{}", LAST_PREFIX, slot_name),
+        ];
+        assert_eq!(tags, expected_tags);
+    }
+
+    #[test]
+    fn test_positive_tagging_with_bilou_unit() {
+        // Given
+        let tagging_scheme = TaggingScheme::BILOU;
+        let slot_name = "animal";
+        let slot_size = 1;
+
+        // When
+        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
+
+        // Then
+        let expected_tags = vec![format!("{}{}", UNIT_PREFIX, slot_name)];
+        assert_eq!(tags, expected_tags);
     }
 }
