@@ -5,8 +5,8 @@ use yolo::Yolo;
 
 use errors::*;
 use pipeline::Slot;
-use preprocessing::Token;
-use utils::{convert_char_range, suffix_from_char_index};
+use utils::token::Token;
+use utils::string::{convert_char_range, suffix_from_char_index};
 
 const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
@@ -237,7 +237,7 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
 mod tests {
     use itertools::Itertools;
 
-    use preprocessing::tokenize;
+    use utils::token::tokenize;
     use super::*;
 
     struct Test {

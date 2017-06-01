@@ -12,8 +12,8 @@ use pipeline::{IntentClassifierResult, IntentParser, Slot};
 use super::intent_classifier::IntentClassifier;
 use super::tagger::Tagger;
 use super::crf_utils::{tags_to_slots, positive_tagging};
-use utils::ranges_overlap;
-use preprocessing::{Token, tokenize};
+use utils::miscellaneous::ranges_overlap;
+use utils::token::{Token, tokenize};
 use super::configuration::ProbabilisticParserConfiguration;
 use builtin_entities::{EntityKind, RustlingEntity, RustlingParser};
 
@@ -199,19 +199,16 @@ mod tests {
                 value: "abc".to_string(),
                 char_range: 0..3,
                 range: 0..3,
-                entity: None
             },
             Token {
                 value: "def".to_string(),
                 char_range: 4..7,
                 range: 4..7,
-                entity: None
             },
             Token {
                 value: "ghi".to_string(),
                 char_range: 10..13,
                 range: 10..13,
-                entity: None
             }
         ];
 

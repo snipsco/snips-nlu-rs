@@ -8,5 +8,4 @@ csv = "0.15"
 error-chain = { version = "0.10", default-features = false }
 itertools = "0.6"
 lazy_static = "0.2"
-queries-preprocessor = { path = "../queries-preprocessor" }
-
+queries-utils = { path = "../queries-utils" }

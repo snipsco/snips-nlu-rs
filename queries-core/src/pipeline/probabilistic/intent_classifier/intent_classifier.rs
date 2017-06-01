@@ -5,7 +5,7 @@ use models::logreg::MulticlassLogisticRegression;
 use pipeline::IntentClassifierResult;
 use super::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
-use utils::argmax;
+use utils::miscellaneous::argmax;
 
 pub struct IntentClassifier {
     intent_list: Vec<Option<String>>,
