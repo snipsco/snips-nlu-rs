@@ -1,7 +1,7 @@
 from setuptools import setup
 import os
 import re
-import time
+import subprocess
 
 from rust_build import build_rust_cmdclass, install_lib_including_rust
 
@@ -12,7 +12,8 @@ setup_py = os.path.abspath(os.path.dirname(__file__))
 try:
     with open(os.path.join(setup_py, 'snips_queries', '__init__.py'), 'r') as f:
         init_py = f.read()
-    version = re.search('__version__ = "(.*)"', init_py).groups()[0].replace("-SNAPSHOT", ".dev%i" % time.time())
+    timestamp = int(subprocess.check_output(['git', 'log', '-1', '--date=unix', '--pretty=format:%cd']))
+    version = re.search('__version__ = "(.*)"', init_py).groups()[0].replace("-SNAPSHOT", ".dev%i" % timestamp)
 except Exception:
     version = ''
 
@@ -23,9 +24,6 @@ setup(
     author='Thibaut Lorrain',
     author_email='thibaut.lorrain@snips.ai',
     packages=["snips_queries"],
-    install_requires=[
-        "duckling==0.0.12",
-    ],
     cmdclass={
         'build_rust': build_rust_cmdclass(debug=False),
         'install_lib': install_lib_including_rust

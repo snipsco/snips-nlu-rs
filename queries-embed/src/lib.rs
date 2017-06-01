@@ -9,17 +9,16 @@ extern crate serde_json;
 
 use std::ffi::{CStr, CString};
 use std::sync::Mutex;
-use std::slice;
-use std::io::Cursor;
+//use std::slice;
+//use std::io::Cursor;
 
 use libc::c_char;
-use libc::c_float;
-
 
 mod errors {
     error_chain! {
           foreign_links {
                 Core(::queries_core::Error);
+                Io(::std::io::Error);
                 Serde(::serde_json::Error);
                 Utf8Error(::std::str::Utf8Error);
                 NulError(::std::ffi::NulError);
@@ -36,8 +35,7 @@ mod errors {
 use errors::*;
 
 #[repr(C)]
-pub struct Opaque(std::sync::Mutex<queries_core::IntentParser>);
-
+pub struct Opaque(std::sync::Mutex<queries_core::SnipsNLUEngine>);
 
 #[repr(C)]
 pub enum QUERIESRESULT {
@@ -83,42 +81,30 @@ macro_rules! get_str_vec {
 }
 
 #[no_mangle]
-pub extern "C" fn intent_parser_create_from_dir(root_dir: *const c_char,
-                                                client: *mut *mut Opaque)
-                                                -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const c_char,
+                                             client: *mut *mut Opaque)
+                                             -> QUERIESRESULT {
     wrap!(create_from_dir(root_dir, client));
 }
 
-#[no_mangle]
+/*#[no_mangle]
 pub extern "C" fn intent_parser_create_from_binary(binary: *const libc::c_uchar,
                                                    binary_size: libc::c_uint,
                                                    client: *mut *mut Opaque)
                                                    -> QUERIESRESULT {
     wrap!(create_from_binary(binary, binary_size, client));
+}*/
+
+#[no_mangle]
+pub extern "C" fn nlu_engine_run_parse(client: *mut Opaque,
+                                       input: *const c_char,
+                                       result_json: *mut *mut c_char)
+                                       -> QUERIESRESULT {
+    wrap!(run_parse(client, input, result_json))
 }
 
 #[no_mangle]
-pub extern "C" fn intent_parser_run_intent_classification(client: *mut Opaque,
-                                                          input: *const c_char,
-                                                          probability_threshold: c_float,
-                                                          entities: *const c_char,
-                                                          result_json: *mut *mut c_char)
-                                                          -> QUERIESRESULT {
-    wrap!(run_intent_classification(client, input, probability_threshold, entities, result_json))
-}
-
-#[no_mangle]
-pub extern "C" fn intent_parser_run_tokens_classification(client: *mut Opaque,
-                                                          input: *const c_char,
-                                                          intent_name: *const c_char,
-                                                          entities: *const c_char,
-                                                          result_json: *mut *mut c_char)
-                                                          -> QUERIESRESULT {
-    wrap!(run_tokens_classification(client, input, intent_name, entities, result_json))
-}
-
-#[no_mangle]
-pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_destroy_string(string: *mut libc::c_char) -> QUERIESRESULT {
     unsafe {
         let _string: CString = CString::from_raw(string);
     }
@@ -127,7 +113,7 @@ pub extern "C" fn intent_parser_destroy_string(string: *mut libc::c_char) -> QUE
 }
 
 #[no_mangle]
-pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> QUERIESRESULT {
     unsafe {
         let _parser: Box<Opaque> = Box::from_raw(client);
     }
@@ -138,62 +124,42 @@ pub extern "C" fn intent_parser_destroy_client(client: *mut Opaque) -> QUERIESRE
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let file_configuration = queries_core::config::FileBasedAssistantConfig::new(root_dir);
-
-    let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
+    let assistant_config = queries_core::FileBasedConfiguration::new(root_dir)?;
+    let intent_parser = queries_core::SnipsNLUEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
-    println!("create ok");
     Ok(())
 }
 
-fn create_from_binary(binary: *const libc::c_uchar,
-                      binary_size: libc::c_uint,
+/*fn create_from_binary(binary: *const libc::c_uchar,
+                  binary_size: libc::c_uint,
                       client: *mut *mut Opaque)
                       -> Result<()> {
     let slice = unsafe { slice::from_raw_parts(binary, binary_size as usize) };
 
     let file_configuration =
-        queries_core::config::BinaryBasedAssistantConfig::new(Cursor::new(slice.to_owned()))?;
+        queries_core::BinaryBasedAssistantConfig::new(Cursor::new(slice.to_owned()))?;
 
-    let intent_parser = queries_core::IntentParser::new(&file_configuration)?;
+    let intent_parser = queries_core::SnipsIntentParser::new(&file_configuration)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
     Ok(())
-}
+}*/
 
-fn run_intent_classification(client: *mut Opaque,
-                             input: *const c_char,
-                             probability_threshold: c_float,
-                             entities: *const c_char,
-                             result_json: *mut *mut c_char)
-                             -> Result<()> {
+fn run_parse(client: *mut Opaque,
+             input: *const c_char,
+             result_json: *mut *mut c_char)
+             -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
-    let entities = get_str!(entities);
 
-    let results = intent_parser.run_intent_classifiers(input, probability_threshold, entities)?;
+    let results = intent_parser.parse(input, None)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
 
-fn run_tokens_classification(client: *mut Opaque,
-                             input: *const c_char,
-                             intent_name: *const c_char,
-                             entities: *const c_char,
-                             result_json: *mut *mut c_char)
-                             -> Result<()> {
-    let input = get_str!(input);
-    let intent_name = get_str!(intent_name);
-    let intent_parser = get_intent_parser!(client);
-    let entities = get_str!(entities);
-
-    let result = intent_parser.run_tokens_classifier(input, intent_name, entities)?;
-
-    point_to_string(result_json, serde_json::to_string(&result)?)
-}
 
 fn point_to_string(pointer: *mut *mut libc::c_char, string: String) -> Result<()> {
     let cs = CString::new(string.as_bytes())?;
