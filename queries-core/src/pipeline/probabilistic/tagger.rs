@@ -5,7 +5,7 @@ use crfsuite::Tagger as CRFTagger;
 use errors::*;
 use pipeline::FeatureProcessor;
 use pipeline::probabilistic::feature_processor::ProbabilisticFeatureProcessor;
-use preprocessing::Token;
+use utils::token::Token;
 use base64::decode;
 use super::crf_utils::TaggingScheme;
 use super::configuration::TaggerConfiguration;
