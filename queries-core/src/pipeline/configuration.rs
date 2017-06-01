@@ -25,11 +25,11 @@ pub struct Entity {
 mod tests {
     use super::NLUEngineConfiguration;
 
-    use utils;
+    use utils::miscellaneous::parse_json;
 
     #[test]
     fn deserialization_works() {
-        let retrieved: NLUEngineConfiguration = utils::parse_json("tests/configurations/sample_engine.json");
+        let retrieved: NLUEngineConfiguration = parse_json("tests/configurations/sample_engine.json");
         assert_eq!("en", retrieved.model.rule_based_parser.unwrap().language);
         assert_eq!("en", retrieved.model.probabilistic_parser.unwrap().language_code);
     }

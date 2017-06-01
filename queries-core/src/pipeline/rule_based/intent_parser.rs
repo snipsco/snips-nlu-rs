@@ -9,8 +9,9 @@ use regex::{Regex, RegexBuilder};
 use errors::*;
 use super::configuration::RuleBasedParserConfiguration;
 use pipeline::{IntentClassifierResult, IntentParser, Slot};
-use preprocessing::{tokenize, tokenize_light};
-use utils::{substring_with_char_range, suffix_from_char_index, ranges_overlap};
+use utils::token::{tokenize, tokenize_light};
+use utils::string::{substring_with_char_range, suffix_from_char_index};
+use utils::miscellaneous::ranges_overlap;
 use builtin_entities::RustlingParser;
 use rustling_ontology::Lang;
 

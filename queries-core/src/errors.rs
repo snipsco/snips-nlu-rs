@@ -5,7 +5,7 @@ error_chain! {
         Csv(::csv::Error);
         Zip(::zip::result::ZipError);
         Fst(::fst::Error);
-        Preprocessor(::preprocessing::Error);
+//        Preprocessor(::preprocessing::Error);
         Regex(::regex::Error);
         Rustling(::rustling_ontology::RustlingError);
         Crfsuite(::crfsuite::Error);

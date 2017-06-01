@@ -1,7 +1,7 @@
 use std::str;
 use std::iter::FromIterator;
 use regex::{Regex, RegexBuilder};
-use preprocessing::Token;
+use utils::token::Token;
 
 pub fn get_word_chunk(word: String, chunk_size: usize, chunk_start: usize, reverse: bool) -> Option<String> {
     if reverse && chunk_size > chunk_start {
@@ -120,19 +120,16 @@ mod tests {
                 value: "hello".to_string(),
                 range: 0..5,
                 char_range: 0..5,
-                entity: None
             },
             Token {
                 value: "world".to_string(),
                 range: 9..14,
                 char_range: 9..14,
-                entity: None
             },
             Token {
                 value: "!!!".to_string(),
                 range: 17..20,
                 char_range: 17..20,
-                entity: None
             }
         ];
 

@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use ndarray::prelude::*;
 
 use errors::*;
-use preprocessing::tokenize;
+use utils::token::tokenize;
 use pipeline::probabilistic::configuration::FeaturizerConfiguration;
 use std::iter::FromIterator;
 

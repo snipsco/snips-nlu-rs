@@ -79,15 +79,14 @@ impl SnipsNLUEngine {
 
 #[cfg(test)]
 mod tests {
-    use utils;
-
     use super::*;
     use pipeline::configuration::NLUEngineConfiguration;
     use pipeline::IntentClassifierResult;
+    use utils::miscellaneous::parse_json;
 
     #[test]
     fn it_works() {
-        let configuration: NLUEngineConfiguration = utils::parse_json("tests/configurations/beverage_engine.json");
+        let configuration: NLUEngineConfiguration = parse_json("tests/configurations/beverage_engine.json");
         let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
 
