@@ -51,7 +51,7 @@ impl RustlingParser {
             .map(|filtered_set|
                 filtered_set.iter().map(|kind| kind.dimension_kind()).collect())
             .unwrap_or(vec![DimensionKind::Number, DimensionKind::Time, DimensionKind::Duration]);
-        let mut entities = self.parser.parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order)
+        let mut entities = self.parser.parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order, true)
             .unwrap_or(Vec::new())
             .iter()
             .filter_map(|m| {
@@ -67,7 +67,6 @@ impl RustlingParser {
             })
             .collect::<Vec<_>>();
         entities.sort_by_key(|e| e.range.start);
-        entities.dedup_by(|e1, e2| ranges_overlap(&e1.range, &e2.range));
         entities
     }
 }
