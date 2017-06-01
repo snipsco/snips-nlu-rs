@@ -1,7 +1,7 @@
 use std::sync::{Mutex, Arc};
 use std::ops::Range;
 use std::collections::HashMap;
-use utils::ranges_overlap;
+use utils::miscellaneous::ranges_overlap;
 
 use errors::*;
 use rustling_ontology::{Lang, Parser, DimensionKind, build_parser, ParsingContext, Output};

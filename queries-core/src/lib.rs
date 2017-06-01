@@ -9,7 +9,6 @@ extern crate itertools;
 extern crate lazy_static;
 #[macro_use]
 extern crate ndarray;
-extern crate queries_preprocessor as preprocessing;
 extern crate queries_resources_packed as resources_packed;
 extern crate queries_utils as utils;
 extern crate regex;
@@ -32,7 +31,7 @@ pub use pipeline::assistant_config::{NLUEngineConfigurationConvertible, FileBase
 pub use pipeline::IntentClassifierResult;
 pub use pipeline::IntentParserResult;
 pub use pipeline::Slot;
-pub use utils::file_path;
+pub use utils::miscellaneous::file_path;
 
 #[cfg(test)]
 mod testutils;
