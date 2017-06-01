@@ -27,7 +27,7 @@ pub enum EntityKind {
 
 impl EntityKind {
     fn all() -> Vec<EntityKind> {
-        vec![EntityKind::Time, EntityKind::Duration, EntityKind::Number]
+        vec![EntityKind::Number, EntityKind::Time, EntityKind::Duration]
     }
 }
 
@@ -50,7 +50,7 @@ impl RustlingParser {
             static ref CACHED_ENTITY: Mutex<EntityCache> = Mutex::new(EntityCache::new(60));
         }
 
-        let key = CacheKey { lang: "en".into(), input: "test".into(), kinds: filter_entity_kinds.unwrap_or_else(|| EntityKind::all())};
+        let key = CacheKey { lang: self.lang.to_string(), input: sentence.into(), kinds: filter_entity_kinds.unwrap_or_else(|| EntityKind::all())};
         CACHED_ENTITY.lock().unwrap().cache(&key, |key| {
             let context = ParsingContext::default();
             let kind_order = key.kinds.iter().map(|kind| kind.dimension_kind()).collect::<Vec<_>>();
