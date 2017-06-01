@@ -1,47 +1,42 @@
+extern crate base64;
+extern crate crfsuite;
+extern crate csv;
 #[macro_use]
 extern crate error_chain;
+extern crate fst;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
+#[macro_use]
 extern crate ndarray;
-extern crate protobuf;
-extern crate rayon;
+extern crate queries_resources_packed as resources_packed;
+extern crate queries_utils as utils;
 extern crate regex;
-extern crate unicode_normalization;
+extern crate rustling_ontology;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-extern crate tensorflow;
 extern crate yolo;
-extern crate csv;
 extern crate zip;
 
-use std::path;
-use std::env;
+#[cfg(test)]
+#[macro_use]
+extern crate maplit;
 
 pub use errors::*;
-pub use preprocessing::preprocess;
-pub use pipeline::slot_filler::Token;
-pub use pipeline::intent_parser::IntentClassifierResult;
-pub use pipeline::intent_parser::IntentParser;
+pub use models::gazetteer::GazetteerKey;
+pub use pipeline::nlu_engine::SnipsNLUEngine;
+pub use pipeline::assistant_config::{NLUEngineConfigurationConvertible, FileBasedConfiguration};
+pub use pipeline::IntentClassifierResult;
+pub use pipeline::IntentParserResult;
+pub use pipeline::Slot;
+pub use utils::miscellaneous::file_path;
 
 #[cfg(test)]
 mod testutils;
 
 pub mod errors;
-pub mod config;
-pub mod pipeline;
-pub mod preprocessing;
-mod features;
+mod builtin_entities;
 mod models;
-mod postprocessing;
-mod protos;
-
-pub fn file_path(file_name: &str) -> path::PathBuf {
-    if env::var("DINGHY").is_ok() {
-        env::current_exe().unwrap().parent().unwrap().join("test_data/data").join(file_name)
-    } else {
-        path::PathBuf::from("../data").join(file_name)
-    }
-}
+mod pipeline;

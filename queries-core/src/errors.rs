@@ -2,15 +2,20 @@ error_chain! {
     foreign_links {
         Io(::std::io::Error);
         NdArray(::ndarray::ShapeError);
-        Serde(::serde_json::Error);
-        Protobuf(::protobuf::ProtobufError);
         Csv(::csv::Error);
         Zip(::zip::result::ZipError);
+        Fst(::fst::Error);
+        Regex(::regex::Error);
+        Rustling(::rustling_ontology::RustlingError);
+        Crfsuite(::crfsuite::Error);
+        Base64(::base64::DecodeError);
+        PackedResources(::resources_packed::Error);
+        SerdeJson(::serde_json::Error);
     }
 }
 
-impl ::std::convert::From<::tensorflow::Status> for Error {
-    fn from(tfs: ::tensorflow::Status) -> Error {
-        format!("Tensorflow error: {:?}", tfs).into()
+impl<T> ::std::convert::From<::std::sync::PoisonError<T>> for Error {
+    fn from(pe: ::std::sync::PoisonError<T>) -> Error {
+        format!("Poisoning error: {:?}", pe).into()
     }
 }

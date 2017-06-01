@@ -1,10 +1,40 @@
-mod intent_configuration;
-pub mod feature_processor;
-pub mod intent_classifier;
-pub mod intent_parser;
-pub mod slot_filler;
-pub mod tokens_classifier;
+use std::ops::Range;
+use std::collections::HashSet;
 
-pub type Probability = f32;
+use errors::*;
 
-pub type BoxedClassifier = Box<::models::tf::Classifier + Send + Sync>;
+pub mod rule_based;
+pub mod probabilistic;
+pub mod nlu_engine;
+pub mod assistant_config;
+mod configuration;
+
+#[derive(Serialize, Debug, Default, PartialEq)]
+pub struct IntentParserResult {
+    pub input: String,
+    pub intent: Option<IntentClassifierResult>,
+    pub slots: Option<Vec<Slot>>,
+}
+
+#[derive(Serialize, Debug, PartialEq)]
+pub struct IntentClassifierResult {
+    pub intent_name: String,
+    pub probability: f32,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq)]
+pub struct Slot {
+    pub value: String,
+    pub range: Range<usize>,
+    pub entity: String,
+    pub slot_name: String
+}
+
+trait IntentParser: Send + Sync {
+    fn get_intent(&self, input: &str, intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>>;
+    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>>;
+}
+
+trait FeatureProcessor<I, O> {
+    fn compute_features(&self, input: &I) -> O;
+}
