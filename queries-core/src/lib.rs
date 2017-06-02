@@ -27,7 +27,9 @@ extern crate maplit;
 pub use errors::*;
 pub use models::gazetteer::GazetteerKey;
 pub use pipeline::nlu_engine::SnipsNLUEngine;
-pub use pipeline::assistant_config::{NLUEngineConfigurationConvertible, FileBasedConfiguration};
+pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
+                                  NLUEngineConfiguration,
+                                  FileBasedConfiguration};
 pub use pipeline::IntentClassifierResult;
 pub use pipeline::IntentParserResult;
 pub use pipeline::Slot;

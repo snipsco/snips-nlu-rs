@@ -5,8 +5,7 @@ use errors::*;
 use pipeline::{IntentParser, IntentParserResult, Slot};
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
-use super::assistant_config::NLUEngineConfigurationConvertible;
-use super::configuration::Entity;
+use super::configuration::{Entity, NLUEngineConfigurationConvertible};
 
 pub struct SnipsNLUEngine {
     parsers: Vec<Box<IntentParser>>,
