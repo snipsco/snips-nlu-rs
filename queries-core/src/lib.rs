@@ -26,7 +26,7 @@ extern crate maplit;
 
 pub use errors::*;
 pub use models::gazetteer::GazetteerKey;
-pub use pipeline::nlu_engine::SnipsNLUEngine;
+pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
 pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
                                   NLUEngineConfiguration,
                                   FileBasedConfiguration};

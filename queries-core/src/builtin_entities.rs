@@ -2,6 +2,7 @@ use std::sync::{Mutex, Arc};
 use std::ops::Range;
 use std::collections::HashMap;
 use std::time::Instant;
+
 use errors::*;
 use rustling_ontology::{Lang, Parser, DimensionKind, build_parser, ParsingContext, Output};
 
@@ -45,7 +46,7 @@ impl RustlingParser {
 
     pub fn extract_entities(&self,
                             sentence: &str,
-                            filter_entity_kinds: Option<Vec<EntityKind>>) -> Vec<RustlingEntity> {
+                            filter_entity_kinds: Option<&[EntityKind]>) -> Vec<RustlingEntity> {
         lazy_static! {
             static ref CACHED_ENTITY: Mutex<EntityCache> = Mutex::new(EntityCache::new(60));
         }
@@ -184,7 +185,7 @@ mod test {
         }
 
         let key = CacheKey { lang: "en".into(), input: "test".into(), kinds: vec![] };
-        
+
         let mut cache = EntityCache::new(10); // caching for 10s
         assert_eq!(cache.cache(&key, parse).instant, cache.cache(&key, parse).instant);
 

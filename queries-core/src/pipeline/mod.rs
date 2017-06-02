@@ -7,6 +7,7 @@ pub mod rule_based;
 pub mod probabilistic;
 pub mod nlu_engine;
 pub mod configuration;
+mod tagging_utils;
 
 #[derive(Serialize, Debug, Default, PartialEq)]
 pub struct IntentParserResult {
