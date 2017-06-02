@@ -16,7 +16,7 @@ include!(concat!(env!("OUT_DIR"), "/phf.rs"));
 pub fn stem(language: &str, word: &str) -> Result<String> {
     if let Some(stem) = match language {
         "en" => &STEMS_EN,
-        "fn" => &STEMS_FR,
+        "fr" => &STEMS_FR,
         "es" => &STEMS_ES,
         _ => bail!("stem not supported for {}", language),
     }
