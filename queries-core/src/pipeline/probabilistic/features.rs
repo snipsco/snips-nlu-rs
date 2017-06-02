@@ -131,7 +131,7 @@ pub fn get_builtin_entities_annotation(tokens: &[Token],
         return None;
     }
     let text = initial_string_from_tokens(tokens);
-    parser.extract_entities(&text, Some(vec![builtin_entity_kind]))
+    parser.extract_entities(&text, Some(&[builtin_entity_kind]))
         .into_iter()
         .find(|e| ranges_overlap(&e.char_range, &tokens[token_index].char_range))
         .map(|e| {
