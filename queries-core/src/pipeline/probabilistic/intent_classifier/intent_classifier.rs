@@ -3,11 +3,14 @@ use ndarray::prelude::*;
 use errors::*;
 use models::logreg::MulticlassLogisticRegression;
 use pipeline::IntentClassifierResult;
-use super::featurizer::Featurizer;
+use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
+use resources_packed::stem;
 use utils::miscellaneous::argmax;
+use utils::token::tokenize_light;
 
 pub struct IntentClassifier {
+    language_code: String,
     intent_list: Vec<Option<String>>,
     featurizer: Option<Featurizer>,
     logreg: Option<MulticlassLogisticRegression>,
@@ -29,6 +32,7 @@ impl IntentClassifier {
             }?;
 
         Ok(Self {
+            language_code: config.language_code,
             intent_list: config.intent_list,
             featurizer,
             logreg
@@ -49,10 +53,12 @@ impl IntentClassifier {
             }
         }
 
-        // TODO: add stemming
-        let stemmed_text = input;
-        let features = self.featurizer.as_ref().unwrap().transform(stemmed_text)?; // checked
-        let probabilities = self.logreg.as_ref().unwrap().run(&features.view())?; // checked
+        let featurizer = self.featurizer.as_ref().unwrap(); // checked
+        let log_reg = self.logreg.as_ref().unwrap(); // checked
+
+        let stemmed_text: String = stem_sentence(input, &self.language_code)?;
+        let features = featurizer.transform(&stemmed_text)?;
+        let probabilities = log_reg.run(&features.view())?;
 
         let (index_predicted, best_probability) = argmax(&probabilities);
 
@@ -62,6 +68,14 @@ impl IntentClassifier {
             Ok(None)
         }
     }
+}
+
+fn stem_sentence(input: &str, language: &str) -> Result<String> {
+    let stemmed_words: Result<Vec<_>> = tokenize_light(input)
+        .iter()
+        .map(|word| Ok(stem(&language, word)?))
+        .collect();
+    Ok(stemmed_words?.join(" "))
 }
 
 #[cfg(test)]
@@ -76,6 +90,7 @@ mod tests {
     #[test]
     fn get_intent_works() {
         // Given
+        let language_code = "en".to_string();
         let best_features = vec![1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92, 93, 96, 97, 100, 101];
         let vocabulary = hashmap![
             "!".to_string() => 0,
@@ -316,7 +331,6 @@ mod tests {
         ];
 
         let config = FeaturizerConfiguration {
-            language_code: "en".to_string(),
             tfidf_vectorizer_idf_diag: diag_elements,
             best_features: best_features,
             tfidf_vectorizer_vocab: vocabulary,
@@ -420,6 +434,7 @@ mod tests {
         let coeffs: Array2<f32> = Array::from_shape_fn((27, 3), |(i, j)| coeffs_vec[j][i]);
         let logreg = MulticlassLogisticRegression::new(intercept, coeffs).unwrap();
         let classifier = IntentClassifier {
+            language_code,
             intent_list,
             featurizer: Some(featurizer),
             logreg: Some(logreg)
@@ -430,12 +445,12 @@ mod tests {
         let ref actual_result = classification_result.unwrap().unwrap();
         let expected_result = IntentClassifierResult {
             intent_name: "MakeTea".to_string(),
-            probability: 0.581595659694
+            probability: 0.48829985
         };
 
         // Then
 
-        assert_eq!(actual_result.intent_name, expected_result.intent_name);
-        assert_eq!(actual_result.probability, expected_result.probability);
+        assert_eq!(expected_result.intent_name, actual_result.intent_name);
+        assert_eq!(expected_result.probability, actual_result.probability);
     }
 }

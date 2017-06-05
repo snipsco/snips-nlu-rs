@@ -106,7 +106,7 @@ impl IntentParser for ProbabilisticIntentParser {
 
         builtin_entity_kinds.dedup_by_key(|kind| *kind);
 
-        let builtin_entities = self.builtin_entity_parser.extract_entities(input, Some(builtin_entity_kinds));
+        let builtin_entities = self.builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
 
         augment_slots(input, &tokens, tags, tagger, intent_slots_mapping, builtin_entities, builtin_slots)
     }
