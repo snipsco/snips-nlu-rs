@@ -12,6 +12,7 @@ pub struct ProbabilisticParserConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct IntentClassifierConfiguration {
+    pub language_code: String,
     pub featurizer: Option<FeaturizerConfiguration>,
     pub intercept: Option<Vec<f32>>,
     pub coeffs: Option<Vec<Vec<f32>>>,
@@ -20,7 +21,6 @@ pub struct IntentClassifierConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct FeaturizerConfiguration {
-    pub language_code: String,
     pub tfidf_vectorizer_idf_diag: Vec<f32>,
     pub best_features: Vec<usize>,
     pub tfidf_vectorizer_vocab: HashMap<String, usize>,
@@ -29,7 +29,6 @@ pub struct FeaturizerConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct TaggerConfiguration {
-    //language: String, // cause a duplicate error ?
     pub crf_model_data: String,
     pub tagging_scheme: u8,
     pub features_signatures: Vec<Feature>,
