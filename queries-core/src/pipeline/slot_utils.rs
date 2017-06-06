@@ -85,3 +85,68 @@ pub fn resolve_builtin_slots(text: &str, slots: Vec<InternalSlot>, parser: &Rust
             })
         .collect()
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rustling_ontology::Lang;
+    use builtin_entities::{AmountOfMoneyValue, Precision, TimeValue, InstantTimeValue, Grain};
+
+    #[test]
+    fn resolve_builtin_slots_works() {
+        // Given
+        let text = "Send 5 dollars to John on Jun 6 2017 at 8pm";
+        let slots = vec![
+            InternalSlot {
+                value: "5 dollars".to_string(),
+                range: 5..14,
+                entity: "snips/amountOfMoney".to_string(),
+                slot_name: "amount".to_string()
+            },
+            InternalSlot {
+                value: "Jun 6 2017 at 8pm".to_string(),
+                range: 26..43,
+                entity: "snips/datetime".to_string(),
+                slot_name: "datetime".to_string()
+            },
+        ];
+        let parser = RustlingParser::get(Lang::EN);
+
+        // When
+        let actual_results = resolve_builtin_slots(text, slots, &*parser);
+
+        // Then
+        let expected_results = vec![
+            Slot {
+                raw_value: "5 dollars".to_string(),
+                value: SlotValue::Builtin(BuiltinEntity::AmountOfMoney(
+                    AmountOfMoneyValue {
+                        value: 5.0,
+                        precision: Precision::Exact,
+                        unit: Some("$")
+                    }
+                )),
+                range: 5..14,
+                entity: "snips/amountOfMoney".to_string(),
+                slot_name: "amount".to_string()
+            },
+            Slot {
+                raw_value: "Jun 6 2017 at 8pm".to_string(),
+                value: SlotValue::Builtin(BuiltinEntity::Time(
+                    TimeValue::InstantTime(
+                        InstantTimeValue {
+                            value: "2017-06-06 20:00:00 +02:00".to_string(),
+                            grain: Grain::Hour,
+                            precision: Precision::Exact
+                        }
+                    )
+                )),
+                range: 26..43,
+                entity: "snips/datetime".to_string(),
+                slot_name: "datetime".to_string()
+            }
+        ];
+        assert_eq!(expected_results, actual_results);
+    }
+}
