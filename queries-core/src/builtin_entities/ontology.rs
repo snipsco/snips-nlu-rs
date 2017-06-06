@@ -12,7 +12,6 @@ pub enum BuiltinEntity {
     Number(NumberValue),
     Ordinal(OrdinalValue),
     Time(TimeValue),
-    TimeInterval(TimeIntervalValue),
     AmountOfMoney(AmountOfMoneyValue),
     Temperature(TemperatureValue),
     Duration(DurationValue),
@@ -43,22 +42,39 @@ impl From<OrdinalOutput> for OrdinalValue {
 }
 
 #[derive(Serialize, Clone, PartialEq, Debug)]
-pub struct TimeValue {
+pub enum TimeValue {
+    InstantTime(InstantTimeValue),
+    TimeInterval(TimeIntervalValue)
+}
+
+impl From<TimeOutput> for TimeValue {
+    fn from(v: TimeOutput) -> TimeValue {
+        TimeValue::InstantTime(InstantTimeValue::from(v))
+    }
+}
+
+impl From<TimeIntervalOutput> for TimeValue {
+    fn from(v: TimeIntervalOutput) -> TimeValue {
+        TimeValue::TimeInterval(TimeIntervalValue::from(v))
+    }
+}
+
+#[derive(Serialize, Clone, PartialEq, Debug)]
+pub struct InstantTimeValue {
     pub value: String,
     pub grain: Grain,
     pub precision: Precision,
 }
 
-impl From<TimeOutput> for TimeValue {
-    fn from(v: TimeOutput) -> TimeValue {
-        TimeValue {
+impl From<TimeOutput> for InstantTimeValue {
+    fn from(v: TimeOutput) -> InstantTimeValue {
+        InstantTimeValue {
             value: v.moment.to_string(),
             grain: Grain::from(v.grain),
             precision: Precision::from(v.precision)
         }
     }
 }
-
 
 #[derive(Serialize, Clone, PartialEq, Debug)]
 pub struct TimeIntervalValue {
@@ -212,7 +228,7 @@ impl BuiltinEntity {
             Output::Ordinal(ref v) => BuiltinEntity::Ordinal(OrdinalValue::from(v.clone())),
             Output::Temperature(ref v) => BuiltinEntity::Temperature(TemperatureValue::from(v.clone())),
             Output::Time(ref v) => BuiltinEntity::Time(TimeValue::from(v.clone())),
-            Output::TimeInterval(ref v) => BuiltinEntity::TimeInterval(TimeIntervalValue::from(v.clone())),
+            Output::TimeInterval(ref v) => BuiltinEntity::Time(TimeValue::from(v.clone())),
         }
     }
 }
@@ -226,7 +242,6 @@ pub enum BuiltinEntityKind {
     Ordinal,
     Temperature,
     Time,
-    TimeInterval,
 }
 
 impl BuiltinEntityKind {
@@ -238,7 +253,6 @@ impl BuiltinEntityKind {
             BuiltinEntityKind::Ordinal,
             BuiltinEntityKind::Temperature,
             BuiltinEntityKind::Time,
-            BuiltinEntityKind::TimeInterval,
         ]
     }
 }
@@ -252,7 +266,6 @@ impl BuiltinEntityKind {
             BuiltinEntityKind::Ordinal => "snips/ordinal",
             BuiltinEntityKind::Temperature => "snips/temperature",
             BuiltinEntityKind::Time => "snips/datetime",
-            BuiltinEntityKind::TimeInterval => "snips/timeInterval",
         }
     }
 
@@ -272,7 +285,7 @@ impl BuiltinEntityKind {
             Output::Ordinal(_) => BuiltinEntityKind::Ordinal,
             Output::Temperature(_) => BuiltinEntityKind::Temperature,
             Output::Time(_) => BuiltinEntityKind::Time,
-            Output::TimeInterval(_) => BuiltinEntityKind::TimeInterval,
+            Output::TimeInterval(_) => BuiltinEntityKind::Time,
         }
     }
 
@@ -284,7 +297,6 @@ impl BuiltinEntityKind {
             BuiltinEntityKind::Ordinal => DimensionKind::Ordinal,
             BuiltinEntityKind::Temperature => DimensionKind::Temperature,
             BuiltinEntityKind::Time => DimensionKind::Time,
-            BuiltinEntityKind::TimeInterval => DimensionKind::Time,
         }
     }
 }
