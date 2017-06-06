@@ -377,7 +377,7 @@ mod tests {
     #[test]
     fn should_replace_builtin_entities() {
         // Given
-        let text = "Meeting today at 5pm or tomorrow at 11am !";
+        let text = "Meeting this evening or tomorrow at 11am !";
         let parser = RustlingParser::get(Lang::EN);
 
         // When
