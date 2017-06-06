@@ -5,7 +5,6 @@ use serde::ser::{Serialize, Serializer, SerializeStruct};
 
 use builtin_entities::{RustlingParser, BuiltinEntity, BuiltinEntityKind};
 use pipeline::{InternalSlot, Slot, SlotValue};
-use utils::miscellaneous::ranges_overlap;
 
 impl Slot {
     pub fn new_custom(value: String, range: Range<usize>, entity: String, slot_name: String) -> Slot {
@@ -72,10 +71,15 @@ pub fn resolve_builtin_slots(text: &str, slots: Vec<InternalSlot>, parser: &Rust
     slots.into_iter()
         .filter_map(|slot|
             if let Some(entity_kind) = BuiltinEntityKind::from_identifier(&slot.entity).ok() {
-                builtin_entities
-                    .iter()
-                    .find(|entity| entity.entity_kind == entity_kind && ranges_overlap(&entity.range, &slot.range))
-                    .map(|matching_entity| convert_to_builtin_slot(slot, matching_entity.entity.clone()))
+                builtin_entities.iter()
+                    .find(|entity| entity.entity_kind == entity_kind && entity.range == slot.range)
+                    .map(|rustling_entity| Some(rustling_entity.entity.clone()))
+                    .unwrap_or({
+                        parser.extract_entities(&slot.value, None).into_iter()
+                            .find(|rustling_entity| rustling_entity.entity_kind == entity_kind)
+                            .map(|rustling_entity| rustling_entity.entity)
+                    })
+                    .map(|matching_entity| convert_to_builtin_slot(slot, matching_entity))
             } else {
                 Some(convert_to_custom_slot(slot))
             })
