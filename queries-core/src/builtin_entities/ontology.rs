@@ -1,8 +1,8 @@
 use std::convert::From;
 
 use errors::*;
-use rustling_ontology::{DimensionKind, Grain as _Grain};
-use rustling_ontology::dimension::{Precision as _Precision};
+use rustling_ontology::{DimensionKind, Grain as RustlingGrain};
+use rustling_ontology::dimension::{Precision as RustlingPrecision};
 use rustling_ontology::output::{IntegerOutput, FloatOutput, OrdinalOutput, TimeOutput,
                                 TimeIntervalOutput, AmountOfMoneyOutput, TemperatureOutput,
                                 DurationOutput, Output};
@@ -151,14 +151,14 @@ impl From<DurationOutput> for DurationValue {
         let mut seconds: i64 = 0;
         for comp in v.period.comps().iter() {
             match comp.grain {
-                _Grain::Year => years = comp.quantity,
-                _Grain::Quarter => quarters = comp.quantity,
-                _Grain::Month => months = comp.quantity,
-                _Grain::Week => weeks = comp.quantity,
-                _Grain::Day => days = comp.quantity,
-                _Grain::Hour => hours = comp.quantity,
-                _Grain::Minute => minutes = comp.quantity,
-                _Grain::Second => seconds = comp.quantity,
+                RustlingGrain::Year => years = comp.quantity,
+                RustlingGrain::Quarter => quarters = comp.quantity,
+                RustlingGrain::Month => months = comp.quantity,
+                RustlingGrain::Week => weeks = comp.quantity,
+                RustlingGrain::Day => days = comp.quantity,
+                RustlingGrain::Hour => hours = comp.quantity,
+                RustlingGrain::Minute => minutes = comp.quantity,
+                RustlingGrain::Second => seconds = comp.quantity,
             }
         }
 
@@ -188,17 +188,17 @@ pub enum Grain {
     Second = 7,
 }
 
-impl From<_Grain> for Grain {
-    fn from(v: _Grain) -> Grain {
+impl From<RustlingGrain> for Grain {
+    fn from(v: RustlingGrain) -> Grain {
         match v {
-            _Grain::Year => Grain::Year,
-            _Grain::Quarter => Grain::Quarter,
-            _Grain::Month => Grain::Month,
-            _Grain::Week => Grain::Week,
-            _Grain::Day => Grain::Day,
-            _Grain::Hour => Grain::Hour,
-            _Grain::Minute => Grain::Minute,
-            _Grain::Second => Grain::Second,
+            RustlingGrain::Year => Grain::Year,
+            RustlingGrain::Quarter => Grain::Quarter,
+            RustlingGrain::Month => Grain::Month,
+            RustlingGrain::Week => Grain::Week,
+            RustlingGrain::Day => Grain::Day,
+            RustlingGrain::Hour => Grain::Hour,
+            RustlingGrain::Minute => Grain::Minute,
+            RustlingGrain::Second => Grain::Second,
         }
     }
 }
@@ -209,11 +209,11 @@ pub enum Precision {
     Exact,
 }
 
-impl From<_Precision> for Precision {
-    fn from(v: _Precision) -> Precision {
+impl From<RustlingPrecision> for Precision {
+    fn from(v: RustlingPrecision) -> Precision {
         match v {
-            _Precision::Approximate => Precision::Approximate,
-            _Precision::Exact => Precision::Exact,
+            RustlingPrecision::Approximate => Precision::Approximate,
+            RustlingPrecision::Exact => Precision::Exact,
         }
     }
 }
