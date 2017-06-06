@@ -2,11 +2,13 @@ use std::ops::Range;
 use std::collections::HashSet;
 
 use errors::*;
+use builtin_entities::BuiltinEntity;
 
 pub mod rule_based;
 pub mod probabilistic;
 pub mod nlu_engine;
 pub mod configuration;
+pub mod slot_utils;
 mod tagging_utils;
 
 #[derive(Serialize, Debug, Default, PartialEq)]
@@ -22,12 +24,27 @@ pub struct IntentClassifierResult {
     pub probability: f32,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
-pub struct Slot {
+#[derive(Debug, Clone, PartialEq)]
+pub struct InternalSlot {
     pub value: String,
     pub range: Range<usize>,
     pub entity: String,
     pub slot_name: String
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Slot {
+    pub raw_value: String,
+    pub value: SlotValue,
+    pub range: Range<usize>,
+    pub entity: String,
+    pub slot_name: String
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum SlotValue {
+    Custom(String),
+    Builtin(BuiltinEntity),
 }
 
 trait IntentParser: Send + Sync {
