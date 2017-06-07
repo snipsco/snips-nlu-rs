@@ -9,7 +9,7 @@ use models::stemmer::StaticMapStemmer;
 use models::word_clusterer::WordClusterer;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape, initial_string_from_tokens};
-use builtin_entities::{EntityKind, RustlingParser};
+use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use utils::miscellaneous::ranges_overlap;
 
 pub fn is_digit(string: &str) -> Option<String> {
@@ -125,7 +125,7 @@ pub fn get_word_cluster<C: WordClusterer, S: Stemmer>(tokens: &[Token],
 pub fn get_builtin_entities_annotation(tokens: &[Token],
                                        token_index: usize,
                                        parser: &RustlingParser,
-                                       builtin_entity_kind: EntityKind,
+                                       builtin_entity_kind: BuiltinEntityKind,
                                        tagging_scheme: TaggingScheme) -> Option<String> {
     if token_index >= tokens.len() {
         return None;
@@ -133,10 +133,10 @@ pub fn get_builtin_entities_annotation(tokens: &[Token],
     let text = initial_string_from_tokens(tokens);
     parser.extract_entities(&text, Some(&[builtin_entity_kind]))
         .into_iter()
-        .find(|e| ranges_overlap(&e.char_range, &tokens[token_index].char_range))
+        .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
         .map(|e| {
             let entity_token_indexes = (0..tokens.len())
-                .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.char_range))
+                .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.range))
                 .collect_vec();
             get_scheme_prefix(token_index, &entity_token_indexes, tagging_scheme).to_string()
         })
@@ -415,7 +415,7 @@ mod tests {
         let actual_annotation = get_builtin_entities_annotation(&tokens,
                                                                 token_index,
                                                                 &*parser,
-                                                                EntityKind::Time,
+                                                                BuiltinEntityKind::Time,
                                                                 tagging_scheme);
 
         // Then

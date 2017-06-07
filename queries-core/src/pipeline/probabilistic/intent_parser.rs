@@ -8,14 +8,15 @@ use itertools::Itertools;
 use rustling_ontology::Lang;
 
 use errors::*;
-use pipeline::{IntentClassifierResult, IntentParser, Slot};
+use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
+use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use super::intent_classifier::IntentClassifier;
 use super::tagger::Tagger;
 use super::crf_utils::{tags_to_slots, positive_tagging};
 use utils::miscellaneous::ranges_overlap;
 use utils::token::{Token, tokenize};
 use super::configuration::ProbabilisticParserConfiguration;
-use builtin_entities::{EntityKind, RustlingEntity, RustlingParser};
+use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
 
 
 pub struct ProbabilisticIntentParser {
@@ -86,21 +87,21 @@ impl IntentParser for ProbabilisticIntentParser {
         }
 
         let tags = tagger.get_tags(&tokens)?;
-        let slots = tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping)
+        let slots: Vec<InternalSlot> = tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping)
             .into_iter()
-            .filter(|s| EntityKind::from_identifier(&s.entity).is_err())
+            .filter(|s| BuiltinEntityKind::from_identifier(&s.entity).is_err())
             .collect();
 
-        let builtin_slots: Vec<(String, EntityKind)> = intent_slots_mapping.into_iter()
+        let builtin_slots: Vec<(String, BuiltinEntityKind)> = intent_slots_mapping.into_iter()
             .filter_map(|(slot_name, entity)|
-                EntityKind::from_identifier(entity).ok().map(|kind| (slot_name.clone(), kind)))
+                BuiltinEntityKind::from_identifier(entity).ok().map(|kind| (slot_name.clone(), kind)))
             .collect();
 
         if builtin_slots.is_empty() {
-            return Ok(slots);
+            return Ok(slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect());
         }
 
-        let mut builtin_entity_kinds: Vec<EntityKind> = builtin_slots.iter()
+        let mut builtin_entity_kinds: Vec<BuiltinEntityKind> = builtin_slots.iter()
             .map(|&(_, kind)| kind)
             .collect_vec();
 
@@ -108,7 +109,14 @@ impl IntentParser for ProbabilisticIntentParser {
 
         let builtin_entities = self.builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
 
-        augment_slots(input, &tokens, tags, tagger, intent_slots_mapping, builtin_entities, builtin_slots)
+        let augmented_slots = augment_slots(input,
+                                            &tokens,
+                                            tags,
+                                            tagger,
+                                            intent_slots_mapping,
+                                            builtin_entities,
+                                            builtin_slots)?;
+        Ok(resolve_builtin_slots(input, augmented_slots, &*self.builtin_entity_parser))
     }
 }
 
@@ -118,12 +126,12 @@ fn augment_slots(text: &str,
                  tagger: &Tagger,
                  intent_slots_mapping: &HashMap<String, String>,
                  builtin_entities: Vec<RustlingEntity>,
-                 missing_slots: Vec<(String, EntityKind)>) -> Result<Vec<Slot>> {
+                 missing_slots: Vec<(String, BuiltinEntityKind)>) -> Result<Vec<InternalSlot>> {
     let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
-    let grouped_entities = builtin_entities.into_iter().group_by(|e| e.kind);
+    let grouped_entities = builtin_entities.into_iter().group_by(|e| e.entity_kind);
 
     for (entity_kind, group) in &grouped_entities {
-        let spans_ranges = group.map(|e| e.char_range).collect_vec();
+        let spans_ranges = group.map(|e| e.range).collect_vec();
         let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
         let related_slots = missing_slots.iter()
             .filter_map(|&(ref slot_name, kind)|
