@@ -12,10 +12,3 @@ pub fn epsilon_eq(a: f32, b: f32, epsilon: f32) -> bool {
     diff < epsilon && diff > -epsilon
 }
 
-pub fn create_array(input: &Vec<Vec<f32>>) -> Array2<f32> {
-    Array::from_shape_fn((input.len(), input[0].len()), |x| input[x.0][x.1])
-}
-
-pub fn create_transposed_array(input: &Vec<Vec<f32>>) -> Array2<f32> {
-    Array::from_shape_fn((input[0].len(), input.len()), |x| input[x.1][x.0])
-}
