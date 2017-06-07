@@ -142,7 +142,7 @@ mod test {
 
     #[test]
     fn test_entity_cache() {
-        fn parse(key: &CacheKey) -> Vec<RustlingEntity> {
+        fn parse(_: &CacheKey) -> Vec<RustlingEntity> {
             vec![
                 RustlingEntity {
                     value: "two".into(),
