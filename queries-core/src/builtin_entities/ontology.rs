@@ -7,7 +7,7 @@ use rustling_ontology::output::{IntegerOutput, FloatOutput, OrdinalOutput, TimeO
                                 TimeIntervalOutput, AmountOfMoneyOutput, TemperatureOutput,
                                 DurationOutput, Output};
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BuiltinEntity {
     Number(NumberValue),
     Ordinal(OrdinalValue),
