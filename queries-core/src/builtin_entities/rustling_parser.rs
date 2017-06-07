@@ -11,7 +11,7 @@ pub struct RustlingParser {
     lang: Lang,
 }
 
-#[derive(Serialize, Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RustlingEntity {
     pub value: String,
     pub range: Range<usize>,

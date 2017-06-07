@@ -37,7 +37,16 @@ impl Serialize for Slot {
         let mut state = serializer.serialize_struct("Slot", 4)?;
         match self.value {
             SlotValue::Custom(ref string_value) => state.serialize_field("value", &string_value)?,
-            SlotValue::Builtin(ref builtin_entity_value) => state.serialize_field("value", &builtin_entity_value)?,
+            SlotValue::Builtin(ref builtin_entity_value) => {
+                match builtin_entity_value {
+                    &BuiltinEntity::Number(ref v) => state.serialize_field("value", &v)?,
+                    &BuiltinEntity::Ordinal(ref v) => state.serialize_field("value", &v)?,
+                    &BuiltinEntity::Time(ref v) => state.serialize_field("value", &v)?,
+                    &BuiltinEntity::AmountOfMoney(ref v) => state.serialize_field("value", &v)?,
+                    &BuiltinEntity::Temperature(ref v) => state.serialize_field("value", &v)?,
+                    &BuiltinEntity::Duration(ref v) => state.serialize_field("value", &v)?,
+                }
+            },
         }
         state.serialize_field("range", &self.range)?;
         state.serialize_field("entity", &self.entity)?;
