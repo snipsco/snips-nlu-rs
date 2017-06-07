@@ -4,7 +4,7 @@ use std::ops::Range;
 use itertools::Itertools;
 
 use errors::*;
-use pipeline::{IntentParser, IntentParserResult, Slot};
+use pipeline::{IntentParser, IntentParserResult, SlotValue};
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities};
@@ -58,23 +58,19 @@ impl SnipsNLUEngine {
                 let valid_slots = parser
                     .get_slots(input, &classification_result.intent_name)?
                     .into_iter()
-                    .filter_map(|s| {
-                        let mut slot_value = s.value.to_string();
-                        if self.entities.contains_key(&s.entity) {
-                            let entity = self.entities.get(&s.entity).unwrap();
+                    .filter_map(|slot| {
+                        if let Some(entity) = self.entities.get(&slot.entity) {
                             if !entity.automatically_extensible {
-                                if !entity.utterances.contains_key(&s.value) {
-                                    return None
-                                }
-                                slot_value = entity.utterances.get(&s.value).unwrap().to_string();
+                                entity.utterances
+                                    .get(&slot.raw_value)
+                                    .map(|reference_value|
+                                        slot.update_with_slot_value(SlotValue::Custom(reference_value.clone())))
+                            } else {
+                                Some(slot)
                             }
-                        };
-                        Some(Slot {
-                            value: slot_value,
-                            range: s.range,
-                            entity: s.entity,
-                            slot_name: s.slot_name
-                        })
+                        } else {
+                            Some(slot)
+                        }
                     })
                     .collect();
 
@@ -120,7 +116,7 @@ impl SnipsNLUEngine {
             .slots
             .map(|slots|
                 slots.into_iter()
-                    .map(|s| TaggedEntity { value: s.value, range: s.range, entity: s.entity })
+                    .map(|s| TaggedEntity { value: s.raw_value, range: s.range, entity: s.entity })
                     .collect_vec())
             .unwrap_or(vec![]);
 
@@ -185,27 +181,36 @@ impl SnipsNLUEngine {
 mod tests {
     use super::*;
     use pipeline::configuration::NLUEngineConfiguration;
-    use pipeline::IntentClassifierResult;
+    use builtin_entities::BuiltinEntity;
+    use builtin_entities::ontology::NumberValue;
+    use pipeline::{IntentClassifierResult, Slot, SlotValue};
     use utils::miscellaneous::parse_json;
 
     #[test]
     fn it_works() {
+        // Given
         let configuration: NLUEngineConfiguration = parse_json("tests/configurations/beverage_engine.json");
         let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
+
+        // When
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
 
-        assert_eq!(IntentParserResult {
+        // Then
+        let expected_entity_value = SlotValue::Builtin(BuiltinEntity::Number(NumberValue(2.0)));
+        let expected_result = IntentParserResult {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
                 intent_name: "MakeCoffee".to_string(),
                 probability: 0.7035172
             }),
             slots: Some(vec![Slot {
-                value: "two".to_string(),
+                raw_value: "two".to_string(),
+                value: expected_entity_value,
                 range: 8..11,
                 entity: "snips/number".to_string(),
                 slot_name: "number_of_cups".to_string()
             }])
-        }, result)
+        };
+        assert_eq!(expected_result, result)
     }
 }

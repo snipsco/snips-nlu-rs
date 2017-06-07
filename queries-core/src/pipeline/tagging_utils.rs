@@ -1,12 +1,12 @@
 use std::str::FromStr;
 
-use builtin_entities::{EntityKind, RustlingParser};
+use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use itertools::Itertools;
 use pipeline::nlu_engine::TaggedEntity;
 use rustling_ontology::Lang;
 use utils::miscellaneous::ranges_overlap;
 
-const TAGGING_SCOPE: [EntityKind; 2] = [EntityKind::Duration, EntityKind::Time];
+const TAGGING_SCOPE: [BuiltinEntityKind; 2] = [BuiltinEntityKind::Duration, BuiltinEntityKind::Time];
 
 pub fn enrich_entities(mut tagged_entities: Vec<TaggedEntity>,
                        other_tagged_entities: Vec<TaggedEntity>) -> Vec<TaggedEntity> {
@@ -28,8 +28,8 @@ pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<TaggedEntity> {
                 .map(|entity|
                     TaggedEntity {
                         value: entity.value,
-                        range: entity.char_range,
-                        entity: entity.kind.identifier().to_string()
+                        range: entity.range,
+                        entity: entity.entity_kind.identifier().to_string()
                     })
                 .collect_vec())
         .unwrap_or(vec![])
