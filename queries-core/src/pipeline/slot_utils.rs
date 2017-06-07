@@ -91,12 +91,12 @@ pub fn resolve_builtin_slots(text: &str, slots: Vec<InternalSlot>, parser: &Rust
 mod tests {
     use super::*;
     use rustling_ontology::Lang;
-    use builtin_entities::{AmountOfMoneyValue, Precision, TimeValue, InstantTimeValue, Grain};
+    use builtin_entities::{AmountOfMoneyValue, OrdinalValue, Precision};
 
     #[test]
     fn resolve_builtin_slots_works() {
         // Given
-        let text = "Send 5 dollars to John on Jun 6 2017 at 8pm";
+        let text = "Send 5 dollars to the 10th subscriber";
         let slots = vec![
             InternalSlot {
                 value: "5 dollars".to_string(),
@@ -105,10 +105,10 @@ mod tests {
                 slot_name: "amount".to_string()
             },
             InternalSlot {
-                value: "Jun 6 2017 at 8pm".to_string(),
-                range: 26..43,
-                entity: "snips/datetime".to_string(),
-                slot_name: "datetime".to_string()
+                value: "10th".to_string(),
+                range: 22..26,
+                entity: "snips/ordinal".to_string(),
+                slot_name: "ranking".to_string()
             },
         ];
         let parser = RustlingParser::get(Lang::EN);
@@ -132,19 +132,11 @@ mod tests {
                 slot_name: "amount".to_string()
             },
             Slot {
-                raw_value: "Jun 6 2017 at 8pm".to_string(),
-                value: SlotValue::Builtin(BuiltinEntity::Time(
-                    TimeValue::InstantTime(
-                        InstantTimeValue {
-                            value: "2017-06-06 20:00:00 +02:00".to_string(),
-                            grain: Grain::Hour,
-                            precision: Precision::Exact
-                        }
-                    )
-                )),
-                range: 26..43,
-                entity: "snips/datetime".to_string(),
-                slot_name: "datetime".to_string()
+                raw_value: "10th".to_string(),
+                value: SlotValue::Builtin(BuiltinEntity::Ordinal(OrdinalValue(10))),
+                range: 22..26,
+                entity: "snips/ordinal".to_string(),
+                slot_name: "ranking".to_string()
             }
         ];
         assert_eq!(expected_results, actual_results);
