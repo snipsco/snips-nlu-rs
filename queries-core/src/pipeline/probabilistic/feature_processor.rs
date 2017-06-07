@@ -13,7 +13,7 @@ use super::crf_utils::TaggingScheme;
 use models::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
 use models::stemmer::StaticMapStemmer;
 use models::word_clusterer::StaticMapWordClusterer;
-use builtin_entities::{EntityKind, RustlingParser};
+use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use rustling_ontology::Lang;
 
 struct FeatureFunction {
@@ -209,7 +209,7 @@ fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
 fn builtin_entities_annotation_feature_function(args: &HashMap<String, serde_json::Value>,
                                                 offsets: Vec<i32>) -> Result<FeatureFunction> {
     let builtin_entity_label = parse_as_string(args, "built_in_entity_label")?;
-    let builtin_entity_kind = EntityKind::from_identifier(&builtin_entity_label)?;
+    let builtin_entity_kind = BuiltinEntityKind::from_identifier(&builtin_entity_label)?;
     let language_code = parse_as_string(args, "language_code")?;
     let rust_lang = Lang::from_str(&language_code)?;
     let parser = RustlingParser::get(rust_lang);
