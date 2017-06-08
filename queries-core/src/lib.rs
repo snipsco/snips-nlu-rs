@@ -3,7 +3,6 @@ extern crate crfsuite;
 extern crate csv;
 #[macro_use]
 extern crate error_chain;
-extern crate fst;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;

@@ -12,6 +12,8 @@ use pipeline::configuration::{Entity, NLUEngineConfigurationConvertible};
 use utils::token::{tokenize, compute_all_ngrams};
 use utils::string::substring_with_char_range;
 
+const MODEL_VERSION: &str = "0.8.3";
+
 pub struct SnipsNLUEngine {
     language: String,
     parsers: Vec<Box<IntentParser>>,
@@ -60,14 +62,17 @@ impl SnipsNLUEngine {
                     .into_iter()
                     .filter_map(|slot| {
                         if let Some(entity) = self.entities.get(&slot.entity) {
-                            if !entity.automatically_extensible {
-                                entity.utterances
-                                    .get(&slot.raw_value)
-                                    .map(|reference_value|
-                                        slot.update_with_slot_value(SlotValue::Custom(reference_value.clone())))
-                            } else {
-                                Some(slot)
-                            }
+                            entity.utterances
+                                .get(&slot.raw_value)
+                                .map(|reference_value|
+                                    Some(slot.update_with_slot_value(SlotValue::Custom(reference_value.clone()))))
+                                .unwrap_or(
+                                    if entity.automatically_extensible {
+                                        Some(slot)
+                                    } else {
+                                        None
+                                    }
+                                )
                         } else {
                             Some(slot)
                         }
@@ -83,15 +88,18 @@ impl SnipsNLUEngine {
                 )
             }
         }
-
         Ok(IntentParserResult { input: input.to_string(), intent: None, slots: None })
+    }
+
+    pub fn model_version() -> &'static str {
+        MODEL_VERSION
     }
 }
 
 const DEFAULT_THRESHOLD: usize = 5;
 
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Serialize, Debug, Clone, PartialEq, Hash)]
 pub struct TaggedEntity {
     pub value: String,
     pub range: Range<usize>,
