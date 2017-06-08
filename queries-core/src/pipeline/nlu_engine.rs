@@ -86,8 +86,11 @@ impl SnipsNLUEngine {
                 )
             }
         }
-
         Ok(IntentParserResult { input: input.to_string(), intent: None, slots: None })
+    }
+
+    pub fn version() -> &'static str {
+        env!("CARGO_PKG_VERSION")
     }
 }
 
