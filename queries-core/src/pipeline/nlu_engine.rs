@@ -60,14 +60,17 @@ impl SnipsNLUEngine {
                     .into_iter()
                     .filter_map(|slot| {
                         if let Some(entity) = self.entities.get(&slot.entity) {
-                            if !entity.automatically_extensible {
-                                entity.utterances
-                                    .get(&slot.raw_value)
-                                    .map(|reference_value|
-                                        slot.update_with_slot_value(SlotValue::Custom(reference_value.clone())))
-                            } else {
-                                Some(slot)
-                            }
+                            entity.utterances
+                                .get(&slot.raw_value)
+                                .map(|reference_value|
+                                    Some(slot.update_with_slot_value(SlotValue::Custom(reference_value.clone()))))
+                                .unwrap_or(
+                                    if entity.automatically_extensible {
+                                        Some(slot)
+                                    } else {
+                                        None
+                                    }
+                                )
                         } else {
                             Some(slot)
                         }
@@ -91,7 +94,7 @@ impl SnipsNLUEngine {
 const DEFAULT_THRESHOLD: usize = 5;
 
 
-#[derive(Debug, Clone, PartialEq, Hash)]
+#[derive(Serialize, Debug, Clone, PartialEq, Hash)]
 pub struct TaggedEntity {
     pub value: String,
     pub range: Range<usize>,
