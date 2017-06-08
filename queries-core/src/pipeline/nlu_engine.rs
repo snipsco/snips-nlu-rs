@@ -12,6 +12,8 @@ use pipeline::configuration::{Entity, NLUEngineConfigurationConvertible};
 use utils::token::{tokenize, compute_all_ngrams};
 use utils::string::substring_with_char_range;
 
+const MODEL_VERSION: &str = "0.8.3";
+
 pub struct SnipsNLUEngine {
     language: String,
     parsers: Vec<Box<IntentParser>>,
@@ -89,8 +91,8 @@ impl SnipsNLUEngine {
         Ok(IntentParserResult { input: input.to_string(), intent: None, slots: None })
     }
 
-    pub fn version() -> &'static str {
-        env!("CARGO_PKG_VERSION")
+    pub fn model_version() -> &'static str {
+        MODEL_VERSION
     }
 }
 
