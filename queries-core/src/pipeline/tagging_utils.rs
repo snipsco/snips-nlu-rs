@@ -29,7 +29,8 @@ pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<TaggedEntity> {
                     TaggedEntity {
                         value: entity.value,
                         range: entity.range,
-                        entity: entity.entity_kind.identifier().to_string()
+                        entity: entity.entity_kind.identifier().to_string(),
+                        slot_name: None
                     })
                 .collect_vec())
         .unwrap_or(vec![])
@@ -43,13 +44,13 @@ mod tests {
     fn enrich_entities_works() {
         // Given
         let tagged_entities = vec![
-            TaggedEntity { value: "hello world".to_string(), range: 0..11, entity: "entity1".to_string() },
-            TaggedEntity { value: "!!!".to_string(), range: 13..16, entity: "entity2".to_string() },
+            TaggedEntity { value: "hello world".to_string(), range: 0..11, entity: "entity1".to_string(), slot_name: None },
+            TaggedEntity { value: "!!!".to_string(), range: 13..16, entity: "entity2".to_string(), slot_name: None },
         ];
 
         let other_tagged_entities = vec![
-            TaggedEntity { value: "world".to_string(), range: 6..11, entity: "entity1".to_string() },
-            TaggedEntity { value: "yay".to_string(), range: 16..19, entity: "entity3".to_string() },
+            TaggedEntity { value: "world".to_string(), range: 6..11, entity: "entity1".to_string(), slot_name: None },
+            TaggedEntity { value: "yay".to_string(), range: 16..19, entity: "entity3".to_string(), slot_name: None },
         ];
 
         // When
@@ -57,9 +58,9 @@ mod tests {
 
         // Then
         let expected_entities = vec![
-            TaggedEntity { value: "hello world".to_string(), range: 0..11, entity: "entity1".to_string() },
-            TaggedEntity { value: "!!!".to_string(), range: 13..16, entity: "entity2".to_string() },
-            TaggedEntity { value: "yay".to_string(), range: 16..19, entity: "entity3".to_string() },
+            TaggedEntity { value: "hello world".to_string(), range: 0..11, entity: "entity1".to_string(), slot_name: None },
+            TaggedEntity { value: "!!!".to_string(), range: 13..16, entity: "entity2".to_string(), slot_name: None },
+            TaggedEntity { value: "yay".to_string(), range: 16..19, entity: "entity3".to_string(), slot_name: None },
         ];
 
         assert_eq!(expected_entities, enriched_entities);
