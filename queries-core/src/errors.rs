@@ -4,7 +4,6 @@ error_chain! {
         NdArray(::ndarray::ShapeError);
         Csv(::csv::Error);
         Zip(::zip::result::ZipError);
-        Fst(::fst::Error);
         Regex(::regex::Error);
         Rustling(::rustling_ontology::RustlingError);
         Crfsuite(::crfsuite::Error);
