@@ -103,7 +103,8 @@ const DEFAULT_THRESHOLD: usize = 5;
 pub struct TaggedEntity {
     pub value: String,
     pub range: Range<usize>,
-    pub entity: String
+    pub entity: String,
+    pub slot_name: Option<String>
 }
 
 impl SnipsNLUEngine {
@@ -124,7 +125,12 @@ impl SnipsNLUEngine {
             .slots
             .map(|slots|
                 slots.into_iter()
-                    .map(|s| TaggedEntity { value: s.raw_value, range: s.range, entity: s.entity })
+                    .map(|s| TaggedEntity {
+                        value: s.raw_value,
+                        range: s.range,
+                        entity: s.entity,
+                        slot_name: Some(s.slot_name)
+                    })
                     .collect_vec())
             .unwrap_or(vec![]);
 
@@ -171,7 +177,8 @@ impl SnipsNLUEngine {
                         ngram_entity = Some(TaggedEntity {
                             value,
                             range,
-                            entity: entity_name.to_string()
+                            entity: entity_name.to_string(),
+                            slot_name: None
                         })
                     }
                 }
