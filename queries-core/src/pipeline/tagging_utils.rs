@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::collections::HashMap;
 
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use itertools::Itertools;
@@ -36,6 +37,42 @@ pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<TaggedEntity> {
         .unwrap_or(vec![])
 }
 
+impl TaggedEntity {
+    fn update_with_slot_name(&self, slot_name: String) -> TaggedEntity {
+        TaggedEntity {
+            value: self.value.clone(),
+            range: self.range.clone(),
+            entity: self.entity.clone(),
+            slot_name: Some(slot_name)
+        }
+    }
+}
+
+pub fn disambiguate_tagged_entities(tagged_entities: Vec<TaggedEntity>,
+                                    slot_name_mapping: HashMap<String, String>) -> Vec<TaggedEntity> {
+    let mut entity_to_slots_mapping = HashMap::<String, Vec<String>>::new();
+    for (slot_name, entity) in slot_name_mapping.into_iter() {
+        let slot_names = entity_to_slots_mapping.entry(entity).or_insert(vec![]);
+        slot_names.push(slot_name)
+    }
+    tagged_entities
+        .into_iter()
+        .map(|tagged_entity|
+            if tagged_entity.slot_name.is_some() {
+                tagged_entity
+            } else {
+                let slot_names = entity_to_slots_mapping.get(&tagged_entity.entity).unwrap(); // checked
+                // Check slot_name ambiguity
+                if slot_names.len() == 1 {
+                    tagged_entity.update_with_slot_name(slot_names[0].clone())
+                } else {
+                    tagged_entity
+                }
+            }
+        )
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -64,5 +101,77 @@ mod tests {
         ];
 
         assert_eq!(expected_entities, enriched_entities);
+    }
+
+    #[test]
+    fn disambiguate_tagged_entities_works() {
+        // Given
+        let tagged_entities = vec![
+            TaggedEntity {
+                value: "abc".to_string(),
+                range: 0..3,
+                entity: "entity_4".to_string(),
+                slot_name: Some("slot_5".to_string())
+            },
+            TaggedEntity {
+                value: "def".to_string(),
+                range: 13..16,
+                entity: "entity_1".to_string(),
+                slot_name: None
+            },
+            TaggedEntity {
+                value: "ghi".to_string(),
+                range: 20..23,
+                entity: "entity_2".to_string(),
+                slot_name: Some("slot_3".to_string())
+            },
+            TaggedEntity {
+                value: "ghi".to_string(),
+                range: 26..29,
+                entity: "entity_2".to_string(),
+                slot_name: None
+            },
+        ];
+
+        let slot_name_mapping = hashmap! {
+            "slot_1".to_string() => "entity_1".to_string(),
+            "slot_2".to_string() => "entity_1".to_string(),
+            "slot_3".to_string() => "entity_2".to_string(),
+            "slot_4".to_string() => "entity_3".to_string(),
+            "slot_5".to_string() => "entity_4".to_string(),
+        };
+
+        // When
+        let result = disambiguate_tagged_entities(tagged_entities, slot_name_mapping);
+
+        // Then
+        let expected_result = vec![
+            TaggedEntity {
+                value: "abc".to_string(),
+                range: 0..3,
+                entity: "entity_4".to_string(),
+                slot_name: Some("slot_5".to_string())
+            },
+            TaggedEntity {
+                value: "def".to_string(),
+                range: 13..16,
+                entity: "entity_1".to_string(),
+                slot_name: None
+            },
+            TaggedEntity {
+                value: "ghi".to_string(),
+                range: 20..23,
+                entity: "entity_2".to_string(),
+                slot_name: Some("slot_3".to_string())
+            },
+            TaggedEntity {
+                value: "ghi".to_string(),
+                range: 26..29,
+                entity: "entity_2".to_string(),
+                slot_name: Some("slot_3".to_string())
+            },
+        ];
+
+        assert_eq!(expected_result, result);
     }
 }

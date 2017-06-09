@@ -7,7 +7,7 @@ use errors::*;
 use pipeline::{IntentParser, IntentParserResult, SlotValue};
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
-use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities};
+use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities, disambiguate_tagged_entities};
 use pipeline::configuration::{Entity, NLUEngineConfigurationConvertible};
 use utils::token::{tokenize, compute_all_ngrams};
 use utils::string::substring_with_char_range;
@@ -115,11 +115,10 @@ impl SnipsNLUEngine {
         let intent_data_size: usize = *self.intents_data_sizes
             .get(intent)
             .ok_or(format!("Unknown intent: {}", intent))?;
-        let intent_entities = HashSet::from_iter(
-            self.slot_name_mapping.get(intent)
-                .ok_or(format!("Unknown intent: {}", intent))?
-                .values()
-        );
+        let slot_name_mapping = self.slot_name_mapping
+            .get(intent)
+            .ok_or(format!("Unknown intent: {}", intent))?;
+        let intent_entities = HashSet::from_iter(slot_name_mapping.values());
         let threshold = small_data_regime_threshold.unwrap_or(DEFAULT_THRESHOLD);
         let parsed_entities = self.parse(text, Some(&vec![intent]))?
             .slots
@@ -142,7 +141,7 @@ impl SnipsNLUEngine {
         let tagged_builtin_entities = tag_builtin_entities(text, &self.language);
         let mut tagged_entities = enrich_entities(tagged_seen_entities, tagged_builtin_entities);
         tagged_entities = enrich_entities(tagged_entities, parsed_entities);
-        Ok(tagged_entities)
+        Ok(disambiguate_tagged_entities(tagged_entities, slot_name_mapping.clone()))
     }
 
     fn tag_seen_entities(&self, text: &str, intent_entities: HashSet<&String>) -> Vec<TaggedEntity> {
