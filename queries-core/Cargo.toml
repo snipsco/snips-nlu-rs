@@ -1,6 +1,6 @@
 [package]
 name = "queries-core"
-version = "0.11.0-SNAPSHOT"
+version = "0.12.0-SNAPSHOT"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>", "Kevin Lefevre <kevin.lefevre@snips.ai>"]
 repository = "https://github.com/snipsco/snips-queries-rust/"
 description = "Rust implementation of the Queries SDK"
