@@ -26,3 +26,7 @@ zip = { version = "0.2", default-features = false }
 
 [dev-dependencies]
 bencher = "0.1"
+
+[[bench]]
+name = "nlu_engine"
+harness = false
