@@ -65,7 +65,7 @@ impl SnipsNLUEngine {
                             entity.utterances
                                 .get(&slot.raw_value)
                                 .map(|reference_value|
-                                    Some(slot.update_with_slot_value(SlotValue::Custom(reference_value.clone()))))
+                                    Some(slot.clone().with_slot_value(SlotValue::Custom(reference_value.to_string()))))
                                 .unwrap_or(
                                     if entity.automatically_extensible {
                                         Some(slot)
@@ -102,7 +102,7 @@ const DEFAULT_THRESHOLD: usize = 5;
 #[derive(Serialize, Debug, Clone, PartialEq, Hash)]
 pub struct TaggedEntity {
     pub value: String,
-    pub range: Range<usize>,
+    pub range: Option<Range<usize>>,
     pub entity: String,
     pub slot_name: Option<String>
 }
@@ -172,10 +172,10 @@ impl SnipsNLUEngine {
                         let range_start = tokens[*first].char_range.start;
                         let range_end = tokens[*last].char_range.end;
                         let range = range_start..range_end;
-                        let value = substring_with_char_range(text, &range);
+                        let value = substring_with_char_range(text.to_string(), &range);
                         ngram_entity = Some(TaggedEntity {
                             value,
-                            range,
+                            range: Some(range),
                             entity: entity_name.to_string(),
                             slot_name: None
                         })
@@ -220,7 +220,7 @@ mod tests {
             slots: Some(vec![Slot {
                 raw_value: "two".to_string(),
                 value: expected_entity_value,
-                range: 8..11,
+                range: Some(8..11),
                 entity: "snips/number".to_string(),
                 slot_name: "number_of_cups".to_string()
             }])

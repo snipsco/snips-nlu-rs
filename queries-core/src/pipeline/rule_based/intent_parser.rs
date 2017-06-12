@@ -303,7 +303,7 @@ mod tests {
                         }
                     )
                 ),
-                range: 5..15,
+                range: Some(5..15),
                 entity: "snips/amountOfMoney".to_string(),
                 slot_name: "dummy_slot_name4".to_string(),
             }

@@ -36,7 +36,7 @@ pub struct InternalSlot {
 pub struct Slot {
     pub raw_value: String,
     pub value: SlotValue,
-    pub range: Range<usize>,
+    pub range: Option<Range<usize>>,
     pub entity: String,
     pub slot_name: String
 }
