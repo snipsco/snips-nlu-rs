@@ -93,7 +93,7 @@ impl IntentParser for RuleBasedIntentParser {
                     .map(|(a_match, group_name)| {
                         let matched_range = a_match.start()..a_match.end();
                         let (value, range) = if let Some(rng) = ranges_mapping.get(&matched_range) {
-                            (substring_with_char_range(input, rng), rng.clone())
+                            (substring_with_char_range(input.to_string(), rng), rng.clone())
                         } else {
                             (a_match.as_str().into(), matched_range)
                         };
@@ -152,7 +152,7 @@ fn replace_builtin_entities(text: &str,
 
     for entity in builtin_entities {
         let range_start = (entity.range.start as i16 + offset) as usize;
-        let prefix_text = substring_with_char_range(text, &(current_ix..entity.range.start));
+        let prefix_text = substring_with_char_range(text.to_string(), &(current_ix..entity.range.start));
         let entity_text = get_builtin_entity_name(entity.entity_kind.identifier());
         processed_text = format!("{}{}{}", processed_text, prefix_text, entity_text);
         offset += entity_text.chars().count() as i16 - entity.range.clone().count() as i16;
@@ -162,7 +162,7 @@ fn replace_builtin_entities(text: &str,
         range_mapping.insert(new_range, entity.range);
     }
 
-    processed_text = format!("{}{}", processed_text, suffix_from_char_index(text, current_ix));
+    processed_text = format!("{}{}", processed_text, suffix_from_char_index(text.to_string(), current_ix));
     (range_mapping, processed_text)
 }
 
