@@ -32,7 +32,7 @@ impl TaggingScheme {
     }
 }
 
-fn tag_name_to_slot_name(tag: &str) -> String {
+fn tag_name_to_slot_name(tag: String) -> String {
     suffix_from_char_index(tag, 2)
 }
 
@@ -145,7 +145,7 @@ fn _tags_to_slots<F1, F2>(tags: &[String],
         if is_end_of_slot(tags, i) {
             slots.push(SlotRange {
                 range: tokens[current_slot_start].range.start..tokens[i].range.end,
-                slot_name: tag_name_to_slot_name(tag),
+                slot_name: tag_name_to_slot_name(tag.to_string()),
             });
             current_slot_start = i;
         }
