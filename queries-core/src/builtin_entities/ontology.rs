@@ -78,8 +78,8 @@ impl From<TimeOutput> for InstantTimeValue {
 
 #[derive(Serialize, Clone, PartialEq, Debug)]
 pub struct TimeIntervalValue {
-    from: Option<String>,
-    to: Option<String>
+    pub from: Option<String>,
+    pub to: Option<String>
 }
 
 impl From<TimeIntervalOutput> for TimeIntervalValue {

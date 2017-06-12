@@ -11,7 +11,7 @@ impl Slot {
         Slot {
             raw_value: value.clone(),
             value: SlotValue::Custom(value),
-            range,
+            range: Some(range),
             entity,
             slot_name
         }
@@ -19,13 +19,13 @@ impl Slot {
 }
 
 impl Slot {
-    pub fn update_with_slot_value(&self, slot_value: SlotValue) -> Slot {
+    pub fn with_slot_value(self, slot_value: SlotValue) -> Slot {
         Slot {
-            raw_value: self.raw_value.clone(),
+            raw_value: self.raw_value,
             value: slot_value,
-            range: self.range.clone(),
-            entity: self.entity.clone(),
-            slot_name: self.slot_name.clone()
+            range: self.range,
+            entity: self.entity,
+            slot_name: self.slot_name
         }
     }
 }
@@ -59,7 +59,7 @@ pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
     Slot {
         raw_value: slot.value.clone(),
         value: SlotValue::Custom(slot.value),
-        range: slot.range,
+        range: Some(slot.range),
         entity: slot.entity,
         slot_name: slot.slot_name
     }
@@ -69,7 +69,7 @@ pub fn convert_to_builtin_slot(slot: InternalSlot, builtin_entity: BuiltinEntity
     Slot {
         raw_value: slot.value,
         value: SlotValue::Builtin(builtin_entity),
-        range: slot.range,
+        range: Some(slot.range),
         entity: slot.entity,
         slot_name: slot.slot_name,
     }
@@ -136,14 +136,14 @@ mod tests {
                         unit: Some("$")
                     }
                 )),
-                range: 5..14,
+                range: Some(5..14),
                 entity: "snips/amountOfMoney".to_string(),
                 slot_name: "amount".to_string()
             },
             Slot {
                 raw_value: "10th".to_string(),
                 value: SlotValue::Builtin(BuiltinEntity::Ordinal(OrdinalValue(10))),
-                range: 22..26,
+                range: Some(22..26),
                 entity: "snips/ordinal".to_string(),
                 slot_name: "ranking".to_string()
             }
