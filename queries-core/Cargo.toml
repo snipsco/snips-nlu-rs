@@ -1,6 +1,6 @@
 [package]
 name = "queries-core"
-version = "0.11.0"
+version = "0.12.0"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>", "Kevin Lefevre <kevin.lefevre@snips.ai>"]
 repository = "https://github.com/snipsco/snips-queries-rust/"
 description = "Rust implementation of the Queries SDK"
@@ -8,7 +8,7 @@ description = "Rust implementation of the Queries SDK"
 [dependencies]
 queries-utils = { path = "../queries-utils" }
 queries-resources-packed = { path = "../queries-resources-packed" }
-crfsuite = { git="ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "0737b3b9dfc9022f1812adfebbca25b6c67edbe9" }
+crfsuite = { git="ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "0737b3b9" }
 rustling-ontology = { git="https://github.com/snipsco/rustling-ontology/", tag="0.8.0"}
 error-chain = { version = "0.10", default-features = false }
 base64 = "0.5.2"
@@ -26,3 +26,7 @@ zip = { version = "0.2", default-features = false }
 
 [dev-dependencies]
 bencher = "0.1"
+
+[[bench]]
+name = "nlu_engine"
+harness = false
