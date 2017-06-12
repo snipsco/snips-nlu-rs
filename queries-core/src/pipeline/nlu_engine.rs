@@ -1,14 +1,18 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use std::ops::Range;
+use std::str::FromStr;
+use std::sync::Arc;
 use itertools::Itertools;
 
+use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
-use pipeline::{IntentParser, IntentParserResult, SlotValue};
+use pipeline::{IntentParser, IntentParserResult, Slot, SlotValue};
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities, disambiguate_tagged_entities};
 use pipeline::configuration::{Entity, NLUEngineConfigurationConvertible};
+use rustling_ontology::Lang;
 use utils::token::{tokenize, compute_all_ngrams};
 use utils::string::substring_with_char_range;
 
@@ -19,7 +23,8 @@ pub struct SnipsNLUEngine {
     parsers: Vec<Box<IntentParser>>,
     entities: HashMap<String, Entity>,
     intents_data_sizes: HashMap<String, usize>,
-    slot_name_mapping: HashMap<String, HashMap<String, String>>
+    slot_name_mapping: HashMap<String, HashMap<String, String>>,
+    builtin_entity_parser: Arc<RustlingParser>
 }
 
 impl SnipsNLUEngine {
@@ -37,12 +42,14 @@ impl SnipsNLUEngine {
         };
         let intents_data_sizes = nlu_config.intents_data_sizes;
         let slot_name_mapping = nlu_config.slot_name_mapping;
+        let rustling_lang = Lang::from_str(&nlu_config.language)?;
         Ok(SnipsNLUEngine {
             language: nlu_config.language,
             parsers,
             entities: nlu_config.entities,
             intents_data_sizes,
-            slot_name_mapping
+            slot_name_mapping,
+            builtin_entity_parser: RustlingParser::get(rustling_lang)
         })
     }
 
@@ -94,6 +101,78 @@ impl SnipsNLUEngine {
     pub fn model_version() -> &'static str {
         MODEL_VERSION
     }
+}
+
+impl SnipsNLUEngine {
+    pub fn extract_slot(&self, input: String, intent_name: &str, slot_name: String) -> Result<Option<Slot>> {
+        let entity_name = self.slot_name_mapping
+            .get(intent_name)
+            .ok_or(format!("Unknown intent: {}", intent_name))?
+            .get(&slot_name)
+            .ok_or(format!("Unknown slot: {}", &slot_name))?;
+
+        let slot = if let Some(custom_entity) = self.entities.get(entity_name) {
+            extract_custom_entity(input.to_string(),
+                                  entity_name.to_string(),
+                                  slot_name.to_string(),
+                                  custom_entity.clone())
+        } else {
+            extract_builtin_entity(input,
+                                   entity_name.to_string(),
+                                   slot_name.to_string(),
+                                   self.builtin_entity_parser.clone())?
+        };
+        Ok(slot)
+    }
+}
+
+fn extract_custom_entity(input: String,
+                         entity_name: String,
+                         slot_name: String,
+                         custom_entity: Entity) -> Option<Slot> {
+    custom_entity.utterances
+        .get(&input)
+        .map(|reference_value|
+            Some(
+                Slot {
+                    raw_value: input.clone(),
+                    value: SlotValue::Custom(reference_value.to_string()),
+                    range: None,
+                    entity: entity_name.clone(),
+                    slot_name: slot_name.clone()
+                }))
+        .unwrap_or(
+            if custom_entity.automatically_extensible {
+                Some(
+                    Slot {
+                        raw_value: input.clone(),
+                        value: SlotValue::Custom(input),
+                        range: None,
+                        entity: entity_name,
+                        slot_name: slot_name
+                    })
+            } else {
+                None
+            })
+}
+
+fn extract_builtin_entity(input: String,
+                          entity_name: String,
+                          slot_name: String,
+                          builtin_entity_parser: Arc<RustlingParser>) -> Result<Option<Slot>> {
+    let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
+    Ok(builtin_entity_parser
+        .extract_entities(&input, Some(&vec![builtin_entity_kind]))
+        .first()
+        .map(|rustlin_entity|
+            Slot {
+                raw_value: substring_with_char_range(input, &rustlin_entity.range),
+                value: SlotValue::Builtin(rustlin_entity.entity.clone()),
+                range: None,
+                entity: entity_name,
+                slot_name: slot_name
+            }
+        ))
 }
 
 const DEFAULT_THRESHOLD: usize = 5;
