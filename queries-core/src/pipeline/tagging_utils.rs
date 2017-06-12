@@ -12,7 +12,16 @@ const TAGGING_SCOPE: [BuiltinEntityKind; 2] = [BuiltinEntityKind::Duration, Buil
 pub fn enrich_entities(mut tagged_entities: Vec<TaggedEntity>,
                        other_tagged_entities: Vec<TaggedEntity>) -> Vec<TaggedEntity> {
     for entity in other_tagged_entities {
-        if tagged_entities.iter().find(|e| ranges_overlap(&e.range, &entity.range)).is_none() {
+        let is_overlapping = tagged_entities.iter()
+            .find(|e| {
+                if let (Some(r1), Some(r2)) = (e.range.as_ref(), entity.range.as_ref()) {
+                    ranges_overlap(&r1, &r2)
+                } else {
+                    false
+                }
+            })
+            .is_some();
+        if !is_overlapping {
             tagged_entities.push(entity);
         }
     }
@@ -29,7 +38,7 @@ pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<TaggedEntity> {
                 .map(|entity|
                     TaggedEntity {
                         value: entity.value,
-                        range: entity.range,
+                        range: Some(entity.range),
                         entity: entity.entity_kind.identifier().to_string(),
                         slot_name: None
                     })
@@ -81,13 +90,13 @@ mod tests {
     fn enrich_entities_works() {
         // Given
         let tagged_entities = vec![
-            TaggedEntity { value: "hello world".to_string(), range: 0..11, entity: "entity1".to_string(), slot_name: None },
-            TaggedEntity { value: "!!!".to_string(), range: 13..16, entity: "entity2".to_string(), slot_name: None },
+            TaggedEntity { value: "hello world".to_string(), range: Some(0..11), entity: "entity1".to_string(), slot_name: None },
+            TaggedEntity { value: "!!!".to_string(), range: Some(13..16), entity: "entity2".to_string(), slot_name: None },
         ];
 
         let other_tagged_entities = vec![
-            TaggedEntity { value: "world".to_string(), range: 6..11, entity: "entity1".to_string(), slot_name: None },
-            TaggedEntity { value: "yay".to_string(), range: 16..19, entity: "entity3".to_string(), slot_name: None },
+            TaggedEntity { value: "world".to_string(), range: Some(6..11), entity: "entity1".to_string(), slot_name: None },
+            TaggedEntity { value: "yay".to_string(), range: Some(16..19), entity: "entity3".to_string(), slot_name: None },
         ];
 
         // When
@@ -95,9 +104,9 @@ mod tests {
 
         // Then
         let expected_entities = vec![
-            TaggedEntity { value: "hello world".to_string(), range: 0..11, entity: "entity1".to_string(), slot_name: None },
-            TaggedEntity { value: "!!!".to_string(), range: 13..16, entity: "entity2".to_string(), slot_name: None },
-            TaggedEntity { value: "yay".to_string(), range: 16..19, entity: "entity3".to_string(), slot_name: None },
+            TaggedEntity { value: "hello world".to_string(), range: Some(0..11), entity: "entity1".to_string(), slot_name: None },
+            TaggedEntity { value: "!!!".to_string(), range: Some(13..16), entity: "entity2".to_string(), slot_name: None },
+            TaggedEntity { value: "yay".to_string(), range: Some(16..19), entity: "entity3".to_string(), slot_name: None },
         ];
 
         assert_eq!(expected_entities, enriched_entities);
@@ -109,25 +118,25 @@ mod tests {
         let tagged_entities = vec![
             TaggedEntity {
                 value: "abc".to_string(),
-                range: 0..3,
+                range: Some(0..3),
                 entity: "entity_4".to_string(),
                 slot_name: Some("slot_5".to_string())
             },
             TaggedEntity {
                 value: "def".to_string(),
-                range: 13..16,
+                range: Some(13..16),
                 entity: "entity_1".to_string(),
                 slot_name: None
             },
             TaggedEntity {
                 value: "ghi".to_string(),
-                range: 20..23,
+                range: Some(20..23),
                 entity: "entity_2".to_string(),
                 slot_name: Some("slot_3".to_string())
             },
             TaggedEntity {
                 value: "ghi".to_string(),
-                range: 26..29,
+                range: Some(26..29),
                 entity: "entity_2".to_string(),
                 slot_name: None
             },
@@ -148,25 +157,25 @@ mod tests {
         let expected_result = vec![
             TaggedEntity {
                 value: "abc".to_string(),
-                range: 0..3,
+                range: Some(0..3),
                 entity: "entity_4".to_string(),
                 slot_name: Some("slot_5".to_string())
             },
             TaggedEntity {
                 value: "def".to_string(),
-                range: 13..16,
+                range: Some(13..16),
                 entity: "entity_1".to_string(),
                 slot_name: None
             },
             TaggedEntity {
                 value: "ghi".to_string(),
-                range: 20..23,
+                range: Some(20..23),
                 entity: "entity_2".to_string(),
                 slot_name: Some("slot_3".to_string())
             },
             TaggedEntity {
                 value: "ghi".to_string(),
-                range: 26..29,
+                range: Some(26..29),
                 entity: "entity_2".to_string(),
                 slot_name: Some("slot_3".to_string())
             },

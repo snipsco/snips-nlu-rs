@@ -23,6 +23,7 @@ extern crate zip;
 #[macro_use]
 extern crate maplit;
 
+pub use builtin_entities::ontology::*;
 pub use errors::*;
 pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
 pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
@@ -30,7 +31,7 @@ pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
                                   FileBasedConfiguration};
 pub use pipeline::IntentClassifierResult;
 pub use pipeline::IntentParserResult;
-pub use pipeline::Slot;
+pub use pipeline::{Slot, SlotValue};
 pub use utils::miscellaneous::file_path;
 
 #[cfg(test)]
