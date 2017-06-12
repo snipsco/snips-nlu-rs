@@ -6,7 +6,6 @@ use std::fs;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-
 fn main() {
     let path = Path::new(&env::var("OUT_DIR").unwrap()).join("phf.rs");
 
@@ -53,7 +52,6 @@ fn main() {
             };
         }
 
-
         macro_rules! gazetteer {
             ($lang:ident, $gazetteer_name:ident) => {
                 write!(&mut file,
@@ -97,6 +95,7 @@ fn main() {
         gazetteer!(en, street_identifier_stem);
         gazetteer!(en, top_10000_words_stem);
     }
+
     // we generate some files based on dependencies of this build script and not files in this
     // project, so we can deactivate the auto rebuild on each file change
     println!("cargo:rerun-if-changed=build.rs")
