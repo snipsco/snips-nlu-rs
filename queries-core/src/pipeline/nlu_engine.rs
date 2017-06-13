@@ -16,7 +16,7 @@ use rustling_ontology::Lang;
 use utils::token::{tokenize, compute_all_ngrams};
 use utils::string::substring_with_char_range;
 
-const MODEL_VERSION: &str = "0.8.4";
+const MODEL_VERSION: &str = "0.8.5";
 
 pub struct SnipsNLUEngine {
     language: String,
