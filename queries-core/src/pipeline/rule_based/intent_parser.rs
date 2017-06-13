@@ -299,7 +299,7 @@ mod tests {
                         AmountOfMoneyValue {
                             value: 10.0,
                             precision: Precision::Exact,
-                            unit: Some("$")
+                            unit: Some("$".to_string())
                         }
                     )
                 ),

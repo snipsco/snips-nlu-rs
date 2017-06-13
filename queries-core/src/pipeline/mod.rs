@@ -11,14 +11,14 @@ pub mod configuration;
 pub mod slot_utils;
 mod tagging_utils;
 
-#[derive(Serialize, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, PartialEq)]
 pub struct IntentParserResult {
     pub input: String,
     pub intent: Option<IntentClassifierResult>,
     pub slots: Option<Vec<Slot>>,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct IntentClassifierResult {
     pub intent_name: String,
     pub probability: f32,
