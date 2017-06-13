@@ -103,28 +103,32 @@ impl From<TimeIntervalOutput> for TimeIntervalValue {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct AmountOfMoneyValue {
     pub value: f32,
     pub precision: Precision,
-    pub unit: Option<&'static str>,
+    pub unit: Option<String>,
 }
 
 impl From<AmountOfMoneyOutput> for AmountOfMoneyValue {
     fn from(v: AmountOfMoneyOutput) -> AmountOfMoneyValue {
-        AmountOfMoneyValue { value: v.value, precision: Precision::from(v.precision), unit: v.unit }
+        AmountOfMoneyValue {
+            value: v.value,
+            precision: Precision::from(v.precision),
+            unit: v.unit.map(|s| s.to_string())
+        }
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TemperatureValue {
     pub value: f32,
-    pub unit: Option<&'static str>,
+    pub unit: Option<String>,
 }
 
 impl From<TemperatureOutput> for TemperatureValue {
     fn from(v: TemperatureOutput) -> TemperatureValue {
-        TemperatureValue { value: v.value, unit: v.unit }
+        TemperatureValue { value: v.value, unit: v.unit.map(|s| s.to_string()) }
     }
 }
 

@@ -105,7 +105,7 @@ mod tests {
                     AmountOfMoneyValue {
                         value: 5.0,
                         precision: Precision::Exact,
-                        unit: Some("$")
+                        unit: Some("$".to_string())
                     }
                 )),
                 range: Some(5..14),
