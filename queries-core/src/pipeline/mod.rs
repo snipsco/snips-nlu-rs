@@ -32,7 +32,7 @@ pub struct InternalSlot {
     pub slot_name: String
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Slot {
     pub raw_value: String,
     pub value: SlotValue,
@@ -41,7 +41,8 @@ pub struct Slot {
     pub slot_name: String
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", content="value")]
 pub enum SlotValue {
     Custom(String),
     Builtin(BuiltinEntity),
