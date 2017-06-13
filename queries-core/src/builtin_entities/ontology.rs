@@ -7,7 +7,8 @@ use rustling_ontology::output::{IntegerOutput, FloatOutput, OrdinalOutput, TimeO
                                 TimeIntervalOutput, AmountOfMoneyOutput, TemperatureOutput,
                                 DurationOutput, Output};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", content="value")]
 pub enum BuiltinEntity {
     Number(NumberValue),
     Ordinal(OrdinalValue),
@@ -17,7 +18,7 @@ pub enum BuiltinEntity {
     Duration(DurationValue),
 }
 
-#[derive(Serialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
 pub struct NumberValue(pub f64);
 
 impl From<IntegerOutput> for NumberValue {
@@ -32,7 +33,7 @@ impl From<FloatOutput> for NumberValue {
     }
 }
 
-#[derive(Serialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
 pub struct OrdinalValue(pub i64);
 
 impl From<OrdinalOutput> for OrdinalValue {
@@ -41,7 +42,8 @@ impl From<OrdinalOutput> for OrdinalValue {
     }
 }
 
-#[derive(Serialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+#[serde(tag = "kind", content="value")]
 pub enum TimeValue {
     InstantTime(InstantTimeValue),
     TimeInterval(TimeIntervalValue)
@@ -59,7 +61,7 @@ impl From<TimeIntervalOutput> for TimeValue {
     }
 }
 
-#[derive(Serialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct InstantTimeValue {
     pub value: String,
     pub grain: Grain,
@@ -76,7 +78,7 @@ impl From<TimeOutput> for InstantTimeValue {
     }
 }
 
-#[derive(Serialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TimeIntervalValue {
     pub from: Option<String>,
     pub to: Option<String>
@@ -101,32 +103,36 @@ impl From<TimeIntervalOutput> for TimeIntervalValue {
     }
 }
 
-#[derive(Serialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct AmountOfMoneyValue {
     pub value: f32,
     pub precision: Precision,
-    pub unit: Option<&'static str>,
+    pub unit: Option<String>,
 }
 
 impl From<AmountOfMoneyOutput> for AmountOfMoneyValue {
     fn from(v: AmountOfMoneyOutput) -> AmountOfMoneyValue {
-        AmountOfMoneyValue { value: v.value, precision: Precision::from(v.precision), unit: v.unit }
+        AmountOfMoneyValue {
+            value: v.value,
+            precision: Precision::from(v.precision),
+            unit: v.unit.map(|s| s.to_string())
+        }
     }
 }
 
-#[derive(Serialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct TemperatureValue {
     pub value: f32,
-    pub unit: Option<&'static str>,
+    pub unit: Option<String>,
 }
 
 impl From<TemperatureOutput> for TemperatureValue {
     fn from(v: TemperatureOutput) -> TemperatureValue {
-        TemperatureValue { value: v.value, unit: v.unit }
+        TemperatureValue { value: v.value, unit: v.unit.map(|s| s.to_string()) }
     }
 }
 
-#[derive(Serialize, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct DurationValue {
     pub years: i64,
     pub quarters: i64,
@@ -176,7 +182,7 @@ impl From<DurationOutput> for DurationValue {
     }
 }
 
-#[derive(Serialize, Clone, Copy, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Debug)]
 pub enum Grain {
     Year = 0,
     Quarter = 1,
@@ -203,7 +209,7 @@ impl From<RustlingGrain> for Grain {
     }
 }
 
-#[derive(Serialize, Debug, PartialEq, Copy, Clone)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Copy, Clone)]
 pub enum Precision {
     Approximate,
     Exact,
@@ -234,7 +240,7 @@ impl BuiltinEntity {
 }
 
 
-#[derive(Copy, Serialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Copy, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
 pub enum BuiltinEntityKind {
     AmountOfMoney,
     Duration,

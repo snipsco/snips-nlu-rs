@@ -1,7 +1,4 @@
-use std::result::Result as StdResult;
 use std::ops::Range;
-
-use serde::ser::{Serialize, Serializer, SerializeStruct};
 
 use builtin_entities::{RustlingParser, BuiltinEntity, BuiltinEntityKind};
 use pipeline::{InternalSlot, Slot, SlotValue};
@@ -27,31 +24,6 @@ impl Slot {
             entity: self.entity,
             slot_name: self.slot_name
         }
-    }
-}
-
-impl Serialize for Slot {
-    fn serialize<S>(&self, serializer: S) -> StdResult<S::Ok, S::Error>
-        where S: Serializer
-    {
-        let mut state = serializer.serialize_struct("Slot", 4)?;
-        match self.value {
-            SlotValue::Custom(ref string_value) => state.serialize_field("value", &string_value)?,
-            SlotValue::Builtin(ref builtin_entity_value) => {
-                match builtin_entity_value {
-                    &BuiltinEntity::Number(ref v) => state.serialize_field("value", &v)?,
-                    &BuiltinEntity::Ordinal(ref v) => state.serialize_field("value", &v)?,
-                    &BuiltinEntity::Time(ref v) => state.serialize_field("value", &v)?,
-                    &BuiltinEntity::AmountOfMoney(ref v) => state.serialize_field("value", &v)?,
-                    &BuiltinEntity::Temperature(ref v) => state.serialize_field("value", &v)?,
-                    &BuiltinEntity::Duration(ref v) => state.serialize_field("value", &v)?,
-                }
-            },
-        }
-        state.serialize_field("range", &self.range)?;
-        state.serialize_field("entity", &self.entity)?;
-        state.serialize_field("slot_name", &self.slot_name)?;
-        state.end()
     }
 }
 
@@ -133,7 +105,7 @@ mod tests {
                     AmountOfMoneyValue {
                         value: 5.0,
                         precision: Precision::Exact,
-                        unit: Some("$")
+                        unit: Some("$".to_string())
                     }
                 )),
                 range: Some(5..14),

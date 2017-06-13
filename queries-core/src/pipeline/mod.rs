@@ -11,14 +11,14 @@ pub mod configuration;
 pub mod slot_utils;
 mod tagging_utils;
 
-#[derive(Serialize, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Default, PartialEq)]
 pub struct IntentParserResult {
     pub input: String,
     pub intent: Option<IntentClassifierResult>,
     pub slots: Option<Vec<Slot>>,
 }
 
-#[derive(Serialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct IntentClassifierResult {
     pub intent_name: String,
     pub probability: f32,
@@ -32,7 +32,7 @@ pub struct InternalSlot {
     pub slot_name: String
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Slot {
     pub raw_value: String,
     pub value: SlotValue,
@@ -41,7 +41,8 @@ pub struct Slot {
     pub slot_name: String
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "kind", content="value")]
 pub enum SlotValue {
     Custom(String),
     Builtin(BuiltinEntity),
