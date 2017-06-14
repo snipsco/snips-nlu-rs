@@ -1,5 +1,6 @@
 use std::str::FromStr;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use itertools::Itertools;
@@ -29,19 +30,26 @@ pub fn enrich_entities(mut tagged_entities: Vec<TaggedEntity>,
 }
 
 pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<TaggedEntity> {
+    let tagging_scope = TAGGING_SCOPE.clone();
+    let tagging_scope_set: HashSet<&BuiltinEntityKind> = HashSet::from_iter(tagging_scope.iter());
     Lang::from_str(language)
         .ok()
         .map(|rustling_lang|
             RustlingParser::get(rustling_lang)
-                .extract_entities(text, Some(&TAGGING_SCOPE))
+                .extract_entities(text, None)
                 .into_iter()
-                .map(|entity|
-                    TaggedEntity {
-                        value: entity.value,
-                        range: Some(entity.range),
-                        entity: entity.entity_kind.identifier().to_string(),
-                        slot_name: None
-                    })
+                .filter_map(|entity| {
+                    if tagging_scope_set.contains(&entity.entity_kind) {
+                        Some(TaggedEntity {
+                            value: entity.value,
+                            range: Some(entity.range),
+                            entity: entity.entity_kind.identifier().to_string(),
+                            slot_name: None
+                        })
+                    } else {
+                        None
+                    }
+                })
                 .collect_vec())
         .unwrap_or(vec![])
 }
@@ -70,10 +78,13 @@ pub fn disambiguate_tagged_entities(tagged_entities: Vec<TaggedEntity>,
             if tagged_entity.slot_name.is_some() {
                 tagged_entity
             } else {
-                let slot_names = entity_to_slots_mapping.get(&tagged_entity.entity).unwrap(); // checked
-                // Check slot_name ambiguity
-                if slot_names.len() == 1 {
-                    tagged_entity.update_with_slot_name(slot_names[0].clone())
+                if let Some(slot_names) = entity_to_slots_mapping.get(&tagged_entity.entity) {
+                    // Check slot_name ambiguity
+                    if slot_names.len() == 1 {
+                        tagged_entity.update_with_slot_name(slot_names[0].clone())
+                    } else {
+                        tagged_entity
+                    }
                 } else {
                     tagged_entity
                 }
