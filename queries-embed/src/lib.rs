@@ -165,10 +165,14 @@ pub struct CSlot {
 
 impl CSlot {
     fn from(input: queries_core::Slot) -> Result<Self> {
+        let range = if let Some(range) = input.range {
+            range.start as libc::c_int..range.end as libc::c_int
+        } else { -1..-1 };
+
         Ok(CSlot {
             value: CString::new(input.raw_value)?.into_raw(),
-            range_start: input.range.start as libc::c_int,
-            range_end: input.range.end as libc::c_int,
+            range_start: range.start,
+            range_end: range.end,
             entity: CString::new(input.entity)?.into_raw(),
             slot_name: CString::new(input.slot_name)?.into_raw()
         })
