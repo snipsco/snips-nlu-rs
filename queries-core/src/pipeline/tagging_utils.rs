@@ -30,7 +30,7 @@ pub fn enrich_entities(mut tagged_entities: Vec<TaggedEntity>,
 }
 
 pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<TaggedEntity> {
-    let tagging_scope = TAGGING_SCOPE.clone();
+    let tagging_scope = TAGGING_SCOPE;
     let tagging_scope_set: HashSet<&BuiltinEntityKind> = HashSet::from_iter(tagging_scope.iter());
     Lang::from_str(language)
         .ok()
