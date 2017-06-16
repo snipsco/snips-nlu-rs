@@ -1,0 +1,5 @@
+module Clibsnips_queries {
+    header "./libsnips_queries.h"
+    link "snips_queries"
+    export *
+}
