@@ -133,7 +133,7 @@ fn shape_ngram_feature_function(args: &HashMap<String, serde_json::Value>,
 
 fn prefix_feature_function(args: &HashMap<String, serde_json::Value>,
                            offsets: Vec<i32>) -> Result<FeatureFunction> {
-    let n = parse_as_u64(args, "n")? as usize;
+    let n = parse_as_u64(args, "prefix_size")? as usize;
     Ok(FeatureFunction::new(format!("prefix-{}", n),
                             offsets,
                             move |t, i| features::prefix(&t[i].value, n)))
@@ -141,7 +141,7 @@ fn prefix_feature_function(args: &HashMap<String, serde_json::Value>,
 
 fn suffix_feature_function(args: &HashMap<String, serde_json::Value>,
                            offsets: Vec<i32>) -> Result<FeatureFunction> {
-    let n = parse_as_u64(args, "n")? as usize;
+    let n = parse_as_u64(args, "suffix_size")? as usize;
     Ok(FeatureFunction::new(format!("suffix-{}", n),
                             offsets,
                             move |t, i| features::suffix(&t[i].value, n)))
@@ -209,23 +209,27 @@ fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
 fn builtin_entities_annotation_feature_function(args: &HashMap<String, serde_json::Value>,
                                                 offsets: Vec<i32>) -> Result<FeatureFunction> {
     let builtin_entity_label = parse_as_string(args, "built_in_entity_label")?;
-    let builtin_entity_kind = BuiltinEntityKind::from_identifier(&builtin_entity_label)?;
+    let builtin_entity_kind = BuiltinEntityKind::from_identifier(&builtin_entity_label).ok();
     let language_code = parse_as_string(args, "language_code")?;
-    let rust_lang = Lang::from_str(&language_code)?;
-    let parser = RustlingParser::get(rust_lang);
+    let builtin_parser = Lang::from_str(&language_code).ok()
+        .map(|rust_lang| RustlingParser::get(rust_lang));
     let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
     Ok(FeatureFunction::new(
-        format!("built-in-{}", builtin_entity_kind.identifier()),
+        format!("built-in-{}", &builtin_entity_label),
         offsets,
         move |tokens, token_index|
-            features::get_builtin_entities_annotation(
-                tokens,
-                token_index,
-                &*parser,
-                builtin_entity_kind,
-                tagging_scheme))
-    )
+            if let (Some(parser), Some(builtin_entity_kind)) = (builtin_parser.as_ref(), builtin_entity_kind) {
+                features::get_builtin_entities_annotation(
+                    tokens,
+                    token_index,
+                    &**parser,
+                    builtin_entity_kind,
+                    tagging_scheme)
+            } else {
+                None
+            }
+    ))
 }
 
 

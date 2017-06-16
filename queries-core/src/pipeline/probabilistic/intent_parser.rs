@@ -23,7 +23,7 @@ pub struct ProbabilisticIntentParser {
     intent_classifier: IntentClassifier,
     slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
     taggers: HashMap<String, Tagger>,
-    builtin_entity_parser: Arc<RustlingParser>
+    builtin_entity_parser: Option<Arc<RustlingParser>>
 }
 
 impl ProbabilisticIntentParser {
@@ -33,13 +33,14 @@ impl ProbabilisticIntentParser {
             .collect();
         let taggers_map: HashMap<String, Tagger> = HashMap::from_iter(taggers?);
         let intent_classifier = IntentClassifier::new(config.intent_classifier)?;
-        let rustling_lang = Lang::from_str(&config.language_code)?;
+        let builtin_entity_parser = Lang::from_str(&config.language_code).ok()
+            .map(|rustling_lang| RustlingParser::get(rustling_lang));
 
         Ok(ProbabilisticIntentParser {
             intent_classifier,
             slot_name_to_entity_mapping: config.slot_name_to_entity_mapping,
             taggers: taggers_map,
-            builtin_entity_parser: RustlingParser::get(rustling_lang)
+            builtin_entity_parser
         })
     }
 }
@@ -87,7 +88,7 @@ impl IntentParser for ProbabilisticIntentParser {
         }
 
         let tags = tagger.get_tags(&tokens)?;
-        let slots: Vec<InternalSlot> = tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping)
+        let custom_slots: Vec<InternalSlot> = tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping)
             .into_iter()
             .filter(|s| BuiltinEntityKind::from_identifier(&s.entity).is_err())
             .collect();
@@ -98,7 +99,7 @@ impl IntentParser for ProbabilisticIntentParser {
             .collect();
 
         if builtin_slots.is_empty() {
-            return Ok(slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect());
+            return Ok(custom_slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect());
         }
 
         let mut builtin_entity_kinds: Vec<BuiltinEntityKind> = builtin_slots.iter()
@@ -107,16 +108,20 @@ impl IntentParser for ProbabilisticIntentParser {
 
         builtin_entity_kinds.dedup_by_key(|kind| *kind);
 
-        let builtin_entities = self.builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
+        if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
+            let builtin_entities = builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
 
-        let augmented_slots = augment_slots(input,
-                                            &tokens,
-                                            tags,
-                                            tagger,
-                                            intent_slots_mapping,
-                                            builtin_entities,
-                                            builtin_slots)?;
-        Ok(resolve_builtin_slots(input, augmented_slots, &*self.builtin_entity_parser))
+            let augmented_slots = augment_slots(input,
+                                                &tokens,
+                                                tags,
+                                                tagger,
+                                                intent_slots_mapping,
+                                                builtin_entities,
+                                                builtin_slots)?;
+            Ok(resolve_builtin_slots(input, augmented_slots, &*builtin_entity_parser))
+        } else {
+            Ok(custom_slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect())
+        }
     }
 }
 
