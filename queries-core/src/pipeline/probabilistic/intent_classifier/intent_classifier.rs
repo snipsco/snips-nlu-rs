@@ -5,9 +5,9 @@ use models::logreg::MulticlassLogisticRegression;
 use pipeline::IntentClassifierResult;
 use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
-use resources_packed::stem;
 use utils::miscellaneous::argmax;
 use utils::token::tokenize_light;
+use models::stemmer::{Stemmer, StaticMapStemmer};
 
 pub struct IntentClassifier {
     language_code: String,
@@ -56,7 +56,10 @@ impl IntentClassifier {
         let featurizer = self.featurizer.as_ref().unwrap(); // checked
         let log_reg = self.logreg.as_ref().unwrap(); // checked
 
-        let stemmed_text: String = stem_sentence(input, &self.language_code)?;
+        let stemmed_text: String = StaticMapStemmer::new(self.language_code.clone()).ok()
+            .map(|stemmer| stem_sentence(input, &stemmer))
+            .unwrap_or(input.to_string());
+
         let features = featurizer.transform(&stemmed_text)?;
         let probabilities = log_reg.run(&features.view())?;
 
@@ -70,12 +73,12 @@ impl IntentClassifier {
     }
 }
 
-fn stem_sentence(input: &str, language: &str) -> Result<String> {
-    let stemmed_words: Result<Vec<_>> = tokenize_light(input)
+fn stem_sentence<S: Stemmer>(input: &str, stemmer: &S) -> String {
+    let stemmed_words: Vec<_> = tokenize_light(input)
         .iter()
-        .map(|word| Ok(stem(&language, word)?))
+        .map(|word| stemmer.stem(word))
         .collect();
-    Ok(stemmed_words?.join(" "))
+    stemmed_words.join(" ")
 }
 
 #[cfg(test)]
