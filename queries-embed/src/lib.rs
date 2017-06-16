@@ -315,7 +315,6 @@ fn point_to_string(pointer: *mut *mut libc::c_char, string: String) -> Result<()
     Ok(())
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
