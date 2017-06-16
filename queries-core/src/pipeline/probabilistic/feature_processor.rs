@@ -219,11 +219,11 @@ fn builtin_entities_annotation_feature_function(args: &HashMap<String, serde_jso
         format!("built-in-{}", &builtin_entity_label),
         offsets,
         move |tokens, token_index|
-            if let (Some(parser), Some(builtin_entity_kind)) = (builtin_parser.clone(), builtin_entity_kind) {
+            if let (Some(parser), Some(builtin_entity_kind)) = (builtin_parser.as_ref(), builtin_entity_kind) {
                 features::get_builtin_entities_annotation(
                     tokens,
                     token_index,
-                    &*parser,
+                    &**parser,
                     builtin_entity_kind,
                     tagging_scheme)
             } else {
