@@ -7,6 +7,7 @@ use builtin_entities::BuiltinEntity;
 pub mod rule_based;
 pub mod probabilistic;
 pub mod nlu_engine;
+pub mod assistant_config;
 pub mod configuration;
 pub mod slot_utils;
 mod tagging_utils;

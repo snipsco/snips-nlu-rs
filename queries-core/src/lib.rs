@@ -27,9 +27,9 @@ pub use builtin_entities::ontology::*;
 pub use errors::*;
 pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
 pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
-                                  NLUEngineConfiguration,
-                                  BinaryBasedConfiguration,
-                                  FileBasedConfiguration};
+                                  NLUEngineConfiguration};
+pub use pipeline::assistant_config::{FileBasedConfiguration,
+                                     BinaryBasedConfiguration};
 pub use pipeline::{IntentClassifierResult,
                    IntentParserResult,
                    Slot,
