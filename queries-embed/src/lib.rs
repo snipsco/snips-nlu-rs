@@ -139,7 +139,7 @@ fn create_from_binary(binary: *const libc::c_uchar,
     let slice = unsafe { slice::from_raw_parts(binary, binary_size as usize) };
     let reader = Cursor::new(slice.to_owned());
 
-    let assistant_config = queries_core::BinaryBasedAssistantConfiguration::new(reader)?;
+    let assistant_config = queries_core::BinaryBasedConfiguration::new(reader)?;
     let intent_parser = queries_core::SnipsNLUEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
