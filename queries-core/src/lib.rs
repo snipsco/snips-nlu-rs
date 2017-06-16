@@ -28,10 +28,12 @@ pub use errors::*;
 pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
 pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
                                   NLUEngineConfiguration,
+                                  BinaryBasedAssistantConfiguration,
                                   FileBasedConfiguration};
-pub use pipeline::IntentClassifierResult;
-pub use pipeline::IntentParserResult;
-pub use pipeline::{Slot, SlotValue};
+pub use pipeline::{IntentClassifierResult,
+                   IntentParserResult,
+                   Slot,
+                   SlotValue};
 pub use utils::miscellaneous::file_path;
 
 #[cfg(test)]
