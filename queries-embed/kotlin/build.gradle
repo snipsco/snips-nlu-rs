@@ -11,14 +11,20 @@ buildscript {
 apply plugin: 'kotlin'
 
 version = "0.16.0-SNAPSHOT"
+group = "ai.snips"
 
 repositories {
     jcenter()
 }
 
+configurations {
+    aarArchives
+    jarArchives
+}
+
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
-    compile 'net.java.dev.jna:jna:4.3.0'
+    compile 'net.java.dev.jna:jna:4.4.0'
 }
 
 def soForJar = [
@@ -58,7 +64,6 @@ sourceSets {
     main {
         resources {
             srcDir jniLibsDir
-            //include "*/*.so"
         }
     }
 }
@@ -67,7 +72,10 @@ def aarDir = new File(buildDir, "aar")
 
 task("aar", type: Zip) {
     destinationDir new File(buildDir, "libs")
-    archiveName "${project.name}-${project.version}.aar"
+    //archiveName "${project.name}-android-${project.version}.aar"
+    baseName = "${project.name}-android"
+    version = project.version
+    extension = "aar"
     from aarDir
 }
 
@@ -110,3 +118,50 @@ soForAar.forEach {
 
 sourceCompatibility = "1.7"
 targetCompatibility = "1.7"
+
+artifacts {
+    aarArchives aar.archivePath
+    jarArchives jar.archivePath
+}
+
+apply plugin: 'maven'
+
+uploadJarArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "https://nexus-repository.snips.ai/repository/snips-maven-releases/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
+            }
+            snapshotRepository(url: "https://nexus-repository.snips.ai/repository/snips-maven-snapshots/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
+            }
+        }
+    }
+}
+
+uploadJarArchives.dependsOn(jar)
+uploadArchives.dependsOn(uploadJarArchives)
+
+uploadAarArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "https://nexus-repository.snips.ai/repository/snips-maven-releases/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
+            }
+            snapshotRepository(url: "https://nexus-repository.snips.ai/repository/snips-maven-snapshots/") {
+                authentication(userName: nexusUsername, password: nexusPassword)
+            }
+
+            repository(url: "file://localhost/tmp/myRepo/")
+            pom.name = "snips-queries-android"
+
+            pom.whenConfigured { pom ->
+                pom.dependencies.find { dep -> dep.groupId == 'net.java.dev.jna' && dep.artifactId == 'jna' }.classifier = "aar"
+            }
+        }
+    }
+}
+
+uploadAarArchives.dependsOn(aar)
+uploadArchives.dependsOn(uploadAarArchives)
+
