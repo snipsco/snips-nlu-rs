@@ -133,7 +133,7 @@ fn shape_ngram_feature_function(args: &HashMap<String, serde_json::Value>,
 
 fn prefix_feature_function(args: &HashMap<String, serde_json::Value>,
                            offsets: Vec<i32>) -> Result<FeatureFunction> {
-    let n = parse_as_u64(args, "n")? as usize;
+    let n = parse_as_u64(args, "prefix_size")? as usize;
     Ok(FeatureFunction::new(format!("prefix-{}", n),
                             offsets,
                             move |t, i| features::prefix(&t[i].value, n)))
@@ -141,7 +141,7 @@ fn prefix_feature_function(args: &HashMap<String, serde_json::Value>,
 
 fn suffix_feature_function(args: &HashMap<String, serde_json::Value>,
                            offsets: Vec<i32>) -> Result<FeatureFunction> {
-    let n = parse_as_u64(args, "n")? as usize;
+    let n = parse_as_u64(args, "suffix_size")? as usize;
     Ok(FeatureFunction::new(format!("suffix-{}", n),
                             offsets,
                             move |t, i| features::suffix(&t[i].value, n)))
