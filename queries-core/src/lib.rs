@@ -28,7 +28,7 @@ pub use errors::*;
 pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
 pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
                                   NLUEngineConfiguration,
-                                  BinaryBasedAssistantConfiguration,
+                                  BinaryBasedConfiguration,
                                   FileBasedConfiguration};
 pub use pipeline::{IntentClassifierResult,
                    IntentParserResult,

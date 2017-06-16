@@ -77,12 +77,12 @@ impl NLUEngineConfigurationConvertible for FileBasedConfiguration {
 
 // -
 
-pub struct BinaryBasedAssistantConfiguration {
+pub struct BinaryBasedConfiguration {
     nlu_configuration: NLUEngineConfiguration,
 }
 
-impl BinaryBasedAssistantConfiguration {
-    pub fn new<R>(reader: R) -> Result<BinaryBasedAssistantConfiguration>
+impl BinaryBasedConfiguration {
+    pub fn new<R>(reader: R) -> Result<BinaryBasedConfiguration>
     where R: Read + Seek {
         let zip = zip::ZipArchive::new(reader)?;
         let mutex = Arc::new(Mutex::new(zip));
@@ -104,7 +104,7 @@ impl BinaryBasedAssistantConfiguration {
     }
 }
 
-impl NLUEngineConfigurationConvertible for BinaryBasedAssistantConfiguration {
+impl NLUEngineConfigurationConvertible for BinaryBasedConfiguration {
     fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration {
         &self.nlu_configuration
     }
@@ -120,7 +120,7 @@ mod tests {
 
     use super::NLUEngineConfiguration;
     use super::NLUEngineConfigurationConvertible;
-    use super::BinaryBasedAssistantConfiguration;
+    use super::BinaryBasedConfiguration;
 
     use utils::miscellaneous::parse_json;
     use utils::miscellaneous::file_path;
@@ -135,7 +135,7 @@ mod tests {
     #[test]
     fn unzip_works() {
         let file = fs::File::open(file_path("tests/zip_files/sample_config.zip")).unwrap();
-        let nlu_config = BinaryBasedAssistantConfiguration::new(file)
+        let nlu_config = BinaryBasedConfiguration::new(file)
             .unwrap()
             .into_nlu_engine_configuration();
 
