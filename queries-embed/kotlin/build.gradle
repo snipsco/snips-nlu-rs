@@ -38,7 +38,6 @@ def jarClassifier = {
     if(exisiting.size == 1) exisiting[0][1]
     else if(exisiting.size == 0) throw new RuntimeException("no so detected")
     else "multiarch"
-
 }
 
 jar {
@@ -72,7 +71,6 @@ def aarDir = new File(buildDir, "aar")
 
 task("aar", type: Zip) {
     destinationDir new File(buildDir, "libs")
-    //archiveName "${project.name}-android-${project.version}.aar"
     baseName = "${project.name}-android"
     version = project.version
     extension = "aar"
