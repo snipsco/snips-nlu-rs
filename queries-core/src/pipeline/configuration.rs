@@ -95,9 +95,7 @@ impl BinaryBasedAssistantConfiguration {
 
     fn read_bytes<R>(zip: Arc<Mutex<zip::read::ZipArchive<R>>>, name: &str) -> Result<Vec<u8>>
     where R: Read + Seek {
-        let mut locked = zip.lock()
-            .map_err(|_| "Can not take lock on ZipFile. Mutex poisoned")?;
-
+        let mut locked = zip.lock()?;
         let ref mut zip = *locked;
         let mut file = zip.by_name(name)?;
         let mut bytes = vec![];
