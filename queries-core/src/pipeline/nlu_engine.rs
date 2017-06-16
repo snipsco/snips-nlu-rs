@@ -24,7 +24,7 @@ pub struct SnipsNLUEngine {
     entities: HashMap<String, Entity>,
     intents_data_sizes: HashMap<String, usize>,
     slot_name_mapping: HashMap<String, HashMap<String, String>>,
-    builtin_entity_parser: Arc<RustlingParser>
+    builtin_entity_parser: Option<Arc<RustlingParser>>
 }
 
 impl SnipsNLUEngine {
@@ -42,14 +42,15 @@ impl SnipsNLUEngine {
         };
         let intents_data_sizes = nlu_config.intents_data_sizes;
         let slot_name_mapping = nlu_config.slot_name_mapping;
-        let rustling_lang = Lang::from_str(&nlu_config.language)?;
+        let builtin_entity_parser = Lang::from_str(&nlu_config.language).ok()
+            .map(|rustling_lang| RustlingParser::get(rustling_lang));
         Ok(SnipsNLUEngine {
             language: nlu_config.language,
             parsers,
             entities: nlu_config.entities,
             intents_data_sizes,
             slot_name_mapping,
-            builtin_entity_parser: RustlingParser::get(rustling_lang)
+            builtin_entity_parser
         })
     }
 
@@ -117,10 +118,14 @@ impl SnipsNLUEngine {
                                   slot_name.to_string(),
                                   custom_entity.clone())
         } else {
-            extract_builtin_entity(input,
-                                   entity_name.to_string(),
-                                   slot_name.to_string(),
-                                   self.builtin_entity_parser.clone())?
+            if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
+                extract_builtin_entity(input,
+                                       entity_name.to_string(),
+                                       slot_name.to_string(),
+                                       builtin_entity_parser)?
+            } else {
+                None
+            }
         };
         Ok(slot)
     }

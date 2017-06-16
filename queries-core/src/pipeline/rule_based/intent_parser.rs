@@ -9,28 +9,29 @@ use regex::{Regex, RegexBuilder};
 use errors::*;
 use super::configuration::RuleBasedParserConfiguration;
 use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
-use pipeline::slot_utils::resolve_builtin_slots;
+use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
 use utils::token::{tokenize, tokenize_light};
 use utils::string::{substring_with_char_range, suffix_from_char_index};
 use utils::miscellaneous::ranges_overlap;
-use builtin_entities::RustlingParser;
+use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use rustling_ontology::Lang;
 
 pub struct RuleBasedIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, String>,
     slot_names_to_entities: HashMap<String, String>,
-    builtin_entity_parser: Arc<RustlingParser>
+    builtin_entity_parser: Option<Arc<RustlingParser>>
 }
 
 impl RuleBasedIntentParser {
     pub fn new(configuration: RuleBasedParserConfiguration) -> Result<Self> {
-        let rustling_lang = Lang::from_str(&configuration.language)?;
+        let builtin_entity_parser = Lang::from_str(&configuration.language).ok()
+            .map(|rustling_lang| RustlingParser::get(rustling_lang));
         Ok(RuleBasedIntentParser {
             regexes_per_intent: compile_regexes_per_intent(configuration.regexes_per_intent)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
             slot_names_to_entities: configuration.slot_names_to_entities,
-            builtin_entity_parser: RustlingParser::get(rustling_lang)
+            builtin_entity_parser
         })
     }
 }
@@ -51,7 +52,11 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>)
 
 impl IntentParser for RuleBasedIntentParser {
     fn get_intent(&self, input: &str, intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
-        let (_, formatted_input) = replace_builtin_entities(input, &*self.builtin_entity_parser);
+        let formatted_input = if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
+            replace_builtin_entities(input, &*builtin_entity_parser).1
+        } else {
+            input.to_string()
+        };
         Ok(self.regexes_per_intent.iter()
             .filter(|&(intent, _)|
                 if let Some(intent_set) = intents {
@@ -75,7 +80,11 @@ impl IntentParser for RuleBasedIntentParser {
             .get(intent_name)
             .ok_or(format!("intent {:?} not found", intent_name))?;
 
-        let (ranges_mapping, formatted_input) = replace_builtin_entities(input, &*self.builtin_entity_parser);
+        let (ranges_mapping, formatted_input) = if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
+            replace_builtin_entities(input, &*builtin_entity_parser)
+        } else {
+            (HashMap::<Range<usize>, Range<usize>>::new(), input.to_string())
+        };
 
         let mut result = vec![];
         for regex in regexes {
@@ -107,7 +116,19 @@ impl IntentParser for RuleBasedIntentParser {
             }
         }
         let deduplicated_slots = deduplicate_overlapping_slots(result);
-        Ok(resolve_builtin_slots(input, deduplicated_slots, &*self.builtin_entity_parser))
+        if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
+            Ok(resolve_builtin_slots(input, deduplicated_slots, &*builtin_entity_parser))
+        } else {
+            Ok(deduplicated_slots.into_iter()
+                .filter_map(|s| {
+                    if BuiltinEntityKind::from_identifier(&s.entity).is_err() {
+                        Some(convert_to_custom_slot(s))
+                    } else {
+                        None
+                    }
+                })
+                .collect())
+        }
     }
 }
 
