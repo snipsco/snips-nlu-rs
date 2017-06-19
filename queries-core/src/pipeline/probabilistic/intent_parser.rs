@@ -10,28 +10,28 @@ use rustling_ontology::Lang;
 use errors::*;
 use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
 use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
-use super::intent_classifier::IntentClassifier;
-use super::tagger::Tagger;
-use super::crf_utils::{tags_to_slots, positive_tagging, replace_builtin_tags};
+use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
+use pipeline::probabilistic::intent_classifier::IntentClassifier;
+use pipeline::probabilistic::tagger::{CRFTagger, Tagger};
+use pipeline::probabilistic::crf_utils::{tags_to_slots, positive_tagging, replace_builtin_tags};
 use utils::miscellaneous::ranges_overlap;
 use utils::token::{Token, tokenize};
-use super::configuration::ProbabilisticParserConfiguration;
 use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
 
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: IntentClassifier,
     slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
-    taggers: HashMap<String, Tagger>,
+    taggers: HashMap<String, Box<Tagger>>,
     builtin_entity_parser: Option<Arc<RustlingParser>>
 }
 
 impl ProbabilisticIntentParser {
     pub fn new(config: ProbabilisticParserConfiguration) -> Result<Self> {
         let taggers: Result<Vec<_>> = config.taggers.into_iter()
-            .map(|(intent_name, tagger_config)| Ok((intent_name, Tagger::new(tagger_config)?)))
+            .map(|(intent_name, tagger_config)| Ok((intent_name, Box::new(CRFTagger::new(tagger_config)?) as _)))
             .collect();
-        let taggers_map: HashMap<String, Tagger> = HashMap::from_iter(taggers?);
+        let taggers_map = HashMap::from_iter(taggers?);
         let intent_classifier = IntentClassifier::new(config.intent_classifier)?;
         let builtin_entity_parser = Lang::from_str(&config.language_code).ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
@@ -87,7 +87,7 @@ impl IntentParser for ProbabilisticIntentParser {
             return Ok(vec![]);
         }
 
-        let tags = tagger.get_tags(&tokens)?;
+        let tags = (*tagger).get_tags(&tokens)?;
 
         let builtin_slot_names_iter = intent_slots_mapping.iter()
             .filter_map(|(slot_name, entity)|
@@ -96,7 +96,8 @@ impl IntentParser for ProbabilisticIntentParser {
         let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
 
         // Remove slots corresponding to builtin entities
-        let custom_slots = tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping)
+        let tagging_scheme = (*tagger).get_tagging_scheme();
+        let custom_slots = tags_to_slots(input, &tokens, &tags, tagging_scheme, intent_slots_mapping)
             .into_iter()
             .filter(|s| !builtin_slot_names.contains(&s.slot_name))
             .collect_vec();
@@ -122,7 +123,7 @@ impl IntentParser for ProbabilisticIntentParser {
             let augmented_slots = augment_slots(input,
                                                 &tokens,
                                                 updated_tags,
-                                                tagger,
+                                                &**tagger,
                                                 intent_slots_mapping,
                                                 builtin_entities,
                                                 builtin_slots)?;
@@ -170,7 +171,8 @@ fn augment_slots(text: &str,
                     break
                 }
                 let ref indexes = tokens_indexes[slot_index];
-                let sub_tags_sequence = positive_tagging(tagger.tagging_scheme, slot, indexes.len());
+                let tagging_scheme = tagger.get_tagging_scheme();
+                let sub_tags_sequence = positive_tagging(tagging_scheme, slot, indexes.len());
                 for (index_position, index) in indexes.iter().enumerate() {
                     updated_tags[*index] = sub_tags_sequence[index_position].clone();
                 }
@@ -184,7 +186,7 @@ fn augment_slots(text: &str,
         augmented_tags = best_updated_tags;
     }
 
-    Ok(tags_to_slots(text, tokens, &augmented_tags, tagger.tagging_scheme, &intent_slots_mapping))
+    Ok(tags_to_slots(text, tokens, &augmented_tags, tagger.get_tagging_scheme(), &intent_slots_mapping))
 }
 
 fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<usize>> {
