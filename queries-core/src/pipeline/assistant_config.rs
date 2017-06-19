@@ -75,7 +75,6 @@ impl NLUEngineConfigurationConvertible for BinaryBasedConfiguration {
 mod tests {
     use std::fs;
 
-    use super::NLUEngineConfiguration;
     use super::NLUEngineConfigurationConvertible;
     use super::BinaryBasedConfiguration;
 
