@@ -260,4 +260,32 @@ mod tests {
         ];
         assert_eq!(expected_indexes, actual_indexes);
     }
+
+    #[test]
+    fn replace_tags_works() {
+        // Given
+        let tags = vec![
+            "B-tag1".to_string(),
+            "I-tag1".to_string(),
+            "O".to_string(),
+            "B-start_date".to_string(),
+            "B-end_date".to_string(),
+            "O".to_string()
+        ];
+        let builtin_slot_names = hashset! {"start_date".to_string(), "end_date".to_string()};
+
+        // When
+        let replaced_tags = replace_builtin_tags(tags, builtin_slot_names);
+
+        // Then
+        let expected_tags = vec![
+            "B-tag1".to_string(),
+            "I-tag1".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string()
+        ];
+        assert_eq!(expected_tags, replaced_tags);
+    }
 }
