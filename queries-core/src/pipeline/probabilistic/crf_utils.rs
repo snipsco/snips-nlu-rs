@@ -12,7 +12,7 @@ const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
 const LAST_PREFIX: &str = "L-";
 const UNIT_PREFIX: &str = "U-";
-const OUTSIDE: &str = "O";
+pub const OUTSIDE: &str = "O";
 
 #[derive(Copy, Clone, Debug)]
 pub enum TaggingScheme {
@@ -32,7 +32,7 @@ impl TaggingScheme {
     }
 }
 
-fn tag_name_to_slot_name(tag: String) -> String {
+pub fn tag_name_to_slot_name(tag: String) -> String {
     suffix_from_char_index(tag, 2)
 }
 
