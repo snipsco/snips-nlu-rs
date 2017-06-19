@@ -207,6 +207,167 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pipeline::probabilistic::crf_utils::TaggingScheme;
+    use builtin_entities::{BuiltinEntity, TimeValue, InstantTimeValue, Precision, Grain};
+
+    struct TestTagger {
+        tags1: Vec<String>,
+        tags2: Vec<String>
+    }
+
+    impl Tagger for TestTagger {
+        fn get_tags(&self, _: &[Token]) -> Result<Vec<String>> {
+            Ok(vec![
+                "O".to_string(),
+                "O".to_string(),
+                "O".to_string(),
+                "O".to_string(),
+                "O".to_string(),
+                "B-location".to_string(),
+                "O".to_string(),
+                "B-start_date".to_string(),
+                "I-start_date".to_string(),
+                "I-start_date".to_string(),
+                "O".to_string(),
+                "O".to_string(),
+                "B-end_date".to_string(),
+                "O".to_string(),
+            ])
+        }
+
+        fn get_sequence_probability(&self, _: &[Token], tags: Vec<String>) -> Result<f64> {
+            if tags == self.tags1 {
+                Ok(0.6)
+            } else if tags == self.tags2 {
+                Ok(0.4)
+            } else {
+                Err(format!("Unexpected tags: {:?}", tags).into())
+            }
+        }
+
+        fn get_tagging_scheme(&self) -> TaggingScheme {
+            TaggingScheme::BIO
+        }
+    }
+
+    #[test]
+    fn augment_slots_works() {
+        // Given
+        let text = "Find a flight leaving from Paris between today at 9pm and tomorrow at 8am";
+        let tokens = tokenize(text);
+        let tags = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+        ];
+        let tags1 = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "B-start_date".to_string(),
+            "I-start_date".to_string(),
+            "I-start_date".to_string(),
+            "O".to_string(),
+            "B-end_date".to_string(),
+            "I-end_date".to_string(),
+            "I-end_date".to_string(),
+        ];
+        let tags2 = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "B-end_date".to_string(),
+            "I-end_date".to_string(),
+            "I-end_date".to_string(),
+            "O".to_string(),
+            "B-start_date".to_string(),
+            "I-start_date".to_string(),
+            "I-start_date".to_string(),
+        ];
+        let tagger = TestTagger { tags1, tags2 };
+        let intent_slots_mapping = hashmap! {
+            "location".to_string() => "location_entity".to_string(),
+            "start_date".to_string() => "snips/datetime".to_string(),
+            "end_date".to_string() => "snips/datetime".to_string(),
+        };
+        let start_time = InstantTimeValue {
+            value: "today at 9pm".to_string(),
+            grain: Grain::Hour,
+            precision: Precision::Exact
+        };
+        let end_time = InstantTimeValue {
+            value: "tomorrow at 8am".to_string(),
+            grain: Grain::Hour,
+            precision: Precision::Exact
+        };
+        let builtin_entities = vec![
+            RustlingEntity {
+                value: "tomorrow at 8am".to_string(),
+                range: 58..73,
+                entity_kind: BuiltinEntityKind::Time,
+                entity: BuiltinEntity::Time(TimeValue::InstantTime(end_time))
+            },
+            RustlingEntity {
+                value: "today at 9pm".to_string(),
+                range: 41..53,
+                entity_kind: BuiltinEntityKind::Time,
+                entity: BuiltinEntity::Time(TimeValue::InstantTime(start_time))
+            }
+        ];
+        let missing_slots = vec![("start_date".to_string(), BuiltinEntityKind::Time),
+                                 ("end_date".to_string(), BuiltinEntityKind::Time)];
+
+        // When
+        let augmented_slots = augment_slots(text,
+                                            &*tokens,
+                                            tags,
+                                            &tagger,
+                                            &intent_slots_mapping,
+                                            builtin_entities,
+                                            missing_slots).unwrap();
+
+        // Then
+        let expected_slots: Vec<InternalSlot> = vec![
+            InternalSlot {
+                value: "Paris".to_string(),
+                range: 27..32,
+                entity: "location_entity".to_string(),
+                slot_name: "location".to_string()
+            },
+            InternalSlot {
+                value: "today at 9pm".to_string(),
+                range: 41..53,
+                entity: "snips/datetime".to_string(),
+                slot_name: "start_date".to_string()
+            },
+            InternalSlot {
+                value: "tomorrow at 8am".to_string(),
+                range: 58..73,
+                entity: "snips/datetime".to_string(),
+                slot_name: "end_date".to_string()
+            }
+        ];
+        assert_eq!(expected_slots, augmented_slots);
+    }
 
     #[test]
     fn spans_to_tokens_indexes_works() {
