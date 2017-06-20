@@ -89,7 +89,7 @@ impl IntentParser for ProbabilisticIntentParser {
 
         let tags = tagger.get_tags(&tokens)?;
 
-        let builtin_slot_names_iter = intent_slots_mapping.into_iter()
+        let builtin_slot_names_iter = intent_slots_mapping.iter()
             .filter_map(|(slot_name, entity)|
                 BuiltinEntityKind::from_identifier(entity).ok().map(|_| slot_name.to_string())
             );
@@ -102,18 +102,20 @@ impl IntentParser for ProbabilisticIntentParser {
             .collect_vec();
 
         if builtin_slot_names.is_empty() {
-            return Ok(custom_slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect());
+            return Ok(custom_slots.into_iter().map(convert_to_custom_slot).collect());
         }
 
         let updated_tags = replace_builtin_tags(tags, builtin_slot_names);
 
-        let builtin_slots = intent_slots_mapping.into_iter()
+        let builtin_slots = intent_slots_mapping.iter()
             .filter_map(|(slot_name, entity)|
                 BuiltinEntityKind::from_identifier(entity).ok().map(|kind| (slot_name.clone(), kind)))
             .collect_vec();
 
-        let mut builtin_entity_kinds = builtin_slots.iter().map(|&(_, kind)| kind).collect_vec();
-        builtin_entity_kinds.dedup_by_key(|kind| *kind);
+        let builtin_entity_kinds = builtin_slots.iter()
+            .map(|&(_, kind)| kind)
+            .unique()
+            .collect_vec();
 
         if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
             let builtin_entities = builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
@@ -126,7 +128,7 @@ impl IntentParser for ProbabilisticIntentParser {
                                                 builtin_slots)?;
             Ok(resolve_builtin_slots(input, augmented_slots, &*builtin_entity_parser))
         } else {
-            Ok(custom_slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect())
+            Ok(custom_slots.into_iter().map(convert_to_custom_slot).collect())
         }
     }
 }
