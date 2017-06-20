@@ -40,33 +40,36 @@ impl IntentClassifier {
     }
 
     pub fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
-        if input.is_empty() || self.intent_list.is_empty() || self.featurizer.is_none() ||
-            self.logreg.is_none() {
+        if input.is_empty() || self.intent_list.is_empty() {
             return Ok(None);
         }
 
         if self.intent_list.len() == 1 {
-            return if let Some(ref intent_name) = self.intent_list[0] {
-                Ok(Some(IntentClassifierResult { intent_name: intent_name.clone(), probability: 1.0 }))
-            } else {
-                Ok(None)
-            }
+            return Ok(self.intent_list[0].as_ref().map(|intent_name|
+                IntentClassifierResult { intent_name: intent_name.clone(), probability: 1.0 }
+            ));
         }
 
-        let featurizer = self.featurizer.as_ref().unwrap(); // checked
-        let log_reg = self.logreg.as_ref().unwrap(); // checked
+        if self.featurizer.is_none() || self.logreg.is_none() {
+            return Ok(None);
+        }
 
-        let stemmed_text: String = StaticMapStemmer::new(self.language_code.clone()).ok()
-            .map(|stemmer| stem_sentence(input, &stemmer))
-            .unwrap_or(input.to_string());
+        if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
+            let stemmed_text = StaticMapStemmer::new(self.language_code.clone()).ok()
+                .map(|stemmer| stem_sentence(input, &stemmer))
+                .unwrap_or(input.to_string());
 
-        let features = featurizer.transform(&stemmed_text)?;
-        let probabilities = log_reg.run(&features.view())?;
+            let features = featurizer.transform(&stemmed_text)?;
+            let probabilities = logreg.run(&features.view())?;
 
-        let (index_predicted, best_probability) = argmax(&probabilities);
+            let (index_predicted, best_probability) = argmax(&probabilities);
 
-        if let Some(ref intent_name) = self.intent_list[index_predicted] {
-            Ok(Some(IntentClassifierResult { intent_name: intent_name.clone(), probability: best_probability }))
+            Ok(self.intent_list[index_predicted].as_ref()
+                .map(|intent_name|
+                    IntentClassifierResult {
+                        intent_name: intent_name.clone(),
+                        probability: best_probability
+                    }))
         } else {
             Ok(None)
         }
