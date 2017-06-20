@@ -11,7 +11,7 @@ use errors::*;
 use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
 use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
-use pipeline::probabilistic::intent_classifier::IntentClassifier;
+use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use pipeline::probabilistic::tagger::{CRFTagger, Tagger};
 use pipeline::probabilistic::crf_utils::{tags_to_slots, positive_tagging, replace_builtin_tags};
 use utils::miscellaneous::ranges_overlap;
@@ -20,7 +20,7 @@ use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
 
 
 pub struct ProbabilisticIntentParser {
-    intent_classifier: IntentClassifier,
+    intent_classifier: Box<IntentClassifier>,
     slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
     taggers: HashMap<String, Box<Tagger>>,
     builtin_entity_parser: Option<Arc<RustlingParser>>
@@ -32,7 +32,7 @@ impl ProbabilisticIntentParser {
             .map(|(intent_name, tagger_config)| Ok((intent_name, Box::new(CRFTagger::new(tagger_config)?) as _)))
             .collect();
         let taggers_map = HashMap::from_iter(taggers?);
-        let intent_classifier = IntentClassifier::new(config.intent_classifier)?;
+        let intent_classifier = Box::new(LogRegIntentClassifier::new(config.intent_classifier)?) as _;
         let builtin_entity_parser = Lang::from_str(&config.language_code).ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
 
@@ -49,25 +49,22 @@ impl IntentParser for ProbabilisticIntentParser {
     fn get_intent(&self, input: &str,
                   intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
         if let Some(intents_set) = intents {
-            if intents_set.len() == 1 {
-                Ok(Some(
-                    IntentClassifierResult {
-                        intent_name: intents_set.into_iter().next().unwrap().to_string(),
-                        probability: 1.0
-                    }
-                ))
-            } else {
-                let result = self.intent_classifier.get_intent(input)?;
-                if let Some(res) = result {
-                    if intents_set.contains(&res.intent_name) {
-                        Ok(Some(res))
-                    } else {
-                        Ok(None)
-                    }
+            Ok(
+                if intents_set.len() == 1 {
+                    Some(
+                        IntentClassifierResult {
+                            intent_name: intents_set.into_iter().next().unwrap().to_string(),
+                            probability: 1.0
+                        }
+                    )
+                } else if let Some(res) = self.intent_classifier.get_intent(input)? {
+                    intents_set
+                        .get(&res.intent_name)
+                        .map(|_| res)
                 } else {
-                    Ok(result)
+                    None
                 }
-            }
+            )
         } else {
             self.intent_classifier.get_intent(input)
         }
@@ -207,6 +204,7 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::result::Result as StdResult;
     use pipeline::probabilistic::crf_utils::TaggingScheme;
     use builtin_entities::{BuiltinEntity, TimeValue, InstantTimeValue, Precision, Grain};
 
@@ -247,6 +245,17 @@ mod tests {
 
         fn get_tagging_scheme(&self) -> TaggingScheme {
             TaggingScheme::BIO
+        }
+    }
+
+    struct TestIntentClassifier {
+        result: Option<IntentClassifierResult>
+    }
+
+    impl IntentClassifier for TestIntentClassifier {
+        fn get_intent(&self, _: &str) -> StdResult<Option<IntentClassifierResult>, Error> {
+            let res = self.result.clone();
+            Ok(res)
         }
     }
 
@@ -435,5 +444,54 @@ mod tests {
             "O".to_string()
         ];
         assert_eq!(expected_tags, replaced_tags);
+    }
+
+    #[test]
+    fn should_not_return_filtered_out_intent() {
+        // Given
+        let classifier_result = IntentClassifierResult {
+            intent_name: "disabled_intent".to_string(),
+            probability: 0.8
+        };
+        let classifier = TestIntentClassifier { result: Some(classifier_result) };
+        let intent_parser = ProbabilisticIntentParser {
+            intent_classifier: Box::new(classifier) as _,
+            slot_name_to_entity_mapping: hashmap! {},
+            taggers: hashmap! {},
+            builtin_entity_parser: None
+        };
+        let text = "hello world";
+        let intents_set = Some(hashset! {"allowed_intent1".to_string(), "allowed_intent2".to_string()});
+
+        // When
+        let result = intent_parser.get_intent(text, intents_set.as_ref()).unwrap();
+
+        // Then
+        assert_eq!(None, result)
+    }
+
+    #[test]
+    fn should_return_only_allowed_intent() {
+        // Given
+        let classifier_result = IntentClassifierResult {
+            intent_name: "disabled_intent".to_string(),
+            probability: 0.8
+        };
+        let classifier = TestIntentClassifier { result: Some(classifier_result) };
+        let intent_parser = ProbabilisticIntentParser {
+            intent_classifier: Box::new(classifier) as _,
+            slot_name_to_entity_mapping: hashmap! {},
+            taggers: hashmap! {},
+            builtin_entity_parser: None
+        };
+        let text = "hello world";
+        let intents_set = Some(hashset! {"allowed_intent1".to_string()});
+
+        // When
+        let result = intent_parser.get_intent(text, intents_set.as_ref()).unwrap();
+
+        // Then
+        let expected_result = Some(IntentClassifierResult { intent_name: "allowed_intent1".to_string(), probability: 1.0 });
+        assert_eq!(expected_result, result)
     }
 }

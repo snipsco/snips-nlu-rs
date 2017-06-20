@@ -9,14 +9,18 @@ use utils::miscellaneous::argmax;
 use utils::token::tokenize_light;
 use models::stemmer::{Stemmer, StaticMapStemmer};
 
-pub struct IntentClassifier {
+pub trait IntentClassifier: Send + Sync {
+    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>>;
+}
+
+pub struct LogRegIntentClassifier {
     language_code: String,
     intent_list: Vec<Option<String>>,
     featurizer: Option<Featurizer>,
     logreg: Option<MulticlassLogisticRegression>,
 }
 
-impl IntentClassifier {
+impl LogRegIntentClassifier {
     pub fn new(config: IntentClassifierConfiguration) -> Result<Self> {
         let featurizer = config.featurizer.map(Featurizer::new);
         let logreg =
@@ -38,8 +42,10 @@ impl IntentClassifier {
             logreg
         })
     }
+}
 
-    pub fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
+impl IntentClassifier for LogRegIntentClassifier {
+    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
         if input.is_empty() || self.intent_list.is_empty() {
             return Ok(None);
         }
@@ -86,7 +92,7 @@ fn stem_sentence<S: Stemmer>(input: &str, stemmer: &S) -> String {
 
 #[cfg(test)]
 mod tests {
-    use super::IntentClassifier;
+    use super::{IntentClassifier, LogRegIntentClassifier};
     use super::Featurizer;
     use ndarray::*;
     use models::logreg::MulticlassLogisticRegression;
@@ -439,7 +445,7 @@ mod tests {
 
         let coeffs: Array2<f32> = Array::from_shape_fn((27, 3), |(i, j)| coeffs_vec[j][i]);
         let logreg = MulticlassLogisticRegression::new(intercept, coeffs).unwrap();
-        let classifier = IntentClassifier {
+        let classifier = LogRegIntentClassifier {
             language_code,
             intent_list,
             featurizer: Some(featurizer),
