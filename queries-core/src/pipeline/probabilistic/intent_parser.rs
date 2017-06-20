@@ -12,7 +12,7 @@ use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
 use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use super::intent_classifier::IntentClassifier;
 use super::tagger::Tagger;
-use super::crf_utils::{tags_to_slots, positive_tagging, tag_name_to_slot_name, OUTSIDE};
+use super::crf_utils::{tags_to_slots, positive_tagging, replace_builtin_tags};
 use utils::miscellaneous::ranges_overlap;
 use utils::token::{Token, tokenize};
 use super::configuration::ProbabilisticParserConfiguration;
@@ -129,23 +129,6 @@ impl IntentParser for ProbabilisticIntentParser {
             Ok(custom_slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect())
         }
     }
-}
-
-fn replace_builtin_tags(tags: Vec<String>, builtin_slot_names: HashSet<String>) -> Vec<String> {
-    tags.into_iter()
-        .map(|tag| {
-            if tag == OUTSIDE {
-                tag
-            } else {
-                let slot_name = tag_name_to_slot_name(tag.to_string());
-                if builtin_slot_names.contains(&slot_name) {
-                    OUTSIDE.to_string()
-                } else {
-                    tag
-                }
-            }
-        })
-        .collect_vec()
 }
 
 fn augment_slots(text: &str,
