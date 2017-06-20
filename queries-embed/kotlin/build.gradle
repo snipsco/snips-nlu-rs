@@ -36,7 +36,7 @@ def soForJar = [
 def jarClassifier = {
     def exisiting = soForJar.findAll{ file(it[0]).exists() }
     if(exisiting.size == 1) exisiting[0][1]
-    else if(exisiting.size == 0) throw new RuntimeException("no so detected")
+    else if(exisiting.size == 0) "naked"
     else "multiarch"
 }
 
@@ -124,14 +124,17 @@ artifacts {
 
 apply plugin: 'maven'
 
+def _nexusUsername = project.hasProperty("nexusUsername") ? nexusUsername : ""
+def _nexusPassword = project.hasProperty("nexusPassword") ? nexusPassword : ""
+
 uploadJarArchives {
     repositories {
         mavenDeployer {
             repository(url: "https://nexus-repository.snips.ai/repository/snips-maven-releases/") {
-                authentication(userName: nexusUsername, password: nexusPassword)
+                authentication(userName: _nexusUsername, password: _nexusPassword)
             }
             snapshotRepository(url: "https://nexus-repository.snips.ai/repository/snips-maven-snapshots/") {
-                authentication(userName: nexusUsername, password: nexusPassword)
+                authentication(userName: _nexusUsername, password: _nexusPassword)
             }
         }
     }
@@ -144,10 +147,10 @@ uploadAarArchives {
     repositories {
         mavenDeployer {
             repository(url: "https://nexus-repository.snips.ai/repository/snips-maven-releases/") {
-                authentication(userName: nexusUsername, password: nexusPassword)
+                authentication(userName: _nexusUsername, password: _nexusPassword)
             }
             snapshotRepository(url: "https://nexus-repository.snips.ai/repository/snips-maven-snapshots/") {
-                authentication(userName: nexusUsername, password: nexusPassword)
+                authentication(userName: _nexusUsername, password: _nexusPassword)
             }
 
             repository(url: "file://localhost/tmp/myRepo/")
