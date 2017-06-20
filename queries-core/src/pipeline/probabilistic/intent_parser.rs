@@ -12,7 +12,7 @@ use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
 use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use super::intent_classifier::IntentClassifier;
 use super::tagger::Tagger;
-use super::crf_utils::{tags_to_slots, positive_tagging};
+use super::crf_utils::{tags_to_slots, positive_tagging, replace_builtin_tags};
 use utils::miscellaneous::ranges_overlap;
 use utils::token::{Token, tokenize};
 use super::configuration::ProbabilisticParserConfiguration;
@@ -88,39 +88,47 @@ impl IntentParser for ProbabilisticIntentParser {
         }
 
         let tags = tagger.get_tags(&tokens)?;
-        let custom_slots: Vec<InternalSlot> = tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping)
-            .into_iter()
-            .filter(|s| BuiltinEntityKind::from_identifier(&s.entity).is_err())
-            .collect();
 
-        let builtin_slots: Vec<(String, BuiltinEntityKind)> = intent_slots_mapping.into_iter()
+        let builtin_slot_names_iter = intent_slots_mapping.iter()
             .filter_map(|(slot_name, entity)|
-                BuiltinEntityKind::from_identifier(entity).ok().map(|kind| (slot_name.clone(), kind)))
-            .collect();
+                BuiltinEntityKind::from_identifier(entity).ok().map(|_| slot_name.to_string())
+            );
+        let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
 
-        if builtin_slots.is_empty() {
-            return Ok(custom_slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect());
-        }
-
-        let mut builtin_entity_kinds: Vec<BuiltinEntityKind> = builtin_slots.iter()
-            .map(|&(_, kind)| kind)
+        // Remove slots corresponding to builtin entities
+        let custom_slots = tags_to_slots(input, &tokens, &tags, tagger.tagging_scheme, intent_slots_mapping)
+            .into_iter()
+            .filter(|s| !builtin_slot_names.contains(&s.slot_name))
             .collect_vec();
 
-        builtin_entity_kinds.dedup_by_key(|kind| *kind);
+        if builtin_slot_names.is_empty() {
+            return Ok(custom_slots.into_iter().map(convert_to_custom_slot).collect());
+        }
+
+        let updated_tags = replace_builtin_tags(tags, builtin_slot_names);
+
+        let builtin_slots = intent_slots_mapping.iter()
+            .filter_map(|(slot_name, entity)|
+                BuiltinEntityKind::from_identifier(entity).ok().map(|kind| (slot_name.clone(), kind)))
+            .collect_vec();
+
+        let builtin_entity_kinds = builtin_slots.iter()
+            .map(|&(_, kind)| kind)
+            .unique()
+            .collect_vec();
 
         if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
             let builtin_entities = builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
-
             let augmented_slots = augment_slots(input,
                                                 &tokens,
-                                                tags,
+                                                updated_tags,
                                                 tagger,
                                                 intent_slots_mapping,
                                                 builtin_entities,
                                                 builtin_slots)?;
             Ok(resolve_builtin_slots(input, augmented_slots, &*builtin_entity_parser))
         } else {
-            Ok(custom_slots.into_iter().map(|slot| convert_to_custom_slot(slot)).collect())
+            Ok(custom_slots.into_iter().map(convert_to_custom_slot).collect())
         }
     }
 }
@@ -236,5 +244,33 @@ mod tests {
             vec![2],
         ];
         assert_eq!(expected_indexes, actual_indexes);
+    }
+
+    #[test]
+    fn replace_tags_works() {
+        // Given
+        let tags = vec![
+            "B-tag1".to_string(),
+            "I-tag1".to_string(),
+            "O".to_string(),
+            "B-start_date".to_string(),
+            "B-end_date".to_string(),
+            "O".to_string()
+        ];
+        let builtin_slot_names = hashset! {"start_date".to_string(), "end_date".to_string()};
+
+        // When
+        let replaced_tags = replace_builtin_tags(tags, builtin_slot_names);
+
+        // Then
+        let expected_tags = vec![
+            "B-tag1".to_string(),
+            "I-tag1".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string()
+        ];
+        assert_eq!(expected_tags, replaced_tags);
     }
 }
