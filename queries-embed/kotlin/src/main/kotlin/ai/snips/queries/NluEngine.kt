@@ -8,7 +8,7 @@ import com.sun.jna.ptr.PointerByReference
 import java.io.Closeable
 import java.io.File
 import kotlin.system.measureTimeMillis
-
+import ai.snips.queries.NluEngine.SnipsQueriesClientLibrary.Companion.INSTANCE as LIB
 
 object Main {
     @JvmStatic
@@ -24,6 +24,11 @@ object Main {
                 //println(parse("what's the weather like in paris ? "))
             })
         }.close()
+
+        NluEngine(File("/home/fredszaq/Work/tmp/assistantproj_SJvHP5PHQb/assistant.zip").readBytes()).apply {
+            println(parse("Set the color of the lights to blue"))
+
+        }
         println("bye world")
     }
 }
@@ -34,42 +39,59 @@ data class Slot(val value: String, val range: Range?, val entity: String, val sl
 data class IntentClassifierResult(val intentName: String, val probability: Float)
 data class IntentParserResult(val input: String, val intent: IntentClassifierResult?, val slots: List<Slot>)
 
-class NluEngine(assistantDir: File) : Closeable {
+class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
-    val client: Pointer = PointerByReference().apply {
-        parseError(SnipsQueriesClientLibrary.INSTANCE.nlu_engine_create_from_dir(assistantDir.absolutePath, this))
-    }.value
-
-    override fun close() {
-        SnipsQueriesClientLibrary.INSTANCE.nlu_engine_destroy_client(client)
-    }
-
-    fun parse(input: String): IntentParserResult =
-            CIntentParserResult(PointerByReference().apply {
-                parseError(SnipsQueriesClientLibrary.INSTANCE.nlu_engine_run_parse(client, input, this))
-            }.value).let {
-                it.toIntentParserResult().apply {
-                    SnipsQueriesClientLibrary.INSTANCE.nlu_engine_destroy_result(it)
+    companion object {
+        private fun parseError(returnCode: Int) {
+            if (returnCode != 1) {
+                PointerByReference().apply {
+                    LIB.nlu_engine_get_last_error(this)
+                    throw RuntimeException(value.getString(0, "utf-8").apply {
+                        LIB.nlu_engine_destroy_string(value)
+                    })
                 }
-            }
-
-    private fun parseError(returnCode: Int) {
-        if (returnCode != 1) {
-            PointerByReference().apply {
-                SnipsQueriesClientLibrary.INSTANCE.nlu_engine_get_last_error(this)
-                throw RuntimeException(value.getString(0, "utf-8").apply {
-                    SnipsQueriesClientLibrary.INSTANCE.nlu_engine_destroy_string(value)
-                })
             }
         }
     }
 
-    private interface SnipsQueriesClientLibrary : Library {
+
+    constructor(assistantDir: File) :
+            this({
+                     PointerByReference().apply {
+                         parseError(LIB.nlu_engine_create_from_dir(assistantDir.absolutePath, this))
+                     }.value
+                 })
+
+    constructor(data: ByteArray) :
+            this({
+                     PointerByReference().apply {
+                         parseError(LIB.nlu_engine_create_from_binary(data, data.size, this))
+                     }.value
+                 })
+
+
+    val client: Pointer = clientBuilder()
+
+    override fun close() {
+        LIB.nlu_engine_destroy_client(client)
+    }
+
+    fun parse(input: String): IntentParserResult =
+            CIntentParserResult(PointerByReference().apply {
+                parseError(LIB.nlu_engine_run_parse(client, input, this))
+            }.value).let {
+                it.toIntentParserResult().apply {
+                    LIB.nlu_engine_destroy_result(it)
+                }
+            }
+
+    internal interface SnipsQueriesClientLibrary : Library {
         companion object {
             val INSTANCE: SnipsQueriesClientLibrary = Native.loadLibrary("queries_embed", SnipsQueriesClientLibrary::class.java)
         }
 
         fun nlu_engine_create_from_dir(root_dir: String, pointer: PointerByReference): Int
+        fun nlu_engine_create_from_binary(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun nlu_engine_run_parse(client: Pointer, input: String, result: PointerByReference): Int
         fun nlu_engine_get_last_error(error: PointerByReference): Int
         fun nlu_engine_destroy_client(client: Pointer): Int
