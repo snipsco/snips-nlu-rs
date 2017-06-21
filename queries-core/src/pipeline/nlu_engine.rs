@@ -24,7 +24,7 @@ pub struct SnipsNLUEngine {
     entities: HashMap<String, Entity>,
     intents_data_sizes: HashMap<String, usize>,
     slot_name_mapping: HashMap<String, HashMap<String, String>>,
-    builtin_entity_parser: Arc<RustlingParser>
+    builtin_entity_parser: Option<Arc<RustlingParser>>
 }
 
 impl SnipsNLUEngine {
@@ -42,14 +42,15 @@ impl SnipsNLUEngine {
         };
         let intents_data_sizes = nlu_config.intents_data_sizes;
         let slot_name_mapping = nlu_config.slot_name_mapping;
-        let rustling_lang = Lang::from_str(&nlu_config.language)?;
+        let builtin_entity_parser = Lang::from_str(&nlu_config.language).ok()
+            .map(|rustling_lang| RustlingParser::get(rustling_lang));
         Ok(SnipsNLUEngine {
             language: nlu_config.language,
             parsers,
             entities: nlu_config.entities,
             intents_data_sizes,
             slot_name_mapping,
-            builtin_entity_parser: RustlingParser::get(rustling_lang)
+            builtin_entity_parser
         })
     }
 
@@ -117,10 +118,14 @@ impl SnipsNLUEngine {
                                   slot_name.to_string(),
                                   custom_entity.clone())
         } else {
-            extract_builtin_entity(input,
-                                   entity_name.to_string(),
-                                   slot_name.to_string(),
-                                   self.builtin_entity_parser.clone())?
+            if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
+                extract_builtin_entity(input,
+                                       entity_name.to_string(),
+                                       slot_name.to_string(),
+                                       builtin_entity_parser)?
+            } else {
+                None
+            }
         };
         Ok(slot)
     }
@@ -183,7 +188,25 @@ pub struct TaggedEntity {
     pub value: String,
     pub range: Option<Range<usize>>,
     pub entity: String,
+    pub slot_name: String
+}
+
+#[derive(Debug, Clone, PartialEq, Hash)]
+pub struct PartialTaggedEntity {
+    pub value: String,
+    pub range: Option<Range<usize>>,
+    pub entity: String,
     pub slot_name: Option<String>
+}
+
+impl PartialTaggedEntity {
+    fn into_tagged_entity(self) -> Option<TaggedEntity> {
+        if let Some(slot_name) = self.slot_name {
+            Some(TaggedEntity { value: self.value, range: self.range, entity: self.entity, slot_name })
+        } else {
+            None
+        }
+    }
 }
 
 impl SnipsNLUEngine {
@@ -203,7 +226,7 @@ impl SnipsNLUEngine {
             .slots
             .map(|slots|
                 slots.into_iter()
-                    .map(|s| TaggedEntity {
+                    .map(|s| PartialTaggedEntity {
                         value: s.raw_value,
                         range: s.range,
                         entity: s.entity,
@@ -213,17 +236,18 @@ impl SnipsNLUEngine {
             .unwrap_or(vec![]);
 
         if intent_data_size >= threshold {
-            return Ok(parsed_entities);
+            return Ok(parsed_entities.into_iter().filter_map(|e| e.into_tagged_entity()).collect());
         }
 
         let tagged_seen_entities = self.tag_seen_entities(text, intent_entities);
         let tagged_builtin_entities = tag_builtin_entities(text, &self.language);
         let mut tagged_entities = enrich_entities(tagged_seen_entities, tagged_builtin_entities);
         tagged_entities = enrich_entities(tagged_entities, parsed_entities);
-        Ok(disambiguate_tagged_entities(tagged_entities, slot_name_mapping.clone()))
+        let disambiguated_entities = disambiguate_tagged_entities(tagged_entities, slot_name_mapping.clone());
+        Ok(disambiguated_entities.into_iter().filter_map(|e| e.into_tagged_entity()).collect())
     }
 
-    fn tag_seen_entities(&self, text: &str, intent_entities: HashSet<&String>) -> Vec<TaggedEntity> {
+    fn tag_seen_entities(&self, text: &str, intent_entities: HashSet<&String>) -> Vec<PartialTaggedEntity> {
         let entities = self.entities.clone().into_iter()
             .filter_map(|(entity_name, entity)|
                 if intent_entities.contains(&entity_name) {
@@ -236,9 +260,9 @@ impl SnipsNLUEngine {
         let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
         let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
         ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
-        let mut tagged_entities = Vec::<TaggedEntity>::new();
+        let mut tagged_entities = Vec::<PartialTaggedEntity>::new();
         for (ngram, ngram_indexes) in ngrams {
-            let mut ngram_entity: Option<TaggedEntity> = None;
+            let mut ngram_entity: Option<PartialTaggedEntity> = None;
             for &(ref entity_name, ref entity_data) in entities.iter() {
                 if entity_data.utterances.contains_key(&ngram) {
                     if ngram_entity.is_some() {
@@ -252,7 +276,7 @@ impl SnipsNLUEngine {
                         let range_end = tokens[*last].char_range.end;
                         let range = range_start..range_end;
                         let value = substring_with_char_range(text.to_string(), &range);
-                        ngram_entity = Some(TaggedEntity {
+                        ngram_entity = Some(PartialTaggedEntity {
                             value,
                             range: Some(range),
                             entity: entity_name.to_string(),

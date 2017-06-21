@@ -1,7 +1,8 @@
 use std::ops::Range;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use yolo::Yolo;
+use itertools::Itertools;
 
 use errors::*;
 use pipeline::InternalSlot;
@@ -32,7 +33,28 @@ impl TaggingScheme {
     }
 }
 
-fn tag_name_to_slot_name(tag: String) -> String {
+pub fn get_substitution_label(labels: &[&str]) -> String {
+    if labels.contains(&OUTSIDE) { OUTSIDE.to_string() } else { labels[0].to_string() }
+}
+
+pub fn replace_builtin_tags(tags: Vec<String>, builtin_slot_names: HashSet<String>) -> Vec<String> {
+    tags.into_iter()
+        .map(|tag| {
+            if tag == OUTSIDE {
+                tag
+            } else {
+                let slot_name = tag_name_to_slot_name(tag.to_string());
+                if builtin_slot_names.contains(&slot_name) {
+                    OUTSIDE.to_string()
+                } else {
+                    tag
+                }
+            }
+        })
+        .collect_vec()
+}
+
+pub fn tag_name_to_slot_name(tag: String) -> String {
     suffix_from_char_index(tag, 2)
 }
 
