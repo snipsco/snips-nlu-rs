@@ -88,12 +88,12 @@ impl From<TimeIntervalOutput> for TimeIntervalValue {
     fn from(v: TimeIntervalOutput) -> TimeIntervalValue {
         match v {
             TimeIntervalOutput::After(after) => TimeIntervalValue {
-                from: Some(after.to_string()),
+                from: Some(after.moment.to_string()),
                 to: None
             },
             TimeIntervalOutput::Before(before) => TimeIntervalValue {
                 from: None,
-                to: Some(before.to_string())
+                to: Some(before.moment.to_string())
             },
             TimeIntervalOutput::Between(from, to) => TimeIntervalValue {
                 from: Some(from.to_string()),
