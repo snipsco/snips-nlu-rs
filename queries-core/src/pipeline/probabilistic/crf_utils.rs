@@ -33,6 +33,10 @@ impl TaggingScheme {
     }
 }
 
+pub fn get_substitution_label(labels: &[&str]) -> String {
+    if labels.contains(&OUTSIDE) { OUTSIDE.to_string() } else { labels[0].to_string() }
+}
+
 pub fn replace_builtin_tags(tags: Vec<String>, builtin_slot_names: HashSet<String>) -> Vec<String> {
     tags.into_iter()
         .map(|tag| {
