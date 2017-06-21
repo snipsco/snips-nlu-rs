@@ -1,6 +1,6 @@
 use std::sync;
 
-use crfsuite::Tagger as CRFTagger;
+use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
 
 use errors::*;
@@ -11,27 +11,25 @@ use base64::decode;
 use super::crf_utils::{get_substitution_label, TaggingScheme};
 use super::configuration::TaggerConfiguration;
 
-pub struct Tagger {
-    pub tagging_scheme: TaggingScheme,
-    tagger: sync::Mutex<CRFTagger>,
+pub trait Tagger: Send + Sync {
+    fn get_tags(&self, tokens: &[Token]) -> Result<Vec<String>>;
+    fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64>;
+    fn get_tagging_scheme(&self) -> TaggingScheme;
+}
+
+pub struct CRFTagger {
+    tagging_scheme: TaggingScheme,
+    tagger: sync::Mutex<CRFSuiteTagger>,
     feature_processor: ProbabilisticFeatureProcessor,
 }
 
-impl Tagger {
-    pub fn new(config: TaggerConfiguration) -> Result<Tagger> {
-        let tagging_scheme = TaggingScheme::from_u8(config.tagging_scheme)?;
-        let feature_processor = ProbabilisticFeatureProcessor::new(&config.features_signatures)?;
-        let converted_data = decode(&config.crf_model_data)?;
-        let tagger = CRFTagger::create_from_memory(converted_data)?;
-        Ok(Self { tagging_scheme, tagger: sync::Mutex::new(tagger), feature_processor })
-    }
-
-    pub fn get_tags(&self, tokens: &[Token]) -> Result<Vec<String>> {
+impl Tagger for CRFTagger {
+    fn get_tags(&self, tokens: &[Token]) -> Result<Vec<String>> {
         let features = self.feature_processor.compute_features(&tokens);
         Ok(self.tagger.lock()?.tag(&features)?)
     }
 
-    pub fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
+    fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
         let features = self.feature_processor.compute_features(&tokens);
         let tagger = self.tagger.lock()?;
         let tagger_labels = tagger.labels()?;
@@ -47,5 +45,18 @@ impl Tagger {
             .collect_vec();
         tagger.set(&features)?;
         Ok(tagger.probability(cleaned_tags)?)
+    }
+    fn get_tagging_scheme(&self) -> TaggingScheme {
+        self.tagging_scheme
+    }
+}
+
+impl CRFTagger {
+    pub fn new(config: TaggerConfiguration) -> Result<CRFTagger> {
+        let tagging_scheme = TaggingScheme::from_u8(config.tagging_scheme)?;
+        let feature_processor = ProbabilisticFeatureProcessor::new(&config.features_signatures)?;
+        let converted_data = decode(&config.crf_model_data)?;
+        let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
+        Ok(Self { tagging_scheme, tagger: sync::Mutex::new(tagger), feature_processor })
     }
 }
