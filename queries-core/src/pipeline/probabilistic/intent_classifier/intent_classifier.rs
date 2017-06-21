@@ -5,18 +5,22 @@ use models::logreg::MulticlassLogisticRegression;
 use pipeline::IntentClassifierResult;
 use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
-use resources_packed::stem;
 use utils::miscellaneous::argmax;
 use utils::token::tokenize_light;
+use models::stemmer::{Stemmer, StaticMapStemmer};
 
-pub struct IntentClassifier {
+pub trait IntentClassifier: Send + Sync {
+    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>>;
+}
+
+pub struct LogRegIntentClassifier {
     language_code: String,
     intent_list: Vec<Option<String>>,
     featurizer: Option<Featurizer>,
     logreg: Option<MulticlassLogisticRegression>,
 }
 
-impl IntentClassifier {
+impl LogRegIntentClassifier {
     pub fn new(config: IntentClassifierConfiguration) -> Result<Self> {
         let featurizer = config.featurizer.map(Featurizer::new);
         let logreg =
@@ -38,49 +42,57 @@ impl IntentClassifier {
             logreg
         })
     }
+}
 
-    pub fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
-        if input.is_empty() || self.intent_list.is_empty() || self.featurizer.is_none() ||
-            self.logreg.is_none() {
+impl IntentClassifier for LogRegIntentClassifier {
+    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
+        if input.is_empty() || self.intent_list.is_empty() {
             return Ok(None);
         }
 
         if self.intent_list.len() == 1 {
-            return if let Some(ref intent_name) = self.intent_list[0] {
-                Ok(Some(IntentClassifierResult { intent_name: intent_name.clone(), probability: 1.0 }))
-            } else {
-                Ok(None)
-            }
+            return Ok(self.intent_list[0].as_ref().map(|intent_name|
+                IntentClassifierResult { intent_name: intent_name.clone(), probability: 1.0 }
+            ));
         }
 
-        let featurizer = self.featurizer.as_ref().unwrap(); // checked
-        let log_reg = self.logreg.as_ref().unwrap(); // checked
+        if self.featurizer.is_none() || self.logreg.is_none() {
+            return Ok(None);
+        }
 
-        let stemmed_text: String = stem_sentence(input, &self.language_code)?;
-        let features = featurizer.transform(&stemmed_text)?;
-        let probabilities = log_reg.run(&features.view())?;
+        if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
+            let stemmed_text = StaticMapStemmer::new(self.language_code.clone()).ok()
+                .map(|stemmer| stem_sentence(input, &stemmer))
+                .unwrap_or(input.to_string());
 
-        let (index_predicted, best_probability) = argmax(&probabilities);
+            let features = featurizer.transform(&stemmed_text)?;
+            let probabilities = logreg.run(&features.view())?;
 
-        if let Some(ref intent_name) = self.intent_list[index_predicted] {
-            Ok(Some(IntentClassifierResult { intent_name: intent_name.clone(), probability: best_probability }))
+            let (index_predicted, best_probability) = argmax(&probabilities);
+
+            Ok(self.intent_list[index_predicted].as_ref()
+                .map(|intent_name|
+                    IntentClassifierResult {
+                        intent_name: intent_name.clone(),
+                        probability: best_probability
+                    }))
         } else {
             Ok(None)
         }
     }
 }
 
-fn stem_sentence(input: &str, language: &str) -> Result<String> {
-    let stemmed_words: Result<Vec<_>> = tokenize_light(input)
+fn stem_sentence<S: Stemmer>(input: &str, stemmer: &S) -> String {
+    let stemmed_words: Vec<_> = tokenize_light(input)
         .iter()
-        .map(|word| Ok(stem(&language, word)?))
+        .map(|word| stemmer.stem(word))
         .collect();
-    Ok(stemmed_words?.join(" "))
+    stemmed_words.join(" ")
 }
 
 #[cfg(test)]
 mod tests {
-    use super::IntentClassifier;
+    use super::{IntentClassifier, LogRegIntentClassifier};
     use super::Featurizer;
     use ndarray::*;
     use models::logreg::MulticlassLogisticRegression;
@@ -433,7 +445,7 @@ mod tests {
 
         let coeffs: Array2<f32> = Array::from_shape_fn((27, 3), |(i, j)| coeffs_vec[j][i]);
         let logreg = MulticlassLogisticRegression::new(intercept, coeffs).unwrap();
-        let classifier = IntentClassifier {
+        let classifier = LogRegIntentClassifier {
             language_code,
             intent_list,
             featurizer: Some(featurizer),

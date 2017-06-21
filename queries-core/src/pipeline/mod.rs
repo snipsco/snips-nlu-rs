@@ -7,18 +7,19 @@ use builtin_entities::BuiltinEntity;
 pub mod rule_based;
 pub mod probabilistic;
 pub mod nlu_engine;
+pub mod assistant_config;
 pub mod configuration;
 pub mod slot_utils;
 mod tagging_utils;
 
-#[derive(Serialize, Deserialize, Debug, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
 pub struct IntentParserResult {
     pub input: String,
     pub intent: Option<IntentClassifierResult>,
     pub slots: Option<Vec<Slot>>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct IntentClassifierResult {
     pub intent_name: String,
     pub probability: f32,

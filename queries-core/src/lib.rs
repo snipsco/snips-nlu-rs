@@ -27,11 +27,13 @@ pub use builtin_entities::ontology::*;
 pub use errors::*;
 pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
 pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
-                                  NLUEngineConfiguration,
-                                  FileBasedConfiguration};
-pub use pipeline::IntentClassifierResult;
-pub use pipeline::IntentParserResult;
-pub use pipeline::{Slot, SlotValue};
+                                  NLUEngineConfiguration};
+pub use pipeline::assistant_config::{FileBasedConfiguration,
+                                     BinaryBasedConfiguration};
+pub use pipeline::{IntentClassifierResult,
+                   IntentParserResult,
+                   Slot,
+                   SlotValue};
 pub use utils::miscellaneous::file_path;
 
 #[cfg(test)]
