@@ -1,13 +1,14 @@
 use std::sync;
 
 use crfsuite::Tagger as CRFTagger;
+use itertools::Itertools;
 
 use errors::*;
 use pipeline::FeatureProcessor;
 use pipeline::probabilistic::feature_processor::ProbabilisticFeatureProcessor;
 use utils::token::Token;
 use base64::decode;
-use super::crf_utils::TaggingScheme;
+use super::crf_utils::{get_substitution_label, TaggingScheme};
 use super::configuration::TaggerConfiguration;
 
 pub struct Tagger {
@@ -33,7 +34,18 @@ impl Tagger {
     pub fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
         let features = self.feature_processor.compute_features(&tokens);
         let tagger = self.tagger.lock()?;
+        let tagger_labels = tagger.labels()?;
+        let tagger_labels_slice = tagger_labels.iter().map(|l| &**l).collect_vec();
+        // Substitute tags that were not seen during training
+        let cleaned_tags = tags.into_iter()
+            .map(|t|
+                if tagger_labels.contains(&t) {
+                    t
+                } else {
+                    get_substitution_label(&*tagger_labels_slice)
+                })
+            .collect_vec();
         tagger.set(&features)?;
-        Ok(tagger.probability(tags)?)
+        Ok(tagger.probability(cleaned_tags)?)
     }
 }
