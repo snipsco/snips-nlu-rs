@@ -11,7 +11,7 @@ queries-resources-packed = { path = "../queries-resources-packed" }
 crfsuite = { git="ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "0737b3b9" }
 rustling-ontology = { git="https://github.com/snipsco/rustling-ontology/", tag="0.9.0"}
 error-chain = { version = "0.10", default-features = false }
-base64 = "0.5.2"
+base64 = "0.6"
 itertools = "0.6"
 lazy_static = "0.2"
 serde = "1.0"
