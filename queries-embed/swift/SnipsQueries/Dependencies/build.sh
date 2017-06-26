@@ -1,5 +1,7 @@
 #!/bin/sh
 
+ : ${PROJECT_DIR:?"${0##*/} must be invoked as part of an Xcode script phase"}
+
 set -e
 
 VERSION="0.20.0-SNAPSHOT"
