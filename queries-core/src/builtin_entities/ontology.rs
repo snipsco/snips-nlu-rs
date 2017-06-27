@@ -95,7 +95,7 @@ impl From<TimeIntervalOutput> for TimeIntervalValue {
                 from: None,
                 to: Some(before.moment.to_string())
             },
-            TimeIntervalOutput::Between(from, to) => TimeIntervalValue {
+            TimeIntervalOutput::Between(from, to, _) => TimeIntervalValue {
                 from: Some(from.to_string()),
                 to: Some(to.to_string())
             },
