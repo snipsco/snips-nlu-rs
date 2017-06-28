@@ -14,6 +14,7 @@ object Main {
     @JvmStatic
     fun main(args: Array<String>) {
         println("hello world")
+        println(NluEngine.modelVersion())
         NluEngine(File("/home/fredszaq/Work/tmp/assistant")).apply {
             println("created")
             /* println("parse time 1 : " + measureTimeMillis {
@@ -42,15 +43,24 @@ data class IntentParserResult(val input: String, val intent: IntentClassifierRes
 class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     companion object {
+        private const val RUST_STRING_ENCODING = "utf-8"
+
         private fun parseError(returnCode: Int) {
             if (returnCode != 1) {
                 PointerByReference().apply {
                     LIB.nlu_engine_get_last_error(this)
-                    throw RuntimeException(value.getString(0, "utf-8").apply {
+                    throw RuntimeException(value.getString(0, RUST_STRING_ENCODING).apply {
                         LIB.nlu_engine_destroy_string(value)
                     })
                 }
             }
+        }
+
+        @JvmStatic
+        fun modelVersion(): String = PointerByReference().run {
+            parseError(LIB.nlu_engine_get_model_version(this))
+            value.getString(0, RUST_STRING_ENCODING).apply { LIB.nlu_engine_destroy_string(value) }
+
         }
     }
 
@@ -90,6 +100,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             val INSTANCE: SnipsQueriesClientLibrary = Native.loadLibrary("queries_embed", SnipsQueriesClientLibrary::class.java)
         }
 
+        fun nlu_engine_get_model_version(version: PointerByReference): Int
         fun nlu_engine_create_from_dir(root_dir: String, pointer: PointerByReference): Int
         fun nlu_engine_create_from_binary(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun nlu_engine_run_parse(client: Pointer, input: String, result: PointerByReference): Int

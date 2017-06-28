@@ -251,6 +251,11 @@ pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) ->
     QUERIESRESULT::OK
 }
 
+#[no_mangle]
+pub extern "C" fn nlu_engine_get_model_version(version: *mut *mut c_char) -> QUERIESRESULT {
+    wrap!(get_model_version(version))
+}
+
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
@@ -306,6 +311,10 @@ fn run_parse_into_json(client: *mut Opaque,
 
 fn get_last_error(error: *mut *mut c_char) -> Result<()> {
     point_to_string(error, LAST_ERROR.lock()?.clone())
+}
+
+fn get_model_version(version : *mut *mut c_char) -> Result<()> {
+    point_to_string(version, queries_core::SnipsNLUEngine::model_version().to_string())
 }
 
 
