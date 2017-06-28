@@ -8,7 +8,8 @@ use itertools::Itertools;
 use rustling_ontology::Lang;
 
 use errors::*;
-use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
+use core_ontology::{IntentClassifierResult, Slot};
+use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
 use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
