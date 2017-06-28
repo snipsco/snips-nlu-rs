@@ -8,7 +8,8 @@ use regex::{Regex, RegexBuilder};
 
 use errors::*;
 use super::configuration::RuleBasedParserConfiguration;
-use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
+use core_ontology::{IntentClassifierResult, Slot};
+use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
 use utils::token::{tokenize, tokenize_light};
 use utils::string::{substring_with_char_range, suffix_from_char_index};

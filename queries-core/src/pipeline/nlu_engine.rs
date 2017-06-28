@@ -7,7 +7,8 @@ use itertools::Itertools;
 
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
-use pipeline::{IntentParser, IntentParserResult, Slot, SlotValue};
+use core_ontology::{IntentParserResult, Slot, SlotValue};
+use pipeline::IntentParser;
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities, disambiguate_tagged_entities};

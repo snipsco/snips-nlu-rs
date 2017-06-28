@@ -2,7 +2,7 @@ use std::ops::Range;
 use std::collections::HashSet;
 
 use errors::*;
-use builtin_entities::BuiltinEntity;
+use core_ontology::{IntentClassifierResult, Slot};
 
 pub mod rule_based;
 pub mod probabilistic;
@@ -12,44 +12,12 @@ pub mod configuration;
 pub mod slot_utils;
 mod tagging_utils;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default, PartialEq)]
-pub struct IntentParserResult {
-    pub input: String,
-    pub intent: Option<IntentClassifierResult>,
-    pub slots: Option<Vec<Slot>>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct IntentClassifierResult {
-    #[serde(rename="intentName")]
-    pub intent_name: String,
-    pub probability: f32,
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct InternalSlot {
     pub value: String,
     pub range: Range<usize>,
     pub entity: String,
     pub slot_name: String
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Slot {
-    #[serde(rename="rawValue")]
-    pub raw_value: String,
-    pub value: SlotValue,
-    pub range: Option<Range<usize>>,
-    pub entity: String,
-    #[serde(rename="slotName")]
-    pub slot_name: String
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", content="value")]
-pub enum SlotValue {
-    Custom(String),
-    Builtin(BuiltinEntity),
 }
 
 trait IntentParser: Send + Sync {
