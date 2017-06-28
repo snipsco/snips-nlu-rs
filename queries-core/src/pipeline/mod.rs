@@ -21,6 +21,7 @@ pub struct IntentParserResult {
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct IntentClassifierResult {
+    #[serde(rename="intentName")]
     pub intent_name: String,
     pub probability: f32,
 }
@@ -35,10 +36,12 @@ pub struct InternalSlot {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Slot {
+    #[serde(rename="rawValue")]
     pub raw_value: String,
     pub value: SlotValue,
     pub range: Option<Range<usize>>,
     pub entity: String,
+    #[serde(rename="slotName")]
     pub slot_name: String
 }
 

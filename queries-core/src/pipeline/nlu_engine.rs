@@ -192,6 +192,7 @@ pub struct TaggedEntity {
     pub value: String,
     pub range: Option<Range<usize>>,
     pub entity: String,
+    #[serde(rename="slotName")]
     pub slot_name: String
 }
 
