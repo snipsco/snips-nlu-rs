@@ -10,7 +10,7 @@ extern crate lazy_static;
 extern crate ndarray;
 extern crate queries_resources_packed as resources_packed;
 extern crate queries_utils as utils;
-extern crate queries_core_ontology as core_ontology;
+extern crate nlu_rust_ontology as core_ontology;
 extern crate regex;
 extern crate rustling_ontology;
 extern crate serde;
