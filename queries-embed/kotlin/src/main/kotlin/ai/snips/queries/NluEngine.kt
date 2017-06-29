@@ -28,6 +28,7 @@ object Main {
 
         NluEngine(File("/home/fredszaq/Work/tmp/assistantproj_SJvHP5PHQb/assistant.zip").readBytes()).apply {
             println(parse("Set the color of the lights to blue"))
+            println(tag("Set the color of the lights to blue", "ActivateLightColor"))
 
         }
         println("bye world")
@@ -39,6 +40,7 @@ data class Range(val start: Int, val end: Int)
 data class Slot(val value: String, val range: Range?, val entity: String, val slotName: String)
 data class IntentClassifierResult(val intentName: String, val probability: Float)
 data class IntentParserResult(val input: String, val intent: IntentClassifierResult?, val slots: List<Slot>)
+data class TaggedEntity(val value: String, val range: Range?, val entity: String, val slotName: String)
 
 class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
@@ -95,6 +97,15 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 }
             }
 
+    fun tag(input: String, intent: String): List<TaggedEntity> =
+            CTaggedEntities(PointerByReference().apply {
+                parseError(LIB.nlu_engine_run_tag(client, input, intent, this))
+            }.value).let {
+                it.toTaggedEntityList().apply {
+                    LIB.nlu_engine_destroy_tagged_entity_list(it)
+                }
+            }
+
     internal interface SnipsQueriesClientLibrary : Library {
         companion object {
             val INSTANCE: SnipsQueriesClientLibrary = Native.loadLibrary("queries_embed", SnipsQueriesClientLibrary::class.java)
@@ -104,9 +115,11 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         fun nlu_engine_create_from_dir(root_dir: String, pointer: PointerByReference): Int
         fun nlu_engine_create_from_binary(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun nlu_engine_run_parse(client: Pointer, input: String, result: PointerByReference): Int
+        fun nlu_engine_run_tag(client: Pointer, input: String, intent: String, result: PointerByReference): Int
         fun nlu_engine_get_last_error(error: PointerByReference): Int
         fun nlu_engine_destroy_client(client: Pointer): Int
         fun nlu_engine_destroy_result(result: CIntentParserResult): Int
+        fun nlu_engine_destroy_tagged_entity_list(result: CTaggedEntities): Int
         fun nlu_engine_destroy_string(string: Pointer): Int
     }
 
@@ -174,5 +187,46 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                             range = if (range_start != -1) Range(range_start!!, range_end!!) else null,
                             entity = entity!!,
                             slotName = slot_name!!)
+    }
+
+    class CTaggedEntities(p: Pointer) : Structure(p), Structure.ByReference {
+        init {
+            read()
+        }
+
+        @JvmField var entities: Pointer? = null
+        @JvmField var size: Int? = null
+
+        override fun getFieldOrder() = listOf("entities", "size")
+
+        fun toTaggedEntityList(): List<TaggedEntity> =
+                if (size != null && size!! > 0)
+                    CTaggedEntity(entities!!).toArray(size!!).map { (it as CTaggedEntity).toTaggedEntity() }
+                else listOf<TaggedEntity>()
+
+
+    }
+
+    class CTaggedEntity(p: Pointer) : Structure(p), Structure.ByReference {
+        init {
+            read()
+        }
+
+        @JvmField var value: String? = null
+        @JvmField var range_start: Int? = null
+        @JvmField var range_end: Int? = null
+        @JvmField var entity: String? = null
+        @JvmField var slot_name: String? = null
+
+        override fun getFieldOrder() = listOf("value",
+                                              "range_start",
+                                              "range_end",
+                                              "entity",
+                                              "slot_name")
+
+        fun toTaggedEntity() = TaggedEntity(value = value!!,
+                                            range = if (range_start != -1) Range(range_start!!, range_end!!) else null,
+                                            entity = entity!!,
+                                            slotName = slot_name!!)
     }
 }
