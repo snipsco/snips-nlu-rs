@@ -44,6 +44,7 @@ use errors::*;
 pub struct Opaque(std::sync::Mutex<queries_core::SnipsNLUEngine>);
 
 #[repr(C)]
+#[derive(Debug)]
 pub enum QUERIESRESULT {
     KO = 0,
     OK = 1,
@@ -92,6 +93,7 @@ macro_rules! get_str_vec {
 }
 
 #[repr(C)]
+#[derive(Debug)]
 pub struct CIntentParserResult {
     pub input: *const libc::c_char,
     pub intent: Option<Box<CIntentClassifierResult>>,
@@ -119,6 +121,7 @@ impl Drop for CIntentParserResult {
 }
 
 #[repr(C)]
+#[derive(Debug)]
 pub struct CIntentClassifierResult {
     pub intent_name: *const libc::c_char,
     pub probability: libc::c_float,
@@ -140,6 +143,7 @@ impl Drop for CIntentClassifierResult {
 }
 
 #[repr(C)]
+#[derive(Debug)]
 pub struct CSlotList {
     pub slots: Box<[CSlot]>,
     pub size: libc::c_int,
@@ -155,6 +159,7 @@ impl CSlotList {
 }
 
 #[repr(C)]
+#[derive(Debug)]
 pub struct CSlot {
     pub value: *const libc::c_char,
     pub range_start: libc::c_int,
@@ -187,6 +192,55 @@ impl Drop for CSlot {
     }
 }
 
+#[repr(C)]
+#[derive(Debug)]
+pub struct CTaggedEntityList {
+    pub entities: Box<[CTaggedEntity]>,
+    pub size: libc::c_int,
+}
+
+impl CTaggedEntityList {
+    fn from(input: Vec<queries_core::TaggedEntity>) -> Result<Self> {
+        Ok(CTaggedEntityList {
+            size: input.len() as libc::c_int,
+            entities: input.into_iter().map(|s| CTaggedEntity::from(s)).collect::<Result<Vec<CTaggedEntity>>>()?.into_boxed_slice()
+        })
+    }
+}
+
+#[repr(C)]
+#[derive(Debug)]
+pub struct CTaggedEntity {
+    pub value: *const libc::c_char,
+    pub range_start: libc::c_int,
+    pub range_end: libc::c_int,
+    pub entity: *const libc::c_char,
+    pub slot_name: *const libc::c_char
+}
+
+impl CTaggedEntity {
+    fn from(input: queries_core::TaggedEntity) -> Result<Self> {
+        let range = if let Some(range) = input.range {
+            range.start as libc::c_int..range.end as libc::c_int
+        } else { -1..-1 };
+
+        Ok(CTaggedEntity {
+            value: CString::new(input.value)?.into_raw(),
+            range_start: range.start,
+            range_end: range.end,
+            entity: CString::new(input.entity)?.into_raw(),
+            slot_name: CString::new(input.slot_name)?.into_raw()
+        })
+    }
+}
+
+impl Drop for CTaggedEntity {
+    fn drop(&mut self) {
+        let _ = unsafe { CString::from_raw(self.value as *mut libc::c_char) };
+        let _ = unsafe { CString::from_raw(self.entity as *mut libc::c_char) };
+        let _ = unsafe { CString::from_raw(self.slot_name as *mut libc::c_char) };
+    }
+}
 
 #[no_mangle]
 pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const c_char,
@@ -197,9 +251,9 @@ pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const c_char,
 
 #[no_mangle]
 pub extern "C" fn nlu_engine_create_from_binary(binary: *const libc::c_uchar,
-                                                   binary_size: libc::c_uint,
-                                                   client: *mut *mut Opaque)
-                                                   -> QUERIESRESULT {
+                                                binary_size: libc::c_uint,
+                                                client: *mut *mut Opaque)
+                                                -> QUERIESRESULT {
     wrap!(create_from_binary(binary, binary_size, client));
 }
 
@@ -217,6 +271,15 @@ pub extern "C" fn nlu_engine_run_parse_into_json(client: *mut Opaque,
                                                  result_json: *mut *mut c_char)
                                                  -> QUERIESRESULT {
     wrap!(run_parse_into_json(client, input, result_json))
+}
+
+#[no_mangle]
+pub extern "C" fn nlu_engine_run_tag(client: *mut Opaque,
+                                     input: *const c_char,
+                                     intent: *const c_char,
+                                     result: *mut *const CTaggedEntityList)
+                                     -> QUERIESRESULT {
+    wrap!(run_tag(client, input, intent, result))
 }
 
 #[no_mangle]
@@ -246,6 +309,16 @@ pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> QUERIESRESUL
 pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) -> QUERIESRESULT {
     unsafe {
         let _: Box<CIntentParserResult> = Box::from_raw(result);
+    }
+
+    QUERIESRESULT::OK
+}
+
+#[no_mangle]
+pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut CTaggedEntityList) -> QUERIESRESULT {
+    println!("{:?}", result);
+    unsafe {
+        let _: Box<CTaggedEntityList> = Box::from_raw(result);
     }
 
     QUERIESRESULT::OK
@@ -309,11 +382,28 @@ fn run_parse_into_json(client: *mut Opaque,
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
 
+fn run_tag(client: *mut Opaque,
+           input: *const c_char,
+           intent: *const c_char,
+           result: *mut *const CTaggedEntityList)
+           -> Result<()> {
+    let input = get_str!(input);
+    let intent = get_str!(intent);
+    let intent_parser = get_intent_parser!(client);
+
+    let results = intent_parser.tag(input, intent, None)?;
+    let b = Box::new(CTaggedEntityList::from(results)?);
+
+    unsafe { *result = Box::into_raw(b) as *const CTaggedEntityList }
+    Ok(())
+}
+
+
 fn get_last_error(error: *mut *mut c_char) -> Result<()> {
     point_to_string(error, LAST_ERROR.lock()?.clone())
 }
 
-fn get_model_version(version : *mut *mut c_char) -> Result<()> {
+fn get_model_version(version: *mut *mut c_char) -> Result<()> {
     point_to_string(version, queries_core::SnipsNLUEngine::model_version().to_string())
 }
 
