@@ -206,8 +206,8 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 mod tests {
     use super::*;
     use std::result::Result as StdResult;
+    use core_ontology::*;
     use pipeline::probabilistic::crf_utils::TaggingScheme;
-    use builtin_entities::{BuiltinEntity, TimeValue, InstantTimeValue, Precision, Grain};
 
     struct TestTagger {
         tags1: Vec<String>,

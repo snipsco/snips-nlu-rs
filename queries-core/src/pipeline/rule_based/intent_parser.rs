@@ -197,10 +197,10 @@ fn get_builtin_entity_name(entity_label: &str) -> String {
 mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
+    use core_ontology::*;
     use pipeline::rule_based::configuration::RuleBasedParserConfiguration;
-    use pipeline::{IntentParser, IntentClassifierResult, InternalSlot, Slot, SlotValue};
-    use builtin_entities::{RustlingParser, BuiltinEntity};
-    use builtin_entities::ontology::{AmountOfMoneyValue, Precision};
+    use pipeline::{IntentParser, InternalSlot};
+    use builtin_entities::RustlingParser;
     use rustling_ontology::Lang;
     use super::{RuleBasedIntentParser, deduplicate_overlapping_slots, get_builtin_entity_name,
                 replace_builtin_entities};

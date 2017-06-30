@@ -118,6 +118,7 @@ impl CacheValue {
 #[cfg(test)]
 mod test {
     use super::*;
+    use core_ontology::*;
     use itertools::Itertools;
 
     #[test]
