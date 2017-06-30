@@ -7,7 +7,7 @@ use itertools::Itertools;
 
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
-use core_ontology::{IntentParserResult, Slot, SlotValue};
+use core_ontology::*;
 use pipeline::IntentParser;
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
@@ -304,9 +304,6 @@ impl SnipsNLUEngine {
 mod tests {
     use super::*;
     use pipeline::configuration::NLUEngineConfiguration;
-    use builtin_entities::BuiltinEntity;
-    use builtin_entities::ontology::NumberValue;
-    use pipeline::{IntentClassifierResult, Slot, SlotValue};
     use utils::miscellaneous::parse_json;
 
     #[test]

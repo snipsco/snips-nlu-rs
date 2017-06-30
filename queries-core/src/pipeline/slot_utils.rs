@@ -1,5 +1,5 @@
 use builtin_entities::{RustlingParser, BuiltinEntityKind};
-use core_ontology::{BuiltinEntity, Slot, SlotValue};
+use core_ontology::*;
 use pipeline::InternalSlot;
 
 pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
@@ -47,7 +47,6 @@ pub fn resolve_builtin_slots(text: &str, slots: Vec<InternalSlot>, parser: &Rust
 mod tests {
     use super::*;
     use rustling_ontology::Lang;
-    use builtin_entities::{AmountOfMoneyValue, OrdinalValue, Precision};
 
     #[test]
     fn resolve_builtin_slots_works() {
