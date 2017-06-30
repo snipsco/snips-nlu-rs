@@ -177,7 +177,7 @@ fn extract_builtin_slot(input: String,
         .map(|rustlin_entity|
             Slot {
                 raw_value: substring_with_char_range(input, &rustlin_entity.range),
-                value: SlotValue::Builtin(rustlin_entity.entity.clone()),
+                value: rustlin_entity.entity.clone(),
                 range: None,
                 entity: entity_name,
                 slot_name: slot_name
@@ -316,7 +316,7 @@ mod tests {
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
 
         // Then
-        let expected_entity_value = SlotValue::Builtin(BuiltinEntity::Number(NumberValue(2.0)));
+        let expected_entity_value = SlotValue::Number(NumberValue(2.0));
         let expected_result = IntentParserResult {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
