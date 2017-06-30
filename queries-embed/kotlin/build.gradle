@@ -1,0 +1,168 @@
+buildscript {
+    ext.kotlin_version = '1.1.2-5'
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: 'kotlin'
+
+version = "0.20.0-SNAPSHOT"
+group = "ai.snips"
+
+repositories {
+    jcenter()
+}
+
+configurations {
+    aarArchives
+    jarArchives
+}
+
+dependencies {
+    compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
+    compile 'net.java.dev.jna:jna:4.4.0'
+}
+
+def soForJar = [
+        ["../../target/release/libqueries_embed.so", "linux-${System.getProperty("os.arch")}" ],
+        ["../../target/release/libqueries_embed.dylib", "darwin" ],
+        ["../../target/arm-unknown-linux-gnueabihf/release/libqueries_embed.so", "linux-arm"]
+]
+
+def jarClassifier = {
+    def exisiting = soForJar.findAll{ file(it[0]).exists() }
+    if(exisiting.size == 1) exisiting[0][1]
+    else if(exisiting.size == 0) "naked"
+    else "multiarch"
+}
+
+jar {
+    classifier "${ -> jarClassifier() }"
+}
+
+def jniLibsDir = new File(buildDir, "jniLibs")
+
+soForJar.forEach {
+    def taskName = "copySo${it[1].capitalize()}ForJar"
+    def soFile = file(it[0])
+    def destDir = new File(jniLibsDir, it[1])
+
+    task(taskName, type: Copy) {
+        from soFile
+        into destDir
+    }
+    processResources.dependsOn(taskName)
+
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDir jniLibsDir
+        }
+    }
+}
+
+def aarDir = new File(buildDir, "aar")
+
+task("aar", type: Zip) {
+    destinationDir new File(buildDir, "libs")
+    baseName = "${project.name}-android"
+    version = project.version
+    extension = "aar"
+    from aarDir
+}
+
+task("classesJarForAar", type: Zip) {
+    destinationDir aarDir
+    archiveName "classes.jar"
+    from new File(buildDir, "classes/main")
+}
+
+classesJarForAar.dependsOn(classes)
+aar.dependsOn(classesJarForAar)
+
+task("manifestForAar", type: Copy) {
+    from new File("src/main/android/AndroidManifest.xml")
+    destinationDir aarDir
+}
+
+aar.dependsOn(manifestForAar)
+
+def soForAar = [
+        ["../../target/arm-linux-androideabi/release/libqueries_embed.so", "armeabi"],
+        ["../../target/armv7-linux-androideabi/release/libqueries_embed.so", "armeabi-v7a"],
+        ["../../target/aarch64-linux-android/release/libqueries_embed.so", "arm64-v8a"],
+        ["../../target/i686-linux-android/release/libqueries_embed.so", "x86"],
+        ["../../target/x86_64-linux-android/release/libqueries_embed.so", "x86_64"]
+]
+
+soForAar.forEach {
+    def taskName = "copySo${it[1].capitalize()}ForAar"
+    def soFile = file(it[0])
+    def destDir = new File(aarDir, "jni/${it[1]}")
+
+    task(taskName, type: Copy) {
+        from soFile
+        into destDir
+    }
+    aar.dependsOn(taskName)
+
+}
+
+sourceCompatibility = "1.7"
+targetCompatibility = "1.7"
+
+artifacts {
+    aarArchives aar.archivePath
+    jarArchives jar.archivePath
+}
+
+apply plugin: 'maven'
+
+def _nexusUsername = project.hasProperty("nexusUsername") ? nexusUsername : ""
+def _nexusPassword = project.hasProperty("nexusPassword") ? nexusPassword : ""
+
+uploadJarArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "https://nexus-repository.snips.ai/repository/snips-maven-releases/") {
+                authentication(userName: _nexusUsername, password: _nexusPassword)
+            }
+            snapshotRepository(url: "https://nexus-repository.snips.ai/repository/snips-maven-snapshots/") {
+                authentication(userName: _nexusUsername, password: _nexusPassword)
+            }
+        }
+    }
+}
+
+uploadJarArchives.dependsOn(jar)
+uploadArchives.dependsOn(uploadJarArchives)
+
+uploadAarArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: "https://nexus-repository.snips.ai/repository/snips-maven-releases/") {
+                authentication(userName: _nexusUsername, password: _nexusPassword)
+            }
+            snapshotRepository(url: "https://nexus-repository.snips.ai/repository/snips-maven-snapshots/") {
+                authentication(userName: _nexusUsername, password: _nexusPassword)
+            }
+
+            repository(url: "file://localhost/tmp/myRepo/")
+            pom.name = "snips-queries-android"
+
+            pom.whenConfigured { pom ->
+                pom.dependencies.find { dep -> dep.groupId == 'net.java.dev.jna' && dep.artifactId == 'jna' }.scope = "provided"
+            }
+        }
+    }
+}
+
+uploadAarArchives.dependsOn(aar)
+uploadArchives.dependsOn(uploadAarArchives)
+
