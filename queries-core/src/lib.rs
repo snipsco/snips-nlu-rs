@@ -10,6 +10,7 @@ extern crate lazy_static;
 extern crate ndarray;
 extern crate queries_resources_packed as resources_packed;
 extern crate queries_utils as utils;
+extern crate nlu_rust_ontology as core_ontology;
 extern crate regex;
 extern crate rustling_ontology;
 extern crate serde;
@@ -24,16 +25,13 @@ extern crate zip;
 extern crate maplit;
 
 pub use builtin_entities::ontology::*;
+pub use core_ontology::*;
 pub use errors::*;
 pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
 pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
                                   NLUEngineConfiguration};
 pub use pipeline::assistant_config::{FileBasedConfiguration,
                                      BinaryBasedConfiguration};
-pub use pipeline::{IntentClassifierResult,
-                   IntentParserResult,
-                   Slot,
-                   SlotValue};
 pub use utils::miscellaneous::file_path;
 
 #[cfg(test)]

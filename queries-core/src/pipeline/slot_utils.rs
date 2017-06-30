@@ -1,31 +1,6 @@
-use std::ops::Range;
-
-use builtin_entities::{RustlingParser, BuiltinEntity, BuiltinEntityKind};
-use pipeline::{InternalSlot, Slot, SlotValue};
-
-impl Slot {
-    pub fn new_custom(value: String, range: Range<usize>, entity: String, slot_name: String) -> Slot {
-        Slot {
-            raw_value: value.clone(),
-            value: SlotValue::Custom(value),
-            range: Some(range),
-            entity,
-            slot_name
-        }
-    }
-}
-
-impl Slot {
-    pub fn with_slot_value(self, slot_value: SlotValue) -> Slot {
-        Slot {
-            raw_value: self.raw_value,
-            value: slot_value,
-            range: self.range,
-            entity: self.entity,
-            slot_name: self.slot_name
-        }
-    }
-}
+use builtin_entities::{RustlingParser, BuiltinEntityKind};
+use core_ontology::*;
+use pipeline::InternalSlot;
 
 pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
     Slot {
@@ -72,7 +47,6 @@ pub fn resolve_builtin_slots(text: &str, slots: Vec<InternalSlot>, parser: &Rust
 mod tests {
     use super::*;
     use rustling_ontology::Lang;
-    use builtin_entities::{AmountOfMoneyValue, OrdinalValue, Precision};
 
     #[test]
     fn resolve_builtin_slots_works() {

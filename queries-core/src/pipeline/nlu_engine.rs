@@ -7,7 +7,8 @@ use itertools::Itertools;
 
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
-use pipeline::{IntentParser, IntentParserResult, Slot, SlotValue};
+use core_ontology::*;
+use pipeline::IntentParser;
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities, disambiguate_tagged_entities};
@@ -192,6 +193,7 @@ pub struct TaggedEntity {
     pub value: String,
     pub range: Option<Range<usize>>,
     pub entity: String,
+    #[serde(rename="slotName")]
     pub slot_name: String
 }
 
@@ -302,9 +304,6 @@ impl SnipsNLUEngine {
 mod tests {
     use super::*;
     use pipeline::configuration::NLUEngineConfiguration;
-    use builtin_entities::BuiltinEntity;
-    use builtin_entities::ontology::NumberValue;
-    use pipeline::{IntentClassifierResult, Slot, SlotValue};
     use utils::miscellaneous::parse_json;
 
     #[test]
