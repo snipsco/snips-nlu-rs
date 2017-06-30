@@ -8,7 +8,8 @@ use regex::{Regex, RegexBuilder};
 
 use errors::*;
 use super::configuration::RuleBasedParserConfiguration;
-use pipeline::{IntentClassifierResult, IntentParser, InternalSlot, Slot};
+use core_ontology::{IntentClassifierResult, Slot};
+use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
 use utils::token::{tokenize, tokenize_light};
 use utils::string::{substring_with_char_range, suffix_from_char_index};
@@ -196,10 +197,10 @@ fn get_builtin_entity_name(entity_label: &str) -> String {
 mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
+    use core_ontology::*;
     use pipeline::rule_based::configuration::RuleBasedParserConfiguration;
-    use pipeline::{IntentParser, IntentClassifierResult, InternalSlot, Slot, SlotValue};
-    use builtin_entities::{RustlingParser, BuiltinEntity};
-    use builtin_entities::ontology::{AmountOfMoneyValue, Precision};
+    use pipeline::{IntentParser, InternalSlot};
+    use builtin_entities::RustlingParser;
     use rustling_ontology::Lang;
     use super::{RuleBasedIntentParser, deduplicate_overlapping_slots, get_builtin_entity_name,
                 replace_builtin_entities};

@@ -3,6 +3,7 @@ use std::ops::Range;
 use std::collections::HashMap;
 use std::time::Instant;
 
+use core_ontology::{BuiltinEntity};
 use rustling_ontology::{Lang, Parser, build_parser, ParsingContext};
 use builtin_entities::ontology::*;
 
@@ -58,7 +59,7 @@ impl RustlingParser {
                             RustlingEntity {
                                 value: sentence[m.byte_range.0..m.byte_range.1].into(),
                                 range: m.char_range.0..m.char_range.1,
-                                entity: BuiltinEntity::from_rustling_output(&m.value),
+                                entity: BuiltinEntity::from_rustling(m.value.clone()),
                                 entity_kind: kind.clone()
                             })
                 })
@@ -117,6 +118,7 @@ impl CacheValue {
 #[cfg(test)]
 mod test {
     use super::*;
+    use core_ontology::*;
     use itertools::Itertools;
 
     #[test]
