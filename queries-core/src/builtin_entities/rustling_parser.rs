@@ -3,7 +3,7 @@ use std::ops::Range;
 use std::collections::HashMap;
 use std::time::Instant;
 
-use core_ontology::{BuiltinEntity};
+use core_ontology::SlotValue;
 use rustling_ontology::{Lang, Parser, build_parser, ParsingContext};
 use builtin_entities::ontology::*;
 
@@ -16,7 +16,7 @@ pub struct RustlingParser {
 pub struct RustlingEntity {
     pub value: String,
     pub range: Range<usize>,
-    pub entity: BuiltinEntity,
+    pub entity: SlotValue,
     pub entity_kind: BuiltinEntityKind,
 }
 
@@ -59,7 +59,7 @@ impl RustlingParser {
                             RustlingEntity {
                                 value: sentence[m.byte_range.0..m.byte_range.1].into(),
                                 range: m.char_range.0..m.char_range.1,
-                                entity: BuiltinEntity::from_rustling(m.value.clone()),
+                                entity: SlotValue::from_rustling(m.value.clone()),
                                 entity_kind: kind.clone()
                             })
                 })
@@ -150,13 +150,13 @@ mod test {
                     value: "two".into(),
                     range: 23..26,
                     entity_kind: BuiltinEntityKind::Number,
-                    entity: BuiltinEntity::Number(NumberValue(2.0))
+                    entity: SlotValue::Number(NumberValue(2.0))
                 },
                 RustlingEntity {
                     value: "4.5".into(),
                     range: 34..42,
                     entity_kind: BuiltinEntityKind::Number,
-                    entity: BuiltinEntity::Number(NumberValue(4.5))
+                    entity: SlotValue::Number(NumberValue(4.5))
                 },
             ]
         }

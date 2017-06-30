@@ -12,10 +12,10 @@ pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
     }
 }
 
-pub fn convert_to_builtin_slot(slot: InternalSlot, builtin_entity: BuiltinEntity) -> Slot {
+pub fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slot {
     Slot {
         raw_value: slot.value,
-        value: SlotValue::Builtin(builtin_entity),
+        value: slot_value,
         range: Some(slot.range),
         entity: slot.entity,
         slot_name: slot.slot_name,
@@ -75,20 +75,20 @@ mod tests {
         let expected_results = vec![
             Slot {
                 raw_value: "5 dollars".to_string(),
-                value: SlotValue::Builtin(BuiltinEntity::AmountOfMoney(
+                value: SlotValue::AmountOfMoney(
                     AmountOfMoneyValue {
                         value: 5.0,
                         precision: Precision::Exact,
                         unit: Some("$".to_string())
                     }
-                )),
+                ),
                 range: Some(5..14),
                 entity: "snips/amountOfMoney".to_string(),
                 slot_name: "amount".to_string()
             },
             Slot {
                 raw_value: "10th".to_string(),
-                value: SlotValue::Builtin(BuiltinEntity::Ordinal(OrdinalValue(10))),
+                value: SlotValue::Ordinal(OrdinalValue(10)),
                 range: Some(22..26),
                 entity: "snips/ordinal".to_string(),
                 slot_name: "ranking".to_string()
