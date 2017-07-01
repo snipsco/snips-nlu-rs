@@ -115,7 +115,7 @@ fn ngram_feature_function(args: &HashMap<String, serde_json::Value>,
     } else {
         None
     };
-    let stemmer = get_stemmer(language_code, use_stemming)?;
+    let stemmer = get_stemmer(language_code, use_stemming);
     Ok(FeatureFunction::new(
         format!("ngram_{}", n),
         offsets,
@@ -156,7 +156,7 @@ fn token_is_in_feature_function(args: &HashMap<String, serde_json::Value>,
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
     let tokens_gazetteer = HashSetGazetteer::from(tokens_collection.into_iter());
-    let stemmer = get_stemmer(language_code, use_stemming)?;
+    let stemmer = get_stemmer(language_code, use_stemming);
     Ok(FeatureFunction::new(
         format!("token_is_in_{}", collection_name),
         offsets,
@@ -176,7 +176,7 @@ fn is_in_gazetteer_feature_function(args: &HashMap<String, serde_json::Value>,
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
     let gazetteer = StaticMapGazetteer::new(&gazetteer_name, &language_code, use_stemming)?;
-    let stemmer = get_stemmer(language_code, use_stemming)?;
+    let stemmer = get_stemmer(language_code, use_stemming);
     Ok(FeatureFunction::new(
         format!("is_in_gazetteer_{}", gazetteer_name),
         offsets,
@@ -195,7 +195,7 @@ fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let word_clusterer = StaticMapWordClusterer::new(language_code.clone(),
                                                      cluster_name.clone())?;
-    let stemmer = get_stemmer(language_code, use_stemming)?;
+    let stemmer = get_stemmer(language_code, use_stemming);
     Ok(FeatureFunction::new(
         format!("word_cluster_{}", cluster_name),
         offsets,
@@ -280,11 +280,11 @@ fn parse_as_u64(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Re
     )
 }
 
-fn get_stemmer(language_code: String, use_stemming: bool) -> Result<Option<StaticMapStemmer>> {
+fn get_stemmer(language_code: String, use_stemming: bool) -> Option<StaticMapStemmer> {
     if use_stemming {
-        Ok(Some(StaticMapStemmer::new(language_code)?))
+        StaticMapStemmer::new(language_code).ok()
     } else {
-        Ok(None)
+        None
     }
 }
 
