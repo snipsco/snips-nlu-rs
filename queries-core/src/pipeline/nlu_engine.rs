@@ -7,7 +7,8 @@ use itertools::Itertools;
 
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
-use pipeline::{IntentParser, IntentParserResult, Slot, SlotValue};
+use core_ontology::*;
+use pipeline::IntentParser;
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities, disambiguate_tagged_entities};
@@ -113,16 +114,16 @@ impl SnipsNLUEngine {
             .ok_or(format!("Unknown slot: {}", &slot_name))?;
 
         let slot = if let Some(custom_entity) = self.entities.get(entity_name) {
-            extract_custom_entity(input.to_string(),
-                                  entity_name.to_string(),
-                                  slot_name.to_string(),
-                                  custom_entity.clone())
+            extract_custom_slot(input.to_string(),
+                                entity_name.to_string(),
+                                slot_name.to_string(),
+                                custom_entity.clone())
         } else {
             if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
-                extract_builtin_entity(input,
-                                       entity_name.to_string(),
-                                       slot_name.to_string(),
-                                       builtin_entity_parser)?
+                extract_builtin_slot(input,
+                                     entity_name.to_string(),
+                                     slot_name.to_string(),
+                                     builtin_entity_parser)?
             } else {
                 None
             }
@@ -131,21 +132,25 @@ impl SnipsNLUEngine {
     }
 }
 
-fn extract_custom_entity(input: String,
-                         entity_name: String,
-                         slot_name: String,
-                         custom_entity: Entity) -> Option<Slot> {
-    custom_entity.utterances
-        .get(&input)
-        .map(|reference_value|
-            Some(
-                Slot {
-                    raw_value: input.clone(),
-                    value: SlotValue::Custom(reference_value.to_string()),
-                    range: None,
-                    entity: entity_name.clone(),
-                    slot_name: slot_name.clone()
-                }))
+fn extract_custom_slot(input: String,
+                       entity_name: String,
+                       slot_name: String,
+                       custom_entity: Entity) -> Option<Slot> {
+    let tokens = tokenize(&input);
+    let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
+    let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
+    ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
+
+    ngrams.into_iter()
+        .find(|&(ref ngram, _)| custom_entity.utterances.contains_key(ngram))
+        .map(|(ngram, _)|
+            Some(Slot {
+                raw_value: ngram.clone(),
+                value: SlotValue::Custom(custom_entity.utterances.get(&ngram).unwrap().to_string()),
+                range: None,
+                entity: entity_name.clone(),
+                slot_name: slot_name.clone()
+            }))
         .unwrap_or(
             if custom_entity.automatically_extensible {
                 Some(
@@ -161,10 +166,10 @@ fn extract_custom_entity(input: String,
             })
 }
 
-fn extract_builtin_entity(input: String,
-                          entity_name: String,
-                          slot_name: String,
-                          builtin_entity_parser: Arc<RustlingParser>) -> Result<Option<Slot>> {
+fn extract_builtin_slot(input: String,
+                        entity_name: String,
+                        slot_name: String,
+                        builtin_entity_parser: Arc<RustlingParser>) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(builtin_entity_parser
         .extract_entities(&input, Some(&vec![builtin_entity_kind]))
@@ -172,7 +177,7 @@ fn extract_builtin_entity(input: String,
         .map(|rustlin_entity|
             Slot {
                 raw_value: substring_with_char_range(input, &rustlin_entity.range),
-                value: SlotValue::Builtin(rustlin_entity.entity.clone()),
+                value: rustlin_entity.entity.clone(),
                 range: None,
                 entity: entity_name,
                 slot_name: slot_name
@@ -188,6 +193,7 @@ pub struct TaggedEntity {
     pub value: String,
     pub range: Option<Range<usize>>,
     pub entity: String,
+    #[serde(rename="slotName")]
     pub slot_name: String
 }
 
@@ -298,13 +304,10 @@ impl SnipsNLUEngine {
 mod tests {
     use super::*;
     use pipeline::configuration::NLUEngineConfiguration;
-    use builtin_entities::BuiltinEntity;
-    use builtin_entities::ontology::NumberValue;
-    use pipeline::{IntentClassifierResult, Slot, SlotValue};
     use utils::miscellaneous::parse_json;
 
     #[test]
-    fn it_works() {
+    fn parse_works() {
         // Given
         let configuration: NLUEngineConfiguration = parse_json("tests/configurations/beverage_engine.json");
         let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
@@ -313,7 +316,7 @@ mod tests {
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
 
         // Then
-        let expected_entity_value = SlotValue::Builtin(BuiltinEntity::Number(NumberValue(2.0)));
+        let expected_entity_value = SlotValue::Number(NumberValue(2.0));
         let expected_result = IntentParserResult {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
@@ -328,6 +331,83 @@ mod tests {
                 slot_name: "number_of_cups".to_string()
             }])
         };
+
         assert_eq!(expected_result, result)
+    }
+
+    #[test]
+    fn should_extract_custom_slot_when_tagged() {
+        // Given
+        let input = "hello a b c d world".to_string();
+        let entity_name = "entity".to_string();
+        let slot_name = "slot".to_string();
+        let custom_entity = Entity {
+            automatically_extensible: true,
+            utterances: hashmap!{
+                "a".to_string() => "value1".to_string(),
+                "a b".to_string() => "value1".to_string(),
+                "b c d".to_string() => "value2".to_string(),
+            }
+        };
+
+
+        // When
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity);
+
+        // Then
+        let expected_slot = Some(Slot {
+            raw_value: "b c d".to_string(),
+            value: SlotValue::Custom("value2".to_string()),
+            range: None,
+            entity: "entity".to_string(),
+            slot_name: "slot".to_string()
+        });
+        assert_eq!(expected_slot, extracted_slot);
+    }
+
+    #[test]
+    fn should_extract_custom_slot_when_not_tagged() {
+        // Given
+        let input = "hello world".to_string();
+        let entity_name = "entity".to_string();
+        let slot_name = "slot".to_string();
+        let custom_entity = Entity {
+            automatically_extensible: true,
+            utterances: hashmap!{}
+        };
+
+
+        // When
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity);
+
+        // Then
+        let expected_slot = Some(Slot {
+            raw_value: "hello world".to_string(),
+            value: SlotValue::Custom("hello world".to_string()),
+            range: None,
+            entity: "entity".to_string(),
+            slot_name: "slot".to_string()
+        });
+        assert_eq!(expected_slot, extracted_slot);
+    }
+
+    #[test]
+    fn should_not_extract_custom_slot_when_not_extensible() {
+        // Given
+        let input = "hello world".to_string();
+        let entity_name = "entity".to_string();
+        let slot_name = "slot".to_string();
+        let custom_entity = Entity {
+            automatically_extensible: false,
+            utterances: hashmap!{}
+        };
+
+
+        // When
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity);
+
+        // Then
+        let expected_slot = None;
+        assert_eq!(expected_slot, extracted_slot);
     }
 }

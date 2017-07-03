@@ -41,7 +41,7 @@ class IntentParser(object):
 
     def parse(self, query):
         pointer = c_char_p()
-        lib.nlu_engine_run_parse(
+        lib.nlu_engine_run_parse_into_json(
             self._parser,
             query.encode("utf-8"),
             byref(pointer))
