@@ -2,7 +2,7 @@ use ndarray::prelude::*;
 
 use errors::*;
 use models::logreg::MulticlassLogisticRegression;
-use pipeline::IntentClassifierResult;
+use core_ontology::IntentClassifierResult;
 use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
 use utils::miscellaneous::argmax;
