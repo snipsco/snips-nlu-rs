@@ -28,9 +28,9 @@ dependencies {
 }
 
 def soForJar = [
-        ["../../target/release/libqueries_embed.so", "linux-${System.getProperty("os.arch")}" ],
-        ["../../target/release/libqueries_embed.dylib", "darwin" ],
-        ["../../target/arm-unknown-linux-gnueabihf/release/libqueries_embed.so", "linux-arm"]
+        ["../../target/release/libsnips_queries.so", "linux-${System.getProperty("os.arch")}" ],
+        ["../../target/release/libsnips_queries.dylib", "darwin" ],
+        ["../../target/arm-unknown-linux-gnueabihf/release/libsnips_queries.so", "linux-arm"]
 ]
 
 def jarClassifier = {
@@ -94,11 +94,11 @@ task("manifestForAar", type: Copy) {
 aar.dependsOn(manifestForAar)
 
 def soForAar = [
-        ["../../target/arm-linux-androideabi/release/libqueries_embed.so", "armeabi"],
-        ["../../target/armv7-linux-androideabi/release/libqueries_embed.so", "armeabi-v7a"],
-        ["../../target/aarch64-linux-android/release/libqueries_embed.so", "arm64-v8a"],
-        ["../../target/i686-linux-android/release/libqueries_embed.so", "x86"],
-        ["../../target/x86_64-linux-android/release/libqueries_embed.so", "x86_64"]
+        ["../../target/arm-linux-androideabi/release/libsnips_queries.so", "armeabi"],
+        ["../../target/armv7-linux-androideabi/release/libsnips_queries.so", "armeabi-v7a"],
+        ["../../target/aarch64-linux-android/release/libsnips_queries.so", "arm64-v8a"],
+        ["../../target/i686-linux-android/release/libsnips_queries.so", "x86"],
+        ["../../target/x86_64-linux-android/release/libsnips_queries.so", "x86_64"]
 ]
 
 soForAar.forEach {

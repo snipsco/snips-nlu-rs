@@ -14,10 +14,10 @@ fi
 
 if [ ! -e $PROJECT_DIR/Dependencies/$SYSTEM/libsnips_queries.a ] ||
    [ ! -e $PROJECT_DIR/Dependencies/$SYSTEM/libsnips_queries.h ]; then
-    echo Will download snips_queries_$SYSTEM_$VERSION
-    URL=https://s3.amazonaws.com/snips/snips-queries-dev/snips-queries-$SYSTEM-$VERSION.tgz
+    FILENAME=snips-queries-$SYSTEM.$VERSION.tgz
+    echo Download $FILENAME
+    URL=https://s3.amazonaws.com/snips/snips-queries-dev/$FILENAME
     mkdir -p $PROJECT_DIR/Dependencies/$SYSTEM
     cd $PROJECT_DIR/Dependencies/$SYSTEM
     curl -s $URL | tar zxv
-    echo Downloaded libsnips_queries $VERSION
 fi
