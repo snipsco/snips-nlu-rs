@@ -334,13 +334,13 @@ mod tests {
                 value: "tomorrow at 8am".to_string(),
                 range: 58..73,
                 entity_kind: BuiltinEntityKind::Time,
-                entity: BuiltinEntity::Time(TimeValue::InstantTime(end_time))
+                entity: SlotValue::InstantTime(end_time)
             },
             RustlingEntity {
                 value: "today at 9pm".to_string(),
                 range: 41..53,
                 entity_kind: BuiltinEntityKind::Time,
-                entity: BuiltinEntity::Time(TimeValue::InstantTime(start_time))
+                entity: SlotValue::InstantTime(start_time)
             }
         ];
         let missing_slots = vec![("start_date".to_string(), BuiltinEntityKind::Time),
