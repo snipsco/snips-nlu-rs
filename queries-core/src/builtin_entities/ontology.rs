@@ -28,18 +28,6 @@ impl FromRustling<OrdinalOutput> for OrdinalValue {
     }
 }
 
-impl FromRustling<TimeOutput> for TimeValue {
-    fn from_rustling(rustling_output: TimeOutput) -> TimeValue {
-        TimeValue::InstantTime(InstantTimeValue::from_rustling(rustling_output))
-    }
-}
-
-impl FromRustling<TimeIntervalOutput> for TimeValue {
-    fn from_rustling(rustling_output: TimeIntervalOutput) -> TimeValue {
-        TimeValue::TimeInterval(TimeIntervalValue::from_rustling(rustling_output))
-    }
-}
-
 impl FromRustling<TimeOutput> for InstantTimeValue {
     fn from_rustling(rustling_output: TimeOutput) -> InstantTimeValue {
         InstantTimeValue {
@@ -146,17 +134,17 @@ impl FromRustling<RustlingPrecision> for Precision {
     }
 }
 
-impl FromRustling<Output> for BuiltinEntity {
-    fn from_rustling(rustling_output: Output) -> BuiltinEntity {
+impl FromRustling<Output> for SlotValue {
+    fn from_rustling(rustling_output: Output) -> SlotValue {
         match rustling_output {
-            Output::AmountOfMoney(v) => BuiltinEntity::AmountOfMoney(AmountOfMoneyValue::from_rustling(v)),
-            Output::Duration(v) => BuiltinEntity::Duration(DurationValue::from_rustling(v)),
-            Output::Float(v) => BuiltinEntity::Number(NumberValue::from_rustling(v)),
-            Output::Integer(v) => BuiltinEntity::Number(NumberValue::from_rustling(v)),
-            Output::Ordinal(v) => BuiltinEntity::Ordinal(OrdinalValue::from_rustling(v)),
-            Output::Temperature(v) => BuiltinEntity::Temperature(TemperatureValue::from_rustling(v)),
-            Output::Time(v) => BuiltinEntity::Time(TimeValue::from_rustling(v)),
-            Output::TimeInterval(v) => BuiltinEntity::Time(TimeValue::from_rustling(v)),
+            Output::AmountOfMoney(v) => SlotValue::AmountOfMoney(AmountOfMoneyValue::from_rustling(v)),
+            Output::Duration(v) => SlotValue::Duration(DurationValue::from_rustling(v)),
+            Output::Float(v) => SlotValue::Number(NumberValue::from_rustling(v)),
+            Output::Integer(v) => SlotValue::Number(NumberValue::from_rustling(v)),
+            Output::Ordinal(v) => SlotValue::Ordinal(OrdinalValue::from_rustling(v)),
+            Output::Temperature(v) => SlotValue::Temperature(TemperatureValue::from_rustling(v)),
+            Output::Time(v) => SlotValue::InstantTime(InstantTimeValue::from_rustling(v)),
+            Output::TimeInterval(v) => SlotValue::TimeInterval(TimeIntervalValue::from_rustling(v)),
         }
     }
 }

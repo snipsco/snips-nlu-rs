@@ -316,14 +316,12 @@ mod tests {
         let expected_slots = vec![
             Slot {
                 raw_value: "10 dollars".to_string(),
-                value: SlotValue::Builtin(
-                    BuiltinEntity::AmountOfMoney(
-                        AmountOfMoneyValue {
-                            value: 10.0,
-                            precision: Precision::Exact,
-                            unit: Some("$".to_string())
-                        }
-                    )
+                value: SlotValue::AmountOfMoney(
+                    AmountOfMoneyValue {
+                        value: 10.0,
+                        precision: Precision::Exact,
+                        unit: Some("$".to_string())
+                    }
                 ),
                 range: Some(5..15),
                 entity: "snips/amountOfMoney".to_string(),
