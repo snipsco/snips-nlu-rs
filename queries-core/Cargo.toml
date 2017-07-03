@@ -10,7 +10,7 @@ queries-utils = { path = "../queries-utils" }
 queries-resources-packed = { path = "../queries-resources-packed" }
 nlu-rust-ontology = { git="ssh://git@github.com/snipsco/nlu-rust-ontology.git", tag="0.2.0"}
 crfsuite = { git="ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "ccb00872" }
-rustling-ontology = { git="https://github.com/snipsco/rustling-ontology/", tag="0.11.1"}
+rustling-ontology = { git="https://github.com/snipsco/rustling-ontology/", tag="0.12.0"}
 error-chain = { version = "0.10", default-features = false }
 base64 = "0.6"
 itertools = "0.6"
