@@ -8,9 +8,9 @@ import json
 import os
 from ctypes import c_char, c_char_p, c_void_p, string_at, pointer, byref, cdll
 
-lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "../queries_embed.so"))
-# lib = cdll.LoadLibrary("../../target/debug/libqueries_embed.so") # use for dev
-# lib = cdll.LoadLibrary("../../target/debug/libqueries_embed.dylib") # use for dev
+lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "../libsnips_queries.so"))
+# lib = cdll.LoadLibrary("../../target/debug/libsnips_queries.so") # use for dev
+# lib = cdll.LoadLibrary("../../target/debug/libsnips_queries.dylib") # use for dev
 
 class IntentParser(object):
     def __init__(self, language, data_path=None, data_binary=None):
