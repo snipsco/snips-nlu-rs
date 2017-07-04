@@ -8,6 +8,14 @@ import ai.snips.queries.SlotValue.NumberValue
 import ai.snips.queries.SlotValue.OrdinalValue
 import ai.snips.queries.SlotValue.TemperatureValue
 import ai.snips.queries.SlotValue.TimeIntervalValue
+import ai.snips.queries.SlotValue.Type.AMOUNT_OF_MONEY
+import ai.snips.queries.SlotValue.Type.CUSTOM
+import ai.snips.queries.SlotValue.Type.DURATION
+import ai.snips.queries.SlotValue.Type.INSTANT_TIME
+import ai.snips.queries.SlotValue.Type.NUMBER
+import ai.snips.queries.SlotValue.Type.ORDINAL
+import ai.snips.queries.SlotValue.Type.TEMPERATURE
+import ai.snips.queries.SlotValue.Type.TIME_INTERVAL
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
@@ -51,15 +59,26 @@ enum class Precision {APPROXIMATE, EXACT }
 enum class Grain { YEAR, QUARTER, MONTH, WEEK, DAY, HOUR, MINUTE, SECOND }
 
 // TODO : add converters to JSR310 / ThreeTen types
-// TODO : add type discriminant for Java API
-sealed class SlotValue {
-    data class CustomValue(val value: String) : SlotValue()
-    data class NumberValue(val value: Double) : SlotValue()
-    data class OrdinalValue(val value: Long) : SlotValue()
-    data class InstantTimeValue(val value: String, val grain: Grain, val precision: Precision) : SlotValue()
-    data class TimeIntervalValue(val from: String, val to: String) : SlotValue()
-    data class AmountOfMoneyValue(val value: Float, val precision: Precision, val unit: String) : SlotValue()
-    data class TemperatureValue(val value: Float, val unit: String) : SlotValue()
+sealed class SlotValue(val type: SlotValue.Type) {
+
+    enum class Type {
+        CUSTOM,
+        NUMBER,
+        ORDINAL,
+        INSTANT_TIME,
+        TIME_INTERVAL,
+        AMOUNT_OF_MONEY,
+        TEMPERATURE,
+        DURATION,
+    }
+
+    data class CustomValue(val value: String) : SlotValue(CUSTOM)
+    data class NumberValue(val value: Double) : SlotValue(NUMBER)
+    data class OrdinalValue(val value: Long) : SlotValue(ORDINAL)
+    data class InstantTimeValue(val value: String, val grain: Grain, val precision: Precision) : SlotValue(INSTANT_TIME)
+    data class TimeIntervalValue(val from: String, val to: String) : SlotValue(TIME_INTERVAL)
+    data class AmountOfMoneyValue(val value: Float, val precision: Precision, val unit: String) : SlotValue(AMOUNT_OF_MONEY)
+    data class TemperatureValue(val value: Float, val unit: String) : SlotValue(TEMPERATURE)
     data class DurationValue(val years: Long,
                              val quarters: Long,
                              val months: Long,
@@ -68,7 +87,7 @@ sealed class SlotValue {
                              val hours: Long,
                              val minutes: Long,
                              val seconds: Long,
-                             val precision: Precision) : SlotValue()
+                             val precision: Precision) : SlotValue(DURATION)
 }
 
 
