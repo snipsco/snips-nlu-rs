@@ -143,6 +143,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 parseError(LIB.nlu_engine_run_parse(client, input, this))
             }.value).let {
                 it.toIntentParserResult().apply {
+                    // we don't want jna to try and sync this struct after the call as we're destroying it
+                    // /!\ removing that will make the app crash semi randomly...
+                    it.autoRead = false
                     LIB.nlu_engine_destroy_result(it)
                 }
             }
@@ -152,6 +155,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 parseError(LIB.nlu_engine_run_tag(client, input, intent, this))
             }.value).let {
                 it.toTaggedEntityList().apply {
+                    // we don't want jna to try and sync this struct after the call as we're destroying it
+                    // /!\ removing that will make the app crash semi randomly...
+                    it.autoRead = false
                     LIB.nlu_engine_destroy_tagged_entity_list(it)
                 }
             }
