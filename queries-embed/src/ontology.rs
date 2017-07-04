@@ -370,6 +370,11 @@ impl CDurationValue {
 #[derive(Debug)]
 pub struct CSlotValue {
     value_type: CSlotValueType,
+    /**
+     * Points to either a *const char, a CNumberValue, a COrdinalValue,
+     * a CInstantTimeValue, a CTimeIntervalValue, a CAmountOfMoneyValue,
+     * a CTemperatureValue or a CDurationValue depending on value_type
+     */
     value: *const libc::c_void,
 }
 
