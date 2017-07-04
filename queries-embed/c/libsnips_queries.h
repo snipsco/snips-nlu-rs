@@ -77,7 +77,7 @@ typedef struct CSlotValue {
       * a CInstantTimeValue, a CTimeIntervalValue, a CAmountOfMoneyValue,
       * a CTemperatureValue or a CDurationValue depending on value_type
       */
-    *const void value;
+    void *const value;
 } CSlotValue;
 
 typedef struct CSlot {
@@ -106,12 +106,12 @@ typedef struct CIntentParserResult{
 } CIntentParserResult;
 
 typedef struct CTaggedEntity {
-    char *const value ;
-    int range_start ;
-    int range_end ;
-    char *const entity ;
-    char *const slot_name ;
-} CTaggedEntity
+    char *const value;
+    int range_start;
+    int range_end;
+    char *const entity;
+    char *const slot_name;
+} CTaggedEntity;
 
 typedef struct CTaggedEntityList {
     CTaggedEntity* entities;
