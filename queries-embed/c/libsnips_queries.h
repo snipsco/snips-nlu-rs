@@ -5,9 +5,6 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
-#include <stdbool.h>
-
 typedef enum CPrecision {
     APPROXIMATE = 0,
     EXACT = 1,
