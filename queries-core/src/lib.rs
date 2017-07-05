@@ -34,6 +34,8 @@ pub use pipeline::assistant_config::{FileBasedConfiguration,
                                      ZipBasedConfiguration};
 pub use utils::miscellaneous::file_path;
 
+pub use pipeline::assistant_config::deprecated::*;
+
 #[cfg(test)]
 mod testutils;
 
