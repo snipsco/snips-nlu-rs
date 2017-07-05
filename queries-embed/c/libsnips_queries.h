@@ -127,7 +127,7 @@ typedef enum QUERIESRESULT {
 
 QUERIESRESULT nlu_engine_create_from_dir(char const* root_dir, Opaque** client);
 
-QUERIESRESULT nlu_engine_create_from_binary(unsigned char const* bytes, unsigned int binary_size, Opaque** client);
+QUERIESRESULT nlu_engine_create_from_zip(unsigned char const* zip, unsigned int zip_size, Opaque** client);
 
 QUERIESRESULT nlu_engine_run_parse(Opaque* client, char const* input, CIntentParserResult** result);
 

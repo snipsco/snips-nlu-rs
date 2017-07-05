@@ -13,12 +13,12 @@ lib = cdll.LoadLibrary(os.path.join(os.path.dirname(__file__), "../libsnips_quer
 # lib = cdll.LoadLibrary("../../target/debug/libsnips_queries.dylib") # use for dev
 
 class IntentParser(object):
-    def __init__(self, language, data_path=None, data_binary=None):
+    def __init__(self, language, data_path=None, data_zip=None):
         self.language = language
         exit_code = 1
 
-        if data_path is None and data_binary is None:
-            raise ValueError("Please specify data_path or data_binary")
+        if data_path is None and data_zip is None:
+            raise ValueError("Please specify data_path or data_zip")
 
         if data_path is not None:
             self.data_path = data_path
@@ -26,11 +26,11 @@ class IntentParser(object):
             exit_code = lib.nlu_engine_create_from_dir(
                 data_path.encode("utf-8"), byref(self._parser))
 
-        if data_binary is not None:
+        if data_zip is not None:
             self._parser = pointer(c_void_p())
-            bytearray_type = c_char * len(data_binary)
-            exit_code = lib.nlu_engine_create_from_binary(
-                bytearray_type.from_buffer(data_binary), len(data_binary), byref(self._parser))
+            bytearray_type = c_char * len(data_zip)
+            exit_code = lib.nlu_engine_create_from_zip(
+                bytearray_type.from_buffer(data_zip), len(data_zip), byref(self._parser))
 
         if exit_code != 1:
             raise ImportError('Something wrong happened while creating the '

@@ -101,11 +101,11 @@ pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const libc::c_char,
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_create_from_binary(binary: *const libc::c_uchar,
-                                                binary_size: libc::c_uint,
-                                                client: *mut *mut Opaque)
-                                                -> QUERIESRESULT {
-    wrap!(create_from_binary(binary, binary_size, client));
+pub extern "C" fn nlu_engine_create_from_zip(zip: *const libc::c_uchar,
+                                             zip_size: libc::c_uint,
+                                             client: *mut *mut Opaque)
+                                             -> QUERIESRESULT {
+    wrap!(create_from_zip(zip, zip_size, client));
 }
 
 #[no_mangle]
@@ -191,14 +191,14 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> R
     Ok(())
 }
 
-fn create_from_binary(binary: *const libc::c_uchar,
-                      binary_size: libc::c_uint,
-                      client: *mut *mut Opaque)
-                      -> Result<()> {
-    let slice = unsafe { slice::from_raw_parts(binary, binary_size as usize) };
+fn create_from_zip(zip: *const libc::c_uchar,
+                   zip_size: libc::c_uint,
+                   client: *mut *mut Opaque)
+                   -> Result<()> {
+    let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
     let reader = Cursor::new(slice.to_owned());
 
-    let assistant_config = queries_core::BinaryBasedConfiguration::new(reader)?;
+    let assistant_config = queries_core::ZipBasedConfiguration::new(reader)?;
     let intent_parser = queries_core::SnipsNLUEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
