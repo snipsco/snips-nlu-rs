@@ -5,6 +5,7 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'net.java.dev.jna:jna:4.4.0'
     }
 }
 
@@ -28,9 +29,9 @@ dependencies {
 }
 
 def soForJar = [
-        ["../../target/release/libsnips_queries.so", "linux-${System.getProperty("os.arch")}" ],
-        ["../../target/release/libsnips_queries.dylib", "darwin" ],
-        ["../../target/arm-unknown-linux-gnueabihf/release/libsnips_queries.so", "linux-arm"]
+        ["../../target/release/libsnips_queries.so", com.sun.jna.Platform.RESOURCE_PREFIX, "linuxNative" ],
+        ["../../target/release/libsnips_queries.dylib", com.sun.jna.Platform.RESOURCE_PREFIX, "macOsNative" ],
+        ["../../target/arm-unknown-linux-gnueabihf/release/libsnips_queries.so", "linux-arm", "linuxArmCross"]
 ]
 
 def jarClassifier = {
@@ -47,7 +48,7 @@ jar {
 def jniLibsDir = new File(buildDir, "jniLibs")
 
 soForJar.forEach {
-    def taskName = "copySo${it[1].capitalize()}ForJar"
+    def taskName = "copySo${it[2].capitalize()}ForJar"
     def soFile = file(it[0])
     def destDir = new File(jniLibsDir, it[1])
 
