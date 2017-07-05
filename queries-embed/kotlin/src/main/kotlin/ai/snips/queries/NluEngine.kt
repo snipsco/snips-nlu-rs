@@ -127,7 +127,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
     constructor(data: ByteArray) :
             this({
                      PointerByReference().apply {
-                         parseError(LIB.nlu_engine_create_from_binary(data, data.size, this))
+                         parseError(LIB.nlu_engine_create_from_zip(data, data.size, this))
                      }.value
                  })
 
@@ -169,7 +169,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
         fun nlu_engine_get_model_version(version: PointerByReference): Int
         fun nlu_engine_create_from_dir(root_dir: String, pointer: PointerByReference): Int
-        fun nlu_engine_create_from_binary(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
+        fun nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun nlu_engine_run_parse(client: Pointer, input: String, result: PointerByReference): Int
         fun nlu_engine_run_tag(client: Pointer, input: String, intent: String, result: PointerByReference): Int
         fun nlu_engine_get_last_error(error: PointerByReference): Int

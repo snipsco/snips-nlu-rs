@@ -174,7 +174,7 @@ public struct DurationValue {
      public let minutes: Int
      public let seconds: Int
      public let precision: Precision
-    
+
     init(cValue: CDurationValue) throws {
         self.years = cValue.years
         self.quarters = cValue.quarters
@@ -197,7 +197,7 @@ public enum Grain {
     case hour
     case minute
     case second
-    
+
     init(cValue: CGrain) throws {
         switch cValue {
         case YEAR: self = .year
@@ -216,7 +216,7 @@ public enum Grain {
 public enum Precision {
     case approximate
     case exact
-    
+
     init(cValue: CPrecision) throws {
         switch cValue {
         case APPROXIMATE: self = .approximate
@@ -251,7 +251,7 @@ public class NluEngine {
 
     public init(assistantZipFile: Data) throws {
         try assistantZipFile.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) in
-            guard nlu_engine_create_from_binary(bytes, UInt32(assistantZipFile.count), &client) == OK else { throw NluEngineError.getLast }
+            guard nlu_engine_create_from_zip(bytes, UInt32(assistantZipFile.count), &client) == OK else { throw NluEngineError.getLast }
         }
     }
 
