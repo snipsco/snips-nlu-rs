@@ -71,6 +71,11 @@ impl NLUEngineConfigurationConvertible for ZipBasedConfiguration {
     }
 }
 
+pub mod deprecated {
+    #[deprecated(since="0.21.0", note="please use `ZipBasedConfiguration` instead")]
+    pub type BinaryBasedConfiguration = super::ZipBasedConfiguration;
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
