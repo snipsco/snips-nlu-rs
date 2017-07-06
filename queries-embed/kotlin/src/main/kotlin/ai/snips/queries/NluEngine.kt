@@ -1,5 +1,21 @@
 package ai.snips.queries
 
+import ai.snips.queries.SlotValue.AmountOfMoneyValue
+import ai.snips.queries.SlotValue.CustomValue
+import ai.snips.queries.SlotValue.DurationValue
+import ai.snips.queries.SlotValue.InstantTimeValue
+import ai.snips.queries.SlotValue.NumberValue
+import ai.snips.queries.SlotValue.OrdinalValue
+import ai.snips.queries.SlotValue.TemperatureValue
+import ai.snips.queries.SlotValue.TimeIntervalValue
+import ai.snips.queries.SlotValue.Type.AMOUNT_OF_MONEY
+import ai.snips.queries.SlotValue.Type.CUSTOM
+import ai.snips.queries.SlotValue.Type.DURATION
+import ai.snips.queries.SlotValue.Type.INSTANT_TIME
+import ai.snips.queries.SlotValue.Type.NUMBER
+import ai.snips.queries.SlotValue.Type.ORDINAL
+import ai.snips.queries.SlotValue.Type.TEMPERATURE
+import ai.snips.queries.SlotValue.Type.TIME_INTERVAL
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
@@ -37,7 +53,44 @@ object Main {
 
 data class Range(val start: Int, val end: Int)
 
-data class Slot(val value: String, val range: Range?, val entity: String, val slotName: String)
+data class Slot(val rawValue: String, val value: SlotValue, val range: Range?, val entity: String, val slotName: String)
+
+enum class Precision {APPROXIMATE, EXACT }
+enum class Grain { YEAR, QUARTER, MONTH, WEEK, DAY, HOUR, MINUTE, SECOND }
+
+// TODO : add converters to JSR310 / ThreeTen types
+sealed class SlotValue(val type: SlotValue.Type) {
+
+    enum class Type {
+        CUSTOM,
+        NUMBER,
+        ORDINAL,
+        INSTANT_TIME,
+        TIME_INTERVAL,
+        AMOUNT_OF_MONEY,
+        TEMPERATURE,
+        DURATION,
+    }
+
+    data class CustomValue(val value: String) : SlotValue(CUSTOM)
+    data class NumberValue(val value: Double) : SlotValue(NUMBER)
+    data class OrdinalValue(val value: Long) : SlotValue(ORDINAL)
+    data class InstantTimeValue(val value: String, val grain: Grain, val precision: Precision) : SlotValue(INSTANT_TIME)
+    data class TimeIntervalValue(val from: String, val to: String) : SlotValue(TIME_INTERVAL)
+    data class AmountOfMoneyValue(val value: Float, val precision: Precision, val unit: String) : SlotValue(AMOUNT_OF_MONEY)
+    data class TemperatureValue(val value: Float, val unit: String) : SlotValue(TEMPERATURE)
+    data class DurationValue(val years: Long,
+                             val quarters: Long,
+                             val months: Long,
+                             val weeks: Long,
+                             val days: Long,
+                             val hours: Long,
+                             val minutes: Long,
+                             val seconds: Long,
+                             val precision: Precision) : SlotValue(DURATION)
+}
+
+
 data class IntentClassifierResult(val intentName: String, val probability: Float)
 data class IntentParserResult(val input: String, val intent: IntentClassifierResult?, val slots: List<Slot>)
 data class TaggedEntity(val value: String, val range: Range?, val entity: String, val slotName: String)
@@ -45,13 +98,11 @@ data class TaggedEntity(val value: String, val range: Range?, val entity: String
 class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     companion object {
-        private const val RUST_STRING_ENCODING = "utf-8"
-
         private fun parseError(returnCode: Int) {
             if (returnCode != 1) {
                 PointerByReference().apply {
                     LIB.nlu_engine_get_last_error(this)
-                    throw RuntimeException(value.getString(0, RUST_STRING_ENCODING).apply {
+                    throw RuntimeException(value.getString(0).apply {
                         LIB.nlu_engine_destroy_string(value)
                     })
                 }
@@ -61,11 +112,10 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         @JvmStatic
         fun modelVersion(): String = PointerByReference().run {
             parseError(LIB.nlu_engine_get_model_version(this))
-            value.getString(0, RUST_STRING_ENCODING).apply { LIB.nlu_engine_destroy_string(value) }
+            value.getString(0).apply { LIB.nlu_engine_destroy_string(value) }
 
         }
     }
-
 
     constructor(assistantDir: File) :
             this({
@@ -77,7 +127,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
     constructor(data: ByteArray) :
             this({
                      PointerByReference().apply {
-                         parseError(LIB.nlu_engine_create_from_binary(data, data.size, this))
+                         parseError(LIB.nlu_engine_create_from_zip(data, data.size, this))
                      }.value
                  })
 
@@ -93,6 +143,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 parseError(LIB.nlu_engine_run_parse(client, input, this))
             }.value).let {
                 it.toIntentParserResult().apply {
+                    // we don't want jna to try and sync this struct after the call as we're destroying it
+                    // /!\ removing that will make the app crash semi randomly...
+                    it.autoRead = false
                     LIB.nlu_engine_destroy_result(it)
                 }
             }
@@ -102,18 +155,21 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 parseError(LIB.nlu_engine_run_tag(client, input, intent, this))
             }.value).let {
                 it.toTaggedEntityList().apply {
+                    // we don't want jna to try and sync this struct after the call as we're destroying it
+                    // /!\ removing that will make the app crash semi randomly...
+                    it.autoRead = false
                     LIB.nlu_engine_destroy_tagged_entity_list(it)
                 }
             }
 
     internal interface SnipsQueriesClientLibrary : Library {
         companion object {
-            val INSTANCE: SnipsQueriesClientLibrary = Native.loadLibrary("queries_embed", SnipsQueriesClientLibrary::class.java)
+            val INSTANCE: SnipsQueriesClientLibrary = Native.loadLibrary("snips_queries", SnipsQueriesClientLibrary::class.java)
         }
 
         fun nlu_engine_get_model_version(version: PointerByReference): Int
         fun nlu_engine_create_from_dir(root_dir: String, pointer: PointerByReference): Int
-        fun nlu_engine_create_from_binary(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
+        fun nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun nlu_engine_run_parse(client: Pointer, input: String, result: PointerByReference): Int
         fun nlu_engine_run_tag(client: Pointer, input: String, intent: String, result: PointerByReference): Int
         fun nlu_engine_get_last_error(error: PointerByReference): Int
@@ -166,24 +222,187 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     }
 
-    class CSlot(p: Pointer) : Structure(p), Structure.ByReference {
+    object CGrain {
+        const val YEAR = 0
+        const val QUARTER = 1
+        const val MONTH = 2
+        const val WEEK = 3
+        const val DAY = 4
+        const val HOUR = 5
+        const val MINUTE = 6
+        const val SECOND = 7
+
+        fun toGrain(input: Int) = when (input) {
+            YEAR -> Grain.YEAR
+            QUARTER -> Grain.QUARTER
+            MONTH -> Grain.MONTH
+            WEEK -> Grain.WEEK
+            DAY -> Grain.DAY
+            HOUR -> Grain.HOUR
+            MINUTE -> Grain.MINUTE
+            SECOND -> Grain.SECOND
+            else -> throw IllegalArgumentException("unknown grain $input")
+        }
+    }
+
+    object CPrecision {
+        const val APPROXIMATE = 0
+        const val EXACT = 1
+
+        fun toPrecision(input: Int) = when (input) {
+            APPROXIMATE -> Precision.APPROXIMATE
+            EXACT -> Precision.EXACT
+            else -> throw IllegalArgumentException("unknown precision $input")
+        }
+    }
+
+    class CSlotValue : Structure(), Structure.ByValue {
+        companion object {
+            const val CUSTOM = 1
+            const val NUMBER = 2
+            const val ORDINAL = 3
+            const val INSTANTTIME = 4
+            const val TIMEINTERVAL = 5
+            const val AMOUNTOFMONEY = 6
+            const val TEMPERATURE = 7
+            const val DURATION = 8
+
+
+        }
+
+        @JvmField var value_type: Int? = null
+        @JvmField var value: Pointer? = null
+
+        override fun getFieldOrder() = listOf("value_type", "value")
+
+        fun toSlotValue(): SlotValue = when (value_type!!) {
+            CUSTOM -> CustomValue(value!!.getString(0))
+            NUMBER -> NumberValue(value!!.getDouble(0))
+            ORDINAL -> OrdinalValue(value!!.getLong(0))
+            INSTANTTIME -> CInstantTimeValue(value!!).toInstantTimeValue()
+            TIMEINTERVAL -> CTimeIntervalValue(value!!).toTimeIntervalValue()
+            AMOUNTOFMONEY -> CAmountOfMoneyValue(value!!).toAmountOfMoneyValue()
+            TEMPERATURE -> CTemperatureValue(value!!).toTemperatureValue()
+            DURATION -> CDurationValue(value!!).toDurationValue()
+            else -> throw IllegalArgumentException("unknown value type $value_type")
+        }
+
+    }
+
+    class CInstantTimeValue(p: Pointer) : Structure(p), Structure.ByReference {
         init {
             read()
         }
 
         @JvmField var value: String? = null
+        @JvmField var grain: Int? = null
+        @JvmField var precision: Int? = null
+        override fun getFieldOrder() = listOf("value", "grain", "precision")
+        fun toInstantTimeValue(): InstantTimeValue {
+            return InstantTimeValue(value = value!!,
+                                    grain = CGrain.toGrain(grain!!),
+                                    precision = CPrecision.toPrecision(precision!!))
+
+        }
+    }
+
+    class CTimeIntervalValue(p: Pointer) : Structure(p), Structure.ByReference {
+        init {
+            read()
+        }
+
+        @JvmField var from: String? = null
+        @JvmField var to: String? = null
+        override fun getFieldOrder() = listOf("from", "to")
+        fun toTimeIntervalValue() = TimeIntervalValue(from = from!!, to = to!!)
+    }
+
+    class CAmountOfMoneyValue(p: Pointer) : Structure(p), Structure.ByReference {
+        init {
+            read()
+        }
+
+        @JvmField var value: Float? = null
+        @JvmField var precision: Int? = null
+        @JvmField var unit: String? = null
+        override fun getFieldOrder() = listOf("value", "precision", "unit")
+        fun toAmountOfMoneyValue() = AmountOfMoneyValue(value = value!!,
+                                                        precision = CPrecision.toPrecision(precision!!),
+                                                        unit = unit!!)
+    }
+
+    class CTemperatureValue(p: Pointer) : Structure(p), Structure.ByReference {
+        init {
+            read()
+        }
+
+        @JvmField var value: Float? = null
+        @JvmField var unit: String? = null
+        override fun getFieldOrder() = listOf("value", "unit")
+        fun toTemperatureValue() = TemperatureValue(value = value!!,
+                                                    unit = unit!!)
+
+    }
+
+    class CDurationValue(p: Pointer) : Structure(p), Structure.ByReference {
+        init {
+            read()
+        }
+
+        @JvmField var years: Long? = null
+        @JvmField var quarters: Long? = null
+        @JvmField var months: Long? = null
+        @JvmField var weeks: Long? = null
+        @JvmField var days: Long? = null
+        @JvmField var hours: Long? = null
+        @JvmField var minutes: Long? = null
+        @JvmField var seconds: Long? = null
+        @JvmField var precision: Int? = null
+
+
+        override fun getFieldOrder() = listOf("years",
+                                              "quarters",
+                                              "months",
+                                              "weeks",
+                                              "days",
+                                              "hours",
+                                              "minutes",
+                                              "seconds",
+                                              "precision")
+
+        fun toDurationValue() = DurationValue(years = years!!,
+                                              quarters = quarters!!,
+                                              months = months!!,
+                                              weeks = weeks!!,
+                                              days = days!!,
+                                              hours = hours!!,
+                                              minutes = minutes!!,
+                                              seconds = seconds!!,
+                                              precision = CPrecision.toPrecision(precision!!))
+    }
+
+
+    class CSlot(p: Pointer) : Structure(p), Structure.ByReference {
+        init {
+            read()
+        }
+
+        @JvmField var raw_value: String? = null
+        @JvmField var value: CSlotValue? = null
         @JvmField var range_start: Int? = null
         @JvmField var range_end: Int? = null
         @JvmField var entity: String? = null
         @JvmField var slot_name: String? = null
 
-        override fun getFieldOrder() = listOf("value",
+        override fun getFieldOrder() = listOf("raw_value",
+                                              "value",
                                               "range_start",
                                               "range_end",
                                               "entity",
                                               "slot_name")
 
-        fun toSlot() = Slot(value = value!!,
+        fun toSlot() = Slot(rawValue = raw_value!!,
+                            value = value!!.toSlotValue(),
                             range = if (range_start != -1) Range(range_start!!, range_end!!) else null,
                             entity = entity!!,
                             slotName = slot_name!!)

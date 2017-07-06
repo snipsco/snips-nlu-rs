@@ -7,7 +7,7 @@ from __future__ import unicode_literals
 from snips_queries import IntentParser
 
 q = IntentParser("en", data_path="../../data/untracked")
-#q = IntentParser("en", data_binary=bytearray(open("../../data/untracked/builtins_final.zip", "rb").read()))
+#q = IntentParser("en", data_zip=bytearray(open("../../data/untracked/builtins_final.zip", "rb").read()))
 
 text = "Book me a table for four people at Le Chalet Savoyard at 9pm"
 

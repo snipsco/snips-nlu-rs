@@ -1,6 +1,6 @@
 [package]
 name = "queries-embed"
-version = "0.20.0"
+version = "0.20.1"
 authors = ["Kevin Lefèvre <kevin.lefevre@snips.ai>", "Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 
 [dependencies]
@@ -11,4 +11,5 @@ libc = "0.2"
 serde_json = "1.0"
 
 [lib]
+name = "snips_queries"
 crate-type = ["staticlib", "cdylib"]
