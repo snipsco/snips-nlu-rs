@@ -34,12 +34,12 @@ impl NLUEngineConfigurationConvertible for FileBasedConfiguration {
     }
 }
 
-pub struct BinaryBasedConfiguration {
+pub struct ZipBasedConfiguration {
     nlu_configuration: NLUEngineConfiguration,
 }
 
-impl BinaryBasedConfiguration {
-    pub fn new<R>(reader: R) -> Result<BinaryBasedConfiguration>
+impl ZipBasedConfiguration {
+    pub fn new<R>(reader: R) -> Result<Self>
     where R: Read + Seek {
         let zip = zip::ZipArchive::new(reader)?;
         let mutex = Arc::new(Mutex::new(zip));
@@ -61,7 +61,7 @@ impl BinaryBasedConfiguration {
     }
 }
 
-impl NLUEngineConfigurationConvertible for BinaryBasedConfiguration {
+impl NLUEngineConfigurationConvertible for ZipBasedConfiguration {
     fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration {
         &self.nlu_configuration
     }
@@ -71,19 +71,24 @@ impl NLUEngineConfigurationConvertible for BinaryBasedConfiguration {
     }
 }
 
+pub mod deprecated {
+    #[deprecated(since="0.21.0", note="please use `ZipBasedConfiguration` instead")]
+    pub type BinaryBasedConfiguration = super::ZipBasedConfiguration;
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
 
     use super::NLUEngineConfigurationConvertible;
-    use super::BinaryBasedConfiguration;
+    use super::ZipBasedConfiguration;
 
     use utils::miscellaneous::file_path;
 
     #[test]
     fn unzip_works() {
         let file = fs::File::open(file_path("tests/zip_files/sample_config.zip")).unwrap();
-        let nlu_config = BinaryBasedConfiguration::new(file)
+        let nlu_config = ZipBasedConfiguration::new(file)
             .unwrap()
             .into_nlu_engine_configuration();
 
