@@ -44,7 +44,11 @@ impl ZipBasedConfiguration {
         let zip = zip::ZipArchive::new(reader)?;
         let mutex = Arc::new(Mutex::new(zip));
 
-        let nlu_conf_bytes = Self::read_bytes(mutex.clone(), NLU_CONFIGURATION_FILENAME)?;
+        let nlu_conf_bytes = Self::read_bytes(mutex.clone(), NLU_CONFIGURATION_FILENAME)
+            .or_else(|_| {
+                // Assistants downloaded from the console are in a directory named assistant
+                Self::read_bytes(mutex.clone(), &format!("assistant/{}", NLU_CONFIGURATION_FILENAME))
+            })?;
         Ok(Self {
             nlu_configuration: serde_json::from_slice(&nlu_conf_bytes)?,
         })
