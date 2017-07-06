@@ -31,8 +31,10 @@ pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
 pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
                                   NLUEngineConfiguration};
 pub use pipeline::assistant_config::{FileBasedConfiguration,
-                                     BinaryBasedConfiguration};
+                                     ZipBasedConfiguration};
 pub use utils::miscellaneous::file_path;
+
+pub use pipeline::assistant_config::deprecated::*;
 
 #[cfg(test)]
 mod testutils;
