@@ -76,6 +76,11 @@ pub mod stems {
         result.extend(parse_lexemes(&include_bytes!("../snips-nlu-resources/es/top_1000_verbs_lexemes.txt")[..])?);
         Ok(result)
     }
+
+    pub fn de() -> Result<HashMap<String, String>> {
+        let result = parse_lexemes(&include_bytes!("../snips-nlu-resources/de/top_1000_verbs_lexemes.txt")[..])?;
+        Ok(result)
+    }
 }
 
 
@@ -187,5 +192,101 @@ pub mod gazetteer {
         create_gazetteer!(stop_words_stem, stop_words, stem_en);
         create_gazetteer!(street_identifier_stem, street_identifier, stem_en);
         create_gazetteer!(top_10000_words_stem, top_10000_words, stem_en);
+    }
+
+    pub mod fr {
+        use std::collections::{HashMap, HashSet};
+        use errors::*;
+        use stems;
+
+        fn stem_fr(input: String) -> String {
+            lazy_static! {
+                static ref STEMS_FR: HashMap<String, String> = stems::fr().unwrap();
+            }
+            STEMS_FR.get(&input).unwrap_or(&input).to_string()
+        }
+
+        fn no_stem(input: String) -> String {
+            input
+        }
+
+        macro_rules! create_gazetteer {
+            ($gazetteer_name:ident) => {
+                pub fn $gazetteer_name() -> Result<HashSet<String>> {
+                    super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/fr/", stringify!($gazetteer_name), ".txt"))[..],
+                                           no_stem)
+                }
+            };
+            ($function_name:ident, $gazetteer_name:ident, $stem:ident) => {
+                pub fn $function_name() -> Result<HashSet<String>> {
+                    super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/fr/", stringify!($gazetteer_name), ".txt"))[..],
+                                           $stem)
+                }
+            };
+        }
+
+        create_gazetteer!(cities_france);
+        create_gazetteer!(cities_world);
+        create_gazetteer!(countries);
+        create_gazetteer!(departements_france);
+        create_gazetteer!(regions_france);
+        create_gazetteer!(stop_words);
+        create_gazetteer!(street_identifier);
+        create_gazetteer!(top_10000_words);
+
+        create_gazetteer!(cities_france_stem, cities_france, stem_fr);
+        create_gazetteer!(cities_world_stem, cities_world, stem_fr);
+        create_gazetteer!(countries_stem, countries, stem_fr);
+        create_gazetteer!(departements_france_stem, departements_france, stem_fr);
+        create_gazetteer!(regions_france_stem, regions_france, stem_fr);
+        create_gazetteer!(stop_words_stem, stop_words, stem_fr);
+        create_gazetteer!(street_identifier_stem, street_identifier, stem_fr);
+        create_gazetteer!(top_10000_words_stem, top_10000_words, stem_fr);
+    }
+
+    pub mod de {
+        use std::collections::{HashMap, HashSet};
+        use errors::*;
+        use stems;
+
+        fn stem_de(input: String) -> String {
+            lazy_static! {
+                static ref STEMS_DE: HashMap<String, String> = stems::de().unwrap();
+            }
+            STEMS_DE.get(&input).unwrap_or(&input).to_string()
+        }
+
+        fn no_stem(input: String) -> String {
+            input
+        }
+
+        macro_rules! create_gazetteer {
+            ($gazetteer_name:ident) => {
+                pub fn $gazetteer_name() -> Result<HashSet<String>> {
+                    super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/de/", stringify!($gazetteer_name), ".txt"))[..],
+                                           no_stem)
+                }
+            };
+            ($function_name:ident, $gazetteer_name:ident, $stem:ident) => {
+                pub fn $function_name() -> Result<HashSet<String>> {
+                    super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/de/", stringify!($gazetteer_name), ".txt"))[..],
+                                           $stem)
+                }
+            };
+        }
+
+        create_gazetteer!(cities_germany);
+        create_gazetteer!(cities_world);
+        create_gazetteer!(countries);
+        create_gazetteer!(lander_germany);
+        create_gazetteer!(stop_words);
+        create_gazetteer!(street_identifier);
+
+        create_gazetteer!(cities_germany_stem, cities_germany, stem_en);
+        create_gazetteer!(cities_world_stem, cities_world, stem_en);
+        create_gazetteer!(countries_stem, countries, stem_en);
+        create_gazetteer!(lander_germany_stem, lander_germany, stem_en);
+        create_gazetteer!(stop_words_stem, stop_words, stem_en);
+        create_gazetteer!(street_identifier_stem, street_identifier, stem_en);
     }
 }
