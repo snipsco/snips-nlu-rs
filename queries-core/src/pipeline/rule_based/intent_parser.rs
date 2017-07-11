@@ -12,7 +12,7 @@ use core_ontology::{IntentClassifierResult, Slot};
 use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
 use utils::token::{tokenize, tokenize_light};
-use utils::string::{substring_with_char_range, suffix_from_char_index};
+use utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use utils::miscellaneous::ranges_overlap;
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use rustling_ontology::Lang;
@@ -101,7 +101,8 @@ impl IntentParser for RuleBasedIntentParser {
                             None
                         })
                     .map(|(a_match, group_name)| {
-                        let matched_range = a_match.start()..a_match.end();
+                        let byte_range = a_match.start()..a_match.end();
+                        let matched_range = convert_to_char_range(&formatted_input, &byte_range);
                         let (value, range) = if let Some(rng) = ranges_mapping.get(&matched_range) {
                             (substring_with_char_range(input.to_string(), rng), rng.clone())
                         } else {
@@ -164,7 +165,7 @@ fn replace_builtin_entities(text: &str,
                             parser: &RustlingParser) -> (HashMap<Range<usize>, Range<usize>>, String) {
     let builtin_entities = parser.extract_entities(text, None);
     if builtin_entities.len() == 0 {
-        return (HashMap::new(), text.to_string())
+        return (HashMap::new(), text.to_string());
     }
 
     let mut range_mapping: HashMap<Range<usize>, Range<usize>> = HashMap::new();
@@ -213,6 +214,7 @@ mod tests {
                     r"^This is a (?P<group_1>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query with another (?P<group_2>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)$".to_string(),
                     r"^(?P<group_5>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1)$".to_string(),
                     r"^This is another (?P<group_3>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.) query.$".to_string(),
+                    r"^This is another über (?P<group_3>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.) query.$".to_string(),
                     r"^This is another (?P<group_4>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)?$".to_string(),
                 ],
                 "dummy_intent_2".to_string() => vec![
@@ -296,6 +298,28 @@ mod tests {
             Slot::new_custom(
                 "dummy_c".to_string(),
                 37..44,
+                "dummy_entity_2".to_string(),
+                "dummy_slot_name2".to_string()
+            ),
+        ];
+        assert_eq!(slots, expected_slots);
+    }
+
+    #[test]
+    fn should_get_slots_with_non_ascii_chars() {
+        // Given
+        let parser = RuleBasedIntentParser::new(test_configuration()).unwrap();
+        let text = "This is another über dummy_cc query!";
+
+
+        // When
+        let slots = parser.get_slots(text, "dummy_intent_1").unwrap();
+
+        // Then
+        let expected_slots = vec![
+            Slot::new_custom(
+                "dummy_cc".to_string(),
+                21..29,
                 "dummy_entity_2".to_string(),
                 "dummy_slot_name2".to_string()
             ),

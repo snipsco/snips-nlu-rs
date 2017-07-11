@@ -7,7 +7,7 @@ use itertools::Itertools;
 use errors::*;
 use pipeline::InternalSlot;
 use utils::token::Token;
-use utils::string::{convert_char_range, suffix_from_char_index};
+use utils::string::{convert_to_char_range, suffix_from_char_index};
 
 const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
@@ -192,7 +192,7 @@ pub fn tags_to_slots(text: &str,
         .map(|s|
             InternalSlot {
                 value: text[s.range.clone()].to_string(),
-                range: convert_char_range(text, &s.range),
+                range: convert_to_char_range(text, &s.range),
                 entity: intent_slots_mapping[&s.slot_name].to_string(),
                 slot_name: s.slot_name
             })
