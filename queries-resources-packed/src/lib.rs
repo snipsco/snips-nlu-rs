@@ -18,6 +18,7 @@ pub fn stem(language: &str, word: &str) -> Result<String> {
         "en" => &STEMS_EN,
         "fr" => &STEMS_FR,
         "es" => &STEMS_ES,
+        "de" => &STEMS_DE,
         _ => bail!("stem not supported for {}", language),
     }
         .get(word) {
@@ -56,6 +57,40 @@ pub fn gazetteer_hits(language: &str, gazetteer_name: &str, word: &str) -> Resul
             "stop_words_stem" => &GAZETTEER_EN_STOP_WORDS_STEM,
             "street_identifier_stem" => &GAZETTEER_EN_STREET_IDENTIFIER_STEM,
             "top_10000_words_stem" => &GAZETTEER_EN_TOP_10000_WORDS_STEM,
+            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language)
+        },
+        "fr" => match gazetteer_name {
+            "cities_france" => &GAZETTEER_FR_CITIES_FRANCE,
+            "cities_world" => &GAZETTEER_FR_CITIES_WORLD,
+            "countries" => &GAZETTEER_FR_COUNTRIES,
+            "departements_france" => &GAZETTEER_FR_DEPARTEMENTS_FRANCE,
+            "regions_france" => &GAZETTEER_FR_REGIONS_FRANCE,
+            "stop_words" => &GAZETTEER_FR_STOP_WORDS,
+            "street_identifier" => &GAZETTEER_FR_STREET_IDENTIFIER,
+            "top_10000_words" => &GAZETTEER_FR_TOP_10000_WORDS,
+            "cities_france_stem" => &GAZETTEER_FR_CITIES_FRANCE_STEM,
+            "cities_world_stem" => &GAZETTEER_FR_CITIES_WORLD_STEM,
+            "countries_stem" => &GAZETTEER_FR_COUNTRIES_STEM,
+            "departements_france_stem" => &GAZETTEER_FR_DEPARTEMENTS_FRANCE_STEM,
+            "regions_france_stem" => &GAZETTEER_FR_REGIONS_FRANCE_STEM,
+            "stop_words_stem" => &GAZETTEER_FR_STOP_WORDS_STEM,
+            "street_identifier_stem" => &GAZETTEER_FR_STREET_IDENTIFIER_STEM,
+            "top_10000_words_stem" => &GAZETTEER_FR_TOP_10000_WORDS_STEM,
+            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language)
+        },
+        "de" => match gazetteer_name {
+            "cities_germany" => &GAZETTEER_DE_CITIES_GERMANY,
+            "cities_world" => &GAZETTEER_DE_CITIES_WORLD,
+            "countries" => &GAZETTEER_DE_COUNTRIES,
+            "lander_germany" => &GAZETTEER_DE_LANDER_GERMANY,
+            "stop_words" => &GAZETTEER_DE_STOP_WORDS,
+            "street_identifier" => &GAZETTEER_DE_STREET_IDENTIFIER,
+            "cities_germany_stem" => &GAZETTEER_DE_CITIES_GERMANY_STEM,
+            "cities_world_stem" => &GAZETTEER_DE_CITIES_WORLD_STEM,
+            "countries_stem" => &GAZETTEER_DE_COUNTRIES_STEM,
+            "lander_germany_stem" => &GAZETTEER_DE_LANDER_GERMANY_STEM,
+            "stop_words_stem" => &GAZETTEER_DE_STOP_WORDS_STEM,
+            "street_identifier_stem" => &GAZETTEER_DE_STREET_IDENTIFIER_STEM,
             _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language)
         },
         _ => bail!("no gazetteers supported for {} language", language)
