@@ -282,11 +282,11 @@ pub mod gazetteer {
         create_gazetteer!(stop_words);
         create_gazetteer!(street_identifier);
 
-        create_gazetteer!(cities_germany_stem, cities_germany, stem_en);
-        create_gazetteer!(cities_world_stem, cities_world, stem_en);
-        create_gazetteer!(countries_stem, countries, stem_en);
-        create_gazetteer!(lander_germany_stem, lander_germany, stem_en);
-        create_gazetteer!(stop_words_stem, stop_words, stem_en);
-        create_gazetteer!(street_identifier_stem, street_identifier, stem_en);
+        create_gazetteer!(cities_germany_stem, cities_germany, stem_de);
+        create_gazetteer!(cities_world_stem, cities_world, stem_de);
+        create_gazetteer!(countries_stem, countries, stem_de);
+        create_gazetteer!(lander_germany_stem, lander_germany, stem_de);
+        create_gazetteer!(stop_words_stem, stop_words, stem_de);
+        create_gazetteer!(street_identifier_stem, street_identifier, stem_de);
     }
 }
