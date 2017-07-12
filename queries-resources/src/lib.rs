@@ -26,6 +26,10 @@ pub mod stems {
 
     use errors::*;
 
+    pub fn no_stem(input: String) -> String {
+        input
+    }
+
     fn parse_lexemes<R: Read>(lexemes_file_reader: R) -> Result<HashMap<String, String>> {
         let mut csv_reader = csv::Reader::from_reader(lexemes_file_reader)
             .delimiter(b';')
@@ -156,15 +160,11 @@ pub mod gazetteer {
             STEMS_EN.get(&input).unwrap_or(&input).to_string()
         }
 
-        fn no_stem(input: String) -> String {
-            input
-        }
-
         macro_rules! create_gazetteer {
             ($gazetteer_name:ident) => {
                 pub fn $gazetteer_name() -> Result<HashSet<String>> {
                     super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/en/", stringify!($gazetteer_name), ".txt"))[..],
-                                           no_stem)
+                                           stems::no_stem)
                 }
             };
             ($function_name:ident, $gazetteer_name:ident, $stem:ident) => {
@@ -206,15 +206,11 @@ pub mod gazetteer {
             STEMS_FR.get(&input).unwrap_or(&input).to_string()
         }
 
-        fn no_stem(input: String) -> String {
-            input
-        }
-
         macro_rules! create_gazetteer {
             ($gazetteer_name:ident) => {
                 pub fn $gazetteer_name() -> Result<HashSet<String>> {
                     super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/fr/", stringify!($gazetteer_name), ".txt"))[..],
-                                           no_stem)
+                                           stems::no_stem)
                 }
             };
             ($function_name:ident, $gazetteer_name:ident, $stem:ident) => {
@@ -256,15 +252,11 @@ pub mod gazetteer {
             STEMS_DE.get(&input).unwrap_or(&input).to_string()
         }
 
-        fn no_stem(input: String) -> String {
-            input
-        }
-
         macro_rules! create_gazetteer {
             ($gazetteer_name:ident) => {
                 pub fn $gazetteer_name() -> Result<HashSet<String>> {
                     super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/de/", stringify!($gazetteer_name), ".txt"))[..],
-                                           no_stem)
+                                           stems::no_stem)
                 }
             };
             ($function_name:ident, $gazetteer_name:ident, $stem:ident) => {
