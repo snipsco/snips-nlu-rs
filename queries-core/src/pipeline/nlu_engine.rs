@@ -72,7 +72,7 @@ impl SnipsNLUEngine {
                     .filter_map(|slot| {
                         if let Some(entity) = self.entities.get(&slot.entity) {
                             entity.utterances
-                                .get(&slot.raw_value)
+                                .get(&slot.raw_value.to_lowercase())
                                 .map(|reference_value|
                                     Some(slot.clone().with_slot_value(SlotValue::Custom(reference_value.to_string()))))
                                 .unwrap_or(
@@ -142,11 +142,11 @@ fn extract_custom_slot(input: String,
     ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
 
     ngrams.into_iter()
-        .find(|&(ref ngram, _)| custom_entity.utterances.contains_key(ngram))
+        .find(|&(ref ngram, _)| custom_entity.utterances.contains_key(&ngram.to_lowercase()))
         .map(|(ngram, _)|
             Some(Slot {
                 raw_value: ngram.clone(),
-                value: SlotValue::Custom(custom_entity.utterances.get(&ngram).unwrap().to_string()),
+                value: SlotValue::Custom(custom_entity.utterances.get(&ngram.to_lowercase()).unwrap().to_string()),
                 range: None,
                 entity: entity_name.clone(),
                 slot_name: slot_name.clone()
@@ -270,7 +270,7 @@ impl SnipsNLUEngine {
         for (ngram, ngram_indexes) in ngrams {
             let mut ngram_entity: Option<PartialTaggedEntity> = None;
             for &(ref entity_name, ref entity_data) in entities.iter() {
-                if entity_data.utterances.contains_key(&ngram) {
+                if entity_data.utterances.contains_key(&ngram.to_lowercase()) {
                     if ngram_entity.is_some() {
                         // If the ngram matches several entities, i.e. there is some ambiguity, we
                         // don't add it to the tagged entities
