@@ -26,7 +26,7 @@ yolo = "*"
 zip = { version = "0.2", default-features = false }
 
 [dev-dependencies]
-bencher = "0.1"
+bencher = { git="https://github.com/snipsco/bencher", rev="63910ace" }
 
 [[bench]]
 name = "nlu_engine"
