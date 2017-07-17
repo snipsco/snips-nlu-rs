@@ -3,22 +3,21 @@
 
 
 from __future__ import print_function
-import sys
-import subprocess
-import os.path
-import os
+
 import glob
+import os
+import os.path
+import shutil
+import subprocess
+import sys
 from distutils.cmd import Command
 from distutils.command.install_lib import install_lib
-import shutil
 
 
 class RustBuildCommand(Command):
-    """ 
-    Command for building rust crates via cargo.
+    """Command for building rust crates via cargo.
 
-    Don't use this directly; use the build_rust_cmdclass
-    factory method.
+    Don't use this directly; use the build_rust_cmdclass factory method.
     """
 
     description = "build rust crates into Python extensions"
@@ -52,7 +51,8 @@ class RustBuildCommand(Command):
             raise Exception(msg)
         except OSError:
             raise Exception("Unable to execute 'cargo' - this package "
-                            "requires rust to be installed and cargo to be on the PATH")
+                            "requires rust to be installed and cargo to be on "
+                            "the PATH")
 
         if not self.quiet:
             print(output, file=sys.stderr)
@@ -79,36 +79,24 @@ class RustBuildCommand(Command):
         try:
             dylib_path = glob.glob(os.path.join(target_dir, wildcard_so))[0]
         except IndexError:
-            raise Exception("rust build failed; unable to find any .dylib in %s" %
-                            target_dir)
-
-        # Ask build_ext where the shared library would go if it had built it,
-        # then copy it there.
-        build_ext = self.get_finalized_command('build_ext')
-        target_fname = os.path.splitext(os.path.basename(dylib_path)[3:])[0]
-        ext_path = build_ext.get_ext_fullpath(os.path.basename(target_fname))
-        try:
-            os.makedirs(os.path.dirname(ext_path))
-        except OSError:
-            pass
-        shutil.copyfile(dylib_path, ext_path)
+            raise Exception(
+                "rust build failed; unable to find any .dylib in %s" %
+                target_dir)
+        package_name = self.distribution.metadata.name
+        root_path = os.path.dirname(os.path.abspath(__file__))
+        dylib_resource_path = os.path.join(root_path, package_name, "dylib",
+                                           os.path.basename(dylib_path))
+        shutil.copyfile(dylib_path, dylib_resource_path)
 
 
-def build_rust_cmdclass(debug=False,
-                        extra_cargo_args=None, quiet=False):
+def build_rust_cmdclass(debug=False, extra_cargo_args=None, quiet=False):
     """
-    Args:
-        cargo_toml_path (str)   The path to the cargo.toml manifest
-                                (--manifest)
-        debug (boolean)         Controls whether --debug or --release is 
-                                passed to cargo.
-        extra_carg_args (list)  A list of extra argumenents to be passed to 
-                                cargo.
-        quiet (boolean)         If True, doesn't echo cargo's output.
+    Build a Command subclass suitable for passing to the cmdclass argument of
+    distutils.
 
-    Returns:
-        A Command subclass suitable for passing to the cmdclass argument
-        of distutils.
+    :param debug: if True --debug is passed to cargo, otherwise --release
+    :param extra_cargo_args: list of extra arguments to be passed to cargo
+    :param quiet: If True, doesn't echo cargo's output
     """
 
     # Manufacture a once-off command class here and set the params on it as
@@ -119,13 +107,13 @@ def build_rust_cmdclass(debug=False,
 
     _args = locals()
 
-    class RustBuildCommand_Impl(RustBuildCommand):
+    class RustBuildCommandImpl(RustBuildCommand):
         args = _args
 
-    return RustBuildCommand_Impl
+    return RustBuildCommandImpl
 
 
-class install_lib_including_rust(install_lib):
+class RustInstallLib(install_lib):
     """
     A replacement install_lib cmdclass that remembers to build_rust
     during install_lib.
