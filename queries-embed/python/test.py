@@ -6,13 +6,9 @@ from __future__ import unicode_literals
 
 from snips_queries import IntentParser
 
-q = IntentParser("en", data_path="../../data/untracked")
-#q = IntentParser("en", data_zip=bytearray(open("../../data/untracked/builtins_final.zip", "rb").read()))
+parser = IntentParser("en", data_path="../../data/untracked")
 
-text = "Book me a table for four people at Le Chalet Savoyard at 9pm"
+text = "Make me two hot cups of tea please"
 
-r = q.get_intent(text, 0.4)
-print(r)
-
-r = q.get_entities(text, "BookRestaurant")
-print(r)
+result = parser.parse(text)
+print(result)
