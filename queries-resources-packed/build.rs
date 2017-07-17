@@ -74,6 +74,7 @@ fn main() {
         stem!(en);
         stem!(fr);
         stem!(es);
+        stem!(de);
 
         word_clusters!(en, brown_clusters);
 
@@ -94,6 +95,38 @@ fn main() {
         gazetteer!(en, stop_words_stem);
         gazetteer!(en, street_identifier_stem);
         gazetteer!(en, top_10000_words_stem);
+
+        gazetteer!(fr, cities_france);
+        gazetteer!(fr, cities_world);
+        gazetteer!(fr, countries);
+        gazetteer!(fr, departements_france);
+        gazetteer!(fr, regions_france);
+        gazetteer!(fr, stop_words);
+        gazetteer!(fr, street_identifier);
+        gazetteer!(fr, top_10000_words);
+
+        gazetteer!(fr, cities_france_stem);
+        gazetteer!(fr, cities_world_stem);
+        gazetteer!(fr, countries_stem);
+        gazetteer!(fr, departements_france_stem);
+        gazetteer!(fr, regions_france_stem);
+        gazetteer!(fr, stop_words_stem);
+        gazetteer!(fr, street_identifier_stem);
+        gazetteer!(fr, top_10000_words_stem);
+
+        gazetteer!(de, cities_germany);
+        gazetteer!(de, cities_world);
+        gazetteer!(de, countries);
+        gazetteer!(de, lander_germany);
+        gazetteer!(de, stop_words);
+        gazetteer!(de, street_identifier);
+
+        gazetteer!(de, cities_germany_stem);
+        gazetteer!(de, cities_world_stem);
+        gazetteer!(de, countries_stem);
+        gazetteer!(de, lander_germany_stem);
+        gazetteer!(de, stop_words_stem);
+        gazetteer!(de, street_identifier_stem);
     }
 
     // we generate some files based on dependencies of this build script and not files in this
