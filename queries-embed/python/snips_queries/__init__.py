@@ -1,1 +1,1 @@
-from intent_parser import IntentParser
+from intent_parser import NLUEngine

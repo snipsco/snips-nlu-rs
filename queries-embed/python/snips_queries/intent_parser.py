@@ -14,7 +14,7 @@ dylib_path = glob(
 lib = cdll.LoadLibrary(dylib_path)
 
 
-class IntentParser(object):
+class NLUEngine(object):
     def __init__(self, language, data_path=None, data_zip=None):
         self.language = language
         exit_code = 1
@@ -24,28 +24,28 @@ class IntentParser(object):
 
         if data_path is not None:
             self.data_path = data_path
-            self._parser = pointer(c_void_p())
+            self._engine = pointer(c_void_p())
             exit_code = lib.nlu_engine_create_from_dir(
-                data_path.encode("utf-8"), byref(self._parser))
+                data_path.encode("utf-8"), byref(self._engine))
 
         if data_zip is not None:
-            self._parser = pointer(c_void_p())
+            self._engine = pointer(c_void_p())
             bytearray_type = c_char * len(data_zip)
             exit_code = lib.nlu_engine_create_from_zip(
                 bytearray_type.from_buffer(data_zip), len(data_zip),
-                byref(self._parser))
+                byref(self._engine))
 
         if exit_code != 1:
             raise ImportError('Something wrong happened while creating the '
                               'intent parser. See stderr.')
 
     def __del__(self):
-        lib.nlu_engine_destroy_client(self._parser)
+        lib.nlu_engine_destroy_client(self._engine)
 
     def parse(self, query):
         pointer = c_char_p()
         lib.nlu_engine_run_parse_into_json(
-            self._parser,
+            self._engine,
             query.encode("utf-8"),
             byref(pointer))
         result = string_at(pointer)
