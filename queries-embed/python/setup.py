@@ -44,5 +44,5 @@ setup(
         'build_rust': build_rust_cmdclass(debug=True),
         'install_lib': RustInstallLib
     },
-    zip_safe=False
+    zip_safe=False,
 )
