@@ -1,10 +1,27 @@
 import io
 import os
 import subprocess
+from setuptools.dist import Distribution
 
 from setuptools import setup, find_packages
+from wheel.bdist_wheel import bdist_wheel
 
-from rust_build import build_rust_cmdclass, RustInstallLib
+from rust_build import build_rust_nlu_cmdclass, RustNLUInstallLib
+
+
+class RustNLUDistribution(Distribution):
+    def __init__(self, *attrs):
+        Distribution.__init__(self, *attrs)
+        self.cmdclass['install_lib'] = RustNLUInstallLib
+        self.cmdclass['bdist_wheel'] = RustNLUBdistWheel
+        self.cmdclass['build_rust'] = build_rust_nlu_cmdclass(debug=False)
+
+
+class RustNLUBdistWheel(bdist_wheel):
+    def finalize_options(self):
+        bdist_wheel.finalize_options(self)
+        self.root_is_pure = False
+
 
 packages = [p for p in find_packages() if "tests" not in p]
 
@@ -34,15 +51,8 @@ setup(
     author_email='thibaut.lorrain@snips.ai',
     install_requires=required,
     packages=packages,
-    package_data={
-        "": [
-            VERSION,
-            "dylib/*",
-        ]},
+    package_data={"": [VERSION, "dylib/*", ]},
     include_package_data=True,
-    cmdclass={
-        'build_rust': build_rust_cmdclass(debug=True),
-        'install_lib': RustInstallLib
-    },
+    distclass=RustNLUDistribution,
     zip_safe=False,
 )
