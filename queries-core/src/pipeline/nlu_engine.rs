@@ -309,7 +309,7 @@ mod tests {
     #[test]
     fn parse_works() {
         // Given
-        let configuration: NLUEngineConfiguration = parse_json("tests/configurations/beverage_engine.json");
+        let configuration: NLUEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
         let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
 
         // When
