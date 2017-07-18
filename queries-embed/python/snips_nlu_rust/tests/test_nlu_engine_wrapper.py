@@ -3,8 +3,8 @@ from __future__ import unicode_literals
 
 import unittest
 
-from snips_queries import NLUEngine
-from snips_queries.tests.utils import SAMPLE_ASSISTANT_DIR
+from snips_nlu_rust import NLUEngine
+from snips_nlu_rust.tests.utils import SAMPLE_ASSISTANT_DIR
 
 
 class TestNLUEngineWrapper(unittest.TestCase):
