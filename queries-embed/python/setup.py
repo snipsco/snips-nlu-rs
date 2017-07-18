@@ -6,18 +6,18 @@ from setuptools.dist import Distribution
 from setuptools import setup, find_packages
 from wheel.bdist_wheel import bdist_wheel
 
-from rust_build import build_rust_nlu_cmdclass, RustNLUInstallLib
+from rust_build import build_rust_cmdclass, RustInstallLib
 
 
 class RustNLUDistribution(Distribution):
     def __init__(self, *attrs):
         Distribution.__init__(self, *attrs)
-        self.cmdclass['install_lib'] = RustNLUInstallLib
-        self.cmdclass['bdist_wheel'] = RustNLUBdistWheel
-        self.cmdclass['build_rust'] = build_rust_nlu_cmdclass(debug=False)
+        self.cmdclass['install_lib'] = RustInstallLib
+        self.cmdclass['bdist_wheel'] = RustBdistWheel
+        self.cmdclass['build_rust'] = build_rust_cmdclass(debug=False)
 
 
-class RustNLUBdistWheel(bdist_wheel):
+class RustBdistWheel(bdist_wheel):
     def finalize_options(self):
         bdist_wheel.finalize_options(self)
         self.root_is_pure = False

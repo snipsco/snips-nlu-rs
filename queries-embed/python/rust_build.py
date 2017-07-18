@@ -17,7 +17,7 @@ CARGO_ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
 GLOBAL_ROOT_PATH = os.path.dirname(CARGO_ROOT_PATH)
 
 
-class RustNLUBuildCommand(Command):
+class RustBuildCommand(Command):
     """Command for building rust crates via cargo.
 
     Don't use this directly; use the build_rust_cmdclass factory method.
@@ -93,7 +93,7 @@ class RustNLUBuildCommand(Command):
         shutil.copyfile(dylib_path, dylib_resource_path)
 
 
-def build_rust_nlu_cmdclass(debug=False, extra_cargo_args=None, quiet=False):
+def build_rust_cmdclass(debug=False, extra_cargo_args=None, quiet=False):
     """
     Build a Command subclass suitable for passing to the cmdclass argument of
     distutils.
@@ -111,13 +111,13 @@ def build_rust_nlu_cmdclass(debug=False, extra_cargo_args=None, quiet=False):
 
     _args = locals()
 
-    class RustNLUBuildCommandImpl(RustNLUBuildCommand):
+    class RustBuildCommandImpl(RustBuildCommand):
         args = _args
 
-    return RustNLUBuildCommandImpl
+    return RustBuildCommandImpl
 
 
-class RustNLUInstallLib(install_lib):
+class RustInstallLib(install_lib):
     """
     A replacement install_lib cmdclass that remembers to build_rust
     during install_lib.
