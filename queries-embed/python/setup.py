@@ -25,7 +25,7 @@ class RustNLUBdistWheel(bdist_wheel):
 
 packages = [p for p in find_packages() if "tests" not in p]
 
-PACKAGE_NAME = "snips_queries"
+PACKAGE_NAME = "snips_nlu_rust"
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH = os.path.join(ROOT_PATH, PACKAGE_NAME)
 VERSION = "__version__"
@@ -46,7 +46,7 @@ required = [
 setup(
     name=PACKAGE_NAME,
     version=version,
-    description='Snips Queries intent parser',
+    description='Python wrapper for the Snips NLU engine',
     author='Thibaut Lorrain',
     author_email='thibaut.lorrain@snips.ai',
     install_requires=required,
