@@ -13,6 +13,9 @@ import sys
 from distutils.cmd import Command
 from distutils.command.install_lib import install_lib
 
+CARGO_ROOT_PATH = os.path.dirname(os.path.dirname(__file__))
+GLOBAL_ROOT_PATH = os.path.dirname(CARGO_ROOT_PATH)
+
 
 class RustNLUBuildCommand(Command):
     """Command for building rust crates via cargo.
@@ -45,7 +48,7 @@ class RustNLUBuildCommand(Command):
                 args.append("--target=%s" % target_tuple)
             if not self.quiet:
                 print(" ".join(args), file=sys.stderr)
-            output = subprocess.check_output(args, cwd="..")
+            output = subprocess.check_output(args, cwd=CARGO_ROOT_PATH)
         except subprocess.CalledProcessError as e:
             msg = "cargo failed with code: %d\n%s" % (e.returncode, e.output)
             raise Exception(msg)
@@ -65,9 +68,10 @@ class RustNLUBuildCommand(Command):
             suffix = "release"
 
         if target_tuple:
-            target_dir = os.path.join("../../target", target_tuple, suffix)
+            target_dir = os.path.join(GLOBAL_ROOT_PATH, "target", target_tuple,
+                                      suffix)
         else:
-            target_dir = os.path.join("../../target", suffix)
+            target_dir = os.path.join(GLOBAL_ROOT_PATH, "target", suffix)
 
         if sys.platform == "win32":
             wildcard_so = "*.dll"
