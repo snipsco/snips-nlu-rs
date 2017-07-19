@@ -8,12 +8,12 @@ use zip;
 
 use errors::*;
 
-use pipeline::configuration::{NLUEngineConfiguration, NLUEngineConfigurationConvertible};
+use pipeline::configuration::{NluEngineConfiguration, NluEngineConfigurationConvertible};
 
 const NLU_CONFIGURATION_FILENAME: &str = "trained_assistant.json";
 
 pub struct FileBasedConfiguration {
-    nlu_configuration: NLUEngineConfiguration,
+    nlu_configuration: NluEngineConfiguration,
 }
 
 impl FileBasedConfiguration {
@@ -24,18 +24,18 @@ impl FileBasedConfiguration {
     }
 }
 
-impl NLUEngineConfigurationConvertible for FileBasedConfiguration {
-    fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration {
+impl NluEngineConfigurationConvertible for FileBasedConfiguration {
+    fn nlu_engine_configuration(&self) -> &NluEngineConfiguration {
         &self.nlu_configuration
     }
 
-    fn into_nlu_engine_configuration(self) -> NLUEngineConfiguration {
+    fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
         self.nlu_configuration
     }
 }
 
 pub struct ZipBasedConfiguration {
-    nlu_configuration: NLUEngineConfiguration,
+    nlu_configuration: NluEngineConfiguration,
 }
 
 impl ZipBasedConfiguration {
@@ -65,12 +65,12 @@ impl ZipBasedConfiguration {
     }
 }
 
-impl NLUEngineConfigurationConvertible for ZipBasedConfiguration {
-    fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration {
+impl NluEngineConfigurationConvertible for ZipBasedConfiguration {
+    fn nlu_engine_configuration(&self) -> &NluEngineConfiguration {
         &self.nlu_configuration
     }
 
-    fn into_nlu_engine_configuration(self) -> NLUEngineConfiguration {
+    fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
         self.nlu_configuration
     }
 }
@@ -84,7 +84,7 @@ pub mod deprecated {
 mod tests {
     use std::fs;
 
-    use super::NLUEngineConfigurationConvertible;
+    use super::NluEngineConfigurationConvertible;
     use super::ZipBasedConfiguration;
 
     use utils::miscellaneous::file_path;
