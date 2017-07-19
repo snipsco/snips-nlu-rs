@@ -27,9 +27,9 @@ extern crate maplit;
 pub use builtin_entities::ontology::*;
 pub use core_ontology::*;
 pub use errors::*;
-pub use pipeline::nlu_engine::{SnipsNLUEngine, TaggedEntity};
-pub use pipeline::configuration::{NLUEngineConfigurationConvertible,
-                                  NLUEngineConfiguration};
+pub use pipeline::nlu_engine::{SnipsNluEngine, TaggedEntity};
+pub use pipeline::configuration::{NluEngineConfigurationConvertible,
+                                  NluEngineConfiguration};
 pub use pipeline::assistant_config::{FileBasedConfiguration,
                                      ZipBasedConfiguration};
 pub use utils::miscellaneous::file_path;
