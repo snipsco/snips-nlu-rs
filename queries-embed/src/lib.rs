@@ -42,7 +42,7 @@ mod errors {
 use errors::*;
 
 #[repr(C)]
-pub struct Opaque(std::sync::Mutex<queries_core::SnipsNLUEngine>);
+pub struct Opaque(std::sync::Mutex<queries_core::SnipsNluEngine>);
 
 #[repr(C)]
 #[derive(Debug)]
@@ -184,7 +184,7 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> R
     let root_dir = get_str!(root_dir);
 
     let assistant_config = queries_core::FileBasedConfiguration::new(root_dir)?;
-    let intent_parser = queries_core::SnipsNLUEngine::new(assistant_config)?;
+    let intent_parser = queries_core::SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -199,7 +199,7 @@ fn create_from_zip(zip: *const libc::c_uchar,
     let reader = Cursor::new(slice.to_owned());
 
     let assistant_config = queries_core::ZipBasedConfiguration::new(reader)?;
-    let intent_parser = queries_core::SnipsNLUEngine::new(assistant_config)?;
+    let intent_parser = queries_core::SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -255,7 +255,7 @@ fn get_last_error(error: *mut *mut libc::c_char) -> Result<()> {
 }
 
 fn get_model_version(version: *mut *mut libc::c_char) -> Result<()> {
-    point_to_string(version, queries_core::SnipsNLUEngine::model_version().to_string())
+    point_to_string(version, queries_core::SnipsNluEngine::model_version().to_string())
 }
 
 

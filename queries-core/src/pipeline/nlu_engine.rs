@@ -12,14 +12,14 @@ use pipeline::IntentParser;
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities, disambiguate_tagged_entities};
-use pipeline::configuration::{Entity, NLUEngineConfigurationConvertible};
+use pipeline::configuration::{Entity, NluEngineConfigurationConvertible};
 use rustling_ontology::Lang;
 use utils::token::{tokenize, compute_all_ngrams};
 use utils::string::substring_with_char_range;
 
 const MODEL_VERSION: &str = "0.8.5";
 
-pub struct SnipsNLUEngine {
+pub struct SnipsNluEngine {
     language: String,
     parsers: Vec<Box<IntentParser>>,
     entities: HashMap<String, Entity>,
@@ -28,8 +28,8 @@ pub struct SnipsNLUEngine {
     builtin_entity_parser: Option<Arc<RustlingParser>>
 }
 
-impl SnipsNLUEngine {
-    pub fn new<T: NLUEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
+impl SnipsNluEngine {
+    pub fn new<T: NluEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
         let nlu_config = configuration.into_nlu_engine_configuration();
 
         let mut parsers: Vec<Box<IntentParser>> = Vec::with_capacity(2);
@@ -45,7 +45,7 @@ impl SnipsNLUEngine {
         let slot_name_mapping = nlu_config.slot_name_mapping;
         let builtin_entity_parser = Lang::from_str(&nlu_config.language).ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
-        Ok(SnipsNLUEngine {
+        Ok(SnipsNluEngine {
             language: nlu_config.language,
             parsers,
             entities: nlu_config.entities,
@@ -105,7 +105,7 @@ impl SnipsNLUEngine {
     }
 }
 
-impl SnipsNLUEngine {
+impl SnipsNluEngine {
     pub fn extract_slot(&self, input: String, intent_name: &str, slot_name: String) -> Result<Option<Slot>> {
         let entity_name = self.slot_name_mapping
             .get(intent_name)
@@ -215,7 +215,7 @@ impl PartialTaggedEntity {
     }
 }
 
-impl SnipsNLUEngine {
+impl SnipsNluEngine {
     pub fn tag(&self,
                text: &str,
                intent: &str,
@@ -299,18 +299,22 @@ impl SnipsNLUEngine {
     }
 }
 
+pub mod deprecated {
+    #[deprecated(since="0.20.2", note="please use `SnipsNluEngine` instead")]
+    pub type SnipsNLUEngine = super::SnipsNluEngine;
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pipeline::configuration::NLUEngineConfiguration;
+    use pipeline::configuration::NluEngineConfiguration;
     use utils::miscellaneous::parse_json;
 
     #[test]
     fn parse_works() {
         // Given
-        let configuration: NLUEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
-        let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
+        let configuration: NluEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
+        let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
 
         // When
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
