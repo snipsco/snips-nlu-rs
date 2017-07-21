@@ -1,12 +1,9 @@
 extern crate libc;
 extern crate queries_core;
-
 #[macro_use]
 extern crate lazy_static;
-
 #[macro_use]
 extern crate error_chain;
-
 extern crate serde_json;
 
 use std::ffi::{CStr, CString};
@@ -167,7 +164,6 @@ pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) ->
 
 #[no_mangle]
 pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut CTaggedEntityList) -> QUERIESRESULT {
-    println!("{:?}", result);
     unsafe {
         let _: Box<CTaggedEntityList> = Box::from_raw(result);
     }
@@ -217,6 +213,7 @@ fn run_parse(client: *mut Opaque,
     let b = Box::new(CIntentParserResult::from(results)?);
 
     unsafe { *result = Box::into_raw(b) as *const CIntentParserResult }
+
     Ok(())
 }
 
@@ -246,6 +243,7 @@ fn run_tag(client: *mut Opaque,
     let b = Box::new(CTaggedEntityList::from(results)?);
 
     unsafe { *result = Box::into_raw(b) as *const CTaggedEntityList }
+
     Ok(())
 }
 
