@@ -43,7 +43,7 @@ impl NluEngineConfigurationConvertible for NluEngineConfiguration {
 mod tests {
     use super::NluEngineConfiguration;
 
-    use utils::miscellaneous::parse_json;
+    use testutils::parse_json;
 
     #[test]
     fn deserialization_works() {
