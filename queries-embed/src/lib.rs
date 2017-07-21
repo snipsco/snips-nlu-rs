@@ -80,16 +80,6 @@ macro_rules! get_str {
     }};
 }
 
-macro_rules! get_str_vec {
-    ($size:ident, $pointer:ident) => {{
-        let mut strings: Vec<&str> = Vec::new();
-        for &s in unsafe { slice::from_raw_parts($pointer, $size as usize) } {
-            strings.push(get_str!(s))
-        }
-        strings
-    }}
-}
-
 #[no_mangle]
 pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const libc::c_char,
                                              client: *mut *mut Opaque)
