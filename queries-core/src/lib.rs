@@ -9,7 +9,7 @@ extern crate lazy_static;
 #[macro_use]
 extern crate ndarray;
 extern crate queries_resources_packed as resources_packed;
-extern crate queries_utils as utils;
+extern crate nlu_utils;
 extern crate nlu_rust_ontology as core_ontology;
 extern crate regex;
 extern crate rustling_ontology;
@@ -32,7 +32,6 @@ pub use pipeline::configuration::{NluEngineConfigurationConvertible,
                                   NluEngineConfiguration};
 pub use pipeline::assistant_config::{FileBasedConfiguration,
                                      ZipBasedConfiguration};
-pub use utils::miscellaneous::file_path;
 
 pub use pipeline::nlu_engine::deprecated::*;
 pub use pipeline::assistant_config::deprecated::*;
@@ -44,3 +43,4 @@ pub mod errors;
 mod builtin_entities;
 mod models;
 mod pipeline;
+mod utils;

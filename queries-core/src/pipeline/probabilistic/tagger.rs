@@ -6,7 +6,7 @@ use itertools::Itertools;
 use errors::*;
 use pipeline::FeatureProcessor;
 use pipeline::probabilistic::feature_processor::ProbabilisticFeatureProcessor;
-use utils::token::Token;
+use nlu_utils::token::Token;
 use base64::decode;
 use super::crf_utils::{get_substitution_label, TaggingScheme};
 use super::configuration::TaggerConfiguration;

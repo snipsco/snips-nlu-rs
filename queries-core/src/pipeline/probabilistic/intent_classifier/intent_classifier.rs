@@ -5,8 +5,8 @@ use models::logreg::MulticlassLogisticRegression;
 use core_ontology::IntentClassifierResult;
 use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
-use utils::miscellaneous::argmax;
-use utils::token::tokenize_light;
+use utils::argmax;
+use nlu_utils::token::tokenize_light;
 use models::stemmer::{Stemmer, StaticMapStemmer};
 
 pub trait IntentClassifier: Send + Sync {
