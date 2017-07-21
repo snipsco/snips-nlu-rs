@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use pipeline::FeatureProcessor;
 use pipeline::probabilistic::configuration::Feature;
-use utils::token::Token;
+use nlu_utils::token::Token;
 use serde_json;
 
 use errors::*;
@@ -295,7 +295,7 @@ mod tests {
 
     use pipeline::FeatureProcessor;
 
-    use utils::token::tokenize;
+    use nlu_utils::token::tokenize;
 
     #[test]
     fn compute_features_works() {

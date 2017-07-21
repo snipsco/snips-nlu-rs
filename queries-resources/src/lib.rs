@@ -4,7 +4,7 @@ extern crate error_chain;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
-extern crate queries_utils;
+extern crate nlu_utils;
 
 mod errors {
     error_chain! {
@@ -130,7 +130,7 @@ pub mod gazetteer {
     use itertools::Itertools;
 
     use errors::*;
-    use queries_utils::token::tokenize;
+    use nlu_utils::token::tokenize;
 
 
     fn parse_gazetteer<R: Read, F>(gazetteer_reader: R, stem_fn: F) -> Result<HashSet<String>>

@@ -4,7 +4,7 @@ use itertools::Itertools;
 use ndarray::prelude::*;
 
 use errors::*;
-use utils::token::tokenize_light;
+use nlu_utils::token::tokenize_light;
 use pipeline::probabilistic::configuration::FeaturizerConfiguration;
 use std::iter::FromIterator;
 
