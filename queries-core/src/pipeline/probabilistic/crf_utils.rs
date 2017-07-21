@@ -6,8 +6,8 @@ use itertools::Itertools;
 
 use errors::*;
 use pipeline::InternalSlot;
-use utils::token::Token;
-use utils::string::{convert_to_char_range, suffix_from_char_index};
+use nlu_utils::token::Token;
+use nlu_utils::string::{convert_to_char_range, suffix_from_char_index};
 
 const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
@@ -258,7 +258,7 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
 mod tests {
     use itertools::Itertools;
 
-    use utils::token::tokenize;
+    use nlu_utils::token::tokenize;
     use super::*;
 
     struct Test {

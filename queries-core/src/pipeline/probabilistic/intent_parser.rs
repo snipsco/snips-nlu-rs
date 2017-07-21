@@ -15,8 +15,8 @@ use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
 use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use pipeline::probabilistic::tagger::{CRFTagger, Tagger};
 use pipeline::probabilistic::crf_utils::{tags_to_slots, positive_tagging, replace_builtin_tags};
-use utils::miscellaneous::ranges_overlap;
-use utils::token::{Token, tokenize};
+use utils::ranges_overlap;
+use nlu_utils::token::{Token, tokenize};
 use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
 
 

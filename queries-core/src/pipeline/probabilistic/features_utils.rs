@@ -1,7 +1,7 @@
 use std::str;
 use std::iter::FromIterator;
 use regex::{Regex, RegexBuilder};
-use utils::token::Token;
+use nlu_utils::token::Token;
 
 pub fn get_word_chunk(word: String, chunk_size: usize, chunk_start: usize, reverse: bool) -> Option<String> {
     if reverse && chunk_size > chunk_start {

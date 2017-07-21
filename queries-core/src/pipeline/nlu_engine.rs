@@ -14,8 +14,8 @@ use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities, disambiguate_tagged_entities};
 use pipeline::configuration::{Entity, NluEngineConfigurationConvertible};
 use rustling_ontology::Lang;
-use utils::token::{tokenize, compute_all_ngrams};
-use utils::string::substring_with_char_range;
+use nlu_utils::token::{tokenize, compute_all_ngrams};
+use nlu_utils::string::substring_with_char_range;
 
 const MODEL_VERSION: &str = "0.8.5";
 
@@ -308,7 +308,7 @@ pub mod deprecated {
 mod tests {
     use super::*;
     use pipeline::configuration::NluEngineConfiguration;
-    use utils::miscellaneous::parse_json;
+    use testutils::parse_json;
 
     #[test]
     fn parse_works() {

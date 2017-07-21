@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use utils::token::{Token, compute_all_ngrams};
+use nlu_utils::token::{Token, compute_all_ngrams};
 use models::gazetteer::Gazetteer;
 #[cfg(test)]
 use models::gazetteer::HashSetGazetteer;
@@ -10,7 +10,7 @@ use models::word_clusterer::WordClusterer;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape, initial_string_from_tokens};
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
-use utils::miscellaneous::ranges_overlap;
+use utils::ranges_overlap;
 
 pub fn is_digit(string: &str) -> Option<String> {
     if string.chars().all(|c| c.is_digit(10)) {
@@ -153,7 +153,7 @@ fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<St
 mod tests {
     use super::*;
 
-    use utils::token::tokenize;
+    use nlu_utils::token::tokenize;
     use rustling_ontology::Lang;
 
     #[test]
