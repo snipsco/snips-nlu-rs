@@ -1,12 +1,9 @@
 extern crate libc;
 extern crate queries_core;
-
 #[macro_use]
 extern crate lazy_static;
-
 #[macro_use]
 extern crate error_chain;
-
 extern crate serde_json;
 
 use std::ffi::{CStr, CString};
@@ -83,19 +80,9 @@ macro_rules! get_str {
     }};
 }
 
-macro_rules! get_str_vec {
-    ($size:ident, $pointer:ident) => {{
-        let mut strings: Vec<&str> = Vec::new();
-        for &s in unsafe { slice::from_raw_parts($pointer, $size as usize) } {
-            strings.push(get_str!(s))
-        }
-        strings
-    }}
-}
-
 #[no_mangle]
 pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const libc::c_char,
-                                             client: *mut *mut Opaque)
+                                             client: *mut *const Opaque)
                                              -> QUERIESRESULT {
     wrap!(create_from_dir(root_dir, client));
 }
@@ -103,13 +90,13 @@ pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const libc::c_char,
 #[no_mangle]
 pub extern "C" fn nlu_engine_create_from_zip(zip: *const libc::c_uchar,
                                              zip_size: libc::c_uint,
-                                             client: *mut *mut Opaque)
+                                             client: *mut *const Opaque)
                                              -> QUERIESRESULT {
     wrap!(create_from_zip(zip, zip_size, client));
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_run_parse(client: *mut Opaque,
+pub extern "C" fn nlu_engine_run_parse(client: *const Opaque,
                                        input: *const libc::c_char,
                                        result: *mut *const CIntentParserResult)
                                        -> QUERIESRESULT {
@@ -117,15 +104,15 @@ pub extern "C" fn nlu_engine_run_parse(client: *mut Opaque,
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_run_parse_into_json(client: *mut Opaque,
+pub extern "C" fn nlu_engine_run_parse_into_json(client: *const Opaque,
                                                  input: *const libc::c_char,
-                                                 result_json: *mut *mut libc::c_char)
+                                                 result_json: *mut *const libc::c_char)
                                                  -> QUERIESRESULT {
     wrap!(run_parse_into_json(client, input, result_json))
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_run_tag(client: *mut Opaque,
+pub extern "C" fn nlu_engine_run_tag(client: *const Opaque,
                                      input: *const libc::c_char,
                                      intent: *const libc::c_char,
                                      result: *mut *const CTaggedEntityList)
@@ -134,7 +121,7 @@ pub extern "C" fn nlu_engine_run_tag(client: *mut Opaque,
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_get_last_error(error: *mut *mut libc::c_char) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_get_last_error(error: *mut *const libc::c_char) -> QUERIESRESULT {
     wrap!(get_last_error(error))
 }
 
@@ -167,7 +154,6 @@ pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) ->
 
 #[no_mangle]
 pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut CTaggedEntityList) -> QUERIESRESULT {
-    println!("{:?}", result);
     unsafe {
         let _: Box<CTaggedEntityList> = Box::from_raw(result);
     }
@@ -176,11 +162,11 @@ pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut CTaggedEnti
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_get_model_version(version: *mut *mut libc::c_char) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_get_model_version(version: *mut *const libc::c_char) -> QUERIESRESULT {
     wrap!(get_model_version(version))
 }
 
-fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> Result<()> {
+fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
     let assistant_config = queries_core::FileBasedConfiguration::new(root_dir)?;
@@ -193,7 +179,7 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *mut Opaque) -> R
 
 fn create_from_zip(zip: *const libc::c_uchar,
                    zip_size: libc::c_uint,
-                   client: *mut *mut Opaque)
+                   client: *mut *const Opaque)
                    -> Result<()> {
     let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
     let reader = Cursor::new(slice.to_owned());
@@ -206,7 +192,7 @@ fn create_from_zip(zip: *const libc::c_uchar,
     Ok(())
 }
 
-fn run_parse(client: *mut Opaque,
+fn run_parse(client: *const Opaque,
              input: *const libc::c_char,
              result: *mut *const CIntentParserResult)
              -> Result<()> {
@@ -217,13 +203,13 @@ fn run_parse(client: *mut Opaque,
     let b = Box::new(CIntentParserResult::from(results)?);
 
     unsafe { *result = Box::into_raw(b) as *const CIntentParserResult }
+
     Ok(())
 }
 
-
-fn run_parse_into_json(client: *mut Opaque,
+fn run_parse_into_json(client: *const Opaque,
                        input: *const libc::c_char,
-                       result_json: *mut *mut libc::c_char)
+                       result_json: *mut *const libc::c_char)
                        -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
@@ -233,7 +219,7 @@ fn run_parse_into_json(client: *mut Opaque,
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
 
-fn run_tag(client: *mut Opaque,
+fn run_tag(client: *const Opaque,
            input: *const libc::c_char,
            intent: *const libc::c_char,
            result: *mut *const CTaggedEntityList)
@@ -246,20 +232,19 @@ fn run_tag(client: *mut Opaque,
     let b = Box::new(CTaggedEntityList::from(results)?);
 
     unsafe { *result = Box::into_raw(b) as *const CTaggedEntityList }
+
     Ok(())
 }
 
-
-fn get_last_error(error: *mut *mut libc::c_char) -> Result<()> {
+fn get_last_error(error: *mut *const libc::c_char) -> Result<()> {
     point_to_string(error, LAST_ERROR.lock()?.clone())
 }
 
-fn get_model_version(version: *mut *mut libc::c_char) -> Result<()> {
+fn get_model_version(version: *mut *const libc::c_char) -> Result<()> {
     point_to_string(version, queries_core::SnipsNluEngine::model_version().to_string())
 }
 
-
-fn point_to_string(pointer: *mut *mut libc::c_char, string: String) -> Result<()> {
+fn point_to_string(pointer: *mut *const libc::c_char, string: String) -> Result<()> {
     let cs = CString::new(string.as_bytes())?;
     unsafe { *pointer = cs.into_raw() }
     Ok(())
