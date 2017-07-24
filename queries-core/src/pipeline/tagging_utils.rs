@@ -6,7 +6,7 @@ use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use itertools::Itertools;
 use pipeline::nlu_engine::PartialTaggedEntity;
 use rustling_ontology::Lang;
-use utils::ranges_overlap;
+use nlu_utils::range::ranges_overlap;
 
 const TAGGING_SCOPE: [BuiltinEntityKind; 2] = [BuiltinEntityKind::Duration, BuiltinEntityKind::Time];
 

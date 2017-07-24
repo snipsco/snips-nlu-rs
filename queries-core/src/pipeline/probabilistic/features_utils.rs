@@ -116,21 +116,21 @@ mod tests {
     fn initial_string_from_tokens_works() {
         // Given
         let tokens = vec![
-            Token {
-                value: "hello".to_string(),
-                range: 0..5,
-                char_range: 0..5,
-            },
-            Token {
-                value: "world".to_string(),
-                range: 9..14,
-                char_range: 9..14,
-            },
-            Token {
-                value: "!!!".to_string(),
-                range: 17..20,
-                char_range: 17..20,
-            }
+            Token::new(
+                "hello".to_string(),
+                0..5,
+                0..5,
+            ),
+            Token::new(
+                "world".to_string(),
+                9..14,
+                9..14,
+            ),
+            Token::new(
+                "!!!".to_string(),
+                17..20,
+                17..20,
+            )
         ];
 
         // When
