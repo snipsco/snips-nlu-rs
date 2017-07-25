@@ -76,7 +76,7 @@ impl NluEngineConfigurationConvertible for ZipBasedConfiguration {
 }
 
 pub mod deprecated {
-    #[deprecated(since="0.21.0", note="please use `ZipBasedConfiguration` instead")]
+    #[deprecated(since="0.20.1", note="please use `ZipBasedConfiguration` instead")]
     pub type BinaryBasedConfiguration = super::ZipBasedConfiguration;
 }
 
