@@ -300,7 +300,7 @@ impl SnipsNluEngine {
 }
 
 pub mod deprecated {
-    #[deprecated(since="0.20.2", note="please use `SnipsNluEngine` instead")]
+    #[deprecated(since="0.21.0", note="please use `SnipsNluEngine` instead")]
     pub type SnipsNLUEngine = super::SnipsNluEngine;
 }
 
