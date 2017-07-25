@@ -114,7 +114,7 @@ impl SnipsNluEngine {
             .ok_or(format!("Unknown slot: {}", &slot_name))?;
 
         let slot = if let Some(custom_entity) = self.entities.get(entity_name) {
-            extract_custom_slot(input.to_string(),
+            extract_custom_slot(input,
                                 entity_name.to_string(),
                                 slot_name.to_string(),
                                 custom_entity.clone())
@@ -300,7 +300,7 @@ impl SnipsNluEngine {
 }
 
 pub mod deprecated {
-    #[deprecated(since="0.20.2", note="please use `SnipsNluEngine` instead")]
+    #[deprecated(since="0.21.0", note="please use `SnipsNluEngine` instead")]
     pub type SnipsNLUEngine = super::SnipsNluEngine;
 }
 
