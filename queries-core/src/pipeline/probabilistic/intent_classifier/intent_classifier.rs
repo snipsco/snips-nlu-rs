@@ -65,7 +65,7 @@ impl IntentClassifier for LogRegIntentClassifier {
             let normalized_input = normalize(input);
             let stemmed_text = StaticMapStemmer::new(self.language_code.clone()).ok()
                 .map(|stemmer| stem_sentence(&normalized_input, &stemmer))
-                .unwrap_or(normalized_input.to_string());
+                .unwrap_or(normalized_input);
 
             let features = featurizer.transform(&stemmed_text)?;
             let probabilities = logreg.run(&features.view())?;
