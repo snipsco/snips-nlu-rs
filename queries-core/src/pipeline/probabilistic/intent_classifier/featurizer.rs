@@ -28,8 +28,7 @@ impl Featurizer {
     }
 
     pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
-        let ref normalized_input = input.to_lowercase();
-        let words = tokenize_light(normalized_input).into_iter()
+        let words = tokenize_light(input).into_iter()
             .filter(|t| !self.stop_words.contains(t))
             .collect_vec();
 

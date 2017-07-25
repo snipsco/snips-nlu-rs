@@ -15,7 +15,7 @@ use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
 use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use pipeline::probabilistic::tagger::{CRFTagger, Tagger};
 use pipeline::probabilistic::crf_utils::{tags_to_slots, positive_tagging, replace_builtin_tags};
-use utils::ranges_overlap;
+use nlu_utils::range::ranges_overlap;
 use nlu_utils::token::{Token, tokenize};
 use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
 
@@ -389,21 +389,21 @@ mod tests {
             9..15
         ];
         let tokens = vec![
-            Token {
-                value: "abc".to_string(),
-                char_range: 0..3,
-                range: 0..3,
-            },
-            Token {
-                value: "def".to_string(),
-                char_range: 4..7,
-                range: 4..7,
-            },
-            Token {
-                value: "ghi".to_string(),
-                char_range: 10..13,
-                range: 10..13,
-            }
+            Token::new(
+                "abc".to_string(),
+                0..3,
+                0..3,
+            ),
+            Token::new(
+                "def".to_string(),
+                4..7,
+                4..7,
+            ),
+            Token::new(
+                "ghi".to_string(),
+                10..13,
+                10..13,
+            )
         ];
 
         // When
