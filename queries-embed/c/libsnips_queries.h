@@ -95,14 +95,14 @@ typedef struct CIntentClassifierResult {
 } CIntentClassifierResult;
 
 typedef struct CSlotList {
-    CSlot* slots;
+    CSlot *const slots;
     int size;
 } CSlotList;
 
 typedef struct CIntentParserResult{
     char *const input;
-    CIntentClassifierResult *intent;
-    CSlotList* slots;
+    CIntentClassifierResult *const intent;
+    CSlotList *const slots;
 } CIntentParserResult;
 
 typedef struct CTaggedEntity {
@@ -114,7 +114,7 @@ typedef struct CTaggedEntity {
 } CTaggedEntity;
 
 typedef struct CTaggedEntityList {
-    CTaggedEntity* entities;
+    CTaggedEntity *const entities;
     int size;
 } CTaggedEntityList;
 
@@ -129,11 +129,11 @@ QUERIESRESULT nlu_engine_create_from_dir(char const* root_dir, Opaque** client);
 
 QUERIESRESULT nlu_engine_create_from_zip(unsigned char const* zip, unsigned int zip_size, Opaque** client);
 
-QUERIESRESULT nlu_engine_run_parse(Opaque* client, char const* input, CIntentParserResult** result);
+QUERIESRESULT nlu_engine_run_parse(Opaque const* client, char const* input, CIntentParserResult** result);
 
-QUERIESRESULT nlu_engine_run_parse_into_json(Opaque* client, char const* input, char** result_json);
+QUERIESRESULT nlu_engine_run_parse_into_json(Opaque const* client, char const* input, char** result_json);
 
-QUERIESRESULT nlu_engine_run_tag(Opaque* client, char const* input, char const* intent, CTaggedEntityList** result);
+QUERIESRESULT nlu_engine_run_tag(Opaque const* client, char const* input, char const* intent, CTaggedEntityList** result);
 
 QUERIESRESULT nlu_engine_destroy_string(char* string);
 

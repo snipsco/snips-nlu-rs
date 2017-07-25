@@ -11,9 +11,9 @@ use super::configuration::RuleBasedParserConfiguration;
 use core_ontology::{IntentClassifierResult, Slot};
 use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
-use utils::token::{tokenize, tokenize_light};
-use utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
-use utils::miscellaneous::ranges_overlap;
+use nlu_utils::token::{tokenize, tokenize_light};
+use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
+use nlu_utils::range::ranges_overlap;
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use rustling_ontology::Lang;
 

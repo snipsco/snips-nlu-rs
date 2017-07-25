@@ -5,8 +5,9 @@ use models::logreg::MulticlassLogisticRegression;
 use core_ontology::IntentClassifierResult;
 use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
-use utils::miscellaneous::argmax;
-use utils::token::tokenize_light;
+use utils::argmax;
+use nlu_utils::token::tokenize_light;
+use nlu_utils::string::normalize;
 use models::stemmer::{Stemmer, StaticMapStemmer};
 
 pub trait IntentClassifier: Send + Sync {
@@ -61,9 +62,10 @@ impl IntentClassifier for LogRegIntentClassifier {
         }
 
         if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
+            let normalized_input = normalize(input);
             let stemmed_text = StaticMapStemmer::new(self.language_code.clone()).ok()
-                .map(|stemmer| stem_sentence(input, &stemmer))
-                .unwrap_or(input.to_string());
+                .map(|stemmer| stem_sentence(&normalized_input, &stemmer))
+                .unwrap_or(normalized_input);
 
             let features = featurizer.transform(&stemmed_text)?;
             let probabilities = logreg.run(&features.view())?;

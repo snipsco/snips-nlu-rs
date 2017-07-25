@@ -8,12 +8,12 @@ use zip;
 
 use errors::*;
 
-use pipeline::configuration::{NLUEngineConfiguration, NLUEngineConfigurationConvertible};
+use pipeline::configuration::{NluEngineConfiguration, NluEngineConfigurationConvertible};
 
 const NLU_CONFIGURATION_FILENAME: &str = "trained_assistant.json";
 
 pub struct FileBasedConfiguration {
-    nlu_configuration: NLUEngineConfiguration,
+    nlu_configuration: NluEngineConfiguration,
 }
 
 impl FileBasedConfiguration {
@@ -24,18 +24,18 @@ impl FileBasedConfiguration {
     }
 }
 
-impl NLUEngineConfigurationConvertible for FileBasedConfiguration {
-    fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration {
+impl NluEngineConfigurationConvertible for FileBasedConfiguration {
+    fn nlu_engine_configuration(&self) -> &NluEngineConfiguration {
         &self.nlu_configuration
     }
 
-    fn into_nlu_engine_configuration(self) -> NLUEngineConfiguration {
+    fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
         self.nlu_configuration
     }
 }
 
 pub struct ZipBasedConfiguration {
-    nlu_configuration: NLUEngineConfiguration,
+    nlu_configuration: NluEngineConfiguration,
 }
 
 impl ZipBasedConfiguration {
@@ -65,29 +65,35 @@ impl ZipBasedConfiguration {
     }
 }
 
-impl NLUEngineConfigurationConvertible for ZipBasedConfiguration {
-    fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration {
+impl NluEngineConfigurationConvertible for ZipBasedConfiguration {
+    fn nlu_engine_configuration(&self) -> &NluEngineConfiguration {
         &self.nlu_configuration
     }
 
-    fn into_nlu_engine_configuration(self) -> NLUEngineConfiguration {
+    fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
         self.nlu_configuration
     }
 }
 
 pub mod deprecated {
-    #[deprecated(since="0.21.0", note="please use `ZipBasedConfiguration` instead")]
+    #[deprecated(since="0.20.1", note="please use `ZipBasedConfiguration` instead")]
     pub type BinaryBasedConfiguration = super::ZipBasedConfiguration;
+
+    #[deprecated(since="0.21.0", note="please use `NluEngineConfigurationConvertible` instead")]
+    pub type NLUEngineConfigurationConvertible = super::NluEngineConfigurationConvertible;
+
+    #[deprecated(since="0.21.0", note="please use `NluEngineConfiguration` instead")]
+    pub type NLUEngineConfiguration = super::NluEngineConfiguration;
 }
 
 #[cfg(test)]
 mod tests {
     use std::fs;
 
-    use super::NLUEngineConfigurationConvertible;
+    use super::NluEngineConfigurationConvertible;
     use super::ZipBasedConfiguration;
 
-    use utils::miscellaneous::file_path;
+    use testutils::file_path;
 
     #[test]
     fn unzip_works() {

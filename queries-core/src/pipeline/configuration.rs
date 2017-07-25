@@ -3,13 +3,13 @@ use std::collections::HashMap;
 use pipeline::rule_based::RuleBasedParserConfiguration;
 use pipeline::probabilistic::ProbabilisticParserConfiguration;
 
-pub trait NLUEngineConfigurationConvertible {
-    fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration;
-    fn into_nlu_engine_configuration(self) -> NLUEngineConfiguration;
+pub trait NluEngineConfigurationConvertible {
+    fn nlu_engine_configuration(&self) -> &NluEngineConfiguration;
+    fn into_nlu_engine_configuration(self) -> NluEngineConfiguration;
 }
 
 #[derive(Debug, Deserialize)]
-pub struct NLUEngineConfiguration {
+pub struct NluEngineConfiguration {
     pub language: String,
     pub model: Model,
     pub entities: HashMap<String, Entity>,
@@ -29,25 +29,25 @@ pub struct Entity {
     pub utterances: HashMap<String, String>
 }
 
-impl NLUEngineConfigurationConvertible for NLUEngineConfiguration {
-    fn nlu_engine_configuration(&self) -> &NLUEngineConfiguration {
+impl NluEngineConfigurationConvertible for NluEngineConfiguration {
+    fn nlu_engine_configuration(&self) -> &NluEngineConfiguration {
         &self
     }
 
-    fn into_nlu_engine_configuration(self) -> NLUEngineConfiguration {
+    fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
         self
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::NLUEngineConfiguration;
+    use super::NluEngineConfiguration;
 
-    use utils::miscellaneous::parse_json;
+    use testutils::parse_json;
 
     #[test]
     fn deserialization_works() {
-        let retrieved: NLUEngineConfiguration = parse_json("tests/configurations/beverage_engine.json");
+        let retrieved: NluEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
         assert_eq!("en", retrieved.model.rule_based_parser.unwrap().language);
         assert_eq!("en", retrieved.model.probabilistic_parser.unwrap().language_code);
     }

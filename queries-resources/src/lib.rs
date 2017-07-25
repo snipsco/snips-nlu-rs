@@ -4,7 +4,7 @@ extern crate error_chain;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
-extern crate queries_utils;
+extern crate nlu_utils;
 
 mod errors {
     error_chain! {
@@ -24,6 +24,8 @@ pub mod stems {
     use csv;
     use itertools::Itertools;
 
+    use nlu_utils::string::normalize;
+
     use errors::*;
 
     pub fn no_stem(input: String) -> String {
@@ -39,10 +41,9 @@ pub mod stems {
 
         for row in csv_reader.decode() {
             let (value, keys): (String, String) = row?;
-
-
+            let normalized_value = normalize(&value);
             keys.split(",")
-                .foreach(|key| { result.insert(key.to_string(), value.clone()); });
+                .foreach(|key| { result.insert(normalize(key).to_string(), normalized_value.clone()); });
         }
         Ok(result)
     }
@@ -58,7 +59,7 @@ pub mod stems {
         for row in csv_reader.decode() {
             let (key, value): (String, String) = row?;
 
-            result.insert(key, value);
+            result.insert(normalize(&key), normalize(&value));
         }
         Ok(result)
     }
@@ -130,7 +131,8 @@ pub mod gazetteer {
     use itertools::Itertools;
 
     use errors::*;
-    use queries_utils::token::tokenize;
+    use nlu_utils::token::tokenize_light;
+    use nlu_utils::string::normalize;
 
 
     fn parse_gazetteer<R: Read, F>(gazetteer_reader: R, stem_fn: F) -> Result<HashSet<String>>
@@ -139,10 +141,10 @@ pub mod gazetteer {
         let mut result = HashSet::new();
 
         for line in reader.lines() {
-            let normalized = line?.trim().to_lowercase();
+            let normalized = normalize(&line?);
             if !normalized.is_empty() {
-                let tokens = tokenize(&normalized);
-                result.insert(tokens.into_iter().map(|t| stem_fn(t.value)).join(" "));
+                let tokens = tokenize_light(&normalized);
+                result.insert(tokens.into_iter().map(|t| stem_fn(t)).join(" "));
             }
         }
         Ok(result)
