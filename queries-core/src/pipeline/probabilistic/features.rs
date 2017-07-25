@@ -10,7 +10,8 @@ use models::word_clusterer::WordClusterer;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape, initial_string_from_tokens};
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
-use utils::ranges_overlap;
+use nlu_utils::range::ranges_overlap;
+use nlu_utils::string::normalize;
 
 pub fn is_digit(string: &str) -> Option<String> {
     if string.chars().all(|c| c.is_digit(10)) {
@@ -33,12 +34,12 @@ pub fn is_last(tokens: &[Token], token_index: usize) -> Option<String> {
 }
 
 pub fn prefix(string: &str, prefix_size: usize) -> Option<String> {
-    let normalized = string.to_lowercase();
+    let normalized = normalize(string);
     get_word_chunk(normalized, prefix_size, 0, false)
 }
 
 pub fn suffix(string: &str, suffix_size: usize) -> Option<String> {
-    let normalized = string.to_lowercase();
+    let normalized = normalize(string);
     let chunk_start = normalized.chars().count();
     get_word_chunk(normalized, suffix_size, chunk_start, true)
 }
@@ -71,9 +72,9 @@ pub fn ngram<S: Stemmer, G: Gazetteer>(tokens: &[Token],
             tokens[token_index..token_index + ngram_size]
                 .iter()
                 .map(|token| {
-                    let lowercased_value = token.value.to_lowercase();
+                    let normalized_value = normalize(&token.value);
                     let stemmed_value = stemmer
-                        .map_or(lowercased_value.to_string(), |s| s.stem(&lowercased_value));
+                        .map_or(normalized_value.to_string(), |s| s.stem(&normalized_value));
                     common_words_gazetteer
                         .map_or(stemmed_value.clone(), |g|
                             if g.contains(&stemmed_value) {
@@ -115,9 +116,9 @@ pub fn get_word_cluster<C: WordClusterer, S: Stemmer>(tokens: &[Token],
         return None;
     }
     let normalized_token = if let Some(stemmer) = stemmer {
-        stemmer.stem(&tokens[token_index].value.to_lowercase())
+        stemmer.stem(&normalize(&tokens[token_index].value))
     } else {
-        tokens[token_index].value.to_lowercase()
+        normalize(&tokens[token_index].value)
     };
     word_clusterer.get_cluster(&normalized_token)
 }
@@ -145,7 +146,7 @@ pub fn get_builtin_entities_annotation(tokens: &[Token],
 fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<String> {
     tokens.iter()
         .map(|t|
-            stemmer.map_or(t.value.to_lowercase(), |s| s.stem(&t.value.to_lowercase()))
+            stemmer.map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value)))
         ).collect_vec()
 }
 
