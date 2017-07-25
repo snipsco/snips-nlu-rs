@@ -1,7 +1,7 @@
 use std::str;
 use std::iter::FromIterator;
 use regex::{Regex, RegexBuilder};
-use utils::token::Token;
+use nlu_utils::token::Token;
 
 pub fn get_word_chunk(word: String, chunk_size: usize, chunk_start: usize, reverse: bool) -> Option<String> {
     if reverse && chunk_size > chunk_start {
@@ -116,21 +116,21 @@ mod tests {
     fn initial_string_from_tokens_works() {
         // Given
         let tokens = vec![
-            Token {
-                value: "hello".to_string(),
-                range: 0..5,
-                char_range: 0..5,
-            },
-            Token {
-                value: "world".to_string(),
-                range: 9..14,
-                char_range: 9..14,
-            },
-            Token {
-                value: "!!!".to_string(),
-                range: 17..20,
-                char_range: 17..20,
-            }
+            Token::new(
+                "hello".to_string(),
+                0..5,
+                0..5,
+            ),
+            Token::new(
+                "world".to_string(),
+                9..14,
+                9..14,
+            ),
+            Token::new(
+                "!!!".to_string(),
+                17..20,
+                17..20,
+            )
         ];
 
         // When

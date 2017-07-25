@@ -12,14 +12,14 @@ use pipeline::IntentParser;
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{enrich_entities, tag_builtin_entities, disambiguate_tagged_entities};
-use pipeline::configuration::{Entity, NLUEngineConfigurationConvertible};
+use pipeline::configuration::{Entity, NluEngineConfigurationConvertible};
 use rustling_ontology::Lang;
-use utils::token::{tokenize, compute_all_ngrams};
-use utils::string::substring_with_char_range;
+use nlu_utils::token::{tokenize, compute_all_ngrams};
+use nlu_utils::string::{normalize, substring_with_char_range};
 
 const MODEL_VERSION: &str = "0.8.5";
 
-pub struct SnipsNLUEngine {
+pub struct SnipsNluEngine {
     language: String,
     parsers: Vec<Box<IntentParser>>,
     entities: HashMap<String, Entity>,
@@ -28,8 +28,8 @@ pub struct SnipsNLUEngine {
     builtin_entity_parser: Option<Arc<RustlingParser>>
 }
 
-impl SnipsNLUEngine {
-    pub fn new<T: NLUEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
+impl SnipsNluEngine {
+    pub fn new<T: NluEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
         let nlu_config = configuration.into_nlu_engine_configuration();
 
         let mut parsers: Vec<Box<IntentParser>> = Vec::with_capacity(2);
@@ -45,7 +45,7 @@ impl SnipsNLUEngine {
         let slot_name_mapping = nlu_config.slot_name_mapping;
         let builtin_entity_parser = Lang::from_str(&nlu_config.language).ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
-        Ok(SnipsNLUEngine {
+        Ok(SnipsNluEngine {
             language: nlu_config.language,
             parsers,
             entities: nlu_config.entities,
@@ -72,7 +72,7 @@ impl SnipsNLUEngine {
                     .filter_map(|slot| {
                         if let Some(entity) = self.entities.get(&slot.entity) {
                             entity.utterances
-                                .get(&slot.raw_value.to_lowercase())
+                                .get(&normalize(&slot.raw_value))
                                 .map(|reference_value|
                                     Some(slot.clone().with_slot_value(SlotValue::Custom(reference_value.to_string()))))
                                 .unwrap_or(
@@ -105,7 +105,7 @@ impl SnipsNLUEngine {
     }
 }
 
-impl SnipsNLUEngine {
+impl SnipsNluEngine {
     pub fn extract_slot(&self, input: String, intent_name: &str, slot_name: String) -> Result<Option<Slot>> {
         let entity_name = self.slot_name_mapping
             .get(intent_name)
@@ -114,7 +114,7 @@ impl SnipsNLUEngine {
             .ok_or(format!("Unknown slot: {}", &slot_name))?;
 
         let slot = if let Some(custom_entity) = self.entities.get(entity_name) {
-            extract_custom_slot(input.to_string(),
+            extract_custom_slot(input,
                                 entity_name.to_string(),
                                 slot_name.to_string(),
                                 custom_entity.clone())
@@ -142,11 +142,11 @@ fn extract_custom_slot(input: String,
     ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
 
     ngrams.into_iter()
-        .find(|&(ref ngram, _)| custom_entity.utterances.contains_key(&ngram.to_lowercase()))
+        .find(|&(ref ngram, _)| custom_entity.utterances.contains_key(&normalize(&ngram)))
         .map(|(ngram, _)|
             Some(Slot {
                 raw_value: ngram.clone(),
-                value: SlotValue::Custom(custom_entity.utterances.get(&ngram.to_lowercase()).unwrap().to_string()),
+                value: SlotValue::Custom(custom_entity.utterances.get(&normalize(&ngram)).unwrap().to_string()),
                 range: None,
                 entity: entity_name.clone(),
                 slot_name: slot_name.clone()
@@ -215,7 +215,7 @@ impl PartialTaggedEntity {
     }
 }
 
-impl SnipsNLUEngine {
+impl SnipsNluEngine {
     pub fn tag(&self,
                text: &str,
                intent: &str,
@@ -270,7 +270,7 @@ impl SnipsNLUEngine {
         for (ngram, ngram_indexes) in ngrams {
             let mut ngram_entity: Option<PartialTaggedEntity> = None;
             for &(ref entity_name, ref entity_data) in entities.iter() {
-                if entity_data.utterances.contains_key(&ngram.to_lowercase()) {
+                if entity_data.utterances.contains_key(&normalize(&ngram)) {
                     if ngram_entity.is_some() {
                         // If the ngram matches several entities, i.e. there is some ambiguity, we
                         // don't add it to the tagged entities
@@ -299,18 +299,22 @@ impl SnipsNLUEngine {
     }
 }
 
+pub mod deprecated {
+    #[deprecated(since="0.21.0", note="please use `SnipsNluEngine` instead")]
+    pub type SnipsNLUEngine = super::SnipsNluEngine;
+}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use pipeline::configuration::NLUEngineConfiguration;
-    use utils::miscellaneous::parse_json;
+    use pipeline::configuration::NluEngineConfiguration;
+    use testutils::parse_json;
 
     #[test]
     fn parse_works() {
         // Given
-        let configuration: NLUEngineConfiguration = parse_json("tests/configurations/beverage_engine.json");
-        let nlu_engine = SnipsNLUEngine::new(configuration).unwrap();
+        let configuration: NluEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
+        let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
 
         // When
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
