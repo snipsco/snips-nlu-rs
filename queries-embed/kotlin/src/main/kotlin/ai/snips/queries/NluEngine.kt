@@ -27,31 +27,6 @@ import java.io.File
 import kotlin.system.measureTimeMillis
 import ai.snips.queries.NluEngine.SnipsQueriesClientLibrary.Companion.INSTANCE as LIB
 
-object Main {
-    @JvmStatic
-    fun main(args: Array<String>) {
-        println("hello world")
-        println(NluEngine.modelVersion())
-        NluEngine(File("/home/fredszaq/Work/tmp/assistant")).apply {
-            println("created")
-            /* println("parse time 1 : " + measureTimeMillis {
-                 println(parse("Make me a latte"))
-             })*/
-            println("parse time 2 : " + measureTimeMillis {
-                println(parse("Can I have for 100£ a medium sized decaf cappuccino with skimmed milk"))
-                //println(parse("what's the weather like in paris ? "))
-            })
-        }.close()
-
-        NluEngine(File("/home/fredszaq/Work/tmp/assistantproj_SJvHP5PHQb/assistant.zip").readBytes()).apply {
-            println(parse("Set the color of the lights to blue"))
-            println(tag("Set the color of the lights to blue", "ActivateLightColor"))
-
-        }
-        println("bye world")
-    }
-}
-
 data class Range(val start: Int, val end: Int)
 
 data class Slot(val rawValue: String, val value: SlotValue, val range: Range?, val entity: String, val slotName: String)
