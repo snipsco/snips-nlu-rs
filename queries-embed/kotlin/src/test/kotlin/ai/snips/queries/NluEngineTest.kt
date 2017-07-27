@@ -1,0 +1,52 @@
+package ai.snips.queries
+
+import com.google.common.truth.Truth.assertThat
+import org.junit.Test
+import java.io.File
+
+
+class NluEngineTest {
+
+    @Test
+    fun modelVersionWorks() {
+        assertThat(NluEngine.modelVersion()).isNotEmpty()
+    }
+
+    @Test
+    fun createFromDirWork() {
+        NluEngine(File("../../data/tests/configurations")).use {
+            it.parse("make me two cups of hot tea").apply {
+                assertThat(input).isEqualTo("make me two cups of hot tea")
+                assertThat(intent).isNotNull()
+                assertThat(intent!!.intentName).isEqualTo("MakeTea")
+                assertThat(slots).hasSize(2)
+                assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
+            }
+        }
+    }
+
+    @Test
+    fun createFromZipWorks() {
+        File("/home/fredszaq/Work/tmp/assistantproj_SJvHP5PHQb/assistant.zip").readBytes()
+        NluEngine(File("../../data/tests/zip_files/sample_config.zip").readBytes()).use {
+            it.parse("make me two cups of hot tea").apply {
+                assertThat(input).isEqualTo("make me two cups of hot tea")
+                assertThat(intent).isNotNull()
+                assertThat(intent!!.intentName).isEqualTo("MakeTea")
+                assertThat(slots).hasSize(2)
+                assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
+            }
+        }
+
+    }
+
+    @Test
+    fun funkyCharsArePreserved() {
+        NluEngine(File("../../data/tests/configurations")).use {
+            it.parse("&€£ôœþかたな刀☺ ̿ ̿ ̿'̿'\\̵͇̿̿\\з=(•_•)=ε/̵͇̿̿/'̿'̿ ̿").apply {
+                assertThat(input).isEqualTo("&€£ôœþかたな刀☺ ̿ ̿ ̿'̿'\\̵͇̿̿\\з=(•_•)=ε/̵͇̿̿/'̿'̿ ̿")
+            }
+        }
+    }
+
+}
