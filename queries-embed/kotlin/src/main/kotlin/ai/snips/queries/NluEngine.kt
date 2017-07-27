@@ -21,6 +21,7 @@ import com.sun.jna.Native
 import com.sun.jna.Pointer
 import com.sun.jna.Structure
 import com.sun.jna.ptr.PointerByReference
+import com.sun.jna.toJnaPointer
 import java.io.Closeable
 import java.io.File
 import kotlin.system.measureTimeMillis
@@ -37,7 +38,7 @@ object Main {
                  println(parse("Make me a latte"))
              })*/
             println("parse time 2 : " + measureTimeMillis {
-                println(parse("Can I have a medium sized decaf cappuccino with skimmed milk."))
+                println(parse("Can I have for 100£ a medium sized decaf cappuccino with skimmed milk"))
                 //println(parse("what's the weather like in paris ? "))
             })
         }.close()
@@ -115,12 +116,18 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             value.getString(0).apply { LIB.nlu_engine_destroy_string(value) }
 
         }
+
+        const val RUST_ENCODING = "utf-8"
+
+        fun String.toPointer(): Pointer = this.toJnaPointer(ai.snips.queries.NluEngine.RUST_ENCODING)
+        fun Pointer.readString(): String = this.getString(0, ai.snips.queries.NluEngine.RUST_ENCODING)
+
     }
 
     constructor(assistantDir: File) :
             this({
                      PointerByReference().apply {
-                         parseError(LIB.nlu_engine_create_from_dir(assistantDir.absolutePath, this))
+                         parseError(LIB.nlu_engine_create_from_dir(assistantDir.absolutePath.toPointer(), this))
                      }.value
                  })
 
@@ -140,7 +147,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     fun parse(input: String): IntentParserResult =
             CIntentParserResult(PointerByReference().apply {
-                parseError(LIB.nlu_engine_run_parse(client, input, this))
+                parseError(LIB.nlu_engine_run_parse(client, input.toPointer(), this))
             }.value).let {
                 it.toIntentParserResult().apply {
                     // we don't want jna to try and sync this struct after the call as we're destroying it
@@ -152,7 +159,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     fun tag(input: String, intent: String): List<TaggedEntity> =
             CTaggedEntities(PointerByReference().apply {
-                parseError(LIB.nlu_engine_run_tag(client, input, intent, this))
+                parseError(LIB.nlu_engine_run_tag(client, input.toPointer(), intent.toPointer(), this))
             }.value).let {
                 it.toTaggedEntityList().apply {
                     // we don't want jna to try and sync this struct after the call as we're destroying it
@@ -168,10 +175,10 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         }
 
         fun nlu_engine_get_model_version(version: PointerByReference): Int
-        fun nlu_engine_create_from_dir(root_dir: String, pointer: PointerByReference): Int
+        fun nlu_engine_create_from_dir(root_dir: Pointer, pointer: PointerByReference): Int
         fun nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
-        fun nlu_engine_run_parse(client: Pointer, input: String, result: PointerByReference): Int
-        fun nlu_engine_run_tag(client: Pointer, input: String, intent: String, result: PointerByReference): Int
+        fun nlu_engine_run_parse(client: Pointer, input: Pointer, result: PointerByReference): Int
+        fun nlu_engine_run_tag(client: Pointer, input: Pointer, intent: Pointer, result: PointerByReference): Int
         fun nlu_engine_get_last_error(error: PointerByReference): Int
         fun nlu_engine_destroy_client(client: Pointer): Int
         fun nlu_engine_destroy_result(result: CIntentParserResult): Int
@@ -185,7 +192,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             read()
         }
 
-        @JvmField var input: String? = null
+        @JvmField var input: Pointer? = null
         @JvmField var intent: CIntentClassifierResult? = null
         @JvmField var slots: CSlots? = null
 
@@ -193,19 +200,19 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                                               "intent",
                                               "slots")
 
-        fun toIntentParserResult() = IntentParserResult(input = input!!,
+        fun toIntentParserResult() = IntentParserResult(input = input!!.readString(),
                                                         intent = intent?.toIntentClassifierResult(),
                                                         slots = slots?.toSlotList() ?: listOf())
 
     }
 
     class CIntentClassifierResult : Structure(), Structure.ByReference {
-        @JvmField var intent_name: String? = null
+        @JvmField var intent_name: Pointer? = null
         @JvmField var probability: Float? = null
 
         override fun getFieldOrder() = listOf("intent_name", "probability")
 
-        fun toIntentClassifierResult() = IntentClassifierResult(intentName = intent_name!!, probability = probability!!)
+        fun toIntentClassifierResult() = IntentClassifierResult(intentName = intent_name!!.readString(), probability = probability!!)
     }
 
     class CSlots : Structure(), Structure.ByReference {
@@ -266,8 +273,6 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             const val AMOUNTOFMONEY = 6
             const val TEMPERATURE = 7
             const val DURATION = 8
-
-
         }
 
         @JvmField var value_type: Int? = null
@@ -276,7 +281,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         override fun getFieldOrder() = listOf("value_type", "value")
 
         fun toSlotValue(): SlotValue = when (value_type!!) {
-            CUSTOM -> CustomValue(value!!.getString(0))
+            CUSTOM -> CustomValue(value!!.readString())
             NUMBER -> NumberValue(value!!.getDouble(0))
             ORDINAL -> OrdinalValue(value!!.getLong(0))
             INSTANTTIME -> CInstantTimeValue(value!!).toInstantTimeValue()
@@ -294,12 +299,12 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             read()
         }
 
-        @JvmField var value: String? = null
+        @JvmField var value: Pointer? = null
         @JvmField var grain: Int? = null
         @JvmField var precision: Int? = null
         override fun getFieldOrder() = listOf("value", "grain", "precision")
         fun toInstantTimeValue(): InstantTimeValue {
-            return InstantTimeValue(value = value!!,
+            return InstantTimeValue(value = value!!.readString(),
                                     grain = CGrain.toGrain(grain!!),
                                     precision = CPrecision.toPrecision(precision!!))
 
@@ -311,10 +316,10 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             read()
         }
 
-        @JvmField var from: String? = null
-        @JvmField var to: String? = null
+        @JvmField var from: Pointer? = null
+        @JvmField var to: Pointer? = null
         override fun getFieldOrder() = listOf("from", "to")
-        fun toTimeIntervalValue() = TimeIntervalValue(from = from!!, to = to!!)
+        fun toTimeIntervalValue() = TimeIntervalValue(from = from!!.readString(), to = to!!.readString())
     }
 
     class CAmountOfMoneyValue(p: Pointer) : Structure(p), Structure.ByReference {
@@ -324,11 +329,11 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
         @JvmField var value: Float? = null
         @JvmField var precision: Int? = null
-        @JvmField var unit: String? = null
+        @JvmField var unit: Pointer? = null
         override fun getFieldOrder() = listOf("value", "precision", "unit")
         fun toAmountOfMoneyValue() = AmountOfMoneyValue(value = value!!,
                                                         precision = CPrecision.toPrecision(precision!!),
-                                                        unit = unit!!)
+                                                        unit = unit!!.readString())
     }
 
     class CTemperatureValue(p: Pointer) : Structure(p), Structure.ByReference {
@@ -337,10 +342,10 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         }
 
         @JvmField var value: Float? = null
-        @JvmField var unit: String? = null
+        @JvmField var unit: Pointer? = null
         override fun getFieldOrder() = listOf("value", "unit")
         fun toTemperatureValue() = TemperatureValue(value = value!!,
-                                                    unit = unit!!)
+                                                    unit = unit!!.readString())
 
     }
 
@@ -387,12 +392,12 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             read()
         }
 
-        @JvmField var raw_value: String? = null
+        @JvmField var raw_value: Pointer? = null
         @JvmField var value: CSlotValue? = null
         @JvmField var range_start: Int? = null
         @JvmField var range_end: Int? = null
-        @JvmField var entity: String? = null
-        @JvmField var slot_name: String? = null
+        @JvmField var entity: Pointer? = null
+        @JvmField var slot_name: Pointer? = null
 
         override fun getFieldOrder() = listOf("raw_value",
                                               "value",
@@ -401,11 +406,11 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                                               "entity",
                                               "slot_name")
 
-        fun toSlot() = Slot(rawValue = raw_value!!,
+        fun toSlot() = Slot(rawValue = raw_value!!.readString(),
                             value = value!!.toSlotValue(),
                             range = if (range_start != -1) Range(range_start!!, range_end!!) else null,
-                            entity = entity!!,
-                            slotName = slot_name!!)
+                            entity = entity!!.readString(),
+                            slotName = slot_name!!.readString())
     }
 
     class CTaggedEntities(p: Pointer) : Structure(p), Structure.ByReference {
@@ -431,11 +436,11 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             read()
         }
 
-        @JvmField var value: String? = null
+        @JvmField var value: Pointer? = null
         @JvmField var range_start: Int? = null
         @JvmField var range_end: Int? = null
-        @JvmField var entity: String? = null
-        @JvmField var slot_name: String? = null
+        @JvmField var entity: Pointer? = null
+        @JvmField var slot_name: Pointer? = null
 
         override fun getFieldOrder() = listOf("value",
                                               "range_start",
@@ -443,9 +448,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                                               "entity",
                                               "slot_name")
 
-        fun toTaggedEntity() = TaggedEntity(value = value!!,
+        fun toTaggedEntity() = TaggedEntity(value = value!!.readString(),
                                             range = if (range_start != -1) Range(range_start!!, range_end!!) else null,
-                                            entity = entity!!,
-                                            slotName = slot_name!!)
+                                            entity = entity!!.readString(),
+                                            slotName = slot_name!!.readString())
     }
 }
