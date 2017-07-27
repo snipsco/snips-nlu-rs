@@ -94,7 +94,7 @@ impl SnipsNluEngine {
                         intent: Some(classification_result),
                         slots: Some(valid_slots)
                     }
-                )
+                );
             }
         }
         Ok(IntentParserResult { input: input.to_string(), intent: None, slots: None })
@@ -228,29 +228,24 @@ impl SnipsNluEngine {
             .ok_or(format!("Unknown intent: {}", intent))?;
         let intent_entities = HashSet::from_iter(slot_name_mapping.values());
         let threshold = small_data_regime_threshold.unwrap_or(DEFAULT_THRESHOLD);
-        let parsed_entities = self.parse(text, Some(&vec![intent]))?
-            .slots
-            .map(|slots|
-                slots.into_iter()
-                    .map(|s| PartialTaggedEntity {
+        if intent_data_size >= threshold {
+            Ok(self.parse(text, Some(&vec![intent]))?.slots
+                .map(|slots| slots.into_iter()
+                    .map(|s| TaggedEntity {
                         value: s.raw_value,
                         range: s.range,
                         entity: s.entity,
-                        slot_name: Some(s.slot_name)
+                        slot_name: s.slot_name
                     })
                     .collect_vec())
-            .unwrap_or(vec![]);
-
-        if intent_data_size >= threshold {
-            return Ok(parsed_entities.into_iter().filter_map(|e| e.into_tagged_entity()).collect());
+                .unwrap_or(vec![]))
+        } else {
+            let tagged_seen_entities = self.tag_seen_entities(text, intent_entities);
+            let tagged_builtin_entities = tag_builtin_entities(text, &self.language);
+            let tagged_entities = enrich_entities(tagged_seen_entities, tagged_builtin_entities);
+            let disambiguated_entities = disambiguate_tagged_entities(tagged_entities, slot_name_mapping.clone());
+            Ok(disambiguated_entities.into_iter().filter_map(|e| e.into_tagged_entity()).collect())
         }
-
-        let tagged_seen_entities = self.tag_seen_entities(text, intent_entities);
-        let tagged_builtin_entities = tag_builtin_entities(text, &self.language);
-        let mut tagged_entities = enrich_entities(tagged_seen_entities, tagged_builtin_entities);
-        tagged_entities = enrich_entities(tagged_entities, parsed_entities);
-        let disambiguated_entities = disambiguate_tagged_entities(tagged_entities, slot_name_mapping.clone());
-        Ok(disambiguated_entities.into_iter().filter_map(|e| e.into_tagged_entity()).collect())
     }
 
     fn tag_seen_entities(&self, text: &str, intent_entities: HashSet<&String>) -> Vec<PartialTaggedEntity> {
@@ -337,6 +332,54 @@ mod tests {
         };
 
         assert_eq!(expected_result, result)
+    }
+
+    #[test]
+    fn tag_works_above_intent_data_threshold() {
+        // Given
+        let configuration: NluEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
+        let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
+        let intent_data_threshold = 0;
+
+        // When
+        let tagged_entities = nlu_engine.tag("Make me two cups of coffee please",
+                                             "MakeCoffee",
+                                             Some(intent_data_threshold)).unwrap();
+
+        // Then
+        let expected_tagged_entities: Vec<TaggedEntity> = vec![
+            TaggedEntity {
+                value: "two".to_string(),
+                range: Some(8..11),
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string()
+            }
+        ];
+        assert_eq!(expected_tagged_entities, tagged_entities)
+    }
+
+    #[test]
+    fn tag_works_below_intent_data_threshold() {
+        // Given
+        let configuration: NluEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
+        let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
+        let intent_data_threshold = 1000;
+
+        // When
+        let tagged_entities = nlu_engine.tag("I want a very hot cup of tea !!",
+                                             "MakeTea",
+                                             Some(intent_data_threshold)).unwrap();
+
+        // Then
+        let expected_tagged_entities: Vec<TaggedEntity> = vec![
+            TaggedEntity {
+                value: "hot".to_string(),
+                range: Some(14..17),
+                entity: "Temperature".to_string(),
+                slot_name: "beverage_temperature".to_string()
+            }
+        ];
+        assert_eq!(expected_tagged_entities, tagged_entities)
     }
 
     #[test]
