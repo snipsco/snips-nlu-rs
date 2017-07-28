@@ -27,7 +27,6 @@ class NluEngineTest {
 
     @Test
     fun createFromZipWorks() {
-        File("/home/fredszaq/Work/tmp/assistantproj_SJvHP5PHQb/assistant.zip").readBytes()
         NluEngine(File("../../data/tests/zip_files/sample_config.zip").readBytes()).use {
             it.parse("make me two cups of hot tea").apply {
                 assertThat(input).isEqualTo("make me two cups of hot tea")
