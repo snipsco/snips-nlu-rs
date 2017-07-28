@@ -366,7 +366,7 @@ mod tests {
         let intent_data_threshold = 1000;
 
         // When
-        let tagged_entities = nlu_engine.tag("I want a very hot cup of tea !!",
+        let tagged_entities = nlu_engine.tag("I want two hot cups of tea !!",
                                              "MakeTea",
                                              Some(intent_data_threshold)).unwrap();
 
@@ -374,9 +374,15 @@ mod tests {
         let expected_tagged_entities: Vec<TaggedEntity> = vec![
             TaggedEntity {
                 value: "hot".to_string(),
-                range: Some(14..17),
+                range: Some(11..14),
                 entity: "Temperature".to_string(),
                 slot_name: "beverage_temperature".to_string()
+            },
+            TaggedEntity {
+                value: "two".to_string(),
+                range: Some(7..10),
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string()
             }
         ];
         assert_eq!(expected_tagged_entities, tagged_entities)
