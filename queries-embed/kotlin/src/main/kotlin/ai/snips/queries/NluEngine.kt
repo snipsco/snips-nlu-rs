@@ -135,6 +135,15 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 }
             }
 
+    fun parseIntoJson(input: String): String =
+            PointerByReference().apply {
+                parseError(LIB.nlu_engine_run_parse_into_json(client, input.toPointer(), this))
+            }.value.let {
+                it.readString().apply {
+                    LIB.nlu_engine_destroy_string(it)
+                }
+            }
+
     fun tag(input: String, intent: String): List<TaggedEntity> =
             CTaggedEntities(PointerByReference().apply {
                 parseError(LIB.nlu_engine_run_tag(client, input.toPointer(), intent.toPointer(), this))
@@ -156,6 +165,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         fun nlu_engine_create_from_dir(root_dir: Pointer, pointer: PointerByReference): Int
         fun nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun nlu_engine_run_parse(client: Pointer, input: Pointer, result: PointerByReference): Int
+        fun nlu_engine_run_parse_into_json(client: Pointer, input: Pointer, result: PointerByReference): Int
         fun nlu_engine_run_tag(client: Pointer, input: Pointer, intent: Pointer, result: PointerByReference): Int
         fun nlu_engine_get_last_error(error: PointerByReference): Int
         fun nlu_engine_destroy_client(client: Pointer): Int

@@ -41,6 +41,19 @@ class NluEngineTest {
     }
 
     @Test
+    fun parseIntoJsonWork() {
+        NluEngine(File("../../data/tests/configurations")).use {
+            it.parseIntoJson("make me two cups of hot tea").apply {
+                assertThat(this).isNotNull()
+                assertThat(this).contains("make me two cups of hot tea")
+                assertThat(this).contains("MakeTea")
+                assertThat(this).contains("beverage_temperature")
+                assertThat(this).contains("number_of_cups")
+            }
+        }
+    }
+
+    @Test
     fun funkyCharsArePreserved() {
         NluEngine(File("../../data/tests/configurations")).use {
             it.parse("&€£ôœþかたな刀☺ ̿ ̿ ̿'̿'\\̵͇̿̿\\з=(•_•)=ε/̵͇̿̿/'̿'̿ ̿").apply {
