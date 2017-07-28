@@ -13,7 +13,7 @@ class NluEngineTest {
     }
 
     @Test
-    fun createFromDirWork() {
+    fun createFromDirWorks() {
         NluEngine(File("../../data/tests/configurations")).use {
             it.parse("make me two cups of hot tea").apply {
                 assertThat(input).isEqualTo("make me two cups of hot tea")
@@ -41,7 +41,7 @@ class NluEngineTest {
     }
 
     @Test
-    fun parseIntoJsonWork() {
+    fun parseIntoJsonWorks() {
         NluEngine(File("../../data/tests/configurations")).use {
             it.parseIntoJson("make me two cups of hot tea").apply {
                 assertThat(this).isNotNull()
@@ -49,6 +49,16 @@ class NluEngineTest {
                 assertThat(this).contains("MakeTea")
                 assertThat(this).contains("beverage_temperature")
                 assertThat(this).contains("number_of_cups")
+            }
+        }
+    }
+
+    @Test
+    fun tagWorks() {
+        NluEngine(File("../../data/tests/configurations")).use {
+            it.tag("make me two cups of hot tea", "MakeTea").apply {
+                assertThat(this).hasSize(2)
+                assertThat(this.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
             }
         }
     }
