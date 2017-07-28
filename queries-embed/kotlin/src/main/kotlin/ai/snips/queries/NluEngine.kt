@@ -24,7 +24,6 @@ import com.sun.jna.ptr.PointerByReference
 import com.sun.jna.toJnaPointer
 import java.io.Closeable
 import java.io.File
-import kotlin.system.measureTimeMillis
 import ai.snips.queries.NluEngine.SnipsQueriesClientLibrary.Companion.INSTANCE as LIB
 
 data class Range(val start: Int, val end: Int)
