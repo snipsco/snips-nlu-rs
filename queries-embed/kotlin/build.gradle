@@ -11,7 +11,7 @@ buildscript {
 
 apply plugin: 'kotlin'
 
-version = "0.21.1"
+version = "0.22.0"
 group = "ai.snips"
 
 repositories {
@@ -26,6 +26,8 @@ configurations {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     compile 'net.java.dev.jna:jna:4.4.0'
+    testCompile 'junit:junit:4.12'
+    testCompile 'com.google.truth:truth:0.34'
 }
 
 def soForJar = [

@@ -1,6 +1,6 @@
 [package]
 name = "queries-core"
-version = "0.21.1"
+version = "0.22.0"
 authors = [
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>",
     "Kevin Lefevre <kevin.lefevre@snips.ai>"
@@ -21,7 +21,7 @@ lazy_static = "0.2"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-ndarray = "0.9"
+ndarray = "0.10"
 regex = "0.2"
 csv = "0.15"
 maplit = "0.1"
