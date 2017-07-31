@@ -8,8 +8,6 @@ use pipeline::nlu_engine::PartialTaggedEntity;
 use rustling_ontology::Lang;
 use nlu_utils::range::ranges_overlap;
 
-const TAGGING_SCOPE: [BuiltinEntityKind; 2] = [BuiltinEntityKind::Duration, BuiltinEntityKind::Time];
-
 pub fn enrich_entities(mut tagged_entities: Vec<PartialTaggedEntity>,
                        other_tagged_entities: Vec<PartialTaggedEntity>) -> Vec<PartialTaggedEntity> {
     for entity in other_tagged_entities {
@@ -30,7 +28,7 @@ pub fn enrich_entities(mut tagged_entities: Vec<PartialTaggedEntity>,
 }
 
 pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<PartialTaggedEntity> {
-    let tagging_scope = TAGGING_SCOPE;
+    let tagging_scope = BuiltinEntityKind::all();
     let tagging_scope_set: HashSet<&BuiltinEntityKind> = HashSet::from_iter(tagging_scope.iter());
     Lang::from_str(language)
         .ok()
