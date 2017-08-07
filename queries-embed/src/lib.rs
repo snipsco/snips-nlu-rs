@@ -1,7 +1,7 @@
-extern crate libc;
 extern crate queries_core;
 #[macro_use]
 extern crate lazy_static;
+extern crate libc;
 #[macro_use]
 extern crate error_chain;
 extern crate serde_json;
@@ -11,8 +11,7 @@ use std::sync::Mutex;
 use std::slice;
 use std::io::Cursor;
 
-mod ontology;
-use ontology::*;
+use queries_core::ffi::*;
 
 lazy_static! {
     static ref LAST_ERROR:std::sync::Mutex<String> = std::sync::Mutex::new("".to_string());
