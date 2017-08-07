@@ -19,13 +19,16 @@ lazy_static! {
 
 mod errors {
     error_chain! {
-          foreign_links {
-                Core(::queries_core::Error);
-                Io(::std::io::Error);
-                Serde(::serde_json::Error);
-                Utf8Error(::std::str::Utf8Error);
-                NulError(::std::ffi::NulError);
-          }
+        links {
+            QueriesCore(::queries_core::Error, ::queries_core::ErrorKind);
+        }
+
+        foreign_links {
+            Io(::std::io::Error);
+            Serde(::serde_json::Error);
+            Utf8Error(::std::str::Utf8Error);
+            NulError(::std::ffi::NulError);
+        }
     }
 
     impl<T> ::std::convert::From<::std::sync::PoisonError<T>> for Error {
