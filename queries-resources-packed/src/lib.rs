@@ -4,7 +4,6 @@ extern crate phf;
 
 mod errors {
     error_chain! {
-
     }
 }
 
