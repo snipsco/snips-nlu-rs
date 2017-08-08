@@ -17,7 +17,7 @@ use rustling_ontology::Lang;
 use nlu_utils::token::{tokenize, compute_all_ngrams};
 use nlu_utils::string::{normalize, substring_with_char_range};
 
-const MODEL_VERSION: &str = "0.8.5";
+const MODEL_VERSION: &str = "0.9.0";
 
 pub struct SnipsNluEngine {
     language: String,
