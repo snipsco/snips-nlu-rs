@@ -1,10 +1,8 @@
-use libc;
 use std::ffi::CString;
 use std::ptr::null;
 
+use libc;
 use errors::*;
-
-use queries_core;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -15,7 +13,7 @@ pub struct CIntentParserResult {
 }
 
 impl CIntentParserResult {
-    pub fn from(input: queries_core::IntentParserResult) -> Result<Self> {
+    pub fn from(input: ::IntentParserResult) -> Result<Self> {
         Ok(CIntentParserResult {
             input: CString::new(input.input)?.into_raw(),
             intent: if let Some(intent) = input.intent {
@@ -42,7 +40,7 @@ pub struct CIntentClassifierResult {
 }
 
 impl CIntentClassifierResult {
-    pub fn from(input: queries_core::IntentClassifierResult) -> Result<Self> {
+    pub fn from(input: ::IntentClassifierResult) -> Result<Self> {
         Ok(CIntentClassifierResult {
             probability: input.probability,
             intent_name: CString::new(input.intent_name)?.into_raw(),
@@ -64,7 +62,7 @@ pub struct CSlotList {
 }
 
 impl CSlotList {
-    pub fn from(input: Vec<queries_core::Slot>) -> Result<Self> {
+    pub fn from(input: Vec<::Slot>) -> Result<Self> {
         Ok(CSlotList {
             size: input.len() as libc::c_int,
             slots: input.into_iter().map(|s| CSlot::from(s)).collect::<Result<Vec<CSlot>>>()?.into_boxed_slice()
@@ -84,7 +82,7 @@ pub struct CSlot {
 }
 
 impl CSlot {
-    pub fn from(input: queries_core::Slot) -> Result<Self> {
+    pub fn from(input: ::Slot) -> Result<Self> {
         let range = if let Some(range) = input.range {
             range.start as libc::c_int..range.end as libc::c_int
         } else { -1..-1 };
@@ -116,7 +114,7 @@ pub struct CTaggedEntityList {
 }
 
 impl CTaggedEntityList {
-    pub fn from(input: Vec<queries_core::TaggedEntity>) -> Result<Self> {
+    pub fn from(input: Vec<::TaggedEntity>) -> Result<Self> {
         Ok(CTaggedEntityList {
             size: input.len() as libc::c_int,
             entities: input.into_iter().map(|s| CTaggedEntity::from(s)).collect::<Result<Vec<CTaggedEntity>>>()?.into_boxed_slice()
@@ -135,7 +133,7 @@ pub struct CTaggedEntity {
 }
 
 impl CTaggedEntity {
-    pub fn from(input: queries_core::TaggedEntity) -> Result<Self> {
+    pub fn from(input: ::TaggedEntity) -> Result<Self> {
         let range = if let Some(range) = input.range {
             range.start as libc::c_int..range.end as libc::c_int
         } else { -1..-1 };
@@ -173,16 +171,16 @@ pub enum CSlotValueType {
 }
 
 impl CSlotValueType {
-    pub fn from(slot_value: &queries_core::SlotValue) -> CSlotValueType {
+    pub fn from(slot_value: &::SlotValue) -> CSlotValueType {
         match slot_value {
-            &queries_core::SlotValue::Custom(_) => CSlotValueType::CUSTOM,
-            &queries_core::SlotValue::Number(_) => CSlotValueType::NUMBER,
-            &queries_core::SlotValue::Ordinal(_) => CSlotValueType::ORDINAL,
-            &queries_core::SlotValue::InstantTime(_) => CSlotValueType::INSTANTTIME,
-            &queries_core::SlotValue::TimeInterval(_) => CSlotValueType::TIMEINTERVAL,
-            &queries_core::SlotValue::AmountOfMoney(_) => CSlotValueType::AMOUNTOFMONEY,
-            &queries_core::SlotValue::Temperature(_) => CSlotValueType::TEMPERATURE,
-            &queries_core::SlotValue::Duration(_) => CSlotValueType::DURATION,
+            &::SlotValue::Custom(_) => CSlotValueType::CUSTOM,
+            &::SlotValue::Number(_) => CSlotValueType::NUMBER,
+            &::SlotValue::Ordinal(_) => CSlotValueType::ORDINAL,
+            &::SlotValue::InstantTime(_) => CSlotValueType::INSTANTTIME,
+            &::SlotValue::TimeInterval(_) => CSlotValueType::TIMEINTERVAL,
+            &::SlotValue::AmountOfMoney(_) => CSlotValueType::AMOUNTOFMONEY,
+            &::SlotValue::Temperature(_) => CSlotValueType::TEMPERATURE,
+            &::SlotValue::Duration(_) => CSlotValueType::DURATION,
         }
     }
 }
@@ -195,10 +193,10 @@ pub enum CPrecision {
 }
 
 impl CPrecision {
-    pub fn from(value: queries_core::Precision) -> CPrecision {
+    pub fn from(value: ::Precision) -> CPrecision {
         match value {
-            queries_core::Precision::Approximate => CPrecision::APPROXIMATE,
-            queries_core::Precision::Exact => CPrecision::EXACT,
+            ::Precision::Approximate => CPrecision::APPROXIMATE,
+            ::Precision::Exact => CPrecision::EXACT,
         }
     }
 }
@@ -220,16 +218,16 @@ pub enum CGrain {
 }
 
 impl CGrain {
-    pub fn from(value: queries_core::Grain) -> CGrain {
+    pub fn from(value: ::Grain) -> CGrain {
         match value {
-            queries_core::Grain::Year => CGrain::YEAR,
-            queries_core::Grain::Quarter => CGrain::QUARTER,
-            queries_core::Grain::Month => CGrain::MONTH,
-            queries_core::Grain::Week => CGrain::WEEK,
-            queries_core::Grain::Day => CGrain::DAY,
-            queries_core::Grain::Hour => CGrain::HOUR,
-            queries_core::Grain::Minute => CGrain::MINUTE,
-            queries_core::Grain::Second => CGrain::SECOND,
+            ::Grain::Year => CGrain::YEAR,
+            ::Grain::Quarter => CGrain::QUARTER,
+            ::Grain::Month => CGrain::MONTH,
+            ::Grain::Week => CGrain::WEEK,
+            ::Grain::Day => CGrain::DAY,
+            ::Grain::Hour => CGrain::HOUR,
+            ::Grain::Minute => CGrain::MINUTE,
+            ::Grain::Second => CGrain::SECOND,
         }
     }
 }
@@ -243,7 +241,7 @@ pub struct CInstantTimeValue {
 }
 
 impl CInstantTimeValue {
-    pub fn from(value: queries_core::InstantTimeValue) -> Result<CInstantTimeValue> {
+    pub fn from(value: ::InstantTimeValue) -> Result<CInstantTimeValue> {
         Ok(CInstantTimeValue {
             value: CString::new(value.value)?.into_raw(),
             grain: CGrain::from(value.grain),
@@ -266,7 +264,7 @@ pub struct CTimeIntervalValue {
 }
 
 impl CTimeIntervalValue {
-    pub fn from(value: queries_core::TimeIntervalValue) -> Result<CTimeIntervalValue> {
+    pub fn from(value: ::TimeIntervalValue) -> Result<CTimeIntervalValue> {
         Ok(CTimeIntervalValue {
             from: if let Some(s) = value.from { CString::new(s)?.into_raw() } else { null() },
             to: if let Some(s) = value.to { CString::new(s)?.into_raw() } else { null() }
@@ -294,7 +292,7 @@ pub struct CAmountOfMoneyValue {
 }
 
 impl CAmountOfMoneyValue {
-    pub fn from(value: queries_core::AmountOfMoneyValue) -> Result<CAmountOfMoneyValue> {
+    pub fn from(value: ::AmountOfMoneyValue) -> Result<CAmountOfMoneyValue> {
         Ok(CAmountOfMoneyValue {
             value: value.value as libc::c_float,
             precision: CPrecision::from(value.precision),
@@ -320,7 +318,7 @@ pub struct CTemperatureValue {
 }
 
 impl CTemperatureValue {
-    pub fn from(value: queries_core::TemperatureValue) -> Result<CTemperatureValue> {
+    pub fn from(value: ::TemperatureValue) -> Result<CTemperatureValue> {
         Ok(CTemperatureValue {
             value: value.value as libc::c_float,
             unit: if let Some(s) = value.unit { CString::new(s)?.into_raw() } else { null() },
@@ -351,7 +349,7 @@ pub struct CDurationValue {
 }
 
 impl CDurationValue {
-    pub fn from(value: queries_core::DurationValue) -> Result<CDurationValue> {
+    pub fn from(value: ::DurationValue) -> Result<CDurationValue> {
         Ok(CDurationValue {
             years: value.years as libc::c_long,
             quarters: value.quarters as libc::c_long,
@@ -379,18 +377,18 @@ pub struct CSlotValue {
 }
 
 impl CSlotValue {
-    pub fn from(slot_value: queries_core::SlotValue) -> Result<CSlotValue> {
+    pub fn from(slot_value: ::SlotValue) -> Result<CSlotValue> {
         let value_type = CSlotValueType::from(&slot_value);
         let value: *const libc::c_void =
             match slot_value {
-                queries_core::SlotValue::Custom(value) => CString::new(value.as_bytes())?.into_raw() as _,
-                queries_core::SlotValue::Number(value) => Box::into_raw(Box::new(value.0 as CNumberValue)) as _,
-                queries_core::SlotValue::Ordinal(value) => Box::into_raw(Box::new(value.0 as COrdinalValue)) as _,
-                queries_core::SlotValue::InstantTime(value) => Box::into_raw(Box::new(CInstantTimeValue::from(value)?)) as _,
-                queries_core::SlotValue::TimeInterval(value) => Box::into_raw(Box::new(CTimeIntervalValue::from(value)?)) as _,
-                queries_core::SlotValue::AmountOfMoney(value) => Box::into_raw(Box::new(CAmountOfMoneyValue::from(value)?)) as _,
-                queries_core::SlotValue::Temperature(value) => Box::into_raw(Box::new(CTemperatureValue::from(value)?)) as _,
-                queries_core::SlotValue::Duration(value) => Box::into_raw(Box::new(CDurationValue::from(value)?)) as _,
+                ::SlotValue::Custom(value) => CString::new(value.as_bytes())?.into_raw() as _,
+                ::SlotValue::Number(value) => Box::into_raw(Box::new(value.0 as CNumberValue)) as _,
+                ::SlotValue::Ordinal(value) => Box::into_raw(Box::new(value.0 as COrdinalValue)) as _,
+                ::SlotValue::InstantTime(value) => Box::into_raw(Box::new(CInstantTimeValue::from(value)?)) as _,
+                ::SlotValue::TimeInterval(value) => Box::into_raw(Box::new(CTimeIntervalValue::from(value)?)) as _,
+                ::SlotValue::AmountOfMoney(value) => Box::into_raw(Box::new(CAmountOfMoneyValue::from(value)?)) as _,
+                ::SlotValue::Temperature(value) => Box::into_raw(Box::new(CTemperatureValue::from(value)?)) as _,
+                ::SlotValue::Duration(value) => Box::into_raw(Box::new(CDurationValue::from(value)?)) as _,
             };
 
         Ok(CSlotValue { value_type, value })
