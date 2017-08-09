@@ -35,6 +35,7 @@ pub use pipeline::assistant_config::{FileBasedConfiguration,
 
 pub use pipeline::nlu_engine::deprecated::*;
 pub use pipeline::assistant_config::deprecated::*;
+pub use utils::file_path;
 
 #[cfg(test)]
 mod testutils;

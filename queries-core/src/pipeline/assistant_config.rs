@@ -93,7 +93,7 @@ mod tests {
     use super::NluEngineConfigurationConvertible;
     use super::ZipBasedConfiguration;
 
-    use testutils::file_path;
+    use utils::file_path;
 
     #[test]
     fn unzip_works() {
