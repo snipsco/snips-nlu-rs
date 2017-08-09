@@ -1,7 +1,8 @@
 use std::f32;
+use std::path;
+use std::env;
 
 use ndarray::prelude::*;
-
 
 pub fn argmax(arr: &Array1<f32>) -> (usize, f32) {
     let mut index = 0;
@@ -13,4 +14,17 @@ pub fn argmax(arr: &Array1<f32>) -> (usize, f32) {
         }
     }
     (index, max_value)
+}
+
+pub fn file_path(file_name: &str) -> path::PathBuf {
+    if env::var("DINGHY").is_ok() {
+        env::current_exe()
+            .unwrap()
+            .parent()
+            .unwrap()
+            .join("test_data/data")
+            .join(file_name)
+    } else {
+        path::PathBuf::from("../data").join(file_name)
+    }
 }
