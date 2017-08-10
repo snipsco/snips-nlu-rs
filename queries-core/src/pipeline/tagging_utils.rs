@@ -1,8 +1,7 @@
 use std::str::FromStr;
-use std::collections::{HashMap, HashSet};
-use std::iter::FromIterator;
+use std::collections::HashMap;
 
-use builtin_entities::{BuiltinEntityKind, RustlingParser};
+use builtin_entities::RustlingParser;
 use itertools::Itertools;
 use pipeline::nlu_engine::PartialTaggedEntity;
 use rustling_ontology::Lang;
@@ -28,24 +27,18 @@ pub fn enrich_entities(mut tagged_entities: Vec<PartialTaggedEntity>,
 }
 
 pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<PartialTaggedEntity> {
-    let tagging_scope = BuiltinEntityKind::all();
-    let tagging_scope_set: HashSet<&BuiltinEntityKind> = HashSet::from_iter(tagging_scope.iter());
     Lang::from_str(language)
         .ok()
         .map(|rustling_lang|
             RustlingParser::get(rustling_lang)
                 .extract_entities(text, None)
                 .into_iter()
-                .filter_map(|entity| {
-                    if tagging_scope_set.contains(&entity.entity_kind) {
-                        Some(PartialTaggedEntity {
-                            value: entity.value,
-                            range: Some(entity.range),
-                            entity: entity.entity_kind.identifier().to_string(),
-                            slot_name: None
-                        })
-                    } else {
-                        None
+                .map(|entity| {
+                    PartialTaggedEntity {
+                        value: entity.value,
+                        range: Some(entity.range),
+                        entity: entity.entity_kind.identifier().to_string(),
+                        slot_name: None
                     }
                 })
                 .collect_vec())
