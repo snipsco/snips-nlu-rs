@@ -45,7 +45,7 @@ def debug_inference(engine_path):
             query = query.decode("utf8")
         if query == "q":
             break
-        pprint(engine.parse(query))
+        print(json.dumps(engine.parse(query), indent=4))
 
 
 def main_debug():
