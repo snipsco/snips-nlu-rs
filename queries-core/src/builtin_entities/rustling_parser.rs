@@ -3,6 +3,8 @@ use std::ops::Range;
 use std::collections::HashMap;
 use std::time::Instant;
 
+use itertools::Itertools;
+
 use core_ontology::SlotValue;
 use rustling_ontology::{Lang, Parser, build_parser, ResolverContext};
 use builtin_entities::ontology::*;
@@ -48,7 +50,7 @@ impl RustlingParser {
             let context = ResolverContext::default();
             if let Some(kinds) = key.kinds.as_ref() {
                 let kind_order = kinds.iter().map(|kind| kind.dimension_kind()).collect::<Vec<_>>();
-                let mut entities = self.parser
+                self.parser
                     .parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order)
                     .unwrap_or(Vec::new())
                     .iter()
@@ -64,11 +66,9 @@ impl RustlingParser {
                                     entity_kind: kind.clone()
                                 })
                     })
-                    .collect::<Vec<_>>();
-                entities.sort_by_key(|e| e.range.start);
-                entities
+                    .sorted_by(|a, b| Ord::cmp(&a.range.start, &b.range.start))
             } else {
-                let mut entities = self.parser.parse(&sentence.to_lowercase(), &context)
+                self.parser.parse(&sentence.to_lowercase(), &context)
                     .unwrap_or(Vec::new())
                     .iter()
                     .map(|entity|
@@ -78,9 +78,7 @@ impl RustlingParser {
                             entity: SlotValue::from_rustling(entity.value.clone()),
                             entity_kind: BuiltinEntityKind::from_rustling_output(&entity.value)
                         })
-                    .collect::<Vec<_>>();
-                entities.sort_by_key(|e| e.range.start);
-                entities
+                    .sorted_by(|a, b| Ord::cmp(&a.range.start, &b.range.start))
             }
         }).entities
     }
