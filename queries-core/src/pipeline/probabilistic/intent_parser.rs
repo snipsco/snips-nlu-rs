@@ -125,7 +125,7 @@ impl IntentParser for ProbabilisticIntentParser {
                                                 intent_slots_mapping,
                                                 builtin_entities,
                                                 builtin_slots)?;
-            Ok(resolve_builtin_slots(input, augmented_slots, &*builtin_entity_parser))
+            Ok(resolve_builtin_slots(input, augmented_slots, &*builtin_entity_parser, Some(&builtin_entity_kinds)))
         } else {
             Ok(custom_slots.into_iter().map(convert_to_custom_slot).collect())
         }
