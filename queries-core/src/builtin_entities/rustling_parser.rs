@@ -3,8 +3,10 @@ use std::ops::Range;
 use std::collections::HashMap;
 use std::time::Instant;
 
+use itertools::Itertools;
+
 use core_ontology::SlotValue;
-use rustling_ontology::{Lang, Parser, build_parser, ParsingContext};
+use rustling_ontology::{Lang, Parser, build_parser, ResolverContext};
 use builtin_entities::ontology::*;
 
 pub struct RustlingParser {
@@ -42,30 +44,42 @@ impl RustlingParser {
         let key = CacheKey {
             lang: self.lang.to_string(),
             input: sentence.into(),
-            kinds: filter_entity_kinds.map(|kinds| kinds.to_vec()).unwrap_or_else(|| BuiltinEntityKind::all())
+            kinds: filter_entity_kinds.map(|kinds| kinds.to_vec())
         };
         CACHED_ENTITY.lock().unwrap().cache(&key, |key| {
-            let context = ParsingContext::default();
-            let kind_order = key.kinds.iter().map(|kind| kind.dimension_kind()).collect::<Vec<_>>();
-            let mut entities = self.parser.parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order, true)
-                .unwrap_or(Vec::new())
-                .iter()
-                .filter_map(|m| {
-                    let entity_kind = BuiltinEntityKind::from_rustling_output(&m.value);
-                    key.kinds
-                        .iter()
-                        .find(|kind| **kind == entity_kind)
-                        .map(|kind|
-                            RustlingEntity {
-                                value: sentence[m.byte_range.0..m.byte_range.1].into(),
-                                range: m.char_range.0..m.char_range.1,
-                                entity: SlotValue::from_rustling(m.value.clone()),
-                                entity_kind: kind.clone()
-                            })
-                })
-                .collect::<Vec<_>>();
-            entities.sort_by_key(|e| e.range.start);
-            entities
+            let context = ResolverContext::default();
+            if let Some(kinds) = key.kinds.as_ref() {
+                let kind_order = kinds.iter().map(|kind| kind.dimension_kind()).collect::<Vec<_>>();
+                self.parser
+                    .parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order)
+                    .unwrap_or(Vec::new())
+                    .iter()
+                    .filter_map(|m| {
+                        let entity_kind = BuiltinEntityKind::from_rustling_output(&m.value);
+                        kinds.iter()
+                            .find(|kind| **kind == entity_kind)
+                            .map(|kind|
+                                RustlingEntity {
+                                    value: sentence[m.byte_range.0..m.byte_range.1].into(),
+                                    range: m.char_range.0..m.char_range.1,
+                                    entity: SlotValue::from_rustling(m.value.clone()),
+                                    entity_kind: kind.clone()
+                                })
+                    })
+                    .sorted_by(|a, b| Ord::cmp(&a.range.start, &b.range.start))
+            } else {
+                self.parser.parse(&sentence.to_lowercase(), &context)
+                    .unwrap_or(Vec::new())
+                    .iter()
+                    .map(|entity|
+                        RustlingEntity {
+                            value: sentence[entity.byte_range.0..entity.byte_range.1].into(),
+                            range: entity.char_range.0..entity.char_range.1,
+                            entity: SlotValue::from_rustling(entity.value.clone()),
+                            entity_kind: BuiltinEntityKind::from_rustling_output(&entity.value)
+                        })
+                    .sorted_by(|a, b| Ord::cmp(&a.range.start, &b.range.start))
+            }
         }).entities
     }
 }
@@ -82,7 +96,7 @@ impl EntityCache {
 
     fn cache<F: Fn(&CacheKey) -> Vec<RustlingEntity>>(&mut self, key: &CacheKey, producer: F) -> CacheValue {
         let cached_value = self.container.get(key).map(|a| a.clone());
-        if let Some(value) = cached_value { if value.is_valid(self.valid_duration_sec) { return value } }
+        if let Some(value) = cached_value { if value.is_valid(self.valid_duration_sec) { return value; } }
         let value = CacheValue::new(producer(key));
         self.container.insert(key.clone(), value.clone());
         value
@@ -93,7 +107,7 @@ impl EntityCache {
 struct CacheKey {
     lang: String,
     input: String,
-    kinds: Vec<BuiltinEntityKind>,
+    kinds: Option<Vec<BuiltinEntityKind>>,
 }
 
 #[derive(Debug, Clone)]
@@ -161,7 +175,7 @@ mod test {
             ]
         }
 
-        let key = CacheKey { lang: "en".into(), input: "test".into(), kinds: vec![] };
+        let key = CacheKey { lang: "en".into(), input: "test".into(), kinds: None };
 
         let mut cache = EntityCache::new(10); // caching for 10s
         assert_eq!(cache.cache(&key, parse).instant, cache.cache(&key, parse).instant);
