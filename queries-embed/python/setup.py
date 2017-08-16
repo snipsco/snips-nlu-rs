@@ -1,9 +1,9 @@
 import io
 import os
 import subprocess
-from setuptools.dist import Distribution
 
 from setuptools import setup, find_packages
+from setuptools.dist import Distribution
 from wheel.bdist_wheel import bdist_wheel
 
 from rust_build import build_rust_cmdclass, RustInstallLib
@@ -23,7 +23,7 @@ class RustBdistWheel(bdist_wheel):
         self.root_is_pure = False
 
 
-packages = [p for p in find_packages() if "tests" not in p]
+packages = [p for p in find_packages() if "tests" not in p and "debug" not in p]
 
 PACKAGE_NAME = "snips_nlu_rust"
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
@@ -53,5 +53,8 @@ setup(
     package_data={"": [VERSION, "dylib/*", ]},
     include_package_data=True,
     distclass=RustNLUDistribution,
+    entry_points={
+        'console_scripts': ['debug=snips_nlu_rust.debug:main_debug'],
+    },
     zip_safe=False,
 )
