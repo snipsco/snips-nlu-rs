@@ -381,9 +381,9 @@ impl CSlotValue {
         let value_type = CSlotValueType::from(&slot_value);
         let value: *const libc::c_void =
             match slot_value {
-                ::SlotValue::Custom(value) => CString::new(value.as_bytes())?.into_raw() as _,
-                ::SlotValue::Number(value) => Box::into_raw(Box::new(value.0 as CNumberValue)) as _,
-                ::SlotValue::Ordinal(value) => Box::into_raw(Box::new(value.0 as COrdinalValue)) as _,
+                ::SlotValue::Custom(value) => CString::new(value.value.as_bytes())?.into_raw() as _,
+                ::SlotValue::Number(value) => Box::into_raw(Box::new(value.value as CNumberValue)) as _,
+                ::SlotValue::Ordinal(value) => Box::into_raw(Box::new(value.value as COrdinalValue)) as _,
                 ::SlotValue::InstantTime(value) => Box::into_raw(Box::new(CInstantTimeValue::from(value)?)) as _,
                 ::SlotValue::TimeInterval(value) => Box::into_raw(Box::new(CTimeIntervalValue::from(value)?)) as _,
                 ::SlotValue::AmountOfMoney(value) => Box::into_raw(Box::new(CAmountOfMoneyValue::from(value)?)) as _,

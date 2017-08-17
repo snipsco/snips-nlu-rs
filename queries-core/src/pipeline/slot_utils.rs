@@ -5,7 +5,7 @@ use pipeline::InternalSlot;
 pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
     Slot {
         raw_value: slot.value.clone(),
-        value: SlotValue::Custom(slot.value),
+        value: SlotValue::Custom(slot.value.into()),
         range: Some(slot.range),
         entity: slot.entity,
         slot_name: slot.slot_name
@@ -92,7 +92,7 @@ mod tests {
             },
             Slot {
                 raw_value: "10th".to_string(),
-                value: SlotValue::Ordinal(OrdinalValue(10)),
+                value: SlotValue::Ordinal(OrdinalValue { value: 10 }),
                 range: Some(22..26),
                 entity: "snips/ordinal".to_string(),
                 slot_name: "ranking".to_string()
