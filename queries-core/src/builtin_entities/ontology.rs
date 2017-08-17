@@ -12,19 +12,19 @@ pub trait FromRustling<T>: Sized {
 
 impl FromRustling<IntegerOutput> for NumberValue {
     fn from_rustling(rustling_output: IntegerOutput) -> NumberValue {
-        NumberValue(rustling_output.0 as f64)
+        NumberValue { value: rustling_output.0 as f64 }
     }
 }
 
 impl FromRustling<FloatOutput> for NumberValue {
     fn from_rustling(rustling_output: FloatOutput) -> NumberValue {
-        NumberValue(rustling_output.0 as f64)
+        NumberValue { value: rustling_output.0 as f64 }
     }
 }
 
 impl FromRustling<OrdinalOutput> for OrdinalValue {
     fn from_rustling(rustling_output: OrdinalOutput) -> OrdinalValue {
-        OrdinalValue(rustling_output.0)
+        OrdinalValue { value: rustling_output.0 }
     }
 }
 

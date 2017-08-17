@@ -164,13 +164,13 @@ mod test {
                     value: "two".into(),
                     range: 23..26,
                     entity_kind: BuiltinEntityKind::Number,
-                    entity: SlotValue::Number(NumberValue(2.0))
+                    entity: SlotValue::Number(NumberValue { value: 2.0 })
                 },
                 RustlingEntity {
                     value: "4.5".into(),
                     range: 34..42,
                     entity_kind: BuiltinEntityKind::Number,
-                    entity: SlotValue::Number(NumberValue(4.5))
+                    entity: SlotValue::Number(NumberValue { value: 4.5 })
                 },
             ]
         }
