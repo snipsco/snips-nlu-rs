@@ -1,13 +1,13 @@
 [package]
 name = "queries-embed"
-version = "0.23.0"
+version = "0.24.0"
 authors = [
     "Kevin Lefevre <kevin.lefevre@snips.ai>",
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>"
 ]
 
 [dependencies]
-queries-core = { path = "../queries-core" }
+queries-core = { path = "../queries-core", features = ["ffi"] }
 error-chain = { version = "0.10", default-features = false }
 lazy_static = "0.2"
 libc = "0.2"

@@ -1,7 +1,7 @@
-extern crate libc;
 extern crate queries_core;
 #[macro_use]
 extern crate lazy_static;
+extern crate libc;
 #[macro_use]
 extern crate error_chain;
 extern crate serde_json;
@@ -11,8 +11,7 @@ use std::sync::Mutex;
 use std::slice;
 use std::io::Cursor;
 
-mod ontology;
-use ontology::*;
+use queries_core::ffi::*;
 
 lazy_static! {
     static ref LAST_ERROR:std::sync::Mutex<String> = std::sync::Mutex::new("".to_string());
@@ -20,13 +19,16 @@ lazy_static! {
 
 mod errors {
     error_chain! {
-          foreign_links {
-                Core(::queries_core::Error);
-                Io(::std::io::Error);
-                Serde(::serde_json::Error);
-                Utf8Error(::std::str::Utf8Error);
-                NulError(::std::ffi::NulError);
-          }
+        links {
+            QueriesCore(::queries_core::Error, ::queries_core::ErrorKind);
+        }
+
+        foreign_links {
+            Io(::std::io::Error);
+            Serde(::serde_json::Error);
+            Utf8Error(::std::str::Utf8Error);
+            NulError(::std::ffi::NulError);
+        }
     }
 
     impl<T> ::std::convert::From<::std::sync::PoisonError<T>> for Error {
