@@ -119,7 +119,12 @@ impl IntentParser for RuleBasedIntentParser {
         }
         let deduplicated_slots = deduplicate_overlapping_slots(result);
         if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-            Ok(resolve_builtin_slots(input, deduplicated_slots, &*builtin_entity_parser))
+            let filter_entity_kinds = self.slot_names_to_entities
+                .values()
+                .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
+                .unique()
+                .collect::<Vec<_>>();
+            Ok(resolve_builtin_slots(input, deduplicated_slots, &*builtin_entity_parser, Some(&*filter_entity_kinds)))
         } else {
             Ok(deduplicated_slots.into_iter()
                 .filter_map(|s| {

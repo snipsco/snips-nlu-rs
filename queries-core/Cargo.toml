@@ -1,6 +1,6 @@
 [package]
 name = "queries-core"
-version = "0.23.0"
+version = "0.24.0"
 authors = [
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>",
     "Kevin Lefevre <kevin.lefevre@snips.ai>"
@@ -8,28 +8,32 @@ authors = [
 repository = "https://github.com/snipsco/snips-queries"
 description = "Rust implementation of the Queries SDK"
 
+[features]
+ffi = ["libc"]
+
 [dependencies]
 queries-resources-packed = { path = "../queries-resources-packed" }
-nlu-rust-ontology = { git="ssh://git@github.com/snipsco/nlu-rust-ontology.git", tag="0.2.0"}
-crfsuite = { git="ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "ccb00872" }
-rustling-ontology = { git="https://github.com/snipsco/rustling-ontology/", tag="0.12.1"}
-nlu-utils = { git="ssh://git@github.com/snipsco/nlu-utils.git", tag="0.4.0"}
+nlu-rust-ontology = { git = "ssh://git@github.com/snipsco/nlu-rust-ontology.git", tag = "0.2.0"}
+crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "ccb00872" }
+rustling-ontology = { git = "https://github.com/snipsco/rustling-ontology/", tag = "0.13.1"}
+nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils.git", tag = "0.4.0"}
 error-chain = { version = "0.10", default-features = false }
 base64 = "0.6"
 itertools = "0.6"
 lazy_static = "0.2"
+libc = { version = "0.2", optional = true }
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 ndarray = "0.10"
 regex = "0.2"
 csv = "0.15"
-maplit = "0.1"
 yolo = "*"
 zip = { version = "0.2", default-features = false }
 
 [dev-dependencies]
-bencher = { git="https://github.com/snipsco/bencher", rev="63910ace" }
+bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
+maplit = "0.1"
 
 [[bench]]
 name = "nlu_engine"
