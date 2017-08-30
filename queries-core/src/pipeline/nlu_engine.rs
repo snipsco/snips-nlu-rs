@@ -187,16 +187,6 @@ fn extract_builtin_slot(input: String,
 
 const DEFAULT_THRESHOLD: usize = 5;
 
-
-#[derive(Serialize, Debug, Clone, PartialEq, Hash)]
-pub struct TaggedEntity {
-    pub value: String,
-    pub range: Option<Range<usize>>,
-    pub entity: String,
-    #[serde(rename="slotName")]
-    pub slot_name: String
-}
-
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct PartialTaggedEntity {
     pub value: String,

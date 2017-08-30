@@ -11,8 +11,6 @@ use std::sync::Mutex;
 use std::slice;
 use std::io::Cursor;
 
-use queries_core::ffi::*;
-
 lazy_static! {
     static ref LAST_ERROR:std::sync::Mutex<String> = std::sync::Mutex::new("".to_string());
 }
@@ -20,7 +18,8 @@ lazy_static! {
 mod errors {
     error_chain! {
         links {
-            QueriesCore(::queries_core::Error, ::queries_core::ErrorKind);
+            SnipsQueries(::queries_core::Error, ::queries_core::ErrorKind);
+            SnipsQueriesOntology(::queries_core::OntologyError, ::queries_core::OntologyErrorKind);
         }
 
         foreign_links {
@@ -100,7 +99,7 @@ pub extern "C" fn nlu_engine_create_from_zip(zip: *const libc::c_uchar,
 #[no_mangle]
 pub extern "C" fn nlu_engine_run_parse(client: *const Opaque,
                                        input: *const libc::c_char,
-                                       result: *mut *const CIntentParserResult)
+                                       result: *mut *const queries_core::CIntentParserResult)
                                        -> QUERIESRESULT {
     wrap!(run_parse(client, input, result))
 }
@@ -117,7 +116,7 @@ pub extern "C" fn nlu_engine_run_parse_into_json(client: *const Opaque,
 pub extern "C" fn nlu_engine_run_tag(client: *const Opaque,
                                      input: *const libc::c_char,
                                      intent: *const libc::c_char,
-                                     result: *mut *const CTaggedEntityList)
+                                     result: *mut *const queries_core::CTaggedEntityList)
                                      -> QUERIESRESULT {
     wrap!(run_tag(client, input, intent, result))
 }
@@ -146,18 +145,18 @@ pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> QUERIESRESUL
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_destroy_result(result: *mut queries_core::CIntentParserResult) -> QUERIESRESULT {
     unsafe {
-        let _: Box<CIntentParserResult> = Box::from_raw(result);
+        let _: Box<queries_core::CIntentParserResult> = Box::from_raw(result);
     }
 
     QUERIESRESULT::OK
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut CTaggedEntityList) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut queries_core::CTaggedEntityList) -> QUERIESRESULT {
     unsafe {
-        let _: Box<CTaggedEntityList> = Box::from_raw(result);
+        let _: Box<queries_core::CTaggedEntityList> = Box::from_raw(result);
     }
 
     QUERIESRESULT::OK
@@ -196,15 +195,15 @@ fn create_from_zip(zip: *const libc::c_uchar,
 
 fn run_parse(client: *const Opaque,
              input: *const libc::c_char,
-             result: *mut *const CIntentParserResult)
+             result: *mut *const queries_core::CIntentParserResult)
              -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 
     let results = intent_parser.parse(input, None)?;
-    let b = Box::new(CIntentParserResult::from(results)?);
+    let b = Box::new(queries_core::CIntentParserResult::from(results)?);
 
-    unsafe { *result = Box::into_raw(b) as *const CIntentParserResult }
+    unsafe { *result = Box::into_raw(b) as *const queries_core::CIntentParserResult }
 
     Ok(())
 }
@@ -224,16 +223,16 @@ fn run_parse_into_json(client: *const Opaque,
 fn run_tag(client: *const Opaque,
            input: *const libc::c_char,
            intent: *const libc::c_char,
-           result: *mut *const CTaggedEntityList)
+           result: *mut *const queries_core::CTaggedEntityList)
            -> Result<()> {
     let input = get_str!(input);
     let intent = get_str!(intent);
     let intent_parser = get_intent_parser!(client);
 
     let results = intent_parser.tag(input, intent, None)?;
-    let b = Box::new(CTaggedEntityList::from(results)?);
+    let b = Box::new(queries_core::CTaggedEntityList::from(results)?);
 
-    unsafe { *result = Box::into_raw(b) as *const CTaggedEntityList }
+    unsafe { *result = Box::into_raw(b) as *const queries_core::CTaggedEntityList }
 
     Ok(())
 }
