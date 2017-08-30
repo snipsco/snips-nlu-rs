@@ -51,19 +51,16 @@ pub enum QUERIESRESULT {
 
 macro_rules! wrap {
     ($e:expr) => { match $e {
-        Ok(_) => { return QUERIESRESULT::OK; }
+        Ok(_) => { QUERIESRESULT::OK }
         Err(e) => {
-            use std::io::Write;
             use error_chain::ChainedError;
-            let stderr = &mut ::std::io::stderr();
-            let errmsg = "Error writing to stderr";
             let msg = e.display().to_string();
-            writeln!(stderr, "{}", msg).expect(errmsg);
+            eprintln!("{}", msg);
             match LAST_ERROR.lock() {
                 Ok(mut guard) => *guard = msg,
                 Err(_) => () /* curl up and cry */
             }
-            return QUERIESRESULT::KO;
+            QUERIESRESULT::KO
         }
     }}
 }
