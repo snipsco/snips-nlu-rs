@@ -8,8 +8,6 @@ extern crate error_chain;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
-#[cfg(feature = "ffi")]
-extern crate libc;
 #[macro_use]
 extern crate ndarray;
 extern crate queries_resources_packed as resources_packed;
@@ -33,15 +31,15 @@ mod builtin_entities;
 mod models;
 mod pipeline;
 mod utils;
-#[cfg(feature = "ffi")]
-pub mod ffi;
 #[cfg(test)]
 mod testutils;
 
 pub use builtin_entities::ontology::*;
 pub use core_ontology::*;
+#[cfg(feature="ffi")]
+pub use core_ontology::ffi::*;
 pub use errors::*;
-pub use pipeline::nlu_engine::{SnipsNluEngine, TaggedEntity};
+pub use pipeline::nlu_engine::SnipsNluEngine;
 pub use pipeline::configuration::{NluEngineConfigurationConvertible,
                                   NluEngineConfiguration};
 pub use pipeline::assistant_config::{FileBasedConfiguration,
