@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use itertools::Itertools;
 
-use core_ontology::SlotValue;
+use snips_queries_ontology::SlotValue;
 use rustling_ontology::{Lang, Parser, build_parser, ResolverContext};
 use builtin_entities::ontology::*;
 
@@ -132,7 +132,7 @@ impl CacheValue {
 #[cfg(test)]
 mod test {
     use super::*;
-    use core_ontology::*;
+    use snips_queries_ontology::*;
     use itertools::Itertools;
 
     #[test]

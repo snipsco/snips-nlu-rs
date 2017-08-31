@@ -12,7 +12,7 @@ extern crate lazy_static;
 extern crate ndarray;
 extern crate queries_resources_packed as resources_packed;
 extern crate nlu_utils;
-extern crate nlu_rust_ontology as core_ontology;
+extern crate snips_queries_ontology;
 extern crate regex;
 extern crate rustling_ontology;
 extern crate serde;
@@ -35,9 +35,6 @@ mod utils;
 mod testutils;
 
 pub use builtin_entities::ontology::*;
-pub use core_ontology::*;
-#[cfg(feature="ffi")]
-pub use core_ontology::ffi::*;
 pub use errors::*;
 pub use pipeline::nlu_engine::SnipsNluEngine;
 pub use pipeline::configuration::{NluEngineConfigurationConvertible,
