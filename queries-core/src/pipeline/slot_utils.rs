@@ -1,5 +1,5 @@
 use builtin_entities::{RustlingParser, BuiltinEntityKind};
-use core_ontology::*;
+use snips_queries_ontology::*;
 use pipeline::InternalSlot;
 
 pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {

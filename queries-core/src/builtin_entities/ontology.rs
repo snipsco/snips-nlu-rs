@@ -1,5 +1,5 @@
 use errors::*;
-use core_ontology::*;
+use snips_queries_ontology::*;
 use rustling_ontology::{DimensionKind, Grain as RustlingGrain};
 use rustling_ontology::dimension::{Precision as RustlingPrecision};
 use rustling_ontology::output::{IntegerOutput, FloatOutput, OrdinalOutput, TimeOutput,

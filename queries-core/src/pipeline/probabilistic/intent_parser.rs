@@ -8,7 +8,7 @@ use itertools::Itertools;
 use rustling_ontology::Lang;
 
 use errors::*;
-use core_ontology::{IntentClassifierResult, Slot};
+use snips_queries_ontology::{IntentClassifierResult, Slot};
 use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
@@ -206,7 +206,7 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 mod tests {
     use super::*;
     use std::result::Result as StdResult;
-    use core_ontology::*;
+    use snips_queries_ontology::*;
     use pipeline::probabilistic::crf_utils::TaggingScheme;
 
     struct TestTagger {

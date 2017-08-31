@@ -1,4 +1,5 @@
 extern crate queries_core;
+extern crate snips_queries_ontology;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
@@ -11,15 +12,18 @@ use std::sync::Mutex;
 use std::slice;
 use std::io::Cursor;
 
+use queries_core::{SnipsNluEngine, FileBasedConfiguration, ZipBasedConfiguration};
+use snips_queries_ontology::ffi::{CIntentParserResult, CTaggedEntityList};
+
 lazy_static! {
-    static ref LAST_ERROR:std::sync::Mutex<String> = std::sync::Mutex::new("".to_string());
+    static ref LAST_ERROR: Mutex<String> = Mutex::new("".to_string());
 }
 
 mod errors {
     error_chain! {
         links {
             SnipsQueries(::queries_core::Error, ::queries_core::ErrorKind);
-            SnipsQueriesOntology(::queries_core::OntologyError, ::queries_core::OntologyErrorKind);
+            SnipsQueriesOntology(::snips_queries_ontology::OntologyError, ::snips_queries_ontology::OntologyErrorKind);
         }
 
         foreign_links {
@@ -40,7 +44,7 @@ mod errors {
 use errors::*;
 
 #[repr(C)]
-pub struct Opaque(std::sync::Mutex<queries_core::SnipsNluEngine>);
+pub struct Opaque(std::sync::Mutex<SnipsNluEngine>);
 
 #[repr(C)]
 #[derive(Debug)]
@@ -82,7 +86,7 @@ macro_rules! get_str {
 pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const libc::c_char,
                                              client: *mut *const Opaque)
                                              -> QUERIESRESULT {
-    wrap!(create_from_dir(root_dir, client));
+    wrap!(create_from_dir(root_dir, client))
 }
 
 #[no_mangle]
@@ -90,13 +94,13 @@ pub extern "C" fn nlu_engine_create_from_zip(zip: *const libc::c_uchar,
                                              zip_size: libc::c_uint,
                                              client: *mut *const Opaque)
                                              -> QUERIESRESULT {
-    wrap!(create_from_zip(zip, zip_size, client));
+    wrap!(create_from_zip(zip, zip_size, client))
 }
 
 #[no_mangle]
 pub extern "C" fn nlu_engine_run_parse(client: *const Opaque,
                                        input: *const libc::c_char,
-                                       result: *mut *const queries_core::CIntentParserResult)
+                                       result: *mut *const CIntentParserResult)
                                        -> QUERIESRESULT {
     wrap!(run_parse(client, input, result))
 }
@@ -113,7 +117,7 @@ pub extern "C" fn nlu_engine_run_parse_into_json(client: *const Opaque,
 pub extern "C" fn nlu_engine_run_tag(client: *const Opaque,
                                      input: *const libc::c_char,
                                      intent: *const libc::c_char,
-                                     result: *mut *const queries_core::CTaggedEntityList)
+                                     result: *mut *const CTaggedEntityList)
                                      -> QUERIESRESULT {
     wrap!(run_tag(client, input, intent, result))
 }
@@ -142,18 +146,18 @@ pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> QUERIESRESUL
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_destroy_result(result: *mut queries_core::CIntentParserResult) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) -> QUERIESRESULT {
     unsafe {
-        let _: Box<queries_core::CIntentParserResult> = Box::from_raw(result);
+        let _: Box<CIntentParserResult> = Box::from_raw(result);
     }
 
     QUERIESRESULT::OK
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut queries_core::CTaggedEntityList) -> QUERIESRESULT {
+pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut CTaggedEntityList) -> QUERIESRESULT {
     unsafe {
-        let _: Box<queries_core::CTaggedEntityList> = Box::from_raw(result);
+        let _: Box<CTaggedEntityList> = Box::from_raw(result);
     }
 
     QUERIESRESULT::OK
@@ -167,8 +171,8 @@ pub extern "C" fn nlu_engine_get_model_version(version: *mut *const libc::c_char
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let assistant_config = queries_core::FileBasedConfiguration::new(root_dir)?;
-    let intent_parser = queries_core::SnipsNluEngine::new(assistant_config)?;
+    let assistant_config = FileBasedConfiguration::new(root_dir)?;
+    let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -182,8 +186,8 @@ fn create_from_zip(zip: *const libc::c_uchar,
     let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
     let reader = Cursor::new(slice.to_owned());
 
-    let assistant_config = queries_core::ZipBasedConfiguration::new(reader)?;
-    let intent_parser = queries_core::SnipsNluEngine::new(assistant_config)?;
+    let assistant_config = ZipBasedConfiguration::new(reader)?;
+    let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -192,15 +196,15 @@ fn create_from_zip(zip: *const libc::c_uchar,
 
 fn run_parse(client: *const Opaque,
              input: *const libc::c_char,
-             result: *mut *const queries_core::CIntentParserResult)
+             result: *mut *const CIntentParserResult)
              -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 
     let results = intent_parser.parse(input, None)?;
-    let b = Box::new(queries_core::CIntentParserResult::from(results)?);
+    let b = Box::new(CIntentParserResult::from(results)?);
 
-    unsafe { *result = Box::into_raw(b) as *const queries_core::CIntentParserResult }
+    unsafe { *result = Box::into_raw(b) as *const CIntentParserResult }
 
     Ok(())
 }
@@ -220,16 +224,16 @@ fn run_parse_into_json(client: *const Opaque,
 fn run_tag(client: *const Opaque,
            input: *const libc::c_char,
            intent: *const libc::c_char,
-           result: *mut *const queries_core::CTaggedEntityList)
+           result: *mut *const CTaggedEntityList)
            -> Result<()> {
     let input = get_str!(input);
     let intent = get_str!(intent);
     let intent_parser = get_intent_parser!(client);
 
     let results = intent_parser.tag(input, intent, None)?;
-    let b = Box::new(queries_core::CTaggedEntityList::from(results)?);
+    let b = Box::new(CTaggedEntityList::from(results)?);
 
-    unsafe { *result = Box::into_raw(b) as *const queries_core::CTaggedEntityList }
+    unsafe { *result = Box::into_raw(b) as *const CTaggedEntityList }
 
     Ok(())
 }
@@ -239,7 +243,7 @@ fn get_last_error(error: *mut *const libc::c_char) -> Result<()> {
 }
 
 fn get_model_version(version: *mut *const libc::c_char) -> Result<()> {
-    point_to_string(version, queries_core::SnipsNluEngine::model_version().to_string())
+    point_to_string(version, SnipsNluEngine::model_version().to_string())
 }
 
 fn point_to_string(pointer: *mut *const libc::c_char, string: String) -> Result<()> {
