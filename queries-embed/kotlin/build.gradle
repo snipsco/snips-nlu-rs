@@ -90,7 +90,7 @@ task("aar", type: Zip) {
 task("classesJarForAar", type: Zip) {
     destinationDir aarDir
     archiveName "classes.jar"
-    from new File(buildDir, "classes/main")
+    from new File(buildDir, "classes/java/main")
 }
 
 classesJarForAar.dependsOn(classes)
