@@ -8,7 +8,7 @@ use regex::{Regex, RegexBuilder};
 
 use errors::*;
 use super::configuration::RuleBasedParserConfiguration;
-use core_ontology::{IntentClassifierResult, Slot};
+use snips_queries_ontology::{IntentClassifierResult, Slot};
 use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
 use nlu_utils::token::{tokenize, tokenize_light};
@@ -203,7 +203,7 @@ fn get_builtin_entity_name(entity_label: &str) -> String {
 mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use core_ontology::*;
+    use snips_queries_ontology::*;
     use pipeline::rule_based::configuration::RuleBasedParserConfiguration;
     use pipeline::{IntentParser, InternalSlot};
     use builtin_entities::RustlingParser;

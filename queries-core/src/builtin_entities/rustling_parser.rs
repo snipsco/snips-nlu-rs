@@ -5,7 +5,7 @@ use std::time::Instant;
 
 use itertools::Itertools;
 
-use core_ontology::SlotValue;
+use snips_queries_ontology::SlotValue;
 use rustling_ontology::{Lang, Parser, build_parser, ResolverContext};
 use builtin_entities::ontology::*;
 
@@ -132,7 +132,7 @@ impl CacheValue {
 #[cfg(test)]
 mod test {
     use super::*;
-    use core_ontology::*;
+    use snips_queries_ontology::*;
     use itertools::Itertools;
 
     #[test]
@@ -164,13 +164,13 @@ mod test {
                     value: "two".into(),
                     range: 23..26,
                     entity_kind: BuiltinEntityKind::Number,
-                    entity: SlotValue::Number(NumberValue(2.0))
+                    entity: SlotValue::Number(NumberValue { value: 2.0 })
                 },
                 RustlingEntity {
                     value: "4.5".into(),
                     range: 34..42,
                     entity_kind: BuiltinEntityKind::Number,
-                    entity: SlotValue::Number(NumberValue(4.5))
+                    entity: SlotValue::Number(NumberValue { value: 4.5 })
                 },
             ]
         }

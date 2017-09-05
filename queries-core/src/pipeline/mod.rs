@@ -2,7 +2,7 @@ use std::ops::Range;
 use std::collections::HashSet;
 
 use errors::*;
-use core_ontology::{IntentClassifierResult, Slot};
+use snips_queries_ontology::{IntentClassifierResult, Slot};
 
 pub mod rule_based;
 pub mod probabilistic;
