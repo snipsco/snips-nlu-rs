@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.1.2-5'
+    ext.kotlin_version = '1.1.3-2'
     repositories {
         jcenter()
     }
@@ -11,11 +11,17 @@ buildscript {
 
 apply plugin: 'kotlin'
 
-version = "0.24.0"
+version = "0.25.0"
 group = "ai.snips"
 
 repositories {
     jcenter()
+    maven {
+        url "https://nexus-repository.snips.ai/repository/snips-maven-releases/"
+    }
+    maven {
+        url "https://nexus-repository.snips.ai/repository/snips-maven-snapshots/"
+    }
 }
 
 configurations {
@@ -26,6 +32,7 @@ configurations {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     compile 'net.java.dev.jna:jna:4.4.0'
+    compile 'ai.snips:snips-queries-ontology:0.4.0' // make sure we use the same version in rust...
     testCompile 'junit:junit:4.12'
     testCompile 'com.google.truth:truth:0.34'
 }
@@ -83,7 +90,7 @@ task("aar", type: Zip) {
 task("classesJarForAar", type: Zip) {
     destinationDir aarDir
     archiveName "classes.jar"
-    from new File(buildDir, "classes/main")
+    from new File(buildDir, "classes/java/main")
 }
 
 classesJarForAar.dependsOn(classes)

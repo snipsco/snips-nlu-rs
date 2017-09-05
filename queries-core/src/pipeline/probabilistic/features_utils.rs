@@ -1,6 +1,5 @@
 use std::str;
 use std::iter::FromIterator;
-use regex::{Regex, RegexBuilder};
 use nlu_utils::token::Token;
 
 pub fn get_word_chunk(word: String, chunk_size: usize, chunk_start: usize, reverse: bool) -> Option<String> {
@@ -16,21 +15,27 @@ pub fn get_word_chunk(word: String, chunk_size: usize, chunk_start: usize, rever
 }
 
 pub fn get_shape(string: &str) -> String {
-    lazy_static! {
-        static ref LOWER_REGEX: Regex = RegexBuilder::new("^[a-z]+$").case_insensitive(false).build().unwrap();
-        static ref UPPER_REGEX: Regex = RegexBuilder::new("^[A-Z]+$").case_insensitive(false).build().unwrap();
-        static ref TITLE_REGEX: Regex = RegexBuilder::new("^[A-Z][a-z]+$").case_insensitive(false).build().unwrap();
-    }
-
-    if LOWER_REGEX.is_match(string) {
+    if string.chars().all(char::is_lowercase) {
         "xxx".to_string()
-    } else if UPPER_REGEX.is_match(string) {
+    } else if string.chars().all(char::is_uppercase) {
         "XXX".to_string()
-    } else if TITLE_REGEX.is_match(string) {
+    } else if is_title_case(string) {
         "Xxx".to_string()
     } else {
         "xX".to_string()
     }
+}
+
+fn is_title_case(string: &str) -> bool {
+    let mut first = true;
+    for c in string.chars() {
+        match (first, c.is_uppercase()) {
+            (true, true) => first = false,
+            (false, false) => continue,
+            _ => return false,
+        }
+    }
+    return !first;
 }
 
 pub fn initial_string_from_tokens(tokens: &[Token]) -> String {
@@ -102,13 +107,13 @@ mod tests {
     #[test]
     fn get_shape_works() {
         // Given
-        let inputs = vec!["hello", "Hello", "HELLO", "heLo", "!!"];
+        let inputs = vec!["héllo", "Héllo", "HÉLLO", "hélLo", "!!", "Éllo", "É"];
 
         // When
-        let actual_shapes: Vec<String> = (0..5).map(|i| get_shape(inputs[i])).collect();
+        let actual_shapes: Vec<String> = inputs.into_iter().map(|i| get_shape(i)).collect();
 
         // Then
-        let expected_shapes = vec!["xxx", "Xxx", "XXX", "xX", "xX"];
+        let expected_shapes = vec!["xxx", "Xxx", "XXX", "xX", "xX", "Xxx", "XXX"];
         assert_eq!(actual_shapes, expected_shapes)
     }
 
