@@ -1,4 +1,5 @@
 extern crate queries_core;
+extern crate snips_queries_ontology;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
@@ -11,16 +12,18 @@ use std::sync::Mutex;
 use std::slice;
 use std::io::Cursor;
 
-use queries_core::ffi::*;
+use queries_core::{SnipsNluEngine, FileBasedConfiguration, ZipBasedConfiguration};
+use snips_queries_ontology::ffi::{CIntentParserResult, CTaggedEntityList};
 
 lazy_static! {
-    static ref LAST_ERROR:std::sync::Mutex<String> = std::sync::Mutex::new("".to_string());
+    static ref LAST_ERROR: Mutex<String> = Mutex::new("".to_string());
 }
 
 mod errors {
     error_chain! {
         links {
-            QueriesCore(::queries_core::Error, ::queries_core::ErrorKind);
+            SnipsQueries(::queries_core::Error, ::queries_core::ErrorKind);
+            SnipsQueriesOntology(::snips_queries_ontology::OntologyError, ::snips_queries_ontology::OntologyErrorKind);
         }
 
         foreign_links {
@@ -41,7 +44,7 @@ mod errors {
 use errors::*;
 
 #[repr(C)]
-pub struct Opaque(std::sync::Mutex<queries_core::SnipsNluEngine>);
+pub struct Opaque(std::sync::Mutex<SnipsNluEngine>);
 
 #[repr(C)]
 #[derive(Debug)]
@@ -52,19 +55,16 @@ pub enum QUERIESRESULT {
 
 macro_rules! wrap {
     ($e:expr) => { match $e {
-        Ok(_) => { return QUERIESRESULT::OK; }
+        Ok(_) => { QUERIESRESULT::OK }
         Err(e) => {
-            use std::io::Write;
             use error_chain::ChainedError;
-            let stderr = &mut ::std::io::stderr();
-            let errmsg = "Error writing to stderr";
             let msg = e.display().to_string();
-            writeln!(stderr, "{}", msg).expect(errmsg);
+            eprintln!("{}", msg);
             match LAST_ERROR.lock() {
                 Ok(mut guard) => *guard = msg,
                 Err(_) => () /* curl up and cry */
             }
-            return QUERIESRESULT::KO;
+            QUERIESRESULT::KO
         }
     }}
 }
@@ -86,7 +86,7 @@ macro_rules! get_str {
 pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const libc::c_char,
                                              client: *mut *const Opaque)
                                              -> QUERIESRESULT {
-    wrap!(create_from_dir(root_dir, client));
+    wrap!(create_from_dir(root_dir, client))
 }
 
 #[no_mangle]
@@ -94,7 +94,7 @@ pub extern "C" fn nlu_engine_create_from_zip(zip: *const libc::c_uchar,
                                              zip_size: libc::c_uint,
                                              client: *mut *const Opaque)
                                              -> QUERIESRESULT {
-    wrap!(create_from_zip(zip, zip_size, client));
+    wrap!(create_from_zip(zip, zip_size, client))
 }
 
 #[no_mangle]
@@ -171,8 +171,8 @@ pub extern "C" fn nlu_engine_get_model_version(version: *mut *const libc::c_char
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let assistant_config = queries_core::FileBasedConfiguration::new(root_dir)?;
-    let intent_parser = queries_core::SnipsNluEngine::new(assistant_config)?;
+    let assistant_config = FileBasedConfiguration::new(root_dir)?;
+    let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -186,8 +186,8 @@ fn create_from_zip(zip: *const libc::c_uchar,
     let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
     let reader = Cursor::new(slice.to_owned());
 
-    let assistant_config = queries_core::ZipBasedConfiguration::new(reader)?;
-    let intent_parser = queries_core::SnipsNluEngine::new(assistant_config)?;
+    let assistant_config = ZipBasedConfiguration::new(reader)?;
+    let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
 
@@ -243,7 +243,7 @@ fn get_last_error(error: *mut *const libc::c_char) -> Result<()> {
 }
 
 fn get_model_version(version: *mut *const libc::c_char) -> Result<()> {
-    point_to_string(version, queries_core::SnipsNluEngine::model_version().to_string())
+    point_to_string(version, SnipsNluEngine::model_version().to_string())
 }
 
 fn point_to_string(pointer: *mut *const libc::c_char, string: String) -> Result<()> {

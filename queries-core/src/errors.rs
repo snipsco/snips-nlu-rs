@@ -1,17 +1,18 @@
 error_chain! {
+    links {
+        Rustling(::rustling_ontology::RustlingError, ::rustling_ontology::RustlingErrorKind);
+    }
+
     foreign_links {
         Io(::std::io::Error);
         NdArray(::ndarray::ShapeError);
         Csv(::csv::Error);
         Zip(::zip::result::ZipError);
         Regex(::regex::Error);
-        Rustling(::rustling_ontology::RustlingError);
         Crfsuite(::crfsuite::Error);
         Base64(::base64::DecodeError);
         PackedResources(::resources_packed::Error);
         SerdeJson(::serde_json::Error);
-        Utf8Error(::std::str::Utf8Error) #[cfg(feature = "ffi")];
-        NulError(::std::ffi::NulError) #[cfg(feature = "ffi")];
     }
 }
 
