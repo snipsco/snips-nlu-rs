@@ -7,7 +7,7 @@ use itertools::Itertools;
 
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
-use core_ontology::*;
+use snips_queries_ontology::*;
 use pipeline::IntentParser;
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
@@ -74,7 +74,7 @@ impl SnipsNluEngine {
                             entity.utterances
                                 .get(&normalize(&slot.raw_value))
                                 .map(|reference_value|
-                                    Some(slot.clone().with_slot_value(SlotValue::Custom(reference_value.to_string()))))
+                                    Some(slot.clone().with_slot_value(SlotValue::Custom(reference_value.to_string().into()))))
                                 .unwrap_or(
                                     if entity.automatically_extensible {
                                         Some(slot)
@@ -146,7 +146,7 @@ fn extract_custom_slot(input: String,
         .map(|(ngram, _)|
             Some(Slot {
                 raw_value: ngram.clone(),
-                value: SlotValue::Custom(custom_entity.utterances.get(&normalize(&ngram)).unwrap().to_string()),
+                value: SlotValue::Custom(custom_entity.utterances.get(&normalize(&ngram)).unwrap().to_string().into()),
                 range: None,
                 entity: entity_name.clone(),
                 slot_name: slot_name.clone()
@@ -156,7 +156,7 @@ fn extract_custom_slot(input: String,
                 Some(
                     Slot {
                         raw_value: input.clone(),
-                        value: SlotValue::Custom(input),
+                        value: SlotValue::Custom(input.into()),
                         range: None,
                         entity: entity_name,
                         slot_name: slot_name
@@ -186,16 +186,6 @@ fn extract_builtin_slot(input: String,
 }
 
 const DEFAULT_THRESHOLD: usize = 5;
-
-
-#[derive(Serialize, Debug, Clone, PartialEq, Hash)]
-pub struct TaggedEntity {
-    pub value: String,
-    pub range: Option<Range<usize>>,
-    pub entity: String,
-    #[serde(rename="slotName")]
-    pub slot_name: String
-}
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct PartialTaggedEntity {
@@ -315,7 +305,7 @@ mod tests {
         let result = nlu_engine.parse("Make me two cups of coffee please", None).unwrap();
 
         // Then
-        let expected_entity_value = SlotValue::Number(NumberValue(2.0));
+        let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
         let expected_result = IntentParserResult {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
@@ -410,7 +400,7 @@ mod tests {
         // Then
         let expected_slot = Some(Slot {
             raw_value: "b c d".to_string(),
-            value: SlotValue::Custom("value2".to_string()),
+            value: SlotValue::Custom("value2".to_string().into()),
             range: None,
             entity: "entity".to_string(),
             slot_name: "slot".to_string()
@@ -436,7 +426,7 @@ mod tests {
         // Then
         let expected_slot = Some(Slot {
             raw_value: "hello world".to_string(),
-            value: SlotValue::Custom("hello world".to_string()),
+            value: SlotValue::Custom("hello world".to_string().into()),
             range: None,
             entity: "entity".to_string(),
             slot_name: "slot".to_string()
