@@ -19,11 +19,23 @@ pub fn get_shape(string: &str) -> String {
         "xxx".to_string()
     } else if string.chars().all(char::is_uppercase) {
         "XXX".to_string()
-    } else if string.len() > 1 && string.chars().nth(0).unwrap().is_uppercase() && string[1..].chars().all(char::is_lowercase) {
+    } else if is_title_case(string) {
         "Xxx".to_string()
     } else {
         "xX".to_string()
     }
+}
+
+fn is_title_case(string: &str) -> bool {
+    let mut first = true;
+    for c in string.chars() {
+        match (first, c.is_uppercase()) {
+            (true, true) => first = false,
+            (false, false) => continue,
+            _ => return false,
+        }
+    }
+    return !first;
 }
 
 pub fn initial_string_from_tokens(tokens: &[Token]) -> String {
@@ -95,13 +107,13 @@ mod tests {
     #[test]
     fn get_shape_works() {
         // Given
-        let inputs = vec!["héllo", "Héllo", "HÉLLO", "hélLo", "!!"];
+        let inputs = vec!["héllo", "Héllo", "HÉLLO", "hélLo", "!!", "Éllo", "É"];
 
         // When
-        let actual_shapes: Vec<String> = (0..5).map(|i| get_shape(inputs[i])).collect();
+        let actual_shapes: Vec<String> = inputs.into_iter().map(|i| get_shape(i)).collect();
 
         // Then
-        let expected_shapes = vec!["xxx", "Xxx", "XXX", "xX", "xX"];
+        let expected_shapes = vec!["xxx", "Xxx", "XXX", "xX", "xX", "Xxx", "XXX"];
         assert_eq!(actual_shapes, expected_shapes)
     }
 
