@@ -58,18 +58,18 @@ impl Featurizer {
         self.add_entity_to_query(&normalized_stemmed_query)
     }
 
-    pub fn add_entity_to_query(&self, query: &str) -> String {
+    fn add_entity_to_query(&self, query: &str) -> String {
         let tokens = tokenize_light(query);
         let tokens_ref = tokens.iter().map(|t| &**t).collect_vec();
         let ngrams = compute_all_ngrams(&*tokens_ref, tokens_ref.len());
 
-        let matching_features: Vec<String> = ngrams.iter()
+        let matching_features: Vec<&String> = ngrams.iter()
             .filter_map(|ngrams| self.entity_utterances_to_feature_names.get(&ngrams.0))
-            .flat_map(|features| features.iter().map(|s| s.to_string()))
-            .collect_vec();
+            .flat_map(|features| features)
+            .collect();
 
         if matching_features.len() > 0 {
-            format!("{} {}", query, matching_features.join(" "))
+            format!("{} {}", query, matching_features.iter().join(" "))
         } else {
             query.to_string()
         }
@@ -108,7 +108,7 @@ mod tests {
             best_features,
             vocabulary,
             idf_diag,
-            entity_utterances_to_feature_names: entity_utterances_to_feature_names
+            entity_utterances_to_feature_names
         };
 
         let input = "héLLo thIs bïrd is a beaUtiful bird";
@@ -161,7 +161,7 @@ mod tests {
             best_features,
             vocabulary,
             idf_diag,
-            entity_utterances_to_feature_names: entity_utterances_to_feature_names
+            entity_utterances_to_feature_names
         };
 
         // When
