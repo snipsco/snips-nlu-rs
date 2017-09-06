@@ -36,15 +36,18 @@ impl SnipsNluEngine {
 
         let model = nlu_config.model;
         if let Some(config) = model.rule_based_parser {
-            parsers.push(Box::new(RuleBasedIntentParser::new(config)?))
+            parsers.push(Box::new(RuleBasedIntentParser::new(config)
+                                  .chain_err(|| "Can't create RuleBasedIntentParser")?))
         };
         if let Some(config) = model.probabilistic_parser {
-            parsers.push(Box::new(ProbabilisticIntentParser::new(config)?))
+            parsers.push(Box::new(ProbabilisticIntentParser::new(config)
+                                  .chain_err(|| "Can't create ProbabilisticIntentParser")?))
         };
         let intents_data_sizes = nlu_config.intents_data_sizes;
         let slot_name_mapping = nlu_config.slot_name_mapping;
         let builtin_entity_parser = Lang::from_str(&nlu_config.language).ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
+
         Ok(SnipsNluEngine {
             language: nlu_config.language,
             parsers,
