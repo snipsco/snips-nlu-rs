@@ -331,7 +331,7 @@ mod tests {
             tfidf_vectorizer_idf_diag: diag_elements,
             best_features: best_features,
             tfidf_vectorizer_vocab: vocabulary,
-            entity_utterances_to_feature_names: entity_utterances_to_feature_names
+            entity_utterances_to_feature_names
         };
 
         let featurizer = Featurizer::new(config);
