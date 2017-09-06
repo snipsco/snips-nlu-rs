@@ -63,6 +63,16 @@ class NluEngineTest {
     }
 
     @Test
+    fun tagWorksOnEmptyResult() {
+        NluEngine(File("../../data/tests/configurations")).use {
+            println("hello")
+            it.tag("Turn off the lights", "MakeTea").apply {
+                assertThat(this).hasSize(0)
+            }
+        }
+    }
+
+    @Test
     fun funkyCharsArePreserved() {
         NluEngine(File("../../data/tests/configurations")).use {
             it.parse("&€£ôœþかたな刀☺ ̿ ̿ ̿'̿'\\̵͇̿̿\\з=(•_•)=ε/̵͇̿̿/'̿'̿ ̿").apply {
