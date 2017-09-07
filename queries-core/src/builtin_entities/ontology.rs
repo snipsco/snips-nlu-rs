@@ -1,10 +1,12 @@
 use errors::*;
-use snips_queries_ontology::*;
+use snips_queries_ontology::{AmountOfMoneyValue, DurationValue, Grain, InstantTimeValue,
+                             NumberValue, OrdinalValue, Precision, SlotValue, TemperatureValue,
+                             TimeIntervalValue};
 use rustling_ontology::{DimensionKind, Grain as RustlingGrain};
-use rustling_ontology::dimension::{Precision as RustlingPrecision};
-use rustling_ontology::output::{IntegerOutput, FloatOutput, OrdinalOutput, TimeOutput,
-                                TimeIntervalOutput, AmountOfMoneyOutput, TemperatureOutput,
-                                DurationOutput, Output};
+use rustling_ontology::dimension::Precision as RustlingPrecision;
+use rustling_ontology::output::{AmountOfMoneyOutput, DurationOutput, FloatOutput, IntegerOutput,
+                                OrdinalOutput, Output, TemperatureOutput, TimeIntervalOutput,
+                                TimeOutput};
 
 pub trait FromRustling<T>: Sized {
     fn from_rustling(rustling_output: T) -> Self;
@@ -12,19 +14,25 @@ pub trait FromRustling<T>: Sized {
 
 impl FromRustling<IntegerOutput> for NumberValue {
     fn from_rustling(rustling_output: IntegerOutput) -> NumberValue {
-        NumberValue { value: rustling_output.0 as f64 }
+        NumberValue {
+            value: rustling_output.0 as f64,
+        }
     }
 }
 
 impl FromRustling<FloatOutput> for NumberValue {
     fn from_rustling(rustling_output: FloatOutput) -> NumberValue {
-        NumberValue { value: rustling_output.0 as f64 }
+        NumberValue {
+            value: rustling_output.0 as f64,
+        }
     }
 }
 
 impl FromRustling<OrdinalOutput> for OrdinalValue {
     fn from_rustling(rustling_output: OrdinalOutput) -> OrdinalValue {
-        OrdinalValue { value: rustling_output.0 }
+        OrdinalValue {
+            value: rustling_output.0,
+        }
     }
 }
 
@@ -33,7 +41,7 @@ impl FromRustling<TimeOutput> for InstantTimeValue {
         InstantTimeValue {
             value: rustling_output.moment.to_string(),
             grain: Grain::from_rustling(rustling_output.grain),
-            precision: Precision::from_rustling(rustling_output.precision)
+            precision: Precision::from_rustling(rustling_output.precision),
         }
     }
 }
@@ -43,15 +51,15 @@ impl FromRustling<TimeIntervalOutput> for TimeIntervalValue {
         match rustling_output {
             TimeIntervalOutput::After(after) => TimeIntervalValue {
                 from: Some(after.moment.to_string()),
-                to: None
+                to: None,
             },
             TimeIntervalOutput::Before(before) => TimeIntervalValue {
                 from: None,
-                to: Some(before.moment.to_string())
+                to: Some(before.moment.to_string()),
             },
             TimeIntervalOutput::Between(from, to, _) => TimeIntervalValue {
                 from: Some(from.to_string()),
-                to: Some(to.to_string())
+                to: Some(to.to_string()),
             },
         }
     }
@@ -62,14 +70,17 @@ impl FromRustling<AmountOfMoneyOutput> for AmountOfMoneyValue {
         AmountOfMoneyValue {
             value: rustling_output.value,
             precision: Precision::from_rustling(rustling_output.precision),
-            unit: rustling_output.unit.map(|s| s.to_string())
+            unit: rustling_output.unit.map(|s| s.to_string()),
         }
     }
 }
 
 impl FromRustling<TemperatureOutput> for TemperatureValue {
     fn from_rustling(rustling_output: TemperatureOutput) -> TemperatureValue {
-        TemperatureValue { value: rustling_output.value, unit: rustling_output.unit.map(|s| s.to_string()) }
+        TemperatureValue {
+            value: rustling_output.value,
+            unit: rustling_output.unit.map(|s| s.to_string()),
+        }
     }
 }
 
@@ -105,7 +116,7 @@ impl FromRustling<DurationOutput> for DurationValue {
             hours,
             minutes,
             seconds,
-            precision: Precision::from_rustling(rustling_output.precision)
+            precision: Precision::from_rustling(rustling_output.precision),
         }
     }
 }
@@ -137,7 +148,9 @@ impl FromRustling<RustlingPrecision> for Precision {
 impl FromRustling<Output> for SlotValue {
     fn from_rustling(rustling_output: Output) -> SlotValue {
         match rustling_output {
-            Output::AmountOfMoney(v) => SlotValue::AmountOfMoney(AmountOfMoneyValue::from_rustling(v)),
+            Output::AmountOfMoney(v) => {
+                SlotValue::AmountOfMoney(AmountOfMoneyValue::from_rustling(v))
+            }
             Output::Duration(v) => SlotValue::Duration(DurationValue::from_rustling(v)),
             Output::Float(v) => SlotValue::Number(NumberValue::from_rustling(v)),
             Output::Integer(v) => SlotValue::Number(NumberValue::from_rustling(v)),
@@ -188,7 +201,9 @@ impl BuiltinEntityKind {
         Self::all()
             .into_iter()
             .find(|kind| kind.identifier() == identifier)
-            .ok_or(format!("Unknown EntityKind identifier: {}", identifier).into())
+            .ok_or(
+                format!("Unknown EntityKind identifier: {}", identifier).into(),
+            )
     }
 
     pub fn from_rustling_output(v: &Output) -> BuiltinEntityKind {
@@ -215,3 +230,4 @@ impl BuiltinEntityKind {
         }
     }
 }
+

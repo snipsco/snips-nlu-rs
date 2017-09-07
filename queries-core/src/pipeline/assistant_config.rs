@@ -18,9 +18,13 @@ pub struct FileBasedConfiguration {
 
 impl FileBasedConfiguration {
     pub fn new<P: AsRef<path::Path>>(root_dir: P) -> Result<Self> {
-        let config_file = fs::File::open(root_dir.as_ref().join(NLU_CONFIGURATION_FILENAME))?;
+        let path = root_dir.as_ref().join(NLU_CONFIGURATION_FILENAME);
+        let config_file = fs::File::open(&path)
+            .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
+        let nlu_configuration = serde_json::from_reader(config_file)
+            .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
 
-        Ok(Self { nlu_configuration: serde_json::from_reader(config_file)? })
+        Ok(Self { nlu_configuration })
     }
 }
 
@@ -41,17 +45,19 @@ pub struct ZipBasedConfiguration {
 impl ZipBasedConfiguration {
     pub fn new<R>(reader: R) -> Result<Self>
     where R: Read + Seek {
-        let zip = zip::ZipArchive::new(reader)?;
+        let zip = zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
         let mutex = Arc::new(Mutex::new(zip));
 
         let nlu_conf_bytes = Self::read_bytes(mutex.clone(), NLU_CONFIGURATION_FILENAME)
             .or_else(|_| {
                 // Assistants downloaded from the console are in a directory named assistant
                 Self::read_bytes(mutex.clone(), &format!("assistant/{}", NLU_CONFIGURATION_FILENAME))
-            })?;
-        Ok(Self {
-            nlu_configuration: serde_json::from_slice(&nlu_conf_bytes)?,
-        })
+            })
+            .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+        let nlu_configuration = serde_json::from_slice(&nlu_conf_bytes)
+            .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+
+        Ok(Self { nlu_configuration })
     }
 
     fn read_bytes<R>(zip: Arc<Mutex<zip::read::ZipArchive<R>>>, name: &str) -> Result<Vec<u8>>
