@@ -1,5 +1,5 @@
-use builtin_entities::{RustlingParser, BuiltinEntityKind};
-use snips_queries_ontology::*;
+use builtin_entities::{BuiltinEntityKind, RustlingParser};
+use snips_queries_ontology::{Slot, SlotValue};
 use pipeline::InternalSlot;
 
 pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
@@ -8,7 +8,7 @@ pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
         value: SlotValue::Custom(slot.value.into()),
         range: Some(slot.range),
         entity: slot.entity,
-        slot_name: slot.slot_name
+        slot_name: slot.slot_name,
     }
 }
 
@@ -22,26 +22,37 @@ pub fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slo
     }
 }
 
-pub fn resolve_builtin_slots(text: &str,
-                             slots: Vec<InternalSlot>,
-                             parser: &RustlingParser,
-                             filter_entity_kinds: Option<&[BuiltinEntityKind]>) -> Vec<Slot> {
+pub fn resolve_builtin_slots(
+    text: &str,
+    slots: Vec<InternalSlot>,
+    parser: &RustlingParser,
+    filter_entity_kinds: Option<&[BuiltinEntityKind]>,
+) -> Vec<Slot> {
     let builtin_entities = parser.extract_entities(text, filter_entity_kinds);
-    slots.into_iter()
-        .filter_map(|slot|
+    slots
+        .into_iter()
+        .filter_map(|slot| {
             if let Some(entity_kind) = BuiltinEntityKind::from_identifier(&slot.entity).ok() {
-                builtin_entities.iter()
-                    .find(|entity| entity.entity_kind == entity_kind && entity.range == slot.range)
+                builtin_entities
+                    .iter()
+                    .find(|entity| {
+                        entity.entity_kind == entity_kind && entity.range == slot.range
+                    })
                     .map(|rustling_entity| Some(rustling_entity.entity.clone()))
                     .unwrap_or({
-                        parser.extract_entities(&slot.value, Some(&[entity_kind])).into_iter()
+                        parser
+                            .extract_entities(&slot.value, Some(&[entity_kind]))
+                            .into_iter()
                             .find(|rustling_entity| rustling_entity.entity_kind == entity_kind)
                             .map(|rustling_entity| rustling_entity.entity)
                     })
-                    .map(|matching_entity| convert_to_builtin_slot(slot, matching_entity))
+                    .map(|matching_entity| {
+                        convert_to_builtin_slot(slot, matching_entity)
+                    })
             } else {
                 Some(convert_to_custom_slot(slot))
-            })
+            }
+        })
         .collect()
 }
 
@@ -49,6 +60,7 @@ pub fn resolve_builtin_slots(text: &str,
 #[cfg(test)]
 mod tests {
     use super::*;
+    use snips_queries_ontology::{AmountOfMoneyValue, OrdinalValue, Precision};
     use rustling_ontology::Lang;
 
     #[test]
@@ -60,44 +72,44 @@ mod tests {
                 value: "5 dollars".to_string(),
                 range: 5..14,
                 entity: "snips/amountOfMoney".to_string(),
-                slot_name: "amount".to_string()
+                slot_name: "amount".to_string(),
             },
             InternalSlot {
                 value: "10th".to_string(),
                 range: 22..26,
                 entity: "snips/ordinal".to_string(),
-                slot_name: "ranking".to_string()
+                slot_name: "ranking".to_string(),
             },
         ];
         let parser = RustlingParser::get(Lang::EN);
 
         // When
         let filter_entity_kinds = &[BuiltinEntityKind::AmountOfMoney, BuiltinEntityKind::Ordinal];
-        let actual_results = resolve_builtin_slots(text, slots, &*parser, Some(filter_entity_kinds));
+        let actual_results =
+            resolve_builtin_slots(text, slots, &*parser, Some(filter_entity_kinds));
 
         // Then
         let expected_results = vec![
             Slot {
                 raw_value: "5 dollars".to_string(),
-                value: SlotValue::AmountOfMoney(
-                    AmountOfMoneyValue {
-                        value: 5.0,
-                        precision: Precision::Exact,
-                        unit: Some("$".to_string())
-                    }
-                ),
+                value: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                    value: 5.0,
+                    precision: Precision::Exact,
+                    unit: Some("$".to_string()),
+                }),
                 range: Some(5..14),
                 entity: "snips/amountOfMoney".to_string(),
-                slot_name: "amount".to_string()
+                slot_name: "amount".to_string(),
             },
             Slot {
                 raw_value: "10th".to_string(),
                 value: SlotValue::Ordinal(OrdinalValue { value: 10 }),
                 range: Some(22..26),
                 entity: "snips/ordinal".to_string(),
-                slot_name: "ranking".to_string()
-            }
+                slot_name: "ranking".to_string(),
+            },
         ];
         assert_eq!(expected_results, actual_results);
     }
 }
+
