@@ -14,6 +14,13 @@ error_chain! {
         PackedResources(::resources_packed::Error);
         SerdeJson(::serde_json::Error);
     }
+
+    errors {
+        ConfigLoad(path: String) {
+            description("Config file not found")
+            display("Unable to read file `{}`", path)
+        }
+    }
 }
 
 impl<T> ::std::convert::From<::std::sync::PoisonError<T>> for Error {

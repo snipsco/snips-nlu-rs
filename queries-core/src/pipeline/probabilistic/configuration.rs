@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use serde_json;
 
 #[derive(Debug, Deserialize)]
@@ -12,7 +11,6 @@ pub struct ProbabilisticParserConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct IntentClassifierConfiguration {
-    pub language_code: String,
     pub featurizer: Option<FeaturizerConfiguration>,
     pub intercept: Option<Vec<f32>>,
     pub coeffs: Option<Vec<Vec<f32>>>,
@@ -21,10 +19,11 @@ pub struct IntentClassifierConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct FeaturizerConfiguration {
+    pub language_code: String,
     pub tfidf_vectorizer_idf_diag: Vec<f32>,
     pub best_features: Vec<usize>,
     pub tfidf_vectorizer_vocab: HashMap<String, usize>,
-    pub tfidf_vectorizer_stop_words: Option<Vec<String>>,
+    pub entity_utterances_to_feature_names: HashMap<String, Vec<String>>
 }
 
 #[derive(Debug, Deserialize)]

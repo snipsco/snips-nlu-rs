@@ -132,7 +132,7 @@ impl CacheValue {
 #[cfg(test)]
 mod test {
     use super::*;
-    use snips_queries_ontology::*;
+    use snips_queries_ontology::NumberValue;
     use itertools::Itertools;
 
     #[test]

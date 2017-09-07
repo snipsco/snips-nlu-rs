@@ -1,6 +1,6 @@
 [package]
 name = "queries-embed"
-version = "0.25.0"
+version = "0.25.1"
 authors = [
     "Kevin Lefevre <kevin.lefevre@snips.ai>",
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>"
@@ -8,7 +8,7 @@ authors = [
 
 [dependencies]
 queries-core = { path = "../queries-core" }
-snips-queries-ontology = { git = "ssh://git@github.com/snipsco/snips-queries-ontology.git", tag = "0.4.1", features = [ "ffi" ] }
+snips-queries-ontology = { git = "ssh://git@github.com/snipsco/snips-queries-ontology.git", tag = "0.4.2", features = [ "ffi" ] }
 error-chain = { version = "0.10", default-features = false }
 lazy_static = "0.2"
 libc = "0.2"
