@@ -45,7 +45,7 @@ pub struct ZipBasedConfiguration {
 impl ZipBasedConfiguration {
     pub fn new<R>(reader: R) -> Result<Self>
     where R: Read + Seek {
-        let zip = zip::ZipArchive::new(reader)?;
+        let zip = zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
         let mutex = Arc::new(Mutex::new(zip));
 
         let nlu_conf_bytes = Self::read_bytes(mutex.clone(), NLU_CONFIGURATION_FILENAME)
