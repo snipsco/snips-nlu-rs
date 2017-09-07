@@ -19,7 +19,7 @@ class TestNLUEngineWrapper(unittest.TestCase):
         # Then
         expected_dict = {
             'input': 'Make me two cups of coffee please',
-            'intent': {'intentName': 'MakeCoffee', 'probability': 0.73643476},
+            'intent': {'intentName': 'MakeCoffee', 'probability': 0.7035172},
             'slots': [
                 {
                     'entity': 'snips/number',
@@ -43,7 +43,7 @@ class TestNLUEngineWrapper(unittest.TestCase):
         # Then
         expected_dict = {
             'input': 'Make me two cups of coffee please',
-            'intent': {'intentName': 'MakeCoffee', 'probability': 0.73643476},
+            'intent': {'intentName': 'MakeCoffee', 'probability': 0.7035172},
             'slots': [
                 {
                     'entity': 'snips/number',
