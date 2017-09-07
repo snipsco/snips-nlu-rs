@@ -32,7 +32,7 @@ configurations {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     compile 'net.java.dev.jna:jna:4.4.0'
-    compile 'ai.snips:snips-queries-ontology:0.4.0' // make sure we use the same version in rust...
+    compile 'ai.snips:snips-queries-ontology:0.4.2' // make sure we use the same version in rust...
     testCompile 'junit:junit:4.12'
     testCompile 'com.google.truth:truth:0.34'
 }
