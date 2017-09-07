@@ -203,7 +203,7 @@ fn get_builtin_entity_name(entity_label: &str) -> String {
 mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use snips_queries_ontology::*;
+    use snips_queries_ontology::{AmountOfMoneyValue, IntentClassifierResult, Precision,Slot, SlotValue};
     use pipeline::rule_based::configuration::RuleBasedParserConfiguration;
     use pipeline::{IntentParser, InternalSlot};
     use builtin_entities::RustlingParser;
