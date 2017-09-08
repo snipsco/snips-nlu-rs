@@ -1,6 +1,6 @@
 [package]
 name = "queries-resources"
-version = "0.25.3"
+version = "0.26.0-SNAPSHOT"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 
 [dependencies]
