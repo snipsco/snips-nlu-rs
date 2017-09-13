@@ -1,6 +1,6 @@
+use std::env;
 use std::f32;
 use std::path;
-use std::env;
 
 use ndarray::prelude::*;
 
@@ -26,5 +26,61 @@ pub fn file_path(file_name: &str) -> path::PathBuf {
             .join(file_name)
     } else {
         path::PathBuf::from("../data").join(file_name)
+    }
+}
+
+pub fn get_sub_list<T: Clone>(list: &[T], i: &usize) -> Vec<T> {
+    list.iter().enumerate().filter(|&(j, _)| j != *i).map(|(_, a)| a.clone()).collect()
+}
+
+pub fn permutations<T: Clone>(v: &[T], permutation_length: &i32) -> Vec<Vec<T>> {
+    let length = *permutation_length;
+
+    if length > v.len() as i32 {
+        panic!("permutation_length must be greater than 0 and less than the length of v")
+    };
+
+    let mut perms: Vec<Vec<T>> = Vec::new();
+    if length == 0 {
+        perms.push(Vec::new());
+    } else {
+        for (i, tail) in v.iter().enumerate() {
+            let sub_vec = get_sub_list(v, &i);
+            for mut p in permutations(&sub_vec[..], &(length - 1)).into_iter() {
+                p.push(tail.clone());
+                perms.push(p);
+            }
+        }
+    }
+    perms
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+    use std::iter::FromIterator;
+
+    #[test]
+    fn permutations_works() {
+        // Given
+        let my_vec = vec![1, 2, 3];
+
+        // When
+        let perms = permutations(&my_vec[..], &2);
+
+        // Then
+        let expected_perms = hashset![
+            vec![1, 2],
+            vec![1, 3],
+            vec![2, 1],
+            vec![2, 3],
+            vec![3, 1],
+            vec![3, 2]
+        ];
+
+        assert_eq!(expected_perms.len(), perms.len());
+        assert_eq!(expected_perms, HashSet::from_iter(perms))
     }
 }
