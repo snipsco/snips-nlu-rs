@@ -13,7 +13,7 @@ const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
 const LAST_PREFIX: &str = "L-";
 const UNIT_PREFIX: &str = "U-";
-const OUTSIDE: &str = "O";
+pub const OUTSIDE: &str = "O";
 
 #[derive(Copy, Clone, Debug)]
 pub enum TaggingScheme {
@@ -200,6 +200,11 @@ pub fn tags_to_slots(text: &str,
 }
 
 pub fn positive_tagging(tagging_scheme: TaggingScheme, slot_name: &str, slot_size: usize) -> Vec<String> {
+    if slot_name == OUTSIDE {
+        return vec![OUTSIDE.to_string();
+                    slot_size];
+    };
+
     match tagging_scheme {
         TaggingScheme::IO => {
             vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size]
