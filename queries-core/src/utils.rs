@@ -33,20 +33,18 @@ pub fn get_sub_list<T: Clone>(list: &[T], i: &usize) -> Vec<T> {
     list.iter().enumerate().filter(|&(j, _)| j != *i).map(|(_, a)| a.clone()).collect()
 }
 
-pub fn permutations<T: Clone>(v: &[T], permutation_length: &i32) -> Vec<Vec<T>> {
-    let length = *permutation_length;
-
-    if length > v.len() as i32 {
+pub fn permutations<T: Clone>(v: &[T], permutation_length: i32) -> Vec<Vec<T>> {
+    if permutation_length > v.len() as i32 {
         panic!("permutation_length must be greater than 0 and less than the length of v")
     };
 
     let mut perms: Vec<Vec<T>> = Vec::new();
-    if length == 0 {
+    if permutation_length == 0 {
         perms.push(Vec::new());
     } else {
         for (i, tail) in v.iter().enumerate() {
             let sub_vec = get_sub_list(v, &i);
-            for mut p in permutations(&sub_vec[..], &(length - 1)).into_iter() {
+            for mut p in permutations(&*sub_vec, permutation_length - 1).into_iter() {
                 p.push(tail.clone());
                 perms.push(p);
             }
@@ -68,16 +66,16 @@ mod tests {
         let my_vec = vec![1, 2, 3];
 
         // When
-        let perms = permutations(&my_vec[..], &2);
+        let perms = permutations(&*my_vec, 3);
 
         // Then
         let expected_perms = hashset![
-            vec![1, 2],
-            vec![1, 3],
-            vec![2, 1],
-            vec![2, 3],
-            vec![3, 1],
-            vec![3, 2]
+            vec![1, 2, 3],
+            vec![2, 3, 1],
+            vec![3, 1, 2],
+            vec![1, 3, 2],
+            vec![3, 2, 1],
+            vec![2, 1, 3],
         ];
 
         assert_eq!(expected_perms.len(), perms.len());

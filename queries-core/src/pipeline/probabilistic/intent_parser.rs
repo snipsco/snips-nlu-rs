@@ -171,23 +171,20 @@ fn generate_slots_permutations(num_detected_builtins: i32, builtin_slots_names: 
     // Generate a pool of index with built in slot index + num_detected_builtins OUTSIDE indexes
     let permutations_pool: Vec<usize> = Vec::from_iter(0..pool_size);
     // Generate all permutations of indexes
-    let permutations = permutations(&permutations_pool[..], &num_detected_builtins);
+    let permutations = permutations(&*permutations_pool, num_detected_builtins);
     // Replace slot indexes with slot names or OUTSIDE
     let slot_permutations = permutations
-        .iter()
-        .map(|ref perm|
-            perm.iter()
-                .map(|&slot_index|
+        .into_iter()
+        .map(|perm|
+            perm.into_iter()
+                .map(|slot_index|
                     match builtin_slots_names.get(slot_index) {
-                        Some(v) => {
-                            let s = *v;
-                            s.clone()
-                        }
+                        Some(v) => v.to_string(),
                         None => OUTSIDE.to_string()
-                    }
-                ).collect()
+                    })
+                .collect()
         );
-    // Make permutation unique
+    // Make permutations unique
     HashSet::from_iter(slot_permutations)
 }
 
