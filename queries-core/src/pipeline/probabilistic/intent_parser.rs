@@ -201,7 +201,7 @@ fn augment_slots(
     missing_slots: Vec<(String, BuiltinEntityKind)>,
 ) -> Result<Vec<InternalSlot>> {
     let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
-    let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<RustlingEntity>> = hashmap! {};
+    let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<RustlingEntity>> = HashMap::new();
     for entity in builtin_entities {
         grouped_entities.entry(entity.entity_kind).or_insert(vec![]).push(entity);
     }
