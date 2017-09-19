@@ -201,10 +201,13 @@ fn augment_slots(
     missing_slots: Vec<(String, BuiltinEntityKind)>,
 ) -> Result<Vec<InternalSlot>> {
     let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
-    let grouped_entities = builtin_entities.into_iter().group_by(|e| e.entity_kind);
+    let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<RustlingEntity>> = hashmap! {};
+    for entity in builtin_entities {
+        grouped_entities.entry(entity.entity_kind).or_insert(vec![]).push(entity);
+    }
 
-    for (entity_kind, group) in &grouped_entities {
-        let spans_ranges = group.map(|e| e.range).collect_vec();
+    for (entity_kind, group) in grouped_entities {
+        let spans_ranges = group.into_iter().map(|e| e.range).collect_vec();
         let num_detected_builtins = spans_ranges.len();
         let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
         let related_slots = missing_slots
@@ -217,15 +220,11 @@ fn augment_slots(
             .collect_vec();
 
         let slots_permutations = generate_slots_permutations(num_detected_builtins as i32, related_slots);
-
         let mut best_updated_tags = augmented_tags.clone();
         let mut best_permutation_score: f64 = -1.0;
         for slots in slots_permutations.iter() {
             let mut updated_tags = augmented_tags.clone();
             for (slot_index, slot) in slots.iter().enumerate() {
-                if slot_index >= tokens_indexes.len() {
-                    break;
-                }
                 let ref indexes = tokens_indexes[slot_index];
                 let tagging_scheme = tagger.get_tagging_scheme();
                 let sub_tags_sequence = positive_tagging(tagging_scheme, slot, indexes.len());
