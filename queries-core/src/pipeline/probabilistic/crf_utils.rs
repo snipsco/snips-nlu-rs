@@ -288,6 +288,7 @@ pub fn generate_slots_permutations(num_detected_builtins: i32, builtin_slots_nam
 mod tests {
     use itertools::Itertools;
 
+    use nlu_utils::language::Language;
     use nlu_utils::token::tokenize;
     use super::*;
 
@@ -300,6 +301,7 @@ mod tests {
     #[test]
     fn test_io_tags_to_slots() {
         // Given
+        let language = Language::EN;
         let slot_name = "animal";
         let intent_slots_mapping = hashmap!["animal".to_string() => "animal".to_string()];
         let tags: Vec<Test> = vec![
@@ -416,7 +418,7 @@ mod tests {
         for data in tags {
             // When
             let slots = tags_to_slots(&data.text,
-                                      &tokenize(&data.text),
+                                      &tokenize(&data.text, &language),
                                       &data.tags,
                                       TaggingScheme::IO,
                                       &intent_slots_mapping);
@@ -428,6 +430,7 @@ mod tests {
     #[test]
     fn test_bio_tags_to_slots() {
         // Given
+        let language = Language::EN;
         let slot_name = "animal";
         let intent_slots_mapping = hashmap!["animal".to_string() => "animal".to_string()];
         let tags: Vec<Test> = vec![
@@ -580,7 +583,7 @@ mod tests {
         for data in tags {
             // When
             let slots = tags_to_slots(&data.text,
-                                      &tokenize(&data.text),
+                                      &tokenize(&data.text, &language),
                                       &data.tags,
                                       TaggingScheme::BIO,
                                       &intent_slots_mapping);
@@ -592,6 +595,7 @@ mod tests {
     #[test]
     fn test_bilou_tags_to_slots() {
         // Given
+        let language = Language::EN;
         let slot_name = "animal";
         let intent_slots_mapping = hashmap!["animal".to_string() => "animal".to_string()];
         let tags: Vec<Test> = vec![
@@ -778,7 +782,7 @@ mod tests {
         for data in tags {
             // When
             let slots = tags_to_slots(&data.text,
-                                      &tokenize(&data.text),
+                                      &tokenize(&data.text, &language),
                                       &data.tags,
                                       TaggingScheme::BILOU,
                                       &intent_slots_mapping);

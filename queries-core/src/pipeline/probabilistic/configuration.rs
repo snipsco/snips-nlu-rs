@@ -21,10 +21,15 @@ pub struct IntentClassifierConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct FeaturizerConfiguration {
-    pub tfidf_vectorizer_idf_diag: Vec<f32>,
+    pub tfidf_vectorizer: TfIdfVectorizerConfiguration,
     pub best_features: Vec<usize>,
-    pub tfidf_vectorizer_vocab: HashMap<String, usize>,
-    pub tfidf_vectorizer_stop_words: Option<Vec<String>>,
+    pub language_code: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TfIdfVectorizerConfiguration {
+    pub idf_diag: Vec<f32>,
+    pub vocab: HashMap<String, usize>,
 }
 
 #[derive(Debug, Deserialize)]

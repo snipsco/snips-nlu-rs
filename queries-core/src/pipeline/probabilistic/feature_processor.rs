@@ -13,6 +13,7 @@ use super::crf_utils::TaggingScheme;
 use models::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
 use models::stemmer::StaticMapStemmer;
 use models::word_clusterer::StaticMapWordClusterer;
+use nlu_utils::language::Language;
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use rustling_ontology::Lang;
 
@@ -107,15 +108,15 @@ fn is_last_feature_function(offsets: Vec<i32>) -> Result<FeatureFunction> {
 fn ngram_feature_function(args: &HashMap<String, serde_json::Value>,
                           offsets: Vec<i32>) -> Result<FeatureFunction> {
     let n = parse_as_u64(args, "n")? as usize;
-    let language_code = parse_as_string(args, "language_code")?;
+    let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
     let common_words_gazetteer_name = parse_as_opt_string(args, "common_words_gazetteer_name")?;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let common_words_gazetteer = if let Some(name) = common_words_gazetteer_name {
-        Some(StaticMapGazetteer::new(&name, &language_code, use_stemming)?)
+        Some(StaticMapGazetteer::new(&name, &language, use_stemming)?)
     } else {
         None
     };
-    let stemmer = get_stemmer(language_code, use_stemming);
+    let stemmer = get_stemmer(&language, use_stemming);
     Ok(FeatureFunction::new(
         format!("ngram_{}", n),
         offsets,
@@ -151,12 +152,12 @@ fn token_is_in_feature_function(args: &HashMap<String, serde_json::Value>,
                                 offsets: Vec<i32>) -> Result<FeatureFunction> {
     let tokens_collection = parse_as_vec_string(args, "tokens_collection")?;
     let collection_name = parse_as_string(args, "collection_name")?;
-    let language_code = parse_as_string(args, "language_code")?;
+    let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
     let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
     let tokens_gazetteer = HashSetGazetteer::from(tokens_collection.into_iter());
-    let stemmer = get_stemmer(language_code, use_stemming);
+    let stemmer = get_stemmer(&language, use_stemming);
     Ok(FeatureFunction::new(
         format!("token_is_in_{}", collection_name),
         offsets,
@@ -171,12 +172,12 @@ fn token_is_in_feature_function(args: &HashMap<String, serde_json::Value>,
 fn is_in_gazetteer_feature_function(args: &HashMap<String, serde_json::Value>,
                                     offsets: Vec<i32>) -> Result<FeatureFunction> {
     let gazetteer_name = parse_as_string(args, "gazetteer_name")?;
-    let language_code = parse_as_string(args, "language_code")?;
+    let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
     let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
-    let gazetteer = StaticMapGazetteer::new(&gazetteer_name, &language_code, use_stemming)?;
-    let stemmer = get_stemmer(language_code, use_stemming);
+    let gazetteer = StaticMapGazetteer::new(&gazetteer_name, &language, use_stemming)?;
+    let stemmer = get_stemmer(&language, use_stemming);
     Ok(FeatureFunction::new(
         format!("is_in_gazetteer_{}", gazetteer_name),
         offsets,
@@ -191,11 +192,11 @@ fn is_in_gazetteer_feature_function(args: &HashMap<String, serde_json::Value>,
 fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
                                  offsets: Vec<i32>) -> Result<FeatureFunction> {
     let cluster_name = parse_as_string(args, "cluster_name")?;
-    let language_code = parse_as_string(args, "language_code")?;
+    let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
-    let word_clusterer = StaticMapWordClusterer::new(language_code.clone(),
+    let word_clusterer = StaticMapWordClusterer::new(&language,
                                                      cluster_name.clone())?;
-    let stemmer = get_stemmer(language_code, use_stemming);
+    let stemmer = get_stemmer(&language, use_stemming);
     Ok(FeatureFunction::new(
         format!("word_cluster_{}", cluster_name),
         offsets,
@@ -280,9 +281,9 @@ fn parse_as_u64(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Re
     )
 }
 
-fn get_stemmer(language_code: String, use_stemming: bool) -> Option<StaticMapStemmer> {
+fn get_stemmer(language: &Language, use_stemming: bool) -> Option<StaticMapStemmer> {
     if use_stemming {
-        StaticMapStemmer::new(language_code).ok()
+        StaticMapStemmer::new(language).ok()
     } else {
         None
     }
@@ -295,10 +296,12 @@ mod tests {
 
     use pipeline::FeatureProcessor;
 
+    use nlu_utils::language::Language;
     use nlu_utils::token::tokenize;
 
     #[test]
     fn compute_features_works() {
+        let language = Language::EN;
         let fp = ProbabilisticFeatureProcessor {
             functions: vec![FeatureFunction::new("Toto".to_string(), vec![0], |_, i| if i == 0 {
                 None
@@ -307,18 +310,19 @@ mod tests {
             })],
         };
 
-        let computed_features = fp.compute_features(&tokenize("hello world how are you ?").as_slice());
+        let computed_features = fp.compute_features(&tokenize("hello world how are you ?", &language).as_slice());
 
         assert_eq!(computed_features.len(), 6);
         assert_eq!(computed_features[0], vec![]);
         for i in 1..5 {
             assert_eq!(computed_features[i],
-            vec![("Toto".to_string(), "Foobar".to_string())]);
+                       vec![("Toto".to_string(), "Foobar".to_string())]);
         }
     }
 
     #[test]
     fn offset_works() {
+        let language = Language::EN;
         let fp = ProbabilisticFeatureProcessor {
             functions: vec![FeatureFunction::new("Toto".to_string(),
                                                  vec![-2, 0, 2, 4],
@@ -334,22 +338,22 @@ mod tests {
                             })],
         };
 
-        let computed_features = fp.compute_features(&tokenize("hello world how are you ?").as_slice());
+        let computed_features = fp.compute_features(&tokenize("hello world how are you ?", &language).as_slice());
         assert_eq!(computed_features,
-        vec![vec![("Toto[+2]".to_string(), "how".to_string()),
-                  ("Toto[+4]".to_string(), "you".to_string())],
-             vec![("Toto".to_string(), "world".to_string()),
-                  ("Toto[+2]".to_string(), "are".to_string()),
-                  ("Toto[+4]".to_string(), "?".to_string()),
-                  ("Tutu[+2]".to_string(), "Foobar".to_string())],
-             vec![("Toto".to_string(), "how".to_string()),
-                  ("Toto[+2]".to_string(), "you".to_string())],
-             vec![("Toto[-2]".to_string(), "world".to_string()),
-                  ("Toto".to_string(), "are".to_string()),
-                  ("Toto[+2]".to_string(), "?".to_string())],
-             vec![("Toto[-2]".to_string(), "how".to_string()),
-                  ("Toto".to_string(), "you".to_string())],
-             vec![("Toto[-2]".to_string(), "are".to_string()),
-                  ("Toto".to_string(), "?".to_string())]]);
+                   vec![vec![("Toto[+2]".to_string(), "how".to_string()),
+                             ("Toto[+4]".to_string(), "you".to_string())],
+                        vec![("Toto".to_string(), "world".to_string()),
+                             ("Toto[+2]".to_string(), "are".to_string()),
+                             ("Toto[+4]".to_string(), "?".to_string()),
+                             ("Tutu[+2]".to_string(), "Foobar".to_string())],
+                        vec![("Toto".to_string(), "how".to_string()),
+                             ("Toto[+2]".to_string(), "you".to_string())],
+                        vec![("Toto[-2]".to_string(), "world".to_string()),
+                             ("Toto".to_string(), "are".to_string()),
+                             ("Toto[+2]".to_string(), "?".to_string())],
+                        vec![("Toto[-2]".to_string(), "how".to_string()),
+                             ("Toto".to_string(), "you".to_string())],
+                        vec![("Toto[-2]".to_string(), "are".to_string()),
+                             ("Toto".to_string(), "?".to_string())]]);
     }
 }
