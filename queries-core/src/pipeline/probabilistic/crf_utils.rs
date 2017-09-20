@@ -1,5 +1,6 @@
 use std::ops::Range;
 use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
 use yolo::Yolo;
 use itertools::Itertools;
@@ -8,12 +9,13 @@ use errors::*;
 use pipeline::InternalSlot;
 use nlu_utils::token::Token;
 use nlu_utils::string::{convert_to_char_range, suffix_from_char_index};
+use utils::permutations;
 
 const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
 const LAST_PREFIX: &str = "L-";
 const UNIT_PREFIX: &str = "U-";
-pub const OUTSIDE: &str = "O";
+const OUTSIDE: &str = "O";
 
 #[derive(Copy, Clone, Debug)]
 pub enum TaggingScheme {
@@ -201,8 +203,7 @@ pub fn tags_to_slots(text: &str,
 
 pub fn positive_tagging(tagging_scheme: TaggingScheme, slot_name: &str, slot_size: usize) -> Vec<String> {
     if slot_name == OUTSIDE {
-        return vec![OUTSIDE.to_string();
-                    slot_size];
+        return vec![OUTSIDE.to_string(); slot_size];
     };
 
     match tagging_scheme {
@@ -257,6 +258,30 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
             }
         }
     }
+}
+
+pub fn generate_slots_permutations(num_detected_builtins: i32, builtin_slots_names: Vec<&String>) -> HashSet<Vec<String>> {
+    if num_detected_builtins == 0 {
+        return HashSet::new();
+    }
+    let pool_size = builtin_slots_names.len() + (num_detected_builtins as usize);
+    let permutations_pool: Vec<usize> = Vec::from_iter(0..pool_size);
+    // Generate all permutations of indexes
+    let permutations = permutations(&*permutations_pool, num_detected_builtins);
+    // Replace slot indexes with slot names or OUTSIDE
+    let slot_permutations = permutations
+        .into_iter()
+        .map(|perm|
+            perm.into_iter()
+                .map(|slot_index|
+                    match builtin_slots_names.get(slot_index) {
+                        Some(v) => v.to_string(),
+                        None => OUTSIDE.to_string()
+                    })
+                .collect()
+        );
+    // Make permutations unique
+    HashSet::from_iter(slot_permutations)
 }
 
 #[cfg(test)]
@@ -1066,5 +1091,35 @@ mod tests {
         // Then
         let expected_tags = vec![format!("{}{}", UNIT_PREFIX, slot_name)];
         assert_eq!(tags, expected_tags);
+    }
+
+    #[test]
+    fn generate_slots_permutations_works() {
+        // Given
+        let s_1 = "slot1".to_string();
+        let s_2 = "slot2".to_string();
+        let builtin_slot_names = vec![&s_1, &s_2];
+        let n_builtin_slot_in_sentences = 3;
+
+        // When
+        let slot_names_permutations = generate_slots_permutations(n_builtin_slot_in_sentences, builtin_slot_names);
+
+        // Then
+        let expected_slot_names_permutations = hashset![
+            vec!["slot1".to_string(), "slot2".to_string(), OUTSIDE.to_string()],
+            vec!["slot2".to_string(), "slot1".to_string(), OUTSIDE.to_string()],
+            vec!["slot2".to_string(), OUTSIDE.to_string(), "slot1".to_string()],
+            vec!["slot1".to_string(), OUTSIDE.to_string(), "slot2".to_string()],
+            vec!["O".to_string(), "slot2".to_string(), "slot1".to_string()],
+            vec!["O".to_string(), "slot1".to_string(), "slot2".to_string()],
+            vec!["O".to_string(), OUTSIDE.to_string(), "slot1".to_string()],
+            vec!["O".to_string(), OUTSIDE.to_string(), "slot2".to_string()],
+            vec!["O".to_string(), "slot1".to_string(), OUTSIDE.to_string()],
+            vec!["O".to_string(), "slot2".to_string(), OUTSIDE.to_string()],
+            vec!["slot1".to_string(), OUTSIDE.to_string(), OUTSIDE.to_string()],
+            vec!["slot2".to_string(), OUTSIDE.to_string(), OUTSIDE.to_string()],
+            vec!["O".to_string(), OUTSIDE.to_string(), OUTSIDE.to_string()]
+        ];
+        assert_eq!(slot_names_permutations, expected_slot_names_permutations)
     }
 }

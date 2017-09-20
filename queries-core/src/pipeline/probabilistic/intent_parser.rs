@@ -14,11 +14,11 @@ use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
 use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use pipeline::probabilistic::tagger::{CRFTagger, Tagger};
-use pipeline::probabilistic::crf_utils::{positive_tagging, replace_builtin_tags, tags_to_slots, OUTSIDE};
+use pipeline::probabilistic::crf_utils::{positive_tagging, replace_builtin_tags, tags_to_slots,
+                                         generate_slots_permutations};
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::token::{tokenize, Token};
 use snips_queries_ontology::{IntentClassifierResult, Slot};
-use utils::permutations;
 
 
 pub struct ProbabilisticIntentParser {
@@ -161,31 +161,6 @@ impl IntentParser for ProbabilisticIntentParser {
             )
         }
     }
-}
-
-fn generate_slots_permutations(num_detected_builtins: i32, builtin_slots_names: Vec<&String>) -> HashSet<Vec<String>> {
-    if num_detected_builtins == 0 {
-        return HashSet::new();
-    }
-    let pool_size = builtin_slots_names.len() + (num_detected_builtins as usize);
-    // Generate a pool of index with built in slot index + num_detected_builtins OUTSIDE indexes
-    let permutations_pool: Vec<usize> = Vec::from_iter(0..pool_size);
-    // Generate all permutations of indexes
-    let permutations = permutations(&*permutations_pool, num_detected_builtins);
-    // Replace slot indexes with slot names or OUTSIDE
-    let slot_permutations = permutations
-        .into_iter()
-        .map(|perm|
-            perm.into_iter()
-                .map(|slot_index|
-                    match builtin_slots_names.get(slot_index) {
-                        Some(v) => v.to_string(),
-                        None => OUTSIDE.to_string()
-                    })
-                .collect()
-        );
-    // Make permutations unique
-    HashSet::from_iter(slot_permutations)
 }
 
 fn augment_slots(
@@ -648,36 +623,6 @@ mod tests {
             probability: 1.0,
         });
         assert_eq!(expected_result, result)
-    }
-
-    #[test]
-    fn generate_slots_permutations_works() {
-        // Given
-        let s_1 = "slot1".to_string();
-        let s_2 = "slot2".to_string();
-        let builtin_slot_names = vec![&s_1, &s_2];
-        let n_builtin_slot_in_sentences = 3;
-
-        // When
-        let slot_names_permutations = generate_slots_permutations(n_builtin_slot_in_sentences, builtin_slot_names);
-
-        // Then
-        let expected_slot_names_permutations = hashset![
-            vec!["slot1".to_string(), "slot2".to_string(), OUTSIDE.to_string()],
-            vec!["slot2".to_string(), "slot1".to_string(), OUTSIDE.to_string()],
-            vec!["slot2".to_string(), OUTSIDE.to_string(), "slot1".to_string()],
-            vec!["slot1".to_string(), OUTSIDE.to_string(), "slot2".to_string()],
-            vec!["O".to_string(), "slot2".to_string(), "slot1".to_string()],
-            vec!["O".to_string(), "slot1".to_string(), "slot2".to_string()],
-            vec!["O".to_string(), OUTSIDE.to_string(), "slot1".to_string()],
-            vec!["O".to_string(), OUTSIDE.to_string(), "slot2".to_string()],
-            vec!["O".to_string(), "slot1".to_string(), OUTSIDE.to_string()],
-            vec!["O".to_string(), "slot2".to_string(), OUTSIDE.to_string()],
-            vec!["slot1".to_string(), OUTSIDE.to_string(), OUTSIDE.to_string()],
-            vec!["slot2".to_string(), OUTSIDE.to_string(), OUTSIDE.to_string()],
-            vec!["O".to_string(), OUTSIDE.to_string(), OUTSIDE.to_string()]
-        ];
-        assert_eq!(slot_names_permutations, expected_slot_names_permutations)
     }
 }
 
