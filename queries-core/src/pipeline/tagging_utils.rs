@@ -5,6 +5,7 @@ use builtin_entities::RustlingParser;
 use itertools::Itertools;
 use pipeline::nlu_engine::PartialTaggedEntity;
 use rustling_ontology::Lang;
+use nlu_utils::language::Language;
 use nlu_utils::range::ranges_overlap;
 
 pub fn enrich_entities(mut tagged_entities: Vec<PartialTaggedEntity>,
@@ -26,8 +27,8 @@ pub fn enrich_entities(mut tagged_entities: Vec<PartialTaggedEntity>,
     tagged_entities
 }
 
-pub fn tag_builtin_entities(text: &str, language: &str) -> Vec<PartialTaggedEntity> {
-    Lang::from_str(language)
+pub fn tag_builtin_entities(text: &str, language: &Language) -> Vec<PartialTaggedEntity> {
+    Lang::from_str(&language.to_string())
         .ok()
         .map(|rustling_lang|
             RustlingParser::get(rustling_lang)

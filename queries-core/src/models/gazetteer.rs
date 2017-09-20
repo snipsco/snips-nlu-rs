@@ -8,6 +8,7 @@ use errors::*;
 #[cfg(test)]
 use serde_json;
 use resources_packed::gazetteer_hits;
+use nlu_utils::language::Language;
 
 pub trait Gazetteer {
     fn contains(&self, value: &str) -> bool;
@@ -15,16 +16,16 @@ pub trait Gazetteer {
 
 pub struct StaticMapGazetteer {
     name: String,
-    language: String,
+    language: Language,
 }
 
 impl StaticMapGazetteer {
-    pub fn new(gazetteer_name: &str, language: &str, use_stemming: bool) -> Result<Self> {
+    pub fn new(gazetteer_name: &str, language: &Language, use_stemming: bool) -> Result<Self> {
         let stemming_suffix = if use_stemming { "_stem" } else { "" };
         let full_gazetteer_name = format!("{}{}", gazetteer_name, stemming_suffix);
         // Hack to check if gazetteer exists
         gazetteer_hits(language, &full_gazetteer_name, "")?;
-        Ok(Self { name: full_gazetteer_name, language: language.to_string() })
+        Ok(Self { name: full_gazetteer_name, language: language.clone() })
     }
 }
 
@@ -49,7 +50,7 @@ impl HashSetGazetteer {
     }
 }
 
-impl <I> From<I> for HashSetGazetteer where I: Iterator<Item=String> {
+impl<I> From<I> for HashSetGazetteer where I: Iterator<Item=String> {
     fn from(values_it: I) -> Self {
         Self { values: HashSet::from_iter(values_it) }
     }

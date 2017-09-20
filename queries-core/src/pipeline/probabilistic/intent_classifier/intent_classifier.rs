@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use ndarray::prelude::*;
 
 use errors::*;
@@ -6,8 +8,10 @@ use snips_queries_ontology::IntentClassifierResult;
 use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
 use utils::argmax;
-use nlu_utils::token::tokenize_light;
+use language::LanguageConfig;
+use nlu_utils::language::Language;
 use nlu_utils::string::normalize;
+use nlu_utils::token::tokenize_light;
 use models::stemmer::{Stemmer, StaticMapStemmer};
 
 pub trait IntentClassifier: Send + Sync {
@@ -15,7 +19,7 @@ pub trait IntentClassifier: Send + Sync {
 }
 
 pub struct LogRegIntentClassifier {
-    language_code: String,
+    language_config: LanguageConfig,
     intent_list: Vec<Option<String>>,
     featurizer: Option<Featurizer>,
     logreg: Option<MulticlassLogisticRegression>,
@@ -35,9 +39,10 @@ impl LogRegIntentClassifier {
             } else {
                 Ok(None)
             }?;
+        let language_config = LanguageConfig::from_str(&config.language_code)?;
 
         Ok(Self {
-            language_code: config.language_code,
+            language_config: language_config,
             intent_list: config.intent_list,
             featurizer,
             logreg
@@ -63,8 +68,8 @@ impl IntentClassifier for LogRegIntentClassifier {
 
         if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
             let normalized_input = normalize(input);
-            let stemmed_text = StaticMapStemmer::new(self.language_code.clone()).ok()
-                .map(|stemmer| stem_sentence(&normalized_input, &stemmer))
+            let stemmed_text = StaticMapStemmer::new(&self.language_config.language).ok()
+                .map(|stemmer| stem_sentence(&normalized_input, &stemmer, &self.language_config.language))
                 .unwrap_or(normalized_input);
 
             let features = featurizer.transform(&stemmed_text)?;
@@ -84,8 +89,8 @@ impl IntentClassifier for LogRegIntentClassifier {
     }
 }
 
-fn stem_sentence<S: Stemmer>(input: &str, stemmer: &S) -> String {
-    let stemmed_words: Vec<_> = tokenize_light(input)
+fn stem_sentence<S: Stemmer>(input: &str, stemmer: &S, language: &Language) -> String {
+    let stemmed_words: Vec<_> = tokenize_light(input, language)
         .iter()
         .map(|word| stemmer.stem(word))
         .collect();
@@ -96,17 +101,21 @@ fn stem_sentence<S: Stemmer>(input: &str, stemmer: &S) -> String {
 mod tests {
     use super::{IntentClassifier, LogRegIntentClassifier};
     use super::Featurizer;
+    use std::str::FromStr;
+
     use ndarray::*;
     use models::logreg::MulticlassLogisticRegression;
+    use language::LanguageConfig;
     use pipeline::IntentClassifierResult;
-    use pipeline::probabilistic::configuration::FeaturizerConfiguration;
+    use pipeline::probabilistic::configuration::{FeaturizerConfiguration, TfIdfVectorizerConfiguration};
 
     #[test]
     fn get_intent_works() {
         // Given
         let language_code = "en".to_string();
+        let language_config = LanguageConfig::from_str(&language_code).unwrap();
         let best_features = vec![1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92, 93, 96, 97, 100, 101];
-        let vocabulary = hashmap![
+        let vocab = hashmap![
             "!".to_string() => 0,
             "12".to_string() => 1,
             "?".to_string() => 2,
@@ -222,7 +231,7 @@ mod tests {
             "you".to_string() => 112,
         ];
 
-        let diag_elements = vec![
+        let idf_diag = vec![
             3.56494935746,
             3.97041446557,
             3.97041446557,
@@ -338,6 +347,11 @@ mod tests {
             3.27726728501
         ];
 
+        let tfidf_vectorizer = TfIdfVectorizerConfiguration {
+            idf_diag,
+            vocab
+        };
+
         let intent_list: Vec<Option<String>> = vec![
             Some("MakeCoffee".to_string()),
             Some("MakeTea".to_string()),
@@ -345,10 +359,9 @@ mod tests {
         ];
 
         let config = FeaturizerConfiguration {
-            tfidf_vectorizer_idf_diag: diag_elements,
-            best_features: best_features,
-            tfidf_vectorizer_vocab: vocabulary,
-            tfidf_vectorizer_stop_words: None
+            tfidf_vectorizer,
+            best_features,
+            language_code
         };
 
         let featurizer = Featurizer::new(config);
@@ -448,7 +461,7 @@ mod tests {
         let coeffs: Array2<f32> = Array::from_shape_fn((27, 3), |(i, j)| coeffs_vec[j][i]);
         let logreg = MulticlassLogisticRegression::new(intercept, coeffs).unwrap();
         let classifier = LogRegIntentClassifier {
-            language_code,
+            language_config,
             intent_list,
             featurizer: Some(featurizer),
             logreg: Some(logreg)

@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn deserialization_works() {
         let retrieved: NluEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
-        assert_eq!("en", retrieved.model.rule_based_parser.unwrap().language);
+        assert_eq!("en", retrieved.model.rule_based_parser.unwrap().language_code);
         assert_eq!("en", retrieved.model.probabilistic_parser.unwrap().language_code);
     }
 }
