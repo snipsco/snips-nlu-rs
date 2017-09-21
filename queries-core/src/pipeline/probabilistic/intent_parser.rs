@@ -7,17 +7,18 @@ use std::sync::Arc;
 use itertools::Itertools;
 use rustling_ontology::Lang;
 
+use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
 use errors::*;
-use snips_queries_ontology::{IntentClassifierResult, Slot};
 use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
 use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use pipeline::probabilistic::tagger::{CRFTagger, Tagger};
-use pipeline::probabilistic::crf_utils::{positive_tagging, replace_builtin_tags, tags_to_slots};
+use pipeline::probabilistic::crf_utils::{positive_tagging, replace_builtin_tags, tags_to_slots,
+                                         generate_slots_permutations};
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::token::{tokenize, Token};
-use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
+use snips_queries_ontology::{IntentClassifierResult, Slot};
 
 
 pub struct ProbabilisticIntentParser {
@@ -172,10 +173,14 @@ fn augment_slots(
     missing_slots: Vec<(String, BuiltinEntityKind)>,
 ) -> Result<Vec<InternalSlot>> {
     let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
-    let grouped_entities = builtin_entities.into_iter().group_by(|e| e.entity_kind);
+    let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<RustlingEntity>> = HashMap::new();
+    for entity in builtin_entities {
+        grouped_entities.entry(entity.entity_kind).or_insert(vec![]).push(entity);
+    }
 
-    for (entity_kind, group) in &grouped_entities {
-        let spans_ranges = group.map(|e| e.range).collect_vec();
+    for (entity_kind, group) in grouped_entities {
+        let spans_ranges = group.into_iter().map(|e| e.range).collect_vec();
+        let num_detected_builtins = spans_ranges.len();
         let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
         let related_slots = missing_slots
             .iter()
@@ -185,20 +190,13 @@ fn augment_slots(
                 None
             })
             .collect_vec();
-        let mut reversed_slots = related_slots.clone();
-        reversed_slots.reverse();
 
-        // Hack: we should list all permutations instead of this
-        let slots_permutations = vec![related_slots, reversed_slots];
-
+        let slots_permutations = generate_slots_permutations(num_detected_builtins as i32, related_slots);
         let mut best_updated_tags = augmented_tags.clone();
         let mut best_permutation_score: f64 = -1.0;
         for slots in slots_permutations.iter() {
             let mut updated_tags = augmented_tags.clone();
             for (slot_index, slot) in slots.iter().enumerate() {
-                if slot_index >= tokens_indexes.len() {
-                    break;
-                }
                 let ref indexes = tokens_indexes[slot_index];
                 let tagging_scheme = tagger.get_tagging_scheme();
                 let sub_tags_sequence = positive_tagging(tagging_scheme, slot, indexes.len());
@@ -252,6 +250,11 @@ mod tests {
     struct TestTagger {
         tags1: Vec<String>,
         tags2: Vec<String>,
+        tags3: Vec<String>,
+        tags4: Vec<String>,
+        tags5: Vec<String>,
+        tags6: Vec<String>,
+        tags7: Vec<String>,
     }
 
     impl Tagger for TestTagger {
@@ -276,8 +279,18 @@ mod tests {
 
         fn get_sequence_probability(&self, _: &[Token], tags: Vec<String>) -> Result<f64> {
             if tags == self.tags1 {
-                Ok(0.6)
+                Ok(0.9)
             } else if tags == self.tags2 {
+                Ok(0.2)
+            } else if tags == self.tags3 {
+                Ok(0.4)
+            } else if tags == self.tags4 {
+                Ok(0.3)
+            } else if tags == self.tags5 {
+                Ok(0.8)
+            } else if tags == self.tags6 {
+                Ok(0.26)
+            } else if tags == self.tags7 {
                 Ok(0.4)
             } else {
                 Err(format!("Unexpected tags: {:?}", tags).into())
@@ -353,7 +366,88 @@ mod tests {
             "I-start_date".to_string(),
             "I-start_date".to_string(),
         ];
-        let tagger = TestTagger { tags1, tags2 };
+        let tags3 = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-end_date".to_string(),
+            "I-end_date".to_string(),
+            "I-end_date".to_string(),
+        ];
+        let tags4 = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-start_date".to_string(),
+            "I-start_date".to_string(),
+            "I-start_date".to_string(),
+        ];
+        let tags5 = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "B-end_date".to_string(),
+            "I-end_date".to_string(),
+            "I-end_date".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+        ];
+        let tags6 = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "B-start_date".to_string(),
+            "I-start_date".to_string(),
+            "I-start_date".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+        ];
+        let tags7 = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+        ];
+
+        let tagger = TestTagger { tags1, tags2, tags3, tags4, tags5, tags6, tags7 };
         let intent_slots_mapping = hashmap! {
             "location".to_string() => "location_entity".to_string(),
             "start_date".to_string() => "snips/datetime".to_string(),
@@ -481,8 +575,8 @@ mod tests {
         };
         let intent_parser = ProbabilisticIntentParser {
             intent_classifier: Box::new(classifier) as _,
-            slot_name_to_entity_mapping: hashmap!{},
-            taggers: hashmap!{},
+            slot_name_to_entity_mapping: hashmap! {},
+            taggers: hashmap! {},
             builtin_entity_parser: None,
         };
         let text = "hello world";
@@ -511,8 +605,8 @@ mod tests {
         };
         let intent_parser = ProbabilisticIntentParser {
             intent_classifier: Box::new(classifier) as _,
-            slot_name_to_entity_mapping: hashmap!{},
-            taggers: hashmap!{},
+            slot_name_to_entity_mapping: hashmap! {},
+            taggers: hashmap! {},
             builtin_entity_parser: None,
         };
         let text = "hello world";
