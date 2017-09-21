@@ -2,10 +2,10 @@ use errors::*;
 use snips_queries_ontology::{AmountOfMoneyValue, DurationValue, Grain, InstantTimeValue,
                              NumberValue, OrdinalValue, Precision, SlotValue, TemperatureValue,
                              TimeIntervalValue};
-use rustling_ontology::{DimensionKind, Grain as RustlingGrain};
+use rustling_ontology::Grain as RustlingGrain;
 use rustling_ontology::dimension::Precision as RustlingPrecision;
 use rustling_ontology::output::{AmountOfMoneyOutput, DurationOutput, FloatOutput, IntegerOutput,
-                                OrdinalOutput, Output, TemperatureOutput, TimeIntervalOutput,
+                                OrdinalOutput, Output, OutputKind, TemperatureOutput, TimeIntervalOutput,
                                 TimeOutput};
 
 pub trait FromRustling<T>: Sized {
@@ -57,9 +57,9 @@ impl FromRustling<TimeIntervalOutput> for TimeIntervalValue {
                 from: None,
                 to: Some(before.moment.to_string()),
             },
-            TimeIntervalOutput::Between(from, to, _) => TimeIntervalValue {
-                from: Some(from.to_string()),
-                to: Some(to.to_string()),
+            TimeIntervalOutput::Between { start, end, precision: _, latent: _ } => TimeIntervalValue {
+                from: Some(start.to_string()),
+                to: Some(end.to_string()),
             },
         }
     }
@@ -219,14 +219,14 @@ impl BuiltinEntityKind {
         }
     }
 
-    pub fn dimension_kind(&self) -> DimensionKind {
+    pub fn output_kind(&self) -> OutputKind {
         match *self {
-            BuiltinEntityKind::AmountOfMoney => DimensionKind::AmountOfMoney,
-            BuiltinEntityKind::Duration => DimensionKind::Duration,
-            BuiltinEntityKind::Number => DimensionKind::Number,
-            BuiltinEntityKind::Ordinal => DimensionKind::Ordinal,
-            BuiltinEntityKind::Temperature => DimensionKind::Temperature,
-            BuiltinEntityKind::Time => DimensionKind::Time,
+            BuiltinEntityKind::AmountOfMoney => OutputKind::AmountOfMoney,
+            BuiltinEntityKind::Duration => OutputKind::Duration,
+            BuiltinEntityKind::Number => OutputKind::Number,
+            BuiltinEntityKind::Ordinal => OutputKind::Ordinal,
+            BuiltinEntityKind::Temperature => OutputKind::Temperature,
+            BuiltinEntityKind::Time => OutputKind::Time,
         }
     }
 }
