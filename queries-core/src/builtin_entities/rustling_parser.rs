@@ -49,7 +49,7 @@ impl RustlingParser {
         CACHED_ENTITY.lock().unwrap().cache(&key, |key| {
             let context = ResolverContext::default();
             if let Some(kinds) = key.kinds.as_ref() {
-                let kind_order = kinds.iter().map(|kind| kind.dimension_kind()).collect::<Vec<_>>();
+                let kind_order = kinds.iter().map(|kind| kind.output_kind()).collect::<Vec<_>>();
                 self.parser
                     .parse_with_kind_order(&sentence.to_lowercase(), &context, &kind_order)
                     .unwrap_or(Vec::new())
