@@ -17,7 +17,7 @@ impl StaticMapWordClusterer {
         word_cluster(&cluster_name, language, "")?;
         Ok(
             Self {
-                language: language.clone(),
+                language: language,
                 cluster_name: cluster_name
             }
         )

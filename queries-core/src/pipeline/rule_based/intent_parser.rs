@@ -201,6 +201,7 @@ fn replace_builtin_entities(text: &str,
 }
 
 fn get_builtin_entity_name(entity_label: &str) -> String {
+    // Here we don't need language specific tokenization, we just want to generate a feature name, that's why we use EN
     let normalized_entity_label = tokenize_light(entity_label, Language::EN).join("").to_uppercase();
     format!("%{}%", normalized_entity_label)
 }

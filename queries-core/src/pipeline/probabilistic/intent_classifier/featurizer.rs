@@ -26,16 +26,15 @@ impl Featurizer {
         let vocabulary = config.tfidf_vectorizer.vocab;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
         let language_config = LanguageConfig::from_str(&config.language_code).unwrap();
-        let word_clusterer = match language_config.intent_classification_clusters() {
-            Some(clusters_name) => StaticMapWordClusterer::new(language_config.language, clusters_name.to_string()).ok(),
-            None => None
-        };
+        let word_clusterer = language_config.intent_classification_clusters()
+            .map(|clusters_name| StaticMapWordClusterer::new(language_config.language, clusters_name.to_string()).ok())
+            .unwrap_or(None);
 
         Self { best_features, vocabulary, idf_diag, language_config, word_clusterer }
     }
 
     pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
-        let preprocessed_query = preprocess_query(input, self.language_config.language, &self.word_clusterer);
+        let preprocessed_query = preprocess_query(input, self.language_config.language, self.word_clusterer.as_ref());
 
         let words = tokenize_light(&preprocessed_query, self.language_config.language);
 
@@ -75,8 +74,8 @@ fn add_word_cluster_features_to_query<C: WordClusterer>(query: &str, language: L
     }
 }
 
-fn preprocess_query<C: WordClusterer>(query: &str, language: Language, word_clusterer: &Option<C>) -> String {
-    if let Some(ref clusterer) = *word_clusterer {
+fn preprocess_query<C: WordClusterer>(query: &str, language: Language, word_clusterer: Option<&C>) -> String {
+    if let Some(clusterer) = word_clusterer {
         add_word_cluster_features_to_query(query, language, clusterer)
     } else {
         query.to_string()
