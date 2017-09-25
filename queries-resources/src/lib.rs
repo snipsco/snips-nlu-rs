@@ -94,7 +94,6 @@ pub mod word_clusters {
     use std::io::Read;
 
     use csv;
-    use nlu_utils::string::normalize;
 
     use errors::*;
 
@@ -107,7 +106,7 @@ pub mod word_clusters {
 
         for row in csv_reader.decode() {
             let (key, value): (String, String) = row?;
-            result.insert(normalize(&key), value);
+            result.insert(key, value);
         }
         Ok(result)
     }
