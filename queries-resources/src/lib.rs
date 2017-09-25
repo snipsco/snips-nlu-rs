@@ -154,13 +154,13 @@ pub mod gazetteer {
             ($language:ident, $gazetteer_name:ident) => {
                 pub fn $gazetteer_name() -> Result<HashSet<String>> {
                     super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/", stringify!($language), "/", stringify!($gazetteer_name), ".txt"))[..],
-                                           stems::no_stem, Language::from_str(stringify!($language)).unwrap())
+                                           stems::no_stem, Language::from_str(stringify!($language))?)
                 }
             };
             ($language:ident, $function_name:ident, $gazetteer_name:ident, $stem:ident) => {
                 pub fn $function_name() -> Result<HashSet<String>> {
                     super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/", stringify!($language), "/", stringify!($gazetteer_name), ".txt"))[..],
-                                           $stem, Language::from_str(stringify!($language)).unwrap())
+                                           $stem, Language::from_str(stringify!($language))?)
                 }
             };
         }

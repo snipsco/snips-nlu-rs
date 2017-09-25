@@ -25,7 +25,7 @@ impl StaticMapGazetteer {
         let full_gazetteer_name = format!("{}{}", gazetteer_name, stemming_suffix);
         // Hack to check if gazetteer exists
         gazetteer_hits(language, &full_gazetteer_name, "")?;
-        Ok(Self { name: full_gazetteer_name, language: language.clone() })
+        Ok(Self { name: full_gazetteer_name, language: language })
     }
 }
 
