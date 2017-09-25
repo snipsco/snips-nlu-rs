@@ -144,7 +144,7 @@ pub mod gazetteer {
         for line in reader.lines() {
             let normalized = normalize(&line?);
             if !normalized.is_empty() {
-                let tokens = tokenize_light(&normalized, &language);
+                let tokens = tokenize_light(&normalized, language);
                 result.insert(tokens.into_iter().map(|t| stem_fn(t)).join(language.default_separator()));
             }
         }

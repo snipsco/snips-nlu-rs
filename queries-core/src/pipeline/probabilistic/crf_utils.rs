@@ -418,7 +418,7 @@ mod tests {
         for data in tags {
             // When
             let slots = tags_to_slots(&data.text,
-                                      &tokenize(&data.text, &language),
+                                      &tokenize(&data.text, language),
                                       &data.tags,
                                       TaggingScheme::IO,
                                       &intent_slots_mapping);
@@ -583,7 +583,7 @@ mod tests {
         for data in tags {
             // When
             let slots = tags_to_slots(&data.text,
-                                      &tokenize(&data.text, &language),
+                                      &tokenize(&data.text, language),
                                       &data.tags,
                                       TaggingScheme::BIO,
                                       &intent_slots_mapping);
@@ -782,7 +782,7 @@ mod tests {
         for data in tags {
             // When
             let slots = tags_to_slots(&data.text,
-                                      &tokenize(&data.text, &language),
+                                      &tokenize(&data.text, language),
                                       &data.tags,
                                       TaggingScheme::BILOU,
                                       &intent_slots_mapping);

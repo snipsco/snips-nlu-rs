@@ -12,7 +12,7 @@ pub struct StaticMapWordClusterer {
 }
 
 impl StaticMapWordClusterer {
-    pub fn new(language: &Language, cluster_name: String) -> Result<Self> {
+    pub fn new(language: Language, cluster_name: String) -> Result<Self> {
         // Hack to check that the word cluster exists
         word_cluster(&cluster_name, language, "")?;
         Ok(
@@ -27,6 +27,6 @@ impl StaticMapWordClusterer {
 impl WordClusterer for StaticMapWordClusterer {
     fn get_cluster(&self, word: &str) -> Option<String> {
         // Checked during initialization
-        word_cluster(&self.cluster_name, &self.language, word).unwrap()
+        word_cluster(&self.cluster_name, self.language, word).unwrap()
     }
 }

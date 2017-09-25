@@ -12,9 +12,9 @@ pub struct StaticMapStemmer {
 }
 
 impl StaticMapStemmer {
-    pub fn new(language: &Language) -> Result<Self> {
+    pub fn new(language: Language) -> Result<Self> {
         // Hack to check if stemming is supported in this language
-        resource_stem(&language, "")?;
+        resource_stem(language, "")?;
         Ok(Self { language: language.clone() })
     }
 }
@@ -22,6 +22,6 @@ impl StaticMapStemmer {
 impl Stemmer for StaticMapStemmer {
     fn stem(&self, value: &str) -> String {
         // checked during initialization
-        resource_stem(&self.language, value).unwrap()
+        resource_stem(self.language, value).unwrap()
     }
 }
