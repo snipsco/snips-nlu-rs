@@ -20,7 +20,7 @@ pub struct StaticMapGazetteer {
 }
 
 impl StaticMapGazetteer {
-    pub fn new(gazetteer_name: &str, language: &Language, use_stemming: bool) -> Result<Self> {
+    pub fn new(gazetteer_name: &str, language: Language, use_stemming: bool) -> Result<Self> {
         let stemming_suffix = if use_stemming { "_stem" } else { "" };
         let full_gazetteer_name = format!("{}{}", gazetteer_name, stemming_suffix);
         // Hack to check if gazetteer exists
@@ -32,7 +32,7 @@ impl StaticMapGazetteer {
 impl Gazetteer for StaticMapGazetteer {
     fn contains(&self, value: &str) -> bool {
         // checked during initialization
-        gazetteer_hits(&self.language, &self.name, value).unwrap()
+        gazetteer_hits(self.language, &self.name, value).unwrap()
     }
 }
 

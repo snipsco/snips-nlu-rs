@@ -27,7 +27,7 @@ impl Featurizer {
         let idf_diag = config.tfidf_vectorizer.idf_diag;
         let language_config = LanguageConfig::from_str(&config.language_code).unwrap();
         let word_clusterer = match language_config.intent_classification_clusters() {
-            Some(clusters_name) => StaticMapWordClusterer::new(&language_config.language, clusters_name.to_string()).ok(),
+            Some(clusters_name) => StaticMapWordClusterer::new(language_config.language, clusters_name.to_string()).ok(),
             None => None
         };
 
@@ -35,9 +35,9 @@ impl Featurizer {
     }
 
     pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
-        let preprocessed_query = preprocess_query(input, &self.language_config.language, &self.word_clusterer);
+        let preprocessed_query = preprocess_query(input, self.language_config.language, &self.word_clusterer);
 
-        let words = tokenize_light(&preprocessed_query, &self.language_config.language);
+        let words = tokenize_light(&preprocessed_query, self.language_config.language);
 
         let vocabulary_size = self.vocabulary.values().max().unwrap() + 1;
         let mut words_count = vec![0.; vocabulary_size];
@@ -57,7 +57,7 @@ impl Featurizer {
     }
 }
 
-fn add_word_cluster_features_to_query<C: WordClusterer>(query: &str, language: &Language, word_clusterer: &C) -> String {
+fn add_word_cluster_features_to_query<C: WordClusterer>(query: &str, language: Language, word_clusterer: &C) -> String {
     let tokens = tokenize_light(query, language);
     let tokens_ref: Vec<&str> = tokens
         .iter()
@@ -75,9 +75,9 @@ fn add_word_cluster_features_to_query<C: WordClusterer>(query: &str, language: &
     }
 }
 
-fn preprocess_query<C: WordClusterer>(query: &str, language: &Language, word_clusterer: &Option<C>) -> String {
+fn preprocess_query<C: WordClusterer>(query: &str, language: Language, word_clusterer: &Option<C>) -> String {
     if let Some(ref clusterer) = *word_clusterer {
-        add_word_cluster_features_to_query(query, &language, clusterer)
+        add_word_cluster_features_to_query(query, language, clusterer)
     } else {
         query.to_string()
     }
@@ -116,9 +116,9 @@ mod tests {
                             1.8472978603872037,
                             1.5596157879354227];
         let language_code = "en";
-        let language = Language::from_str(&language_code).unwrap();
+        let language = Language::from_str(language_code).unwrap();
         let language_config = LanguageConfig::from_str(&language_code).unwrap();
-        let word_clusterer = StaticMapWordClusterer::new(&language, "brown_cluster".to_string()).ok();
+        let word_clusterer = StaticMapWordClusterer::new(language, "brown_cluster".to_string()).ok();
 
         let featurizer = Featurizer {
             best_features,
@@ -156,7 +156,7 @@ mod tests {
         let word_clusterer = TestWordClusterer {};
 
         // When
-        let augmented_query = &add_word_cluster_features_to_query(query, &language, &word_clusterer);
+        let augmented_query = &add_word_cluster_features_to_query(query, language, &word_clusterer);
 
         // Then
         let expected_augmented_query = "I, love Höuse, Müsic cluster_love cluster_house";

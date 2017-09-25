@@ -112,11 +112,11 @@ fn ngram_feature_function(args: &HashMap<String, serde_json::Value>,
     let common_words_gazetteer_name = parse_as_opt_string(args, "common_words_gazetteer_name")?;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let common_words_gazetteer = if let Some(name) = common_words_gazetteer_name {
-        Some(StaticMapGazetteer::new(&name, &language, use_stemming)?)
+        Some(StaticMapGazetteer::new(&name, language, use_stemming)?)
     } else {
         None
     };
-    let stemmer = get_stemmer(&language, use_stemming);
+    let stemmer = get_stemmer(language, use_stemming);
     Ok(FeatureFunction::new(
         format!("ngram_{}", n),
         offsets,
@@ -157,7 +157,7 @@ fn token_is_in_feature_function(args: &HashMap<String, serde_json::Value>,
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
     let tokens_gazetteer = HashSetGazetteer::from(tokens_collection.into_iter());
-    let stemmer = get_stemmer(&language, use_stemming);
+    let stemmer = get_stemmer(language, use_stemming);
     Ok(FeatureFunction::new(
         format!("token_is_in_{}", collection_name),
         offsets,
@@ -176,8 +176,8 @@ fn is_in_gazetteer_feature_function(args: &HashMap<String, serde_json::Value>,
     let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
-    let gazetteer = StaticMapGazetteer::new(&gazetteer_name, &language, use_stemming)?;
-    let stemmer = get_stemmer(&language, use_stemming);
+    let gazetteer = StaticMapGazetteer::new(&gazetteer_name, language, use_stemming)?;
+    let stemmer = get_stemmer(language, use_stemming);
     Ok(FeatureFunction::new(
         format!("is_in_gazetteer_{}", gazetteer_name),
         offsets,
@@ -194,9 +194,9 @@ fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
     let cluster_name = parse_as_string(args, "cluster_name")?;
     let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
-    let word_clusterer = StaticMapWordClusterer::new(&language,
+    let word_clusterer = StaticMapWordClusterer::new(language,
                                                      cluster_name.clone())?;
-    let stemmer = get_stemmer(&language, use_stemming);
+    let stemmer = get_stemmer(language, use_stemming);
     Ok(FeatureFunction::new(
         format!("word_cluster_{}", cluster_name),
         offsets,
@@ -281,7 +281,7 @@ fn parse_as_u64(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Re
     )
 }
 
-fn get_stemmer(language: &Language, use_stemming: bool) -> Option<StaticMapStemmer> {
+fn get_stemmer(language: Language, use_stemming: bool) -> Option<StaticMapStemmer> {
     if use_stemming {
         StaticMapStemmer::new(language).ok()
     } else {
@@ -310,7 +310,7 @@ mod tests {
             })],
         };
 
-        let computed_features = fp.compute_features(&tokenize("hello world how are you ?", &language).as_slice());
+        let computed_features = fp.compute_features(&tokenize("hello world how are you ?", language).as_slice());
 
         assert_eq!(computed_features.len(), 6);
         assert_eq!(computed_features[0], vec![]);
@@ -338,7 +338,7 @@ mod tests {
                             })],
         };
 
-        let computed_features = fp.compute_features(&tokenize("hello world how are you ?", &language).as_slice());
+        let computed_features = fp.compute_features(&tokenize("hello world how are you ?", language).as_slice());
         assert_eq!(computed_features,
                    vec![vec![("Toto[+2]".to_string(), "how".to_string()),
                              ("Toto[+4]".to_string(), "you".to_string())],

@@ -27,7 +27,7 @@ pub fn enrich_entities(mut tagged_entities: Vec<PartialTaggedEntity>,
     tagged_entities
 }
 
-pub fn tag_builtin_entities(text: &str, language: &Language) -> Vec<PartialTaggedEntity> {
+pub fn tag_builtin_entities(text: &str, language: Language) -> Vec<PartialTaggedEntity> {
     Lang::from_str(&language.to_string())
         .ok()
         .map(|rustling_lang|

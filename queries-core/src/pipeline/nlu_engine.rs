@@ -144,7 +144,7 @@ impl SnipsNluEngine {
                 entity_name.to_string(),
                 slot_name.to_string(),
                 custom_entity.clone(),
-                &self.language_config.language,
+                self.language_config.language,
             )
         } else {
             if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
@@ -167,9 +167,9 @@ fn extract_custom_slot(
     entity_name: String,
     slot_name: String,
     custom_entity: Entity,
-    language: &Language,
+    language: Language,
 ) -> Option<Slot> {
-    let tokens = tokenize(&input, &language);
+    let tokens = tokenize(&input, language);
     let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
     let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
     ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
@@ -291,8 +291,8 @@ impl SnipsNluEngine {
                     .unwrap_or(vec![]),
             )
         } else {
-            let tagged_seen_entities = self.tag_seen_entities(text, intent_entities, &self.language_config.language);
-            let tagged_builtin_entities = tag_builtin_entities(text, &self.language_config.language);
+            let tagged_seen_entities = self.tag_seen_entities(text, intent_entities, self.language_config.language);
+            let tagged_builtin_entities = tag_builtin_entities(text, self.language_config.language);
             let tagged_entities = enrich_entities(tagged_seen_entities, tagged_builtin_entities);
             let disambiguated_entities =
                 disambiguate_tagged_entities(tagged_entities, slot_name_mapping.clone());
@@ -309,7 +309,7 @@ impl SnipsNluEngine {
         &self,
         text: &str,
         intent_entities: HashSet<&String>,
-        language: &Language
+        language: Language
     ) -> Vec<PartialTaggedEntity> {
         let entities = self.entities
             .clone()
@@ -322,7 +322,7 @@ impl SnipsNluEngine {
                 }
             })
             .collect_vec();
-        let tokens = tokenize(text, &language);
+        let tokens = tokenize(text, language);
         let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
         let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
         ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
@@ -487,7 +487,7 @@ mod tests {
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, &language);
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
 
         // Then
         let expected_slot = Some(Slot {
@@ -513,7 +513,7 @@ mod tests {
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, &language);
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
 
         // Then
         let expected_slot = Some(Slot {
@@ -539,7 +539,7 @@ mod tests {
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, &language);
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
 
         // Then
         let expected_slot = None;

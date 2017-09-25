@@ -85,7 +85,7 @@ impl IntentParser for ProbabilisticIntentParser {
             format!("intent {:?} not found in slots name mapping", intent_name),
         )?;
 
-        let tokens = tokenize(input, &self.language_config.language);
+        let tokens = tokenize(input, self.language_config.language);
         if tokens.is_empty() {
             return Ok(vec![]);
         }
@@ -320,7 +320,7 @@ mod tests {
         // Given
         let language = Language::EN;
         let text = "Find a flight leaving from Paris between today at 9pm and tomorrow at 8am";
-        let tokens = tokenize(text, &language);
+        let tokens = tokenize(text, language);
         let tags = vec![
             "O".to_string(),
             "O".to_string(),

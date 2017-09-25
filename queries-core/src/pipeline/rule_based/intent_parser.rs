@@ -123,7 +123,7 @@ impl IntentParser for RuleBasedIntentParser {
                 break;
             }
         }
-        let deduplicated_slots = deduplicate_overlapping_slots(result, &self.language_config.language);
+        let deduplicated_slots = deduplicate_overlapping_slots(result, self.language_config.language);
         if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
             let filter_entity_kinds = self.slot_names_to_entities
                 .values()
@@ -145,7 +145,7 @@ impl IntentParser for RuleBasedIntentParser {
     }
 }
 
-fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: &Language) -> Vec<InternalSlot> {
+fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -> Vec<InternalSlot> {
     let mut deduped: Vec<InternalSlot> = Vec::with_capacity(slots.len());
 
     for slot in slots {
@@ -154,7 +154,7 @@ fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: &Language) 
             .position(|existing_slot| ranges_overlap(&slot.range, &existing_slot.range));
 
         if let Some(index) = conflicting_slot_index {
-            fn extract_counts(v: &InternalSlot, l: &Language) -> (usize, usize) {
+            fn extract_counts(v: &InternalSlot, l: Language) -> (usize, usize) {
                 (tokenize(&v.value, l).len(), v.value.chars().count())
             }
             let (existing_token_count, existing_char_count) = extract_counts(&deduped[index], language);
@@ -201,7 +201,7 @@ fn replace_builtin_entities(text: &str,
 }
 
 fn get_builtin_entity_name(entity_label: &str) -> String {
-    let normalized_entity_label = tokenize_light(entity_label, &Language::EN).join("").to_uppercase();
+    let normalized_entity_label = tokenize_light(entity_label, Language::EN).join("").to_uppercase();
     format!("%{}%", normalized_entity_label)
 }
 
@@ -405,7 +405,7 @@ mod tests {
         ];
 
         // When
-        let deduplicated_slots = deduplicate_overlapping_slots(slots, &language);
+        let deduplicated_slots = deduplicate_overlapping_slots(slots, language);
 
         // Then
         let expected_slots = vec![

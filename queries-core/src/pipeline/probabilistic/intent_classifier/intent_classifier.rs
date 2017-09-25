@@ -68,8 +68,8 @@ impl IntentClassifier for LogRegIntentClassifier {
 
         if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
             let normalized_input = normalize(input);
-            let stemmed_text = StaticMapStemmer::new(&self.language_config.language).ok()
-                .map(|stemmer| stem_sentence(&normalized_input, &stemmer, &self.language_config.language))
+            let stemmed_text = StaticMapStemmer::new(self.language_config.language).ok()
+                .map(|stemmer| stem_sentence(&normalized_input, &stemmer, self.language_config.language))
                 .unwrap_or(normalized_input);
 
             let features = featurizer.transform(&stemmed_text)?;
@@ -89,7 +89,7 @@ impl IntentClassifier for LogRegIntentClassifier {
     }
 }
 
-fn stem_sentence<S: Stemmer>(input: &str, stemmer: &S, language: &Language) -> String {
+fn stem_sentence<S: Stemmer>(input: &str, stemmer: &S, language: Language) -> String {
     let stemmed_words: Vec<_> = tokenize_light(input, language)
         .iter()
         .map(|word| stemmer.stem(word))

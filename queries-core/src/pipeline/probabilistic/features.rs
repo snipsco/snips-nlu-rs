@@ -201,7 +201,7 @@ mod tests {
     fn shape_works() {
         // Given
         let language = Language::EN;
-        let tokens = tokenize("Hello BEAUTIFUL world !!!", &language);
+        let tokens = tokenize("Hello BEAUTIFUL world !!!", language);
 
         // When
         let actual_result = vec![shape(&tokens, 0, 2), shape(&tokens, 1, 3)];
@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn ngram_works() {
         let language = Language::EN;
-        let tokens = tokenize("I love House Music", &language);
+        let tokens = tokenize("I love House Music", language);
 
         let expected_ngrams = vec![vec![Some("i".to_string()),
                                         Some("love".to_string()),
@@ -252,7 +252,7 @@ mod tests {
     fn ngram_works_with_common_words_gazetteer() {
         // Given
         let language = Language::EN;
-        let tokens = tokenize("I love House Music", &language);
+        let tokens = tokenize("I love House Music", language);
         let common_words_gazetteer = HashSetGazetteer::from(
             vec![
                 "i".to_string(),
@@ -285,7 +285,7 @@ mod tests {
     fn ngram_works_with_stemmer() {
         // Given
         let language = Language::EN;
-        let tokens = tokenize("I love House Music", &language);
+        let tokens = tokenize("I love House Music", language);
         struct TestStemmer;
         impl Stemmer for TestStemmer {
             fn stem(&self, value: &str) -> String {
@@ -331,7 +331,7 @@ mod tests {
             ].into_iter()
         );
         let tagging_scheme = TaggingScheme::BILOU;
-        let tokens = tokenize("I love this beautiful blue Bird !", &language);
+        let tokens = tokenize("I love this beautiful blue Bird !", language);
         let token_index = 5;
 
         // When
@@ -371,7 +371,7 @@ mod tests {
         );
 
         let tagging_scheme = TaggingScheme::BILOU;
-        let tokens = tokenize("I love Blue Birds !", &language);
+        let tokens = tokenize("I love Blue Birds !", language);
         let token_index = 3;
 
         // When
@@ -402,7 +402,7 @@ mod tests {
 
         let language = Language::EN;
         let word_clusterer = TestWordClusterer {};
-        let tokens = tokenize("I love this bird", &language);
+        let tokens = tokenize("I love this bird", language);
         let token_index = 3;
 
         // When
@@ -416,7 +416,7 @@ mod tests {
     fn get_builtin_annotation_works() {
         // Given
         let language = Language::EN;
-        let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", &language);
+        let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
         let token_index = 5; // 9pm
         let tagging_scheme = TaggingScheme::BILOU;
         let parser = RustlingParser::get(Lang::EN);
