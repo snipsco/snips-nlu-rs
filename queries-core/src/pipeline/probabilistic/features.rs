@@ -108,19 +108,13 @@ pub fn is_in_gazetteer<S: Stemmer, G: Gazetteer>(tokens: &[Token],
         .map(|ngrams| get_scheme_prefix(token_index, &ngrams.1, tagging_scheme).to_string())
 }
 
-pub fn get_word_cluster<C: WordClusterer, S: Stemmer>(tokens: &[Token],
-                                                      token_index: usize,
-                                                      word_clusterer: &C,
-                                                      stemmer: Option<&S>) -> Option<String> {
+pub fn get_word_cluster<C: WordClusterer>(tokens: &[Token],
+                                          token_index: usize,
+                                          word_clusterer: &C) -> Option<String> {
     if token_index >= tokens.len() {
         return None;
     }
-    let normalized_token = if let Some(stemmer) = stemmer {
-        stemmer.stem(&normalize(&tokens[token_index].value))
-    } else {
-        normalize(&tokens[token_index].value)
-    };
-    word_clusterer.get_cluster(&normalized_token)
+    word_clusterer.get_cluster(&tokens[token_index].value.to_lowercase())
 }
 
 pub fn get_builtin_entities_annotation(tokens: &[Token],
@@ -406,7 +400,7 @@ mod tests {
         let token_index = 3;
 
         // When
-        let actual_result = get_word_cluster(&tokens, token_index, &word_clusterer, None as Option<&StaticMapStemmer>);
+        let actual_result = get_word_cluster(&tokens, token_index, &word_clusterer);
 
         // Then
         assert_eq!(Some("010101".to_string()), actual_result);
