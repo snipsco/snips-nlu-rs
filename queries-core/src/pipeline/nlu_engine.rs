@@ -337,19 +337,18 @@ impl SnipsNluEngine {
                         ngram_entity = None;
                         break;
                     }
-                    if let (Some(first), Some(last)) = (ngram_indexes.first(), ngram_indexes.last())
-                        {
-                            let range_start = tokens[*first].char_range.start;
-                            let range_end = tokens[*last].char_range.end;
-                            let range = range_start..range_end;
-                            let value = substring_with_char_range(text.to_string(), &range);
-                            ngram_entity = Some(PartialTaggedEntity {
-                                value,
-                                range: Some(range),
-                                entity: entity_name.to_string(),
-                                slot_name: None,
-                            })
-                        }
+                    if let (Some(first), Some(last)) = (ngram_indexes.first(), ngram_indexes.last()) {
+                        let range_start = tokens[*first].char_range.start;
+                        let range_end = tokens[*last].char_range.end;
+                        let range = range_start..range_end;
+                        let value = substring_with_char_range(text.to_string(), &range);
+                        ngram_entity = Some(PartialTaggedEntity {
+                            value,
+                            range: Some(range),
+                            entity: entity_name.to_string(),
+                            slot_name: None,
+                        })
+                    }
                 }
             }
             if let Some(ngram_entity) = ngram_entity {
