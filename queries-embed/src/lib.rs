@@ -58,7 +58,7 @@ macro_rules! wrap {
         Ok(_) => { QUERIESRESULT::OK }
         Err(e) => {
             use error_chain::ChainedError;
-            let msg = e.display().to_string();
+            let msg = e.display_chain().to_string();
             eprintln!("{}", msg);
             match LAST_ERROR.lock() {
                 Ok(mut guard) => *guard = msg,
