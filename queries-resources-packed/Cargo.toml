@@ -5,7 +5,7 @@ authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 build = "build.rs"
 
 [dependencies]
-error-chain = { version = "0.10", default-features = false }
+error-chain = { version = "0.11", default-features = false }
 phf = "0.7.21"
 
 [build-dependencies]

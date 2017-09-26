@@ -5,7 +5,7 @@ authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 
 [dependencies]
 csv = "0.15"
-error-chain = { version = "0.10", default-features = false }
+error-chain = { version = "0.11", default-features = false }
 itertools = "0.6"
 lazy_static = "0.2"
 nlu-utils = { git="ssh://git@github.com/snipsco/nlu-utils.git", tag="0.4.0"}
