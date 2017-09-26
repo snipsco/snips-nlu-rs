@@ -193,18 +193,13 @@ fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
                                  offsets: Vec<i32>) -> Result<FeatureFunction> {
     let cluster_name = parse_as_string(args, "cluster_name")?;
     let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
-    let use_stemming = parse_as_bool(args, "use_stemming")?;
     let word_clusterer = StaticMapWordClusterer::new(language,
                                                      cluster_name.clone())?;
-    let stemmer = get_stemmer(language, use_stemming);
     Ok(FeatureFunction::new(
         format!("word_cluster_{}", cluster_name),
         offsets,
         move |tokens, token_index|
-            features::get_word_cluster(tokens,
-                                       token_index,
-                                       &word_clusterer,
-                                       stemmer.as_ref())))
+            features::get_word_cluster(tokens, token_index, &word_clusterer)))
 }
 
 fn builtin_entities_annotation_feature_function(args: &HashMap<String, serde_json::Value>,
