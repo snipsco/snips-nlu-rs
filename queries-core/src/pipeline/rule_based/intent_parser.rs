@@ -8,12 +8,15 @@ use regex::{Regex, RegexBuilder};
 
 use errors::*;
 use super::configuration::RuleBasedParserConfiguration;
+use language::LanguageConfig;
 use snips_queries_ontology::{IntentClassifierResult, Slot};
 use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
-use nlu_utils::token::{tokenize, tokenize_light};
-use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
+use nlu_utils::language::Language;
 use nlu_utils::range::ranges_overlap;
+use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
+use nlu_utils::token::{tokenize, tokenize_light};
+
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use rustling_ontology::Lang;
 
@@ -21,18 +24,21 @@ pub struct RuleBasedIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, String>,
     slot_names_to_entities: HashMap<String, String>,
-    builtin_entity_parser: Option<Arc<RustlingParser>>
+    builtin_entity_parser: Option<Arc<RustlingParser>>,
+    language_config: LanguageConfig,
 }
 
 impl RuleBasedIntentParser {
     pub fn new(configuration: RuleBasedParserConfiguration) -> Result<Self> {
-        let builtin_entity_parser = Lang::from_str(&configuration.language).ok()
+        let builtin_entity_parser = Lang::from_str(&configuration.language_code).ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
+        let language_config = LanguageConfig::from_str(&configuration.language_code)?;
         Ok(RuleBasedIntentParser {
             regexes_per_intent: compile_regexes_per_intent(configuration.regexes_per_intent)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
             slot_names_to_entities: configuration.slot_names_to_entities,
-            builtin_entity_parser
+            builtin_entity_parser,
+            language_config: language_config
         })
     }
 }
@@ -117,7 +123,7 @@ impl IntentParser for RuleBasedIntentParser {
                 break;
             }
         }
-        let deduplicated_slots = deduplicate_overlapping_slots(result);
+        let deduplicated_slots = deduplicate_overlapping_slots(result, self.language_config.language);
         if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
             let filter_entity_kinds = self.slot_names_to_entities
                 .values()
@@ -139,7 +145,7 @@ impl IntentParser for RuleBasedIntentParser {
     }
 }
 
-fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>) -> Vec<InternalSlot> {
+fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -> Vec<InternalSlot> {
     let mut deduped: Vec<InternalSlot> = Vec::with_capacity(slots.len());
 
     for slot in slots {
@@ -148,11 +154,11 @@ fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>) -> Vec<InternalSlot> 
             .position(|existing_slot| ranges_overlap(&slot.range, &existing_slot.range));
 
         if let Some(index) = conflicting_slot_index {
-            fn extract_counts(v: &InternalSlot) -> (usize, usize) {
-                (tokenize(&v.value).len(), v.value.chars().count())
+            fn extract_counts(v: &InternalSlot, l: Language) -> (usize, usize) {
+                (tokenize(&v.value, l).len(), v.value.chars().count())
             }
-            let (existing_token_count, existing_char_count) = extract_counts(&deduped[index]);
-            let (token_count, char_count) = extract_counts(&slot);
+            let (existing_token_count, existing_char_count) = extract_counts(&deduped[index], language);
+            let (token_count, char_count) = extract_counts(&slot, language);
 
             if token_count > existing_token_count ||
                 (token_count == existing_token_count && char_count > existing_char_count) {
@@ -195,7 +201,8 @@ fn replace_builtin_entities(text: &str,
 }
 
 fn get_builtin_entity_name(entity_label: &str) -> String {
-    let normalized_entity_label = tokenize_light(entity_label).join("").to_uppercase();
+    // Here we don't need language specific tokenization, we just want to generate a feature name, that's why we use EN
+    let normalized_entity_label = tokenize_light(entity_label, Language::EN).join("").to_uppercase();
     format!("%{}%", normalized_entity_label)
 }
 
@@ -203,17 +210,18 @@ fn get_builtin_entity_name(entity_label: &str) -> String {
 mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use snips_queries_ontology::{AmountOfMoneyValue, IntentClassifierResult, Precision,Slot, SlotValue};
+    use snips_queries_ontology::{AmountOfMoneyValue, IntentClassifierResult, Precision, Slot, SlotValue};
     use pipeline::rule_based::configuration::RuleBasedParserConfiguration;
     use pipeline::{IntentParser, InternalSlot};
     use builtin_entities::RustlingParser;
+    use nlu_utils::language::Language;
     use rustling_ontology::Lang;
     use super::{RuleBasedIntentParser, deduplicate_overlapping_slots, get_builtin_entity_name,
                 replace_builtin_entities};
 
     fn test_configuration() -> RuleBasedParserConfiguration {
         RuleBasedParserConfiguration {
-            language: "en".to_string(),
+            language_code: "en".to_string(),
             regexes_per_intent: hashmap![
                 "dummy_intent_1".to_string() => vec![
                     r"^This is a (?P<group_1>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query with another (?P<group_2>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)$".to_string(),
@@ -363,6 +371,7 @@ mod tests {
     #[test]
     fn should_deduplicate_overlapping_slots() {
         // Given
+        let language = Language::EN;
         let slots = vec![
             InternalSlot {
                 value: "non_overlapping1".to_string(),
@@ -397,7 +406,7 @@ mod tests {
         ];
 
         // When
-        let deduplicated_slots = deduplicate_overlapping_slots(slots);
+        let deduplicated_slots = deduplicate_overlapping_slots(slots, language);
 
         // Then
         let expected_slots = vec![
