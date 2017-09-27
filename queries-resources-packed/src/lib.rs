@@ -105,17 +105,17 @@ mod tests {
 
     #[test]
     fn stem_works() {
-        assert_eq!(stem(Language::from_str("en"), "billing").unwrap(), "bill")
+        assert_eq!(stem(Language::from_str("en").unwrap(), "billing").unwrap(), "bill")
     }
 
     #[test]
     fn brown_clusters_works() {
-        assert_eq!(word_cluster("brown_clusters", Language::from_str("en"), "groovy").unwrap().unwrap(), "11111000111111")
+        assert_eq!(word_cluster("brown_clusters", Language::from_str("en").unwrap(), "groovy").unwrap().unwrap(), "11111000111111")
     }
 
     #[test]
     fn gazetteers_works() {
-        assert_eq!(gazetteer_hits(Language::from_str("en"), "top_10000_words", "car").unwrap(), true);
-        assert_eq!(gazetteer_hits(Language::from_str("en"), "top_10000_words", "qsmldkfjdk").unwrap(), false)
+        assert_eq!(gazetteer_hits(Language::from_str("en").unwrap(), "top_10000_words", "car").unwrap(), true);
+        assert_eq!(gazetteer_hits(Language::from_str("en").unwrap(), "top_10000_words", "qsmldkfjdk").unwrap(), false)
     }
 }
