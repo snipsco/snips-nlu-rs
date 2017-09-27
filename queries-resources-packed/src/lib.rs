@@ -101,6 +101,7 @@ pub fn gazetteer_hits(language: Language, gazetteer_name: &str, word: &str) -> R
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::str::FromStr;
 
     #[test]
     fn stem_works() {
