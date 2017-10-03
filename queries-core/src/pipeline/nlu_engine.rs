@@ -89,7 +89,7 @@ impl SnipsNluEngine {
                         if let Some(entity) = self.entities.get(&slot.entity) {
                             entity
                                 .utterances
-                                .get(&normalize(&slot.raw_value))
+                                .get(&slot.raw_value)
                                 .map(|reference_value| {
                                     Some(slot.clone().with_slot_value(
                                         SlotValue::Custom(reference_value.to_string().into()),
