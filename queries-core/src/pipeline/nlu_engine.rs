@@ -389,7 +389,7 @@ mod tests {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
                 intent_name: "MakeCoffee".to_string(),
-                probability: 0.7813475,
+                probability: 0.7703216,
             }),
             slots: Some(vec![
                 Slot {
