@@ -108,7 +108,7 @@ mod tests {
             .unwrap()
             .into_nlu_engine_configuration();
 
-        assert_eq!("en", nlu_config.model.rule_based_parser.unwrap().language);
+        assert_eq!("en", nlu_config.model.rule_based_parser.unwrap().language_code);
         assert_eq!("en", nlu_config.model.probabilistic_parser.unwrap().language_code);
     }
 }

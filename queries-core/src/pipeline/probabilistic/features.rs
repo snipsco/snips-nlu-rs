@@ -108,19 +108,13 @@ pub fn is_in_gazetteer<S: Stemmer, G: Gazetteer>(tokens: &[Token],
         .map(|ngrams| get_scheme_prefix(token_index, &ngrams.1, tagging_scheme).to_string())
 }
 
-pub fn get_word_cluster<C: WordClusterer, S: Stemmer>(tokens: &[Token],
-                                                      token_index: usize,
-                                                      word_clusterer: &C,
-                                                      stemmer: Option<&S>) -> Option<String> {
+pub fn get_word_cluster<C: WordClusterer>(tokens: &[Token],
+                                          token_index: usize,
+                                          word_clusterer: &C) -> Option<String> {
     if token_index >= tokens.len() {
         return None;
     }
-    let normalized_token = if let Some(stemmer) = stemmer {
-        stemmer.stem(&normalize(&tokens[token_index].value))
-    } else {
-        normalize(&tokens[token_index].value)
-    };
-    word_clusterer.get_cluster(&normalized_token)
+    word_clusterer.get_cluster(&tokens[token_index].value.to_lowercase())
 }
 
 pub fn get_builtin_entities_annotation(tokens: &[Token],
@@ -154,6 +148,7 @@ fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<St
 mod tests {
     use super::*;
 
+    use nlu_utils::language::Language;
     use nlu_utils::token::tokenize;
     use rustling_ontology::Lang;
 
@@ -199,7 +194,8 @@ mod tests {
     #[test]
     fn shape_works() {
         // Given
-        let tokens = tokenize("Hello BEAUTIFUL world !!!");
+        let language = Language::EN;
+        let tokens = tokenize("Hello BEAUTIFUL world !!!", language);
 
         // When
         let actual_result = vec![shape(&tokens, 0, 2), shape(&tokens, 1, 3)];
@@ -223,7 +219,8 @@ mod tests {
 
     #[test]
     fn ngram_works() {
-        let tokens = tokenize("I love House Music");
+        let language = Language::EN;
+        let tokens = tokenize("I love House Music", language);
 
         let expected_ngrams = vec![vec![Some("i".to_string()),
                                         Some("love".to_string()),
@@ -248,7 +245,8 @@ mod tests {
     #[test]
     fn ngram_works_with_common_words_gazetteer() {
         // Given
-        let tokens = tokenize("I love House Music");
+        let language = Language::EN;
+        let tokens = tokenize("I love House Music", language);
         let common_words_gazetteer = HashSetGazetteer::from(
             vec![
                 "i".to_string(),
@@ -280,7 +278,8 @@ mod tests {
     #[test]
     fn ngram_works_with_stemmer() {
         // Given
-        let tokens = tokenize("I love House Music");
+        let language = Language::EN;
+        let tokens = tokenize("I love House Music", language);
         struct TestStemmer;
         impl Stemmer for TestStemmer {
             fn stem(&self, value: &str) -> String {
@@ -317,6 +316,7 @@ mod tests {
     #[test]
     fn is_in_gazetteer_works() {
         // Given
+        let language = Language::EN;
         let gazetteer = HashSetGazetteer::from(
             vec![
                 "bird".to_string(),
@@ -325,7 +325,7 @@ mod tests {
             ].into_iter()
         );
         let tagging_scheme = TaggingScheme::BILOU;
-        let tokens = tokenize("I love this beautiful blue Bird !");
+        let tokens = tokenize("I love this beautiful blue Bird !", language);
         let token_index = 5;
 
         // When
@@ -354,6 +354,7 @@ mod tests {
             }
         }
 
+        let language = Language::EN;
         let stemmer = TestStemmer {};
         let gazetteer = HashSetGazetteer::from(
             vec![
@@ -364,7 +365,7 @@ mod tests {
         );
 
         let tagging_scheme = TaggingScheme::BILOU;
-        let tokens = tokenize("I love Blue Birds !");
+        let tokens = tokenize("I love Blue Birds !", language);
         let token_index = 3;
 
         // When
@@ -393,12 +394,13 @@ mod tests {
             }
         }
 
+        let language = Language::EN;
         let word_clusterer = TestWordClusterer {};
-        let tokens = tokenize("I love this bird");
+        let tokens = tokenize("I love this bird", language);
         let token_index = 3;
 
         // When
-        let actual_result = get_word_cluster(&tokens, token_index, &word_clusterer, None as Option<&StaticMapStemmer>);
+        let actual_result = get_word_cluster(&tokens, token_index, &word_clusterer);
 
         // Then
         assert_eq!(Some("010101".to_string()), actual_result);
@@ -407,7 +409,8 @@ mod tests {
     #[test]
     fn get_builtin_annotation_works() {
         // Given
-        let tokens = tokenize("Let's meet tomorrow at 9pm ok ?");
+        let language = Language::EN;
+        let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
         let token_index = 5; // 9pm
         let tagging_scheme = TaggingScheme::BILOU;
         let parser = RustlingParser::get(Lang::EN);

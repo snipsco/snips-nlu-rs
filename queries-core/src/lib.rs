@@ -1,4 +1,4 @@
-#![recursion_limit="128"]
+#![recursion_limit = "128"]
 
 extern crate base64;
 extern crate crfsuite;
@@ -31,6 +31,7 @@ mod builtin_entities;
 mod models;
 mod pipeline;
 mod utils;
+mod language;
 #[cfg(test)]
 mod testutils;
 
@@ -44,4 +45,5 @@ pub use pipeline::assistant_config::{FileBasedConfiguration,
 
 pub use pipeline::nlu_engine::deprecated::*;
 pub use pipeline::assistant_config::deprecated::*;
+pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use utils::file_path;
