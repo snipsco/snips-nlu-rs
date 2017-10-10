@@ -1,6 +1,6 @@
 [package]
 name = "queries-core"
-version = "0.26.1"
+version = "0.27.0"
 authors = [
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>",
     "Kevin Lefevre <kevin.lefevre@snips.ai>"
@@ -13,7 +13,7 @@ queries-resources-packed = { path = "../queries-resources-packed" }
 snips-queries-ontology = { git = "ssh://git@github.com/snipsco/snips-queries-ontology.git", tag = "0.4.4"}
 crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs.git", rev = "cb97f3a" }
 rustling-ontology = { git = "https://github.com/snipsco/rustling-ontology/", tag = "0.14.1"}
-nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils.git", tag = "0.4.0"}
+nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils.git", tag = "0.5.0"}
 error-chain = { version = "0.11", default-features = false }
 base64 = "0.6"
 itertools = "0.6"

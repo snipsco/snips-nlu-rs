@@ -10,27 +10,21 @@ import XCTest
 @testable import SnipsQueries
 
 class NluEngineTests: XCTestCase {
-    
-    override func setUp() {
-        super.setUp()
         
-    }
-    
-    override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-        super.tearDown()
-    }
-    
     func testCreationFromZipfile() {
-        let fileURL = Bundle(for: type(of: self)).url(forResource: "sample_assistant", withExtension: "zip")!
+        let fileURL = Bundle(for: type(of: self)).url(forResource: "sample_config", withExtension: "zip")!
         let data = try! Data(contentsOf: fileURL)
         
         let nluEngine = try? NluEngine(assistantZipFile: data)
-        
+
         XCTAssertNotNil(nluEngine)
     }
     
     func testCreationFromDirectory() {
-        // TODO: Create directory with an assistant inside and check if everything works
+        let directoryURL = Bundle(for: type(of: self)).url(forResource: "configurations", withExtension: nil)!
+        
+        let nluEngine = try? NluEngine(assistantDirectoryURL: directoryURL)
+
+        XCTAssertNotNil(nluEngine)
     }
 }

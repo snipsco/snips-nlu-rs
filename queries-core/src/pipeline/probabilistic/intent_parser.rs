@@ -5,7 +5,6 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use itertools::Itertools;
-use rustling_ontology::Lang;
 
 use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
 use errors::*;
@@ -16,8 +15,9 @@ use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentC
 use pipeline::probabilistic::tagger::{CRFTagger, Tagger};
 use pipeline::probabilistic::crf_utils::{positive_tagging, replace_builtin_tags, tags_to_slots,
                                          generate_slots_permutations};
+use language::LanguageConfig;
 use nlu_utils::range::ranges_overlap;
-use nlu_utils::token::{tokenize, Token};
+use nlu_utils::token::{Token, tokenize};
 use snips_queries_ontology::{IntentClassifierResult, Slot};
 
 
@@ -26,6 +26,7 @@ pub struct ProbabilisticIntentParser {
     slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
     taggers: HashMap<String, Box<Tagger>>,
     builtin_entity_parser: Option<Arc<RustlingParser>>,
+    language_config: LanguageConfig,
 }
 
 impl ProbabilisticIntentParser {
@@ -40,15 +41,15 @@ impl ProbabilisticIntentParser {
         let taggers_map = HashMap::from_iter(taggers?);
         let intent_classifier =
             Box::new(LogRegIntentClassifier::new(config.intent_classifier)?) as _;
-        let builtin_entity_parser = Lang::from_str(&config.language_code)
-            .ok()
-            .map(|rustling_lang| RustlingParser::get(rustling_lang));
+        let language_config = LanguageConfig::from_str(&config.language_code)?;
+        let builtin_entity_parser = Some(RustlingParser::get(language_config.to_rust_lang()));
 
         Ok(ProbabilisticIntentParser {
             intent_classifier,
             slot_name_to_entity_mapping: config.slot_name_to_entity_mapping,
             taggers: taggers_map,
             builtin_entity_parser,
+            language_config: language_config,
         })
     }
 }
@@ -84,7 +85,7 @@ impl IntentParser for ProbabilisticIntentParser {
             format!("intent {:?} not found in slots name mapping", intent_name),
         )?;
 
-        let tokens = tokenize(input);
+        let tokens = tokenize(input, self.language_config.language);
         if tokens.is_empty() {
             return Ok(vec![]);
         }
@@ -243,6 +244,7 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 mod tests {
     use super::*;
     use std::result::Result as StdResult;
+    use nlu_utils::language::Language;
     use snips_queries_ontology::{Grain, InstantTimeValue, IntentClassifierResult, Precision,
                                  SlotValue};
     use pipeline::probabilistic::crf_utils::TaggingScheme;
@@ -316,8 +318,9 @@ mod tests {
     #[test]
     fn augment_slots_works() {
         // Given
+        let language = Language::EN;
         let text = "Find a flight leaving from Paris between today at 9pm and tomorrow at 8am";
-        let tokens = tokenize(text);
+        let tokens = tokenize(text, language);
         let tags = vec![
             "O".to_string(),
             "O".to_string(),
@@ -566,6 +569,8 @@ mod tests {
     #[test]
     fn should_not_return_filtered_out_intent() {
         // Given
+        let language = Language::EN;
+        let language_config = LanguageConfig{language};
         let classifier_result = IntentClassifierResult {
             intent_name: "disabled_intent".to_string(),
             probability: 0.8,
@@ -578,6 +583,7 @@ mod tests {
             slot_name_to_entity_mapping: hashmap! {},
             taggers: hashmap! {},
             builtin_entity_parser: None,
+            language_config
         };
         let text = "hello world";
         let intents_set = Some(
@@ -596,6 +602,8 @@ mod tests {
     #[test]
     fn should_return_only_allowed_intent() {
         // Given
+        let language = Language::EN;
+        let language_config = LanguageConfig::from_str(&language.to_string()).unwrap();
         let classifier_result = IntentClassifierResult {
             intent_name: "disabled_intent".to_string(),
             probability: 0.8,
@@ -608,6 +616,7 @@ mod tests {
             slot_name_to_entity_mapping: hashmap! {},
             taggers: hashmap! {},
             builtin_entity_parser: None,
+            language_config,
         };
         let text = "hello world";
         let intents_set = Some(hashset! {"allowed_intent1".to_string()});

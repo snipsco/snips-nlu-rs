@@ -246,7 +246,7 @@ public class NluEngine {
     private var client: OpaquePointer? = nil
 
     public init(assistantDirectoryURL: URL) throws {
-        guard nlu_engine_create_from_dir(assistantDirectoryURL.absoluteString, &client) == OK else { throw NluEngineError.getLast }
+        guard nlu_engine_create_from_dir(assistantDirectoryURL.path, &client) == OK else { throw NluEngineError.getLast }
     }
 
     public init(assistantZipFile: Data) throws {

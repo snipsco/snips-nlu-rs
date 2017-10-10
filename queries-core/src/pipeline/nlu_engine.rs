@@ -14,13 +14,16 @@ use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::tagging_utils::{disambiguate_tagged_entities, enrich_entities, tag_builtin_entities};
 use pipeline::configuration::{Entity, NluEngineConfigurationConvertible};
 use rustling_ontology::Lang;
+use language::LanguageConfig;
+use nlu_utils::language::Language;
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
 
-const MODEL_VERSION: &str = "0.9.0";
+
+const MODEL_VERSION: &str = "0.10.0";
 
 pub struct SnipsNluEngine {
-    language: String,
+    language_config: LanguageConfig,
     parsers: Vec<Box<IntentParser>>,
     entities: HashMap<String, Entity>,
     intents_data_sizes: HashMap<String, usize>,
@@ -48,9 +51,10 @@ impl SnipsNluEngine {
         let builtin_entity_parser = Lang::from_str(&nlu_config.language)
             .ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
+        let language_config = LanguageConfig::from_str(&nlu_config.language)?;
 
         Ok(SnipsNluEngine {
-            language: nlu_config.language,
+            language_config: language_config,
             parsers,
             entities: nlu_config.entities,
             intents_data_sizes,
@@ -85,7 +89,7 @@ impl SnipsNluEngine {
                         if let Some(entity) = self.entities.get(&slot.entity) {
                             entity
                                 .utterances
-                                .get(&normalize(&slot.raw_value))
+                                .get(&slot.raw_value)
                                 .map(|reference_value| {
                                     Some(slot.clone().with_slot_value(
                                         SlotValue::Custom(reference_value.to_string().into()),
@@ -140,6 +144,7 @@ impl SnipsNluEngine {
                 entity_name.to_string(),
                 slot_name.to_string(),
                 custom_entity.clone(),
+                self.language_config.language,
             )
         } else {
             if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
@@ -162,8 +167,9 @@ fn extract_custom_slot(
     entity_name: String,
     slot_name: String,
     custom_entity: Entity,
+    language: Language,
 ) -> Option<Slot> {
-    let tokens = tokenize(&input);
+    let tokens = tokenize(&input, language);
     let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
     let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
     ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
@@ -285,8 +291,8 @@ impl SnipsNluEngine {
                     .unwrap_or(vec![]),
             )
         } else {
-            let tagged_seen_entities = self.tag_seen_entities(text, intent_entities);
-            let tagged_builtin_entities = tag_builtin_entities(text, &self.language);
+            let tagged_seen_entities = self.tag_seen_entities(text, intent_entities, self.language_config.language);
+            let tagged_builtin_entities = tag_builtin_entities(text, self.language_config.language);
             let tagged_entities = enrich_entities(tagged_seen_entities, tagged_builtin_entities);
             let disambiguated_entities =
                 disambiguate_tagged_entities(tagged_entities, slot_name_mapping.clone());
@@ -303,6 +309,7 @@ impl SnipsNluEngine {
         &self,
         text: &str,
         intent_entities: HashSet<&String>,
+        language: Language
     ) -> Vec<PartialTaggedEntity> {
         let entities = self.entities
             .clone()
@@ -315,7 +322,7 @@ impl SnipsNluEngine {
                 }
             })
             .collect_vec();
-        let tokens = tokenize(text);
+        let tokens = tokenize(text, language);
         let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
         let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
         ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
@@ -330,8 +337,7 @@ impl SnipsNluEngine {
                         ngram_entity = None;
                         break;
                     }
-                    if let (Some(first), Some(last)) = (ngram_indexes.first(), ngram_indexes.last())
-                    {
+                    if let (Some(first), Some(last)) = (ngram_indexes.first(), ngram_indexes.last()) {
                         let range_start = tokens[*first].char_range.start;
                         let range_end = tokens[*last].char_range.end;
                         let range = range_start..range_end;
@@ -383,7 +389,7 @@ mod tests {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
                 intent_name: "MakeCoffee".to_string(),
-                probability: 0.7035172,
+                probability: 0.7703216,
             }),
             slots: Some(vec![
                 Slot {
@@ -466,12 +472,13 @@ mod tests {
     #[test]
     fn should_extract_custom_slot_when_tagged() {
         // Given
+        let language = Language::EN;
         let input = "hello a b c d world".to_string();
         let entity_name = "entity".to_string();
         let slot_name = "slot".to_string();
         let custom_entity = Entity {
             automatically_extensible: true,
-            utterances: hashmap!{
+            utterances: hashmap! {
                 "a".to_string() => "value1".to_string(),
                 "a b".to_string() => "value1".to_string(),
                 "b c d".to_string() => "value2".to_string(),
@@ -479,7 +486,7 @@ mod tests {
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity);
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
 
         // Then
         let expected_slot = Some(Slot {
@@ -495,16 +502,17 @@ mod tests {
     #[test]
     fn should_extract_custom_slot_when_not_tagged() {
         // Given
+        let language = Language::EN;
         let input = "hello world".to_string();
         let entity_name = "entity".to_string();
         let slot_name = "slot".to_string();
         let custom_entity = Entity {
             automatically_extensible: true,
-            utterances: hashmap!{},
+            utterances: hashmap! {},
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity);
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
 
         // Then
         let expected_slot = Some(Slot {
@@ -520,16 +528,17 @@ mod tests {
     #[test]
     fn should_not_extract_custom_slot_when_not_extensible() {
         // Given
+        let language = Language::EN;
         let input = "hello world".to_string();
         let entity_name = "entity".to_string();
         let slot_name = "slot".to_string();
         let custom_entity = Entity {
             automatically_extensible: false,
-            utterances: hashmap!{},
+            utterances: hashmap! {},
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity);
+        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
 
         // Then
         let expected_slot = None;
