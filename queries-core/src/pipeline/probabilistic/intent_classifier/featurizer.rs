@@ -13,11 +13,11 @@ use pipeline::probabilistic::configuration::FeaturizerConfiguration;
 use std::str::FromStr;
 use models::stemmer::{Stemmer, StaticMapStemmer};
 
-
 pub struct Featurizer {
     best_features: Vec<usize>,
     vocabulary: HashMap<String, usize>,
     idf_diag: Vec<f32>,
+    sublinear: bool,
     language_config: LanguageConfig,
     word_clusterer: Option<StaticMapWordClusterer>,
     stemmer: Option<StaticMapStemmer>,
@@ -36,23 +36,36 @@ impl Featurizer {
         let stemmer = StaticMapStemmer::new(language_config.language).ok();
         let entity_utterances_to_feature_names = config.entity_utterances_to_feature_names;
 
-        Self { best_features, vocabulary, idf_diag, language_config, word_clusterer, stemmer, entity_utterances_to_feature_names }
+        Self { best_features, vocabulary, idf_diag, sublinear: config.config.sublinear_tf, language_config, word_clusterer, stemmer, entity_utterances_to_feature_names }
     }
 
     pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
         let preprocessed_tokens = self.preprocess_query(input);
-
         let vocabulary_size = self.vocabulary.values().max().unwrap() + 1;
-        let mut words_count = vec![0.; vocabulary_size];
-        for word in preprocessed_tokens {
-            if let Some(word_idx) = self.vocabulary.get(&word) {
-                words_count[*word_idx] += self.idf_diag[*word_idx];
+
+        let mut count: HashMap<String, f32> = HashMap::new();
+        for token in preprocessed_tokens.into_iter() {
+            let c = count.entry(token).or_insert(0.);
+            *c += 1.;
+        }
+
+        let mut words_count: Vec<f32> = vec![0.; vocabulary_size];
+
+        for (w, c) in count.into_iter() {
+            if let Some(ix) = self.vocabulary.get(&w) {
+                if self.sublinear {
+                    words_count[*ix] = (c.ln() + 1.) * self.idf_diag[*ix]
+                } else {
+                    words_count[*ix] = c * self.idf_diag[*ix]
+                }
             }
         }
 
         let l2_norm: f32 = words_count.iter().fold(0., |norm, v| norm + v * v).sqrt();
         let safe_l2_norm = if l2_norm > 0. { l2_norm } else { 1. };
+
         words_count = words_count.iter().map(|c| *c / safe_l2_norm).collect_vec();
+
         let selected_features = Array::from_iter(
             (0..self.best_features.len()).map(|fi| words_count[self.best_features[fi]])
         );
@@ -94,7 +107,7 @@ fn get_dataset_entities_features<S: Stemmer>(query_tokens: &Vec<String>, stemmer
         .into_iter()
         .filter_map(|ngrams| entity_utterances_to_feature_names.get(&ngrams.0))
         .flat_map(|features| features)
-        .map(|s| s.clone())
+        .map(|s| normalize(s))
         .collect()
 }
 
@@ -111,7 +124,7 @@ mod tests {
     use models::stemmer::Stemmer;
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
-    use pipeline::probabilistic::configuration::{FeaturizerConfiguration, TfIdfVectorizerConfiguration};
+    use pipeline::probabilistic::configuration::{FeaturizerConfiguration, TfIdfVectorizerConfiguration, FeaturizerConfigConfiguration};
 
     struct TestWordClusterer {}
 
@@ -177,6 +190,7 @@ mod tests {
         let featurizer_config = FeaturizerConfiguration {
             language_code: language_code.to_string(),
             tfidf_vectorizer,
+            config: FeaturizerConfigConfiguration { sublinear_tf: false },
             best_features,
             entity_utterances_to_feature_names,
         };
@@ -213,8 +227,8 @@ mod tests {
         let language = Language::EN;
         let query_tokens = tokenize_light("Hëllo this bïrd is a beautiful Bïrd", language);
         let entity_utterances_to_feature_names = hashmap![
-            "bir".to_string() => vec!["featureentityanimal".to_string()],
-            "hell this".to_string() => vec!["featureentityword".to_string(), "featureentitygreeting".to_string()]
+            "bir".to_string() => vec!["featureentityAnimal".to_string()],
+            "hell this".to_string() => vec!["featureentityWord".to_string(), "featureentityGreeting".to_string()]
         ];
         let stemmer = TestStemmer {};
 
