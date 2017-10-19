@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use itertools::Itertools;
 
 use ndarray::prelude::*;
@@ -43,31 +43,30 @@ impl Featurizer {
         let preprocessed_tokens = self.preprocess_query(input);
         let vocabulary_size = self.vocabulary.values().max().unwrap() + 1;
 
-        let mut count: HashMap<String, f32> = HashMap::new();
-        for token in preprocessed_tokens.into_iter() {
-            let c = count.entry(token).or_insert(0.);
-            *c += 1.;
-        }
-
-        let mut words_count: Vec<f32> = vec![0.; vocabulary_size];
-
-        for (w, c) in count.into_iter() {
-            if let Some(ix) = self.vocabulary.get(&w) {
-                if self.sublinear {
-                    words_count[*ix] = (c.ln() + 1.) * self.idf_diag[*ix]
-                } else {
-                    words_count[*ix] = c * self.idf_diag[*ix]
-                }
+        let mut tfidf: Vec<f32> = vec![0.; vocabulary_size];
+        let mut match_idx: HashSet<usize> = HashSet::new();
+        for word in preprocessed_tokens {
+            if let Some(word_idx) = self.vocabulary.get(&word) {
+                tfidf[*word_idx] += 1.;
+                match_idx.insert(*word_idx);
             }
         }
 
-        let l2_norm: f32 = words_count.iter().fold(0., |norm, v| norm + v * v).sqrt();
+        for ix in match_idx.into_iter() {
+            if self.sublinear {
+                tfidf[ix] = (tfidf[ix].ln() + 1.) * self.idf_diag[ix]
+            } else {
+                tfidf[ix] = tfidf[ix] * self.idf_diag[ix]
+            }
+        }
+
+        let l2_norm: f32 = tfidf.iter().fold(0., |norm, v| norm + v * v).sqrt();
         let safe_l2_norm = if l2_norm > 0. { l2_norm } else { 1. };
 
-        words_count = words_count.iter().map(|c| *c / safe_l2_norm).collect_vec();
+        tfidf = tfidf.iter().map(|c| *c / safe_l2_norm).collect_vec();
 
         let selected_features = Array::from_iter(
-            (0..self.best_features.len()).map(|fi| words_count[self.best_features[fi]])
+            (0..self.best_features.len()).map(|fi| tfidf[self.best_features[fi]])
         );
         Ok(selected_features)
     }
