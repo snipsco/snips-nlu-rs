@@ -22,8 +22,14 @@ pub struct IntentClassifierConfiguration {
 pub struct FeaturizerConfiguration {
     pub language_code: String,
     pub tfidf_vectorizer: TfIdfVectorizerConfiguration,
+    pub config: FeaturizerConfigConfiguration,
     pub best_features: Vec<usize>,
     pub entity_utterances_to_feature_names: HashMap<String, Vec<String>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FeaturizerConfigConfiguration {
+    pub sublinear_tf: bool
 }
 
 #[derive(Debug, Deserialize)]

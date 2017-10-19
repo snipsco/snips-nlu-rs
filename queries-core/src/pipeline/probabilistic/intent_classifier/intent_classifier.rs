@@ -74,7 +74,6 @@ impl IntentClassifier for LogRegIntentClassifier {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::{IntentClassifier, LogRegIntentClassifier};
@@ -83,7 +82,7 @@ mod tests {
     use ndarray::*;
     use models::logreg::MulticlassLogisticRegression;
     use pipeline::IntentClassifierResult;
-    use pipeline::probabilistic::configuration::{FeaturizerConfiguration, TfIdfVectorizerConfiguration};
+    use pipeline::probabilistic::configuration::{FeaturizerConfiguration, TfIdfVectorizerConfiguration, FeaturizerConfigConfiguration};
 
     #[test]
     fn get_intent_works() {
@@ -334,10 +333,12 @@ mod tests {
             None
         ];
 
+        let config = FeaturizerConfigConfiguration { sublinear_tf: false };
 
         let config = FeaturizerConfiguration {
             tfidf_vectorizer,
             best_features,
+            config,
             language_code,
             entity_utterances_to_feature_names,
         };
@@ -453,7 +454,6 @@ mod tests {
         };
 
         // Then
-
         assert_eq!(expected_result.intent_name, actual_result.intent_name);
         assert_eq!(expected_result.probability, actual_result.probability);
     }
