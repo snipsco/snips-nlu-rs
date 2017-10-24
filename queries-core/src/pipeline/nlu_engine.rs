@@ -66,7 +66,7 @@ impl SnipsNluEngine {
     pub fn parse(
         &self,
         input: &str,
-        intents_filter: Option<&[&str]>,
+        intents_filter: Option<&[String]>,
     ) -> Result<IntentParserResult> {
         if self.parsers.is_empty() {
             return Ok(IntentParserResult {
@@ -217,7 +217,7 @@ fn extract_builtin_slot(
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(
         builtin_entity_parser
-            .extract_entities(&input, Some(&vec![builtin_entity_kind]))
+            .extract_entities(&input, Some(&[builtin_entity_kind]))
             .first()
             .map(|rustlin_entity| {
                 Slot {
@@ -273,7 +273,7 @@ impl SnipsNluEngine {
         let threshold = small_data_regime_threshold.unwrap_or(DEFAULT_THRESHOLD);
         if intent_data_size >= threshold {
             Ok(
-                self.parse(text, Some(&vec![intent]))?
+                self.parse(text, Some(&[intent.into()]))?
                     .slots
                     .map(|slots| {
                         slots

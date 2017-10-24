@@ -1015,7 +1015,7 @@ mod tests {
             get_scheme_prefix(3, &indexes, TaggingScheme::BILOU).to_string(),
             get_scheme_prefix(4, &indexes, TaggingScheme::BILOU).to_string(),
             get_scheme_prefix(5, &indexes, TaggingScheme::BILOU).to_string(),
-            get_scheme_prefix(1, &vec![1], TaggingScheme::BILOU).to_string(),
+            get_scheme_prefix(1, &[1], TaggingScheme::BILOU).to_string(),
         ];
 
         // Then
