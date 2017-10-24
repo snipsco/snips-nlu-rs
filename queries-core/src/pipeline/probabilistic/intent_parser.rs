@@ -104,7 +104,7 @@ impl IntentParser for ProbabilisticIntentParser {
         // Remove slots corresponding to builtin entities
         let tagging_scheme = (*tagger).get_tagging_scheme();
         let custom_slots =
-            tags_to_slots(input, &tokens, &tags, tagging_scheme, intent_slots_mapping)
+            tags_to_slots(input, &tokens, &tags, tagging_scheme, intent_slots_mapping)?
                 .into_iter()
                 .filter(|s| !builtin_slot_names.contains(&s.slot_name))
                 .collect_vec();
@@ -220,7 +220,7 @@ fn augment_slots(
         &augmented_tags,
         tagger.get_tagging_scheme(),
         &intent_slots_mapping,
-    ))
+    )?)
 }
 
 fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<usize>> {
