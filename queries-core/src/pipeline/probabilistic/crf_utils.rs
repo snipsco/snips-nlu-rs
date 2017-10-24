@@ -182,7 +182,7 @@ pub fn tags_to_slots(text: &str,
                      tags: &[String],
                      tagging_scheme: TaggingScheme,
                      intent_slots_mapping: &HashMap<String, String>)
-                     -> Vec<InternalSlot> {
+                     -> Result<Vec<InternalSlot>> {
     let slot_ranges = match tagging_scheme {
         TaggingScheme::IO => _tags_to_slots(tags, tokens, is_start_of_io_slot, is_end_of_io_slot),
         TaggingScheme::BIO => _tags_to_slots(tags, tokens, is_start_of_bio_slot, is_end_of_bio_slot),
@@ -192,12 +192,15 @@ pub fn tags_to_slots(text: &str,
     slot_ranges
         .into_iter()
         .map(|s|
-            InternalSlot {
+            Ok(InternalSlot {
                 value: text[s.range.clone()].to_string(),
                 range: convert_to_char_range(text, &s.range),
-                entity: intent_slots_mapping[&s.slot_name].to_string(),
+                entity: intent_slots_mapping
+                    .get(&s.slot_name)
+                    .ok_or(format!("Missing slot to entity mapping for slot name: {}", s.slot_name))?
+                    .to_string(),
                 slot_name: s.slot_name
-            })
+            }))
         .collect()
 }
 
@@ -421,7 +424,7 @@ mod tests {
                                       &tokenize(&data.text, language),
                                       &data.tags,
                                       TaggingScheme::IO,
-                                      &intent_slots_mapping);
+                                      &intent_slots_mapping).unwrap();
             // Then
             assert_eq!(slots, data.expected_slots);
         }
@@ -586,7 +589,7 @@ mod tests {
                                       &tokenize(&data.text, language),
                                       &data.tags,
                                       TaggingScheme::BIO,
-                                      &intent_slots_mapping);
+                                      &intent_slots_mapping).unwrap();
             // Then
             assert_eq!(slots, data.expected_slots);
         }
@@ -785,7 +788,7 @@ mod tests {
                                       &tokenize(&data.text, language),
                                       &data.tags,
                                       TaggingScheme::BILOU,
-                                      &intent_slots_mapping);
+                                      &intent_slots_mapping).unwrap();
             // Then
             assert_eq!(slots, data.expected_slots);
         }
@@ -1012,7 +1015,7 @@ mod tests {
             get_scheme_prefix(3, &indexes, TaggingScheme::BILOU).to_string(),
             get_scheme_prefix(4, &indexes, TaggingScheme::BILOU).to_string(),
             get_scheme_prefix(5, &indexes, TaggingScheme::BILOU).to_string(),
-            get_scheme_prefix(1, &vec![1], TaggingScheme::BILOU).to_string(),
+            get_scheme_prefix(1, &[1], TaggingScheme::BILOU).to_string(),
         ];
 
         // Then
