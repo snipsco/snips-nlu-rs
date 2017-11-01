@@ -36,7 +36,6 @@ class NluEngineTest {
                 assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
             }
         }
-
     }
 
     @Test
@@ -80,5 +79,4 @@ class NluEngineTest {
             }
         }
     }
-
 }
