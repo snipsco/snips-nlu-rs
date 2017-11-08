@@ -1,4 +1,5 @@
 extern crate queries_core;
+extern crate snips_queries_ontology;
 extern crate snips_queries_ontology_ffi;
 #[macro_use]
 extern crate lazy_static;
