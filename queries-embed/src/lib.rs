@@ -201,7 +201,7 @@ fn run_parse(client: *const Opaque,
     let intent_parser = get_intent_parser!(client);
 
     let results = intent_parser.parse(input, None)?;
-    let b = Box::new(CIntentParserResult::from(results).chain_err(|| "Can't create CIntentParserResult"));
+    let b = Box::new(CIntentParserResult::from(results).chain_err(|| "Can't create CIntentParserResult")?);
 
     unsafe { *result = Box::into_raw(b) as *const CIntentParserResult }
 
