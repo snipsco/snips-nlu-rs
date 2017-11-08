@@ -1,5 +1,5 @@
 extern crate queries_core;
-extern crate snips_queries_ontology;
+extern crate snips_queries_ontology_ffi;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
@@ -13,7 +13,7 @@ use std::slice;
 use std::io::Cursor;
 
 use queries_core::{SnipsNluEngine, FileBasedConfiguration, ZipBasedConfiguration};
-use snips_queries_ontology::ffi::{CIntentParserResult, CTaggedEntityList};
+use snips_queries_ontology_ffi::{CIntentParserResult, CTaggedEntityList};
 
 lazy_static! {
     static ref LAST_ERROR: Mutex<String> = Mutex::new("".to_string());
