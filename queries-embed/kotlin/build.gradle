@@ -5,13 +5,13 @@ buildscript {
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'net.java.dev.jna:jna:4.4.0'
+        classpath 'net.java.dev.jna:jna:4.5.0'
     }
 }
 
 apply plugin: 'kotlin'
 
-version = "0.29.1"
+version = "0.30.0"
 group = "ai.snips"
 
 repositories {
@@ -31,10 +31,10 @@ configurations {
 
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
-    compile 'net.java.dev.jna:jna:4.4.0'
-    compile 'ai.snips:snips-queries-ontology:0.4.4' // make sure we use the same version in rust...
+    compile 'net.java.dev.jna:jna:4.5.0'
+    compile 'ai.snips:snips-queries-ontology:0.5.0' // make sure we use the same version in rust...
     testCompile 'junit:junit:4.12'
-    testCompile 'com.google.truth:truth:0.34'
+    testCompile 'com.google.truth:truth:0.36'
 }
 
 def soForJar = [
@@ -175,4 +175,3 @@ uploadAarArchives {
 
 uploadAarArchives.dependsOn(aar)
 uploadArchives.dependsOn(uploadAarArchives)
-
