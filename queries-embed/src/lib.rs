@@ -1,5 +1,4 @@
 extern crate queries_core;
-extern crate snips_queries_ontology;
 extern crate snips_queries_ontology_ffi;
 #[macro_use]
 extern crate lazy_static;
@@ -24,7 +23,6 @@ mod errors {
     error_chain! {
         links {
             SnipsQueries(::queries_core::Error, ::queries_core::ErrorKind);
-            SnipsQueriesOntology(::snips_queries_ontology::OntologyError, ::snips_queries_ontology::OntologyErrorKind);
         }
 
         foreign_links {
@@ -203,7 +201,7 @@ fn run_parse(client: *const Opaque,
     let intent_parser = get_intent_parser!(client);
 
     let results = intent_parser.parse(input, None)?;
-    let b = Box::new(CIntentParserResult::from(results)?);
+    let b = Box::new(CIntentParserResult::from(results).chain_err(|| "Can't create CIntentParserResult"));
 
     unsafe { *result = Box::into_raw(b) as *const CIntentParserResult }
 
@@ -232,7 +230,7 @@ fn run_tag(client: *const Opaque,
     let intent_parser = get_intent_parser!(client);
 
     let results = intent_parser.tag(input, intent, None)?;
-    let b = Box::new(CTaggedEntityList::from(results)?);
+    let b = Box::new(CTaggedEntityList::from(results).chain_err(|| "Can't create CTaggedEntityList")?);
 
     unsafe { *result = Box::into_raw(b) as *const CTaggedEntityList }
 

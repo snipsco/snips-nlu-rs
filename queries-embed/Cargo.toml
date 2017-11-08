@@ -8,7 +8,6 @@ authors = [
 
 [dependencies]
 queries-core = { path = "../queries-core" }
-snips-queries-ontology = { git = "ssh://git@github.com/snipsco/snips-queries-ontology.git", tag = "0.5.0" }
 snips-queries-ontology-ffi = { git = "ssh://git@github.com/snipsco/snips-queries-ontology.git", tag = "0.5.0" }
 error-chain = { version = "0.11", default-features = false }
 lazy_static = "0.2"
