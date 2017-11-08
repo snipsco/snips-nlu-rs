@@ -32,7 +32,6 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         fun modelVersion(): String = PointerByReference().run {
             parseError(LIB.nlu_engine_get_model_version(this))
             value.getString(0).apply { LIB.nlu_engine_destroy_string(value) }
-
         }
     }
 
