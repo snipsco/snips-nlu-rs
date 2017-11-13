@@ -78,55 +78,23 @@ fn main() {
 
         word_clusters!(en, brown_clusters);
 
-        gazetteer!(en, top_10000_nouns);
-        gazetteer!(en, cities_us);
-        gazetteer!(en, cities_world);
-        gazetteer!(en, countries);
-        gazetteer!(en, states_us);
         gazetteer!(en, stop_words);
-        gazetteer!(en, street_identifier);
+        gazetteer!(en, top_10000_nouns);
         gazetteer!(en, top_10000_words);
 
-        gazetteer!(en, top_10000_nouns_stem);
-        gazetteer!(en, cities_us_stem);
-        gazetteer!(en, cities_world_stem);
-        gazetteer!(en, countries_stem);
-        gazetteer!(en, states_us_stem);
         gazetteer!(en, stop_words_stem);
-        gazetteer!(en, street_identifier_stem);
+        gazetteer!(en, top_10000_nouns_stem);
         gazetteer!(en, top_10000_words_stem);
 
-        gazetteer!(fr, cities_france);
-        gazetteer!(fr, cities_world);
-        gazetteer!(fr, countries);
-        gazetteer!(fr, departements_france);
-        gazetteer!(fr, regions_france);
         gazetteer!(fr, stop_words);
-        gazetteer!(fr, street_identifier);
         gazetteer!(fr, top_10000_words);
 
-        gazetteer!(fr, cities_france_stem);
-        gazetteer!(fr, cities_world_stem);
-        gazetteer!(fr, countries_stem);
-        gazetteer!(fr, departements_france_stem);
-        gazetteer!(fr, regions_france_stem);
         gazetteer!(fr, stop_words_stem);
-        gazetteer!(fr, street_identifier_stem);
         gazetteer!(fr, top_10000_words_stem);
 
-        gazetteer!(de, cities_germany);
-        gazetteer!(de, cities_world);
-        gazetteer!(de, countries);
-        gazetteer!(de, lander_germany);
         gazetteer!(de, stop_words);
-        gazetteer!(de, street_identifier);
 
-        gazetteer!(de, cities_germany_stem);
-        gazetteer!(de, cities_world_stem);
-        gazetteer!(de, countries_stem);
-        gazetteer!(de, lander_germany_stem);
         gazetteer!(de, stop_words_stem);
-        gazetteer!(de, street_identifier_stem);
     }
 
     // we generate some files based on dependencies of this build script and not files in this
