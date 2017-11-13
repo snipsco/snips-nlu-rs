@@ -20,7 +20,7 @@ use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
 
 
-const MODEL_VERSION: &str = "0.10.0";
+const MODEL_VERSION: &str = "0.11.0";
 
 pub struct SnipsNluEngine {
     language_config: LanguageConfig,
