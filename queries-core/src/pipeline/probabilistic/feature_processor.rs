@@ -86,7 +86,6 @@ fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
         "get_prefix_fn" => prefix_feature_function(&f.args, offsets),
         "get_suffix_fn" => suffix_feature_function(&f.args, offsets),
         "get_token_is_in_fn" => token_is_in_feature_function(&f.args, offsets),
-        "get_is_in_gazetteer_fn" => is_in_gazetteer_feature_function(&f.args, offsets),
         "get_word_cluster_fn" => word_cluster_feature_function(&f.args, offsets),
         "get_built_in_annotation_fn" => builtin_entities_annotation_feature_function(&f.args, offsets),
         _ => bail!("Feature {} not implemented", f.factory_name),
@@ -165,26 +164,6 @@ fn token_is_in_feature_function(args: &HashMap<String, serde_json::Value>,
             features::is_in_gazetteer(tokens,
                                       token_index,
                                       &tokens_gazetteer,
-                                      stemmer.as_ref(),
-                                      tagging_scheme)))
-}
-
-fn is_in_gazetteer_feature_function(args: &HashMap<String, serde_json::Value>,
-                                    offsets: Vec<i32>) -> Result<FeatureFunction> {
-    let gazetteer_name = parse_as_string(args, "gazetteer_name")?;
-    let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
-    let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
-    let use_stemming = parse_as_bool(args, "use_stemming")?;
-    let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
-    let gazetteer = StaticMapGazetteer::new(&gazetteer_name, language, use_stemming)?;
-    let stemmer = get_stemmer(language, use_stemming);
-    Ok(FeatureFunction::new(
-        format!("is_in_gazetteer_{}", gazetteer_name),
-        offsets,
-        move |tokens, token_index|
-            features::is_in_gazetteer(tokens,
-                                      token_index,
-                                      &gazetteer,
                                       stemmer.as_ref(),
                                       tagging_scheme)))
 }
