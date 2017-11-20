@@ -146,9 +146,9 @@ fn is_end_of_bilou_slot(tags: &[String], i: usize) -> bool {
     }
 }
 
-struct SlotRange {
+pub struct SlotRange {
     slot_name: String,
-    range: Range<usize>,
+    pub range: Range<usize>,
 }
 
 fn _tags_to_slots<F1, F2>(tags: &[String],
@@ -177,19 +177,22 @@ fn _tags_to_slots<F1, F2>(tags: &[String],
     slots
 }
 
+pub fn tags_to_slot_ranges(tokens: &[Token], tags: &[String], tagging_scheme: TaggingScheme) -> Vec<SlotRange> {
+    match tagging_scheme {
+        TaggingScheme::IO => _tags_to_slots(tags, tokens, is_start_of_io_slot, is_end_of_io_slot),
+        TaggingScheme::BIO => _tags_to_slots(tags, tokens, is_start_of_bio_slot, is_end_of_bio_slot),
+        TaggingScheme::BILOU => _tags_to_slots(tags, tokens, is_start_of_bilou_slot, is_end_of_bilou_slot),
+    }
+}
+
+
 pub fn tags_to_slots(text: &str,
                      tokens: &[Token],
                      tags: &[String],
                      tagging_scheme: TaggingScheme,
                      intent_slots_mapping: &HashMap<String, String>)
                      -> Result<Vec<InternalSlot>> {
-    let slot_ranges = match tagging_scheme {
-        TaggingScheme::IO => _tags_to_slots(tags, tokens, is_start_of_io_slot, is_end_of_io_slot),
-        TaggingScheme::BIO => _tags_to_slots(tags, tokens, is_start_of_bio_slot, is_end_of_bio_slot),
-        TaggingScheme::BILOU => _tags_to_slots(tags, tokens, is_start_of_bilou_slot, is_end_of_bilou_slot),
-    };
-
-    slot_ranges
+    tags_to_slot_ranges(tokens, tags, tagging_scheme)
         .into_iter()
         .map(|s|
             Ok(InternalSlot {
