@@ -68,17 +68,17 @@ class RustBuildCommand(Command):
             suffix = "release"
 
         if target_tuple:
-            target_dir = os.path.join(GLOBAL_ROOT_PATH, "target", target_tuple,
+            target_dir = os.path.join(GLOBAL_ROOT_PATH, "../target", target_tuple,
                                       suffix)
         else:
-            target_dir = os.path.join(GLOBAL_ROOT_PATH, "target", suffix)
+            target_dir = os.path.join(GLOBAL_ROOT_PATH, "../target", suffix)
 
         if sys.platform == "win32":
-            wildcard_so = "*.dll"
+            wildcard_so = "*snips_queries*.dll"
         elif sys.platform == "darwin":
-            wildcard_so = "*.dylib"
+            wildcard_so = "*snips_queries*.dylib"
         else:
-            wildcard_so = "*.so"
+            wildcard_so = "*snips_queries*.so"
 
         try:
             dylib_path = glob.glob(os.path.join(target_dir, wildcard_so))[0]
