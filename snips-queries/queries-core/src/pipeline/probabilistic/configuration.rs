@@ -8,6 +8,7 @@ pub struct ProbabilisticParserConfiguration {
     pub taggers: HashMap<String, TaggerConfiguration>,
     pub intent_classifier: IntentClassifierConfiguration,
     pub slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
+    pub exhaustive_permutations_threshold: usize,
 }
 
 #[derive(Debug, Deserialize)]
