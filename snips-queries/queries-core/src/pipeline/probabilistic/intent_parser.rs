@@ -28,6 +28,7 @@ pub struct ProbabilisticIntentParser {
     taggers: HashMap<String, Box<Tagger>>,
     builtin_entity_parser: Option<Arc<RustlingParser>>,
     language_config: LanguageConfig,
+    exhaustive_permutations_threshold: usize,
 }
 
 impl ProbabilisticIntentParser {
@@ -51,6 +52,7 @@ impl ProbabilisticIntentParser {
             taggers: taggers_map,
             builtin_entity_parser,
             language_config: language_config,
+            exhaustive_permutations_threshold: config.exhaustive_permutations_threshold,
         })
     }
 }
@@ -146,6 +148,7 @@ impl IntentParser for ProbabilisticIntentParser {
                 intent_slots_mapping,
                 builtin_entities,
                 builtin_slots,
+                self.exhaustive_permutations_threshold,
             )?;
             Ok(resolve_builtin_slots(
                 input,
@@ -188,6 +191,7 @@ fn augment_slots(
     intent_slots_mapping: &HashMap<String, String>,
     builtin_entities: Vec<RustlingEntity>,
     missing_slots: Vec<(String, BuiltinEntityKind)>,
+    exhaustive_permutations_threshold: usize,
 ) -> Result<Vec<InternalSlot>> {
     let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<RustlingEntity>> = HashMap::new();
     for entity in filter_overlapping_builtins(builtin_entities, tokens, &tags, tagger.get_tagging_scheme()) {
@@ -199,16 +203,17 @@ fn augment_slots(
         let spans_ranges = group.into_iter().map(|e| e.range).collect_vec();
         let num_detected_builtins = spans_ranges.len();
         let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
-        let related_slots = missing_slots
+        let related_slots: Vec<&str> = missing_slots
             .iter()
             .filter_map(|&(ref slot_name, kind)| if kind == entity_kind {
-                Some(slot_name)
+                let name: &str = &*slot_name;
+                Some(name)
             } else {
                 None
             })
             .collect_vec();
 
-        let slots_permutations = generate_slots_permutations(num_detected_builtins as i32, related_slots);
+        let slots_permutations = generate_slots_permutations(num_detected_builtins, related_slots.as_slice(), exhaustive_permutations_threshold);
         let mut best_updated_tags = augmented_tags.clone();
         let mut best_permutation_score: f64 = -1.0;
         for slots in slots_permutations.iter() {
@@ -402,6 +407,8 @@ mod tests {
         let language = Language::EN;
         let text = "Find a flight leaving from Paris between today at 9pm and tomorrow at 8am";
         let tokens = tokenize(text, language);
+        let exhaustive_permutations_threshold = 1;
+
         let tags = vec![
             "O".to_string(),
             "O".to_string(),
@@ -575,6 +582,7 @@ mod tests {
             &intent_slots_mapping,
             builtin_entities,
             missing_slots,
+            exhaustive_permutations_threshold,
         ).unwrap();
 
         // Then
@@ -652,6 +660,7 @@ mod tests {
         // Given
         let language = Language::EN;
         let language_config = LanguageConfig { language };
+        let exhaustive_permutations_threshold = 1;
         let classifier_result = IntentClassifierResult {
             intent_name: "disabled_intent".to_string(),
             probability: 0.8,
@@ -664,7 +673,8 @@ mod tests {
             slot_name_to_entity_mapping: hashmap! {},
             taggers: hashmap! {},
             builtin_entity_parser: None,
-            language_config
+            language_config,
+            exhaustive_permutations_threshold,
         };
         let text = "hello world";
         let intents_set = Some(
@@ -692,12 +702,14 @@ mod tests {
         let classifier = TestIntentClassifier {
             result: Some(classifier_result),
         };
+        let exhaustive_permutations_threshold = 1;
         let intent_parser = ProbabilisticIntentParser {
             intent_classifier: Box::new(classifier) as _,
             slot_name_to_entity_mapping: hashmap! {},
             taggers: hashmap! {},
             builtin_entity_parser: None,
             language_config,
+            exhaustive_permutations_threshold,
         };
         let text = "hello world";
         let intents_set = Some(hashset! {"allowed_intent1".to_string()});
@@ -715,4 +727,3 @@ mod tests {
         assert_eq!(expected_result, result)
     }
 }
-
