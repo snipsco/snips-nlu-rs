@@ -52,7 +52,7 @@ impl ProbabilisticIntentParser {
             taggers: taggers_map,
             builtin_entity_parser,
             language_config: language_config,
-            exhaustive_permutations_threshold: config.exhaustive_permutations_threshold,
+            exhaustive_permutations_threshold: config.config.exhaustive_permutations_threshold,
         })
     }
 }
