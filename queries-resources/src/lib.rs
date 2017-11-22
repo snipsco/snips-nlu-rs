@@ -180,22 +180,12 @@ pub mod gazetteer {
             STEMS_EN.get(&input).unwrap_or(&input).to_string()
         }
 
-        create_gazetteer!(en, top_10000_nouns);
-        create_gazetteer!(en, cities_us);
-        create_gazetteer!(en, cities_world);
-        create_gazetteer!(en, countries);
-        create_gazetteer!(en, states_us);
         create_gazetteer!(en, stop_words);
-        create_gazetteer!(en, street_identifier);
+        create_gazetteer!(en, top_10000_nouns);
         create_gazetteer!(en, top_10000_words);
 
-        create_gazetteer!(en, top_10000_nouns_stem, top_10000_nouns, stem_en);
-        create_gazetteer!(en, cities_us_stem, cities_us, stem_en);
-        create_gazetteer!(en, cities_world_stem, cities_world, stem_en);
-        create_gazetteer!(en, countries_stem, countries, stem_en);
-        create_gazetteer!(en, states_us_stem, states_us, stem_en);
         create_gazetteer!(en, stop_words_stem, stop_words, stem_en);
-        create_gazetteer!(en, street_identifier_stem, street_identifier, stem_en);
+        create_gazetteer!(en, top_10000_nouns_stem, top_10000_nouns, stem_en);
         create_gazetteer!(en, top_10000_words_stem, top_10000_words, stem_en);
     }
 
@@ -214,22 +204,10 @@ pub mod gazetteer {
             STEMS_FR.get(&input).unwrap_or(&input).to_string()
         }
 
-        create_gazetteer!(fr, cities_france);
-        create_gazetteer!(fr, cities_world);
-        create_gazetteer!(fr, countries);
-        create_gazetteer!(fr, departements_france);
-        create_gazetteer!(fr, regions_france);
         create_gazetteer!(fr, stop_words);
-        create_gazetteer!(fr, street_identifier);
         create_gazetteer!(fr, top_10000_words);
 
-        create_gazetteer!(fr, cities_france_stem, cities_france, stem_fr);
-        create_gazetteer!(fr, cities_world_stem, cities_world, stem_fr);
-        create_gazetteer!(fr, countries_stem, countries, stem_fr);
-        create_gazetteer!(fr, departements_france_stem, departements_france, stem_fr);
-        create_gazetteer!(fr, regions_france_stem, regions_france, stem_fr);
         create_gazetteer!(fr, stop_words_stem, stop_words, stem_fr);
-        create_gazetteer!(fr, street_identifier_stem, street_identifier, stem_fr);
         create_gazetteer!(fr, top_10000_words_stem, top_10000_words, stem_fr);
     }
 
@@ -248,18 +226,7 @@ pub mod gazetteer {
             STEMS_DE.get(&input).unwrap_or(&input).to_string()
         }
 
-        create_gazetteer!(de, cities_germany);
-        create_gazetteer!(de, cities_world);
-        create_gazetteer!(de, countries);
-        create_gazetteer!(de, lander_germany);
         create_gazetteer!(de, stop_words);
-        create_gazetteer!(de, street_identifier);
-
-        create_gazetteer!(de, cities_germany_stem, cities_germany, stem_de);
-        create_gazetteer!(de, cities_world_stem, cities_world, stem_de);
-        create_gazetteer!(de, countries_stem, countries, stem_de);
-        create_gazetteer!(de, lander_germany_stem, lander_germany, stem_de);
         create_gazetteer!(de, stop_words_stem, stop_words, stem_de);
-        create_gazetteer!(de, street_identifier_stem, street_identifier, stem_de);
     }
 }
