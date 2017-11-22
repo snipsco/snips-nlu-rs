@@ -1,5 +1,5 @@
 use std::ops::Range;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::iter::FromIterator;
 
 use itertools::{Itertools, repeat_n};
@@ -278,9 +278,8 @@ fn conservative_permutations<'a>(num_detected_builtins: usize, possible_slots_na
                 .map(|slot_index| possible_slots_names.get(slot_index).map_or(OUTSIDE, |x| *x))
                 .collect()
         });
-    // Make permutations unique
-    let unique_slots_permutations: HashSet<Vec<&str>> = HashSet::from_iter(slot_permutations);
-    Vec::from_iter(unique_slots_permutations.into_iter())
+    // Return unique permutations
+    Vec::from_iter(slot_permutations.dedup())
 }
 
 fn exhaustive_permutations<'a>(num_detected_builtins: usize, possible_slots_names: &[&'a str]) -> Vec<Vec<&'a str>> {
@@ -305,11 +304,14 @@ fn exhaustive_permutations<'a>(num_detected_builtins: usize, possible_slots_name
         ).collect()
 }
 
-fn generate_permutations<'a>(
+pub fn generate_slots_permutations<'a>(
     num_detected_builtins: usize,
     possible_slots_names: &'a [&str],
     exhaustive_permutations_threshold: usize,
 ) -> Vec<Vec<&'a str>> {
+    if num_detected_builtins == 0 {
+        return vec![];
+    }
     let num_exhaustive_perms = (possible_slots_names.len() + 1).pow(num_detected_builtins as u32);
     if num_exhaustive_perms <= exhaustive_permutations_threshold {
         exhaustive_permutations(num_detected_builtins, possible_slots_names)
@@ -318,19 +320,6 @@ fn generate_permutations<'a>(
     }
 }
 
-pub fn generate_slots_permutations<'a>(
-    num_detected_builtins: usize,
-    builtin_slots_names: &'a [&str],
-    exhaustive_permutation_threshold: usize) -> Vec<Vec<&'a str>> {
-    if num_detected_builtins == 0 {
-        return vec![];
-    }
-    let perms = generate_permutations(
-        num_detected_builtins,
-        &builtin_slots_names[..],
-        exhaustive_permutation_threshold);
-    perms
-}
 
 #[cfg(test)]
 mod tests {
@@ -1184,19 +1173,19 @@ mod tests {
 
         // Then
         let expected_slot_names_permutations = hashset![
-            vec!["slot1", "slot2", OUTSIDE],
-            vec!["slot2", "slot1", OUTSIDE],
-            vec!["slot2", OUTSIDE, "slot1"],
-            vec!["slot1", OUTSIDE, "slot2"],
+            vec!["slot1", "slot2", "O"],
+            vec!["slot2", "slot1", "O"],
+            vec!["slot2", "O", "slot1"],
+            vec!["slot1", "O", "slot2"],
             vec!["O", "slot2", "slot1"],
             vec!["O", "slot1", "slot2"],
-            vec!["O", OUTSIDE, "slot1"],
-            vec!["O", OUTSIDE, "slot2"],
-            vec!["O", "slot1", OUTSIDE],
-            vec!["O", "slot2", OUTSIDE],
-            vec!["slot1", OUTSIDE, OUTSIDE],
-            vec!["slot2", OUTSIDE, OUTSIDE],
-            vec!["O", OUTSIDE, OUTSIDE]
+            vec!["O", "O", "slot1"],
+            vec!["O", "O", "slot2"],
+            vec!["O", "slot1", "O"],
+            vec!["O", "slot2", "O"],
+            vec!["slot1", "O", "O"],
+            vec!["slot2", "O", "O"],
+            vec!["O", "O", "O"]
         ];
         assert_eq!(slot_names_permutations.len(), expected_slot_names_permutations.len());
         for perm in slot_names_permutations {
