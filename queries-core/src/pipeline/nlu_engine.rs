@@ -20,7 +20,7 @@ use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
 
 
-const MODEL_VERSION: &str = "0.10.0";
+const MODEL_VERSION: &str = "0.11.0";
 
 pub struct SnipsNluEngine {
     language_config: LanguageConfig,
@@ -389,7 +389,7 @@ mod tests {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
                 intent_name: "MakeCoffee".to_string(),
-                probability: 0.6997911,
+                probability: 0.68611836,
             }),
             slots: Some(vec![
                 Slot {
