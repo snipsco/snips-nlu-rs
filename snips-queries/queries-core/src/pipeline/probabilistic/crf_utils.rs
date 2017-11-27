@@ -1,5 +1,5 @@
 use std::ops::Range;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 use itertools::{Itertools, repeat_n};
@@ -271,15 +271,18 @@ fn conservative_permutations<'a>(num_detected_builtins: usize, possible_slots_na
     let permutations_pool: Vec<usize> = Vec::from_iter(0..pool_size);
     // Generate all permutations of indexes
     // Replace slot indexes with slot names or OUTSIDE
-    let slot_permutations = permutations(&*permutations_pool, num_detected_builtins as i32)
+    let mut slot_permutations: Vec<Vec<&str>> = permutations(&*permutations_pool, num_detected_builtins as i32)
         .into_iter()
         .map(|perm| -> Vec<&str> {
             perm.into_iter()
                 .map(|slot_index| possible_slots_names.get(slot_index).map_or(OUTSIDE, |x| *x))
                 .collect()
-        });
+        })
+        .collect();
     // Return unique permutations
-    Vec::from_iter(slot_permutations.dedup())
+    slot_permutations.sort();
+    slot_permutations.dedup();
+    Vec::from_iter(slot_permutations)
 }
 
 fn exhaustive_permutations<'a>(num_detected_builtins: usize, possible_slots_names: &[&'a str]) -> Vec<Vec<&'a str>> {
