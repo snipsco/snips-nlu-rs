@@ -1,11 +1,11 @@
 [package]
 name = "queries-resources"
-version = "0.31.0-SNAPSHOT"
+version = "0.50.0"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 
 [dependencies]
 csv = "0.15"
 error-chain = { version = "0.11", default-features = false }
-itertools = "0.7"
+itertools = { version = "0.7", default-features = false }
 lazy_static = "0.2"
 nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils", tag = "0.5.1" }
