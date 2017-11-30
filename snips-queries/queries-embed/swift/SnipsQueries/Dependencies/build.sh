@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="0.50.0-SNAPSHOT"
+VERSION="0.51.0-SNAPSHOT"
 SYSTEM=$1
 
 if [ $SYSTEM != ios ] && [ $SYSTEM != macos ]; then
