@@ -1,10 +1,10 @@
-#!/bin/sh
+#!/bin/sh -ex
 
  : ${PROJECT_DIR:?"${0##*/} must be invoked as part of an Xcode script phase"}
 
 set -e
 
-VERSION="0.31.0-SNAPSHOT"
+VERSION="0.50.0"
 SYSTEM=$1
 
 if [ $SYSTEM != ios ] && [ $SYSTEM != macos ]; then
@@ -17,12 +17,15 @@ OUTDIR=$PROJECT_DIR/Dependencies/$SYSTEM
 # create final directory
 mkdir -p $OUTDIR
 
-TARGET_BUILD_TYPE=release
+if [ -z "$TARGET_BUILD_TYPE" ]
+then
+    TARGET_BUILD_TYPE=$(echo ${CONFIGURATION} | tr '[:upper:]' '[:lower:]')
+fi
 
-if [ -e ../../../target/$TARGET_BUILD_TYPE/libsnips_queries.a ] &&
+if [ -e ../../../../target/$TARGET_BUILD_TYPE/libsnips_queries.a ] &&
    [ $SYSTEM = macos ]; then
     echo "Using macOS local build"
-    cp ../../../target/$TARGET_BUILD_TYPE/libsnips_queries.a $OUTDIR
+    cp ../../../../target/$TARGET_BUILD_TYPE/libsnips_queries.a $OUTDIR
     cp ../../c/libsnips_queries.h ../../c/module.modulemap $OUTDIR
 elif [ $SYSTEM = ios ]; then
     ARCHS_ARRAY=( $ARCHS )
@@ -32,7 +35,7 @@ elif [ $SYSTEM = ios ]; then
         if [ $ARCHS_ARRAY = arm64 ]; then
             ARCHS_ARRAY="aarch64"
         fi
-        LOCAL_LIBRARY_PATH=$PROJECT_DIR/../../../target/$ARCHS_ARRAY-apple-ios/$TARGET_BUILD_TYPE/libsnips_queries.a
+        LOCAL_LIBRARY_PATH=$PROJECT_DIR/../../../../target/$ARCHS_ARRAY-apple-ios/$TARGET_BUILD_TYPE/libsnips_queries.a
         echo "Targeting only one arch. Trying to copy $LOCAL_LIBRARY_PATH into $OUTDIR"
 
         if [ -e $LOCAL_LIBRARY_PATH ]; then
@@ -52,7 +55,7 @@ elif [ $SYSTEM = ios ]; then
             if [ $arch = arm64 ]; then
                 arch="aarch64"
             fi
-            LOCAL_LIBRARY_PATH=$PROJECT_DIR/../../../target/$arch-apple-ios/$TARGET_BUILD_TYPE/libsnips_queries.a
+            LOCAL_LIBRARY_PATH=$PROJECT_DIR/../../../../target/$arch-apple-ios/$TARGET_BUILD_TYPE/libsnips_queries.a
             echo "Trying to copy $LOCAL_LIBRARY_PATH into $OUTDIR"
             if [ ! -e $LOCAL_LIBRARY_PATH ]; then
                 echo "Not found. Skipping to remote library."

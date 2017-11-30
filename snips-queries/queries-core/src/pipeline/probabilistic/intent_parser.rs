@@ -13,8 +13,9 @@ use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
 use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use pipeline::probabilistic::tagger::{CRFTagger, Tagger};
-use pipeline::probabilistic::crf_utils::{positive_tagging, replace_builtin_tags, tags_to_slots,
-                                         generate_slots_permutations};
+use pipeline::probabilistic::crf_utils::{
+    positive_tagging, replace_builtin_tags, tags_to_slots, tags_to_slot_ranges,
+    generate_slots_permutations, TaggingScheme};
 use language::LanguageConfig;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::token::{Token, tokenize};
@@ -136,8 +137,7 @@ impl IntentParser for ProbabilisticIntentParser {
             .collect_vec();
 
         if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-            let builtin_entities =
-                builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
+            let builtin_entities = builtin_entity_parser.extract_entities(input, Some(&builtin_entity_kinds));
             let augmented_slots = augment_slots(
                 input,
                 &tokens,
@@ -164,6 +164,22 @@ impl IntentParser for ProbabilisticIntentParser {
     }
 }
 
+fn filter_overlapping_builtins(builtin_entities: Vec<RustlingEntity>,
+                               tokens: &[Token],
+                               tags: &Vec<String>,
+                               tagging_scheme: TaggingScheme
+) -> Vec<RustlingEntity> {
+    let slots_ranges = tags_to_slot_ranges(tokens, tags, tagging_scheme);
+    builtin_entities
+        .into_iter()
+        .filter(|ent| {
+            !slots_ranges
+                .iter()
+                .any(|s| ent.range.start < s.range.end && ent.range.end > s.range.start)
+        })
+        .collect()
+}
+
 fn augment_slots(
     text: &str,
     tokens: &[Token],
@@ -173,12 +189,12 @@ fn augment_slots(
     builtin_entities: Vec<RustlingEntity>,
     missing_slots: Vec<(String, BuiltinEntityKind)>,
 ) -> Result<Vec<InternalSlot>> {
-    let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
     let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<RustlingEntity>> = HashMap::new();
-    for entity in builtin_entities {
+    for entity in filter_overlapping_builtins(builtin_entities, tokens, &tags, tagger.get_tagging_scheme()) {
         grouped_entities.entry(entity.entity_kind).or_insert(vec![]).push(entity);
     }
 
+    let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
     for (entity_kind, group) in grouped_entities {
         let spans_ranges = group.into_iter().map(|e| e.range).collect_vec();
         let num_detected_builtins = spans_ranges.len();
@@ -313,6 +329,71 @@ mod tests {
             let res = self.result.clone();
             Ok(res)
         }
+    }
+
+    #[test]
+    fn filter_overlapping_builtin_works() {
+        // Given
+        let language = Language::EN;
+        let text = "Find a flight leaving from Paris between today at 9pm and tomorrow at 8am";
+        let tokens = tokenize(text, language);
+        let tags = vec![
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "B-location".to_string(),
+            "O".to_string(),
+            "B-not-a-date".to_string(),
+            "I-not-a-date".to_string(),
+            "I-not-a-date".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+            "O".to_string(),
+        ];
+
+        let start_time = InstantTimeValue {
+            value: "today at 9pm".to_string(),
+            grain: Grain::Hour,
+            precision: Precision::Exact,
+        };
+        let end_time = InstantTimeValue {
+            value: "tomorrow at 8am".to_string(),
+            grain: Grain::Hour,
+            precision: Precision::Exact,
+        };
+
+        let builtin_entities = vec![
+            RustlingEntity {
+                value: "tomorrow at 8am".to_string(),
+                range: 58..73,
+                entity_kind: BuiltinEntityKind::Time,
+                entity: SlotValue::InstantTime(end_time.clone()),
+            },
+            RustlingEntity {
+                value: "today at 9pm".to_string(),
+                range: 41..53,
+                entity_kind: BuiltinEntityKind::Time,
+                entity: SlotValue::InstantTime(start_time),
+            },
+        ];
+
+        // When
+        let filtered_entities = filter_overlapping_builtins(
+            builtin_entities, &tokens[..], &tags, TaggingScheme::BIO);
+
+        // Then
+        let expected_entities = vec![
+            RustlingEntity {
+                value: "tomorrow at 8am".to_string(),
+                range: 58..73,
+                entity_kind: BuiltinEntityKind::Time,
+                entity: SlotValue::InstantTime(end_time),
+            },
+        ];
+        assert_eq!(filtered_entities, expected_entities)
     }
 
     #[test]
@@ -570,7 +651,7 @@ mod tests {
     fn should_not_return_filtered_out_intent() {
         // Given
         let language = Language::EN;
-        let language_config = LanguageConfig{language};
+        let language_config = LanguageConfig { language };
         let classifier_result = IntentClassifierResult {
             intent_name: "disabled_intent".to_string(),
             probability: 0.8,

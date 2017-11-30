@@ -1,20 +1,25 @@
 import io
 import os
 import subprocess
+import sys
 
 from setuptools import setup, find_packages
 from setuptools.dist import Distribution
 from wheel.bdist_wheel import bdist_wheel
 
 from rust_build import build_rust_cmdclass, RustInstallLib
-
+# Hack to pass custom parameters because setup.py is badly documented and I'm fed up with this crap
+script_args = [i for i in sys.argv[1:] if "build-mode" not in i]
+debug = not "--build-mode=release" in sys.argv
 
 class RustNLUDistribution(Distribution):
     def __init__(self, *attrs):
         Distribution.__init__(self, *attrs)
         self.cmdclass['install_lib'] = RustInstallLib
         self.cmdclass['bdist_wheel'] = RustBdistWheel
-        self.cmdclass['build_rust'] = build_rust_cmdclass(debug=False)
+        self.cmdclass['build_rust'] = build_rust_cmdclass(debug=debug)
+
+        print("Building in {} mode".format("debug" if debug else "release"))
 
 
 class RustBdistWheel(bdist_wheel):
@@ -57,4 +62,5 @@ setup(
         'console_scripts': ['debug=snips_nlu_rust.debug:main_debug'],
     },
     zip_safe=False,
+    script_args = script_args,
 )
