@@ -23,6 +23,7 @@ mod errors {
     error_chain! {
         links {
             SnipsQueries(::queries_core::Error, ::queries_core::ErrorKind);
+            SnipsQueriesOntology(::snips_queries_ontology_ffi::OntologyError, ::snips_queries_ontology_ffi::OntologyErrorKind);
         }
 
         foreign_links {
