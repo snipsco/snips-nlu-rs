@@ -20,6 +20,11 @@ error_chain! {
             description("Config file not found")
             display("Unable to read file `{}`", path)
         }
+
+        WrongModelVersion(model_version: String) {
+            description("Model version doesn't match")
+            display("Given model version {} doesn't match. Expected model version {}", model_version, ::SnipsNluEngine::model_version())
+        }
     }
 }
 
