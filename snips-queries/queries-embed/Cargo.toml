@@ -11,7 +11,7 @@ queries-core = { path = "../queries-core" }
 snips-queries-ontology-ffi = { path="../../snips-queries-ontology/snips-queries-ontology-ffi" }
 derive-new = "0.5" # Because cargo feature management is big sh☆☆! See https://github.com/rust-lang/cargo/issues/3923
 error-chain = { version = "0.11", default-features = false }
-lazy_static = "0.2"
+lazy_static = "1.0"
 libc = "0.2"
 serde_json = "1.0"
 void = "1" # Because cargo feature management is big sh☆☆

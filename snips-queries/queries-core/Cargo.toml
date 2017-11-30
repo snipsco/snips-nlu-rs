@@ -15,9 +15,9 @@ crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs", rev = "fec47c8" }
 rustling-ontology = { git = "https://github.com/snipsco/rustling-ontology", tag = "0.14.7" }
 nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils", tag = "0.5.1" }
 error-chain = { version = "0.11", default-features = false }
-base64 = "0.7"
+base64 = "0.8"
 itertools = { version = "0.7", default-features = false }
-lazy_static = "0.2"
+lazy_static = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
@@ -29,7 +29,7 @@ zip = { version = "0.2", default-features = false }
 
 [dev-dependencies]
 bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
-maplit = "0.1"
+maplit = "1.0"
 
 [[bench]]
 name = "nlu_engine"
