@@ -9,6 +9,11 @@ pub trait NluEngineConfigurationConvertible {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct ModelVersionConfiguration {
+    pub model_version: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct NluEngineConfiguration {
     pub language: String,
     pub model: Model,
