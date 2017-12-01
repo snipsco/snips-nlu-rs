@@ -19,7 +19,6 @@ use nlu_utils::language::Language;
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
 
-
 const MODEL_VERSION: &str = "0.11.0";
 
 pub struct SnipsNluEngine {
@@ -120,6 +119,7 @@ impl SnipsNluEngine {
         })
     }
 
+    // TODO: Expose directly a static variable
     pub fn model_version() -> &'static str {
         MODEL_VERSION
     }
@@ -389,7 +389,7 @@ mod tests {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
                 intent_name: "MakeCoffee".to_string(),
-                probability: 0.6656828,
+                probability: 0.7114164,
             }),
             slots: Some(vec![
                 Slot {
