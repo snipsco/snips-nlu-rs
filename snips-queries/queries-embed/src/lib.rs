@@ -23,6 +23,7 @@ mod errors {
     error_chain! {
         links {
             SnipsQueries(::queries_core::Error, ::queries_core::ErrorKind);
+            SnipsQueriesOntology(::snips_queries_ontology_ffi::OntologyError, ::snips_queries_ontology_ffi::OntologyErrorKind);
         }
 
         foreign_links {
@@ -170,7 +171,7 @@ pub extern "C" fn nlu_engine_get_model_version(version: *mut *const libc::c_char
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let assistant_config = FileBasedConfiguration::new(root_dir)?;
+    let assistant_config = FileBasedConfiguration::new(root_dir, false)?;
     let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
@@ -185,7 +186,7 @@ fn create_from_zip(zip: *const libc::c_uchar,
     let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
     let reader = Cursor::new(slice.to_owned());
 
-    let assistant_config = ZipBasedConfiguration::new(reader)?;
+    let assistant_config = ZipBasedConfiguration::new(reader, false)?;
     let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };

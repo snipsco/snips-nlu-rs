@@ -30,9 +30,12 @@ typedef enum CSlotValueType {
     AMOUNTOFMONEY = 6,
     TEMPERATURE = 7,
     DURATION = 8,
+    PERCENTAGE = 9,
 } CSlotValueType;
 
 typedef double CNumberValue;
+
+typedef double CPercentageValue;
 
 typedef long COrdinalValue;
 
