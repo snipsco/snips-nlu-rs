@@ -154,6 +154,22 @@ mod test {
             .iter()
             .map(|e| e.entity_kind)
             .collect_vec());
+
+        assert_eq!(vec![
+            BuiltinEntityKind::Percentage,
+        ],
+        parser.extract_entities("Set light to ten percents", None)
+            .iter()
+            .map(|e| e.entity_kind)
+            .collect_vec());
+
+        assert_eq!(vec![
+            BuiltinEntityKind::AmountOfMoney,
+        ],
+        parser.extract_entities("I would like to do a bank transfer of ten euros for my friends", None)
+            .iter()
+            .map(|e| e.entity_kind)
+            .collect_vec());
     }
 
     #[test]

@@ -60,7 +60,8 @@ public enum SlotValue {
     case amountOfMoney(AmountOfMoneyValue)
     case temperature(TemperatureValue)
     case duration(DurationValue)
-    
+    case percentage(PercentageValue)
+
     init(cSlotValue: CSlotValue) throws {
         switch cSlotValue.value_type {
         case CUSTOM:
@@ -95,12 +96,18 @@ public enum SlotValue {
             let x = cSlotValue.value.assumingMemoryBound(to: CDurationValue.self)
             self = .duration(try DurationValue(cValue: x.pointee))
 
+        case PERCENTAGE:
+            let x = cSlotValue.value.assumingMemoryBound(to: CDouble.self)
+            self = .percentage(x.pointee)
+
         default: throw NluEngineError(message: "Internal error: Bad type conversion")
         }
     }
 }
 
 public typealias NumberValue = Double
+
+public typealias PercentageValue = Double
 
 public typealias OrdinalValue = Int
 

@@ -1,12 +1,12 @@
 use errors::*;
 use snips_queries_ontology::{AmountOfMoneyValue, DurationValue, Grain, InstantTimeValue,
                              NumberValue, OrdinalValue, Precision, SlotValue, TemperatureValue,
-                             TimeIntervalValue};
+                             TimeIntervalValue, PercentageValue};
 use rustling_ontology::Grain as RustlingGrain;
 use rustling_ontology::dimension::Precision as RustlingPrecision;
 use rustling_ontology::output::{AmountOfMoneyOutput, DurationOutput, FloatOutput, IntegerOutput,
                                 OrdinalOutput, Output, OutputKind, TemperatureOutput, TimeIntervalOutput,
-                                TimeOutput};
+                                TimeOutput, PercentageOutput};
 
 pub trait FromRustling<T>: Sized {
     fn from_rustling(rustling_output: T) -> Self;
@@ -32,6 +32,14 @@ impl FromRustling<OrdinalOutput> for OrdinalValue {
     fn from_rustling(rustling_output: OrdinalOutput) -> OrdinalValue {
         OrdinalValue {
             value: rustling_output.0,
+        }
+    }
+}
+
+impl FromRustling<PercentageOutput> for PercentageValue {
+    fn from_rustling(rustling_output: PercentageOutput) -> PercentageValue {
+        PercentageValue {
+            value: rustling_output.0 as f64,
         }
     }
 }
@@ -151,6 +159,7 @@ impl FromRustling<Output> for SlotValue {
             Output::AmountOfMoney(v) => {
                 SlotValue::AmountOfMoney(AmountOfMoneyValue::from_rustling(v))
             }
+            Output::Percentage(v) => SlotValue::Percentage(PercentageValue::from_rustling(v)),
             Output::Duration(v) => SlotValue::Duration(DurationValue::from_rustling(v)),
             Output::Float(v) => SlotValue::Number(NumberValue::from_rustling(v)),
             Output::Integer(v) => SlotValue::Number(NumberValue::from_rustling(v)),
@@ -170,6 +179,7 @@ pub enum BuiltinEntityKind {
     Ordinal,
     Temperature,
     Time,
+    Percentage,
 }
 
 impl BuiltinEntityKind {
@@ -181,6 +191,7 @@ impl BuiltinEntityKind {
             BuiltinEntityKind::Ordinal,
             BuiltinEntityKind::Temperature,
             BuiltinEntityKind::Time,
+            BuiltinEntityKind::Percentage,
         ]
     }
 }
@@ -194,6 +205,7 @@ impl BuiltinEntityKind {
             BuiltinEntityKind::Ordinal => "snips/ordinal",
             BuiltinEntityKind::Temperature => "snips/temperature",
             BuiltinEntityKind::Time => "snips/datetime",
+            BuiltinEntityKind::Percentage => "snips/percentage",
         }
     }
 
@@ -216,6 +228,7 @@ impl BuiltinEntityKind {
             Output::Temperature(_) => BuiltinEntityKind::Temperature,
             Output::Time(_) => BuiltinEntityKind::Time,
             Output::TimeInterval(_) => BuiltinEntityKind::Time,
+            Output::Percentage(_) => BuiltinEntityKind::Percentage,
         }
     }
 
@@ -227,6 +240,7 @@ impl BuiltinEntityKind {
             BuiltinEntityKind::Ordinal => OutputKind::Ordinal,
             BuiltinEntityKind::Temperature => OutputKind::Temperature,
             BuiltinEntityKind::Time => OutputKind::Time,
+            BuiltinEntityKind::Percentage => OutputKind::Percentage,
         }
     }
 }

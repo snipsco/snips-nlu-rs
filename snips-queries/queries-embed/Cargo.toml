@@ -1,6 +1,6 @@
 [package]
 name = "queries-embed"
-version = "0.50.0"
+version = "0.51.0"
 authors = [
     "Kevin Lefevre <kevin.lefevre@snips.ai>",
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>"
@@ -8,13 +8,12 @@ authors = [
 
 [dependencies]
 queries-core = { path = "../queries-core" }
+snips-common-deps = { path = "../../snips-common/snips-common-deps" }
 snips-queries-ontology-ffi = { path="../../snips-queries-ontology/snips-queries-ontology-ffi" }
-derive-new = "0.5" # Because cargo feature management is big sh☆☆! See https://github.com/rust-lang/cargo/issues/3923
 error-chain = { version = "0.11", default-features = false }
-lazy_static = "0.2"
+lazy_static = "1.0"
 libc = "0.2"
 serde_json = "1.0"
-void = "1" # Because cargo feature management is big sh☆☆
 
 [lib]
 name = "snips_queries"
