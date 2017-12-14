@@ -178,7 +178,7 @@ fn filter_overlapping_builtins(builtin_entities: Vec<RustlingEntity>,
         .filter(|ent| {
             !slots_ranges
                 .iter()
-                .any(|s| ent.range.start < s.range.end && ent.range.end > s.range.start)
+                .any(|s| ent.range.start < s.char_range.end && ent.range.end > s.char_range.start)
         })
         .collect()
 }
@@ -340,7 +340,7 @@ mod tests {
     fn filter_overlapping_builtin_works() {
         // Given
         let language = Language::EN;
-        let text = "Find a flight leaving from Paris between today at 9pm and tomorrow at 8am";
+        let text = "Fïnd ä flïght leävïng from Paris bëtwëen today at 9pm and tomorrow at 8am";
         let tokens = tokenize(text, language);
         let tags = vec![
             "O".to_string(),
@@ -589,19 +589,19 @@ mod tests {
         let expected_slots: Vec<InternalSlot> = vec![
             InternalSlot {
                 value: "Paris".to_string(),
-                range: 27..32,
+                char_range: 27..32,
                 entity: "location_entity".to_string(),
                 slot_name: "location".to_string(),
             },
             InternalSlot {
                 value: "today at 9pm".to_string(),
-                range: 41..53,
+                char_range: 41..53,
                 entity: "snips/datetime".to_string(),
                 slot_name: "start_date".to_string(),
             },
             InternalSlot {
                 value: "tomorrow at 8am".to_string(),
-                range: 58..73,
+                char_range: 58..73,
                 entity: "snips/datetime".to_string(),
                 slot_name: "end_date".to_string(),
             },
