@@ -6,7 +6,7 @@ pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
     Slot {
         raw_value: slot.value.clone(),
         value: SlotValue::Custom(slot.value.into()),
-        range: Some(slot.range),
+        range: Some(slot.char_range),
         entity: slot.entity,
         slot_name: slot.slot_name,
     }
@@ -16,7 +16,7 @@ pub fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slo
     Slot {
         raw_value: slot.value,
         value: slot_value,
-        range: Some(slot.range),
+        range: Some(slot.char_range),
         entity: slot.entity,
         slot_name: slot.slot_name,
     }
@@ -36,7 +36,7 @@ pub fn resolve_builtin_slots(
                 builtin_entities
                     .iter()
                     .find(|entity| {
-                        entity.entity_kind == entity_kind && entity.range == slot.range
+                        entity.entity_kind == entity_kind && entity.range == slot.char_range
                     })
                     .map(|rustling_entity| Some(rustling_entity.entity.clone()))
                     .unwrap_or({
@@ -70,13 +70,13 @@ mod tests {
         let slots = vec![
             InternalSlot {
                 value: "5 dollars".to_string(),
-                range: 5..14,
+                char_range: 5..14,
                 entity: "snips/amountOfMoney".to_string(),
                 slot_name: "amount".to_string(),
             },
             InternalSlot {
                 value: "10th".to_string(),
-                range: 22..26,
+                char_range: 22..26,
                 entity: "snips/ordinal".to_string(),
                 slot_name: "ranking".to_string(),
             },
