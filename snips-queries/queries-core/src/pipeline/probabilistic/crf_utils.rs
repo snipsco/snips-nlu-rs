@@ -8,7 +8,7 @@ use yolo::Yolo;
 use errors::*;
 use pipeline::InternalSlot;
 use nlu_utils::token::Token;
-use nlu_utils::string::{convert_to_char_range, suffix_from_char_index};
+use nlu_utils::string::suffix_from_char_index;
 use utils::{permutations, product};
 
 const BEGINNING_PREFIX: &str = "B-";
@@ -149,6 +149,7 @@ fn is_end_of_bilou_slot(tags: &[String], i: usize) -> bool {
 pub struct SlotRange {
     slot_name: String,
     pub range: Range<usize>,
+    pub char_range: Range<usize>,
 }
 
 fn _tags_to_slots<F1, F2>(tags: &[String],
@@ -169,6 +170,7 @@ fn _tags_to_slots<F1, F2>(tags: &[String],
         if is_end_of_slot(tags, i) {
             slots.push(SlotRange {
                 range: tokens[current_slot_start].range.start..tokens[i].range.end,
+                char_range: tokens[current_slot_start].char_range.start..tokens[i].char_range.end,
                 slot_name: tag_name_to_slot_name(tag.to_string()),
             });
             current_slot_start = i;
@@ -197,7 +199,7 @@ pub fn tags_to_slots(text: &str,
         .map(|s|
             Ok(InternalSlot {
                 value: text[s.range.clone()].to_string(),
-                range: convert_to_char_range(text, &s.range),
+                char_range: s.char_range,
                 entity: intent_slots_mapping
                     .get(&s.slot_name)
                     .ok_or(format!("Missing slot to entity mapping for slot name: {}", s.slot_name))?
@@ -369,7 +371,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 7..16,
+                        char_range: 7..16,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string()
@@ -386,7 +388,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 7..11,
+                        char_range: 7..11,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -398,7 +400,7 @@ mod tests {
                 tags: vec![format!("{}{}", INSIDE_PREFIX, slot_name)],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..4,
+                        char_range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -413,7 +415,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..9,
+                        char_range: 0..9,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -431,7 +433,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..25,
+                        char_range: 0..25,
                         value: "light blue bird blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -446,7 +448,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..10,
+                        char_range: 0..10,
                         value: "bird birdy".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -498,7 +500,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 7..16,
+                        char_range: 7..16,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -515,7 +517,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 7..11,
+                        char_range: 7..11,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -527,7 +529,7 @@ mod tests {
                 tags: vec![format!("{}{}", BEGINNING_PREFIX, slot_name)],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..4,
+                        char_range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -542,7 +544,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..9,
+                        char_range: 0..9,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -560,13 +562,13 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..15,
+                        char_range: 0..15,
                         value: "light blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 16..25,
+                        char_range: 16..25,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -581,13 +583,13 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..4,
+                        char_range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 5..10,
+                        char_range: 5..10,
                         value: "birdy".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -605,13 +607,13 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..9,
+                        char_range: 0..9,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 14..24,
+                        char_range: 14..24,
                         value: "white bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -663,7 +665,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 7..16,
+                        char_range: 7..16,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -680,7 +682,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 7..11,
+                        char_range: 7..11,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -692,7 +694,7 @@ mod tests {
                 tags: vec![format!("{}{}", UNIT_PREFIX, slot_name)],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..4,
+                        char_range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -707,7 +709,7 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..9,
+                        char_range: 0..9,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -725,13 +727,13 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..15,
+                        char_range: 0..15,
                         value: "light blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 16..25,
+                        char_range: 16..25,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -746,13 +748,13 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..4,
+                        char_range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 5..10,
+                        char_range: 5..10,
                         value: "birdy".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -770,19 +772,19 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..10,
+                        char_range: 0..10,
                         value: "light bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 11..15,
+                        char_range: 11..15,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 16..25,
+                        char_range: 16..25,
                         value: "blue bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
@@ -798,19 +800,19 @@ mod tests {
                 ],
                 expected_slots: vec![
                     InternalSlot {
-                        range: 0..4,
+                        char_range: 0..4,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 5..9,
+                        char_range: 5..9,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),
                     },
                     InternalSlot {
-                        range: 10..14,
+                        char_range: 10..14,
                         value: "bird".to_string(),
                         entity: slot_name.to_string(),
                         slot_name: slot_name.to_string(),

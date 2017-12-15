@@ -117,7 +117,7 @@ impl IntentParser for RuleBasedIntentParser {
                         let slot_name = self.group_names_to_slot_names[group_name].to_string();
                         let entity = self.slot_names_to_entities[&slot_name].to_string();
 
-                        InternalSlot { value, range, entity, slot_name }
+                        InternalSlot { value, char_range: range, entity, slot_name }
                     })
                     .foreach(|slot| { result.push(slot); });
                 break;
@@ -151,7 +151,7 @@ fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -
     for slot in slots {
         let conflicting_slot_index = deduped
             .iter()
-            .position(|existing_slot| ranges_overlap(&slot.range, &existing_slot.range));
+            .position(|existing_slot| ranges_overlap(&slot.char_range, &existing_slot.char_range));
 
         if let Some(index) = conflicting_slot_index {
             fn extract_counts(v: &InternalSlot, l: Language) -> (usize, usize) {
@@ -168,7 +168,7 @@ fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -
             deduped.push(slot);
         }
     }
-    deduped.sort_by_key(|slot| slot.range.start);
+    deduped.sort_by_key(|slot| slot.char_range.start);
     deduped
 }
 
@@ -375,31 +375,31 @@ mod tests {
         let slots = vec![
             InternalSlot {
                 value: "non_overlapping1".to_string(),
-                range: 3..7,
+                char_range: 3..7,
                 entity: "e".to_string(),
                 slot_name: "s1".to_string(),
             },
             InternalSlot {
                 value: "aaaaaaa".to_string(),
-                range: 9..16,
+                char_range: 9..16,
                 entity: "e1".to_string(),
                 slot_name: "s2".to_string(),
             },
             InternalSlot {
                 value: "bbbbbbbb".to_string(),
-                range: 10..18,
+                char_range: 10..18,
                 entity: "e1".to_string(),
                 slot_name: "s3".to_string(),
             },
             InternalSlot {
                 value: "b cccc".to_string(),
-                range: 17..23,
+                char_range: 17..23,
                 entity: "e1".to_string(),
                 slot_name: "s4".to_string(),
             },
             InternalSlot {
                 value: "non_overlapping2".to_string(),
-                range: 50..60,
+                char_range: 50..60,
                 entity: "e".to_string(),
                 slot_name: "s5".to_string(),
             },
@@ -412,19 +412,19 @@ mod tests {
         let expected_slots = vec![
             InternalSlot {
                 value: "non_overlapping1".to_string(),
-                range: 3..7,
+                char_range: 3..7,
                 entity: "e".to_string(),
                 slot_name: "s1".to_string()
             },
             InternalSlot {
                 value: "b cccc".to_string(),
-                range: 17..23,
+                char_range: 17..23,
                 entity: "e1".to_string(),
                 slot_name: "s4".to_string()
             },
             InternalSlot {
                 value: "non_overlapping2".to_string(),
-                range: 50..60,
+                char_range: 50..60,
                 entity: "e".to_string(),
                 slot_name: "s5".to_string()
             },
