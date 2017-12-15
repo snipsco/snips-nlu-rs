@@ -15,7 +15,7 @@ mod tagging_utils;
 #[derive(Debug, Clone, PartialEq)]
 pub struct InternalSlot {
     pub value: String,
-    pub range: Range<usize>,
+    pub char_range: Range<usize>,
     pub entity: String,
     pub slot_name: String
 }
