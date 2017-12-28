@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 
 use pipeline::FeatureProcessor;
-use pipeline::probabilistic::configuration::Feature;
+use pipeline::probabilistic::configuration::FeatureFactory;
 use nlu_utils::token::Token;
 use serde_json;
 
@@ -67,27 +67,31 @@ impl<'a> FeatureProcessor<&'a [Token], Vec<Vec<(String, String)>>> for Probabili
 
 impl ProbabilisticFeatureProcessor {
     // TODO add a `GazetteerProvider` to this signature
-    pub fn new(features: &[Feature]) -> Result<ProbabilisticFeatureProcessor> {
-        let functions: Result<Vec<FeatureFunction>> =
-            features.iter().map(|f| get_feature_function(f)).collect();
+    pub fn new(features: &[FeatureFactory]) -> Result<ProbabilisticFeatureProcessor> {
+        let functions = features.iter()
+            .map(|f| get_feature_function(f))
+            .collect::<Result<Vec<Vec<_>>>>()?
+            .into_iter()
+            .flat_map(|fs| fs)
+            .collect();
 
-        Ok(ProbabilisticFeatureProcessor { functions: functions? })
+        Ok(ProbabilisticFeatureProcessor { functions })
     }
 }
 
-fn get_feature_function(f: &Feature) -> Result<FeatureFunction> {
+fn get_feature_function(f: &FeatureFactory) -> Result<Vec<FeatureFunction>> {
     let offsets = f.offsets.clone();
     match &*f.factory_name {
-        "is_digit" => is_digit_feature_function(offsets),
-        "is_first" => is_first_feature_function(offsets),
-        "is_last" => is_last_feature_function(offsets),
-        "get_ngram_fn" => ngram_feature_function(&f.args, offsets),
-        "get_shape_ngram_fn" => shape_ngram_feature_function(&f.args, offsets),
-        "get_prefix_fn" => prefix_feature_function(&f.args, offsets),
-        "get_suffix_fn" => suffix_feature_function(&f.args, offsets),
-        "get_token_is_in_fn" => token_is_in_feature_function(&f.args, offsets),
-        "get_word_cluster_fn" => word_cluster_feature_function(&f.args, offsets),
-        "get_built_in_annotation_fn" => builtin_entities_annotation_feature_function(&f.args, offsets),
+        "is_digit" => Ok(vec![is_digit_feature_function(offsets)?]),
+        "is_first" => Ok(vec![is_first_feature_function(offsets)?]),
+        "is_last" => Ok(vec![is_last_feature_function(offsets)?]),
+        "ngram" => Ok(vec![ngram_feature_function(&f.args, offsets)?]),
+        "shape_ngram" => Ok(vec![shape_ngram_feature_function(&f.args, offsets)?]),
+        "prefix" => Ok(vec![prefix_feature_function(&f.args, offsets)?]),
+        "suffix" => Ok(vec![suffix_feature_function(&f.args, offsets)?]),
+        "entity_match" => entity_match_feature_function(&f.args, offsets),
+        "builtin_entity_match" => builtin_entity_match_feature_function(&f.args, offsets),
+        "word_cluster" => Ok(vec![word_cluster_feature_function(&f.args, offsets)?]),
         _ => bail!("Feature {} not implemented", f.factory_name),
     }
 }
@@ -147,25 +151,58 @@ fn suffix_feature_function(args: &HashMap<String, serde_json::Value>,
                             move |t, i| features::suffix(&t[i].value, n)))
 }
 
-fn token_is_in_feature_function(args: &HashMap<String, serde_json::Value>,
-                                offsets: Vec<i32>) -> Result<FeatureFunction> {
-    let tokens_collection = parse_as_vec_string(args, "tokens_collection")?;
-    let collection_name = parse_as_string(args, "collection_name")?;
+fn entity_match_feature_function(args: &HashMap<String, serde_json::Value>,
+                                 offsets: Vec<i32>) -> Result<Vec<FeatureFunction>> {
+    let collections = parse_as_vec_of_vec(args, "collections")?;
     let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
     let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
-    let tokens_gazetteer = HashSetGazetteer::from(tokens_collection.into_iter());
     let stemmer = get_stemmer(language, use_stemming);
-    Ok(FeatureFunction::new(
-        format!("token_is_in_{}", collection_name),
-        offsets,
-        move |tokens, token_index|
-            features::is_in_gazetteer(tokens,
-                                      token_index,
-                                      &tokens_gazetteer,
-                                      stemmer.as_ref(),
-                                      tagging_scheme)))
+    collections.into_iter()
+        .map(|(entity_name, values)| {
+            let entity_gazetteer = HashSetGazetteer::from(values.into_iter());
+            Ok(FeatureFunction::new(
+                format!("entity_match_{}", entity_name),
+                offsets.clone(),
+                move |tokens, token_index|
+                    features::get_gazetteer_match(tokens,
+                                                  token_index,
+                                                  &entity_gazetteer,
+                                                  stemmer.as_ref(),
+                                                  tagging_scheme)))
+        })
+        .collect()
+}
+
+fn builtin_entity_match_feature_function(args: &HashMap<String, serde_json::Value>,
+                                         offsets: Vec<i32>) -> Result<Vec<FeatureFunction>> {
+    let builtin_entity_labels = parse_as_vec_string(args, "entity_labels")?;
+    let language_code = parse_as_string(args, "language_code")?;
+    let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
+    let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
+    builtin_entity_labels.into_iter()
+        .map(|label| {
+            let builtin_parser = Lang::from_str(&language_code).ok()
+                .map(|rust_lang| RustlingParser::get(rust_lang));
+            let builtin_entity_kind = BuiltinEntityKind::from_identifier(&label).ok();
+            Ok(FeatureFunction::new(
+                format!("builtin_entity_match_{}", &label),
+                offsets.clone(),
+                move |tokens, token_index|
+                    if let (Some(parser), Some(builtin_entity_kind)) = (builtin_parser.as_ref(), builtin_entity_kind) {
+                        features::get_builtin_entity_match(
+                            tokens,
+                            token_index,
+                            &**parser,
+                            builtin_entity_kind,
+                            tagging_scheme)
+                    } else {
+                        None
+                    },
+            ))
+        })
+        .collect()
 }
 
 fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
@@ -180,33 +217,6 @@ fn word_cluster_feature_function(args: &HashMap<String, serde_json::Value>,
         move |tokens, token_index|
             features::get_word_cluster(tokens, token_index, &word_clusterer)))
 }
-
-fn builtin_entities_annotation_feature_function(args: &HashMap<String, serde_json::Value>,
-                                                offsets: Vec<i32>) -> Result<FeatureFunction> {
-    let builtin_entity_label = parse_as_string(args, "built_in_entity_label")?;
-    let builtin_entity_kind = BuiltinEntityKind::from_identifier(&builtin_entity_label).ok();
-    let language_code = parse_as_string(args, "language_code")?;
-    let builtin_parser = Lang::from_str(&language_code).ok()
-        .map(|rust_lang| RustlingParser::get(rust_lang));
-    let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
-    let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
-    Ok(FeatureFunction::new(
-        format!("built-in-{}", &builtin_entity_label),
-        offsets,
-        move |tokens, token_index|
-            if let (Some(parser), Some(builtin_entity_kind)) = (builtin_parser.as_ref(), builtin_entity_kind) {
-                features::get_builtin_entities_annotation(
-                    tokens,
-                    token_index,
-                    &**parser,
-                    builtin_entity_kind,
-                    tagging_scheme)
-            } else {
-                None
-            }
-    ))
-}
-
 
 fn parse_as_string(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<String> {
     Ok(args.get(arg_name)
@@ -238,6 +248,28 @@ fn parse_as_vec_string(args: &HashMap<String, serde_json::Value>, arg_name: &str
         )
         .collect()
 }
+
+fn parse_as_vec_of_vec(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<Vec<(String, Vec<String>)>> {
+    args.get(arg_name)
+        .ok_or(format!("can't retrieve '{}' parameter", arg_name))?
+        .as_object()
+        .ok_or(format!("'{}' isn't a map", arg_name))?
+        .into_iter()
+        .map(|(k, v)| {
+            let values: Result<Vec<_>> = v.as_array()
+                .ok_or(format!("'{}' is not a vec", v))?
+                .into_iter()
+                .map(|item|
+                    Ok(item.as_str()
+                        .ok_or(format!("'{}' is not a string", item))?
+                        .to_string())
+                )
+                .collect();
+            Ok((k.to_string(), values?))
+        })
+        .collect()
+}
+
 
 fn parse_as_bool(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<bool> {
     Ok(args.get(arg_name)

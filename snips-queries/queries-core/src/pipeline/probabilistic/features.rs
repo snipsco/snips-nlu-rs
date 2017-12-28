@@ -89,11 +89,11 @@ pub fn ngram<S: Stemmer, G: Gazetteer>(tokens: &[Token],
     }
 }
 
-pub fn is_in_gazetteer<S: Stemmer, G: Gazetteer>(tokens: &[Token],
-                                                 token_index: usize,
-                                                 gazetteer: &G,
-                                                 stemmer: Option<&S>,
-                                                 tagging_scheme: TaggingScheme) -> Option<String> {
+pub fn get_gazetteer_match<S: Stemmer, G: Gazetteer>(tokens: &[Token],
+                                                     token_index: usize,
+                                                     gazetteer: &G,
+                                                     stemmer: Option<&S>,
+                                                     tagging_scheme: TaggingScheme) -> Option<String> {
     let normalized_tokens = normalize_tokens(tokens, stemmer);
     let normalized_tokens_ref = normalized_tokens.iter().map(|t| &**t).collect_vec();
     let mut filtered_ngrams = compute_all_ngrams(&*normalized_tokens_ref, normalized_tokens_ref.len())
@@ -117,11 +117,11 @@ pub fn get_word_cluster<C: WordClusterer>(tokens: &[Token],
     word_clusterer.get_cluster(&tokens[token_index].value.to_lowercase())
 }
 
-pub fn get_builtin_entities_annotation(tokens: &[Token],
-                                       token_index: usize,
-                                       parser: &RustlingParser,
-                                       builtin_entity_kind: BuiltinEntityKind,
-                                       tagging_scheme: TaggingScheme) -> Option<String> {
+pub fn get_builtin_entity_match(tokens: &[Token],
+                                token_index: usize,
+                                parser: &RustlingParser,
+                                builtin_entity_kind: BuiltinEntityKind,
+                                tagging_scheme: TaggingScheme) -> Option<String> {
     if token_index >= tokens.len() {
         return None;
     }
@@ -314,7 +314,7 @@ mod tests {
     }
 
     #[test]
-    fn is_in_gazetteer_works() {
+    fn get_gazetteer_match_works() {
         // Given
         let language = Language::EN;
         let gazetteer = HashSetGazetteer::from(
@@ -329,7 +329,7 @@ mod tests {
         let token_index = 5;
 
         // When
-        let actual_result = is_in_gazetteer(
+        let actual_result = get_gazetteer_match(
             &tokens,
             token_index,
             &gazetteer,
@@ -341,7 +341,7 @@ mod tests {
     }
 
     #[test]
-    fn is_in_gazetteer_works_with_stemming() {
+    fn get_gazetteer_match_works_with_stemming() {
         // Given
         struct TestStemmer;
         impl Stemmer for TestStemmer {
@@ -369,7 +369,7 @@ mod tests {
         let token_index = 3;
 
         // When
-        let actual_result = is_in_gazetteer(
+        let actual_result = get_gazetteer_match(
             &tokens,
             token_index,
             &gazetteer,
@@ -378,6 +378,26 @@ mod tests {
 
         // Then
         assert_eq!(Some("L-".to_string()), actual_result)
+    }
+
+    #[test]
+    fn get_builtin_entity_match_works() {
+        // Given
+        let language = Language::EN;
+        let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
+        let token_index = 5; // 9pm
+        let tagging_scheme = TaggingScheme::BILOU;
+        let parser = RustlingParser::get(Lang::EN);
+
+        // When
+        let actual_annotation = get_builtin_entity_match(&tokens,
+                                                         token_index,
+                                                         &*parser,
+                                                         BuiltinEntityKind::Time,
+                                                         tagging_scheme);
+
+        // Then
+        assert_eq!(Some("L-".to_string()), actual_annotation)
     }
 
     #[test]
@@ -404,25 +424,5 @@ mod tests {
 
         // Then
         assert_eq!(Some("010101".to_string()), actual_result);
-    }
-
-    #[test]
-    fn get_builtin_annotation_works() {
-        // Given
-        let language = Language::EN;
-        let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
-        let token_index = 5; // 9pm
-        let tagging_scheme = TaggingScheme::BILOU;
-        let parser = RustlingParser::get(Lang::EN);
-
-        // When
-        let actual_annotation = get_builtin_entities_annotation(&tokens,
-                                                                token_index,
-                                                                &*parser,
-                                                                BuiltinEntityKind::Time,
-                                                                tagging_scheme);
-
-        // Then
-        assert_eq!(Some("L-".to_string()), actual_annotation)
     }
 }
