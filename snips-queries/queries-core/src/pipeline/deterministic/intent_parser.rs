@@ -6,21 +6,21 @@ use std::sync::Arc;
 use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
+use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
-use super::configuration::RuleBasedParserConfiguration;
+use super::configuration::DeterministicParserConfiguration;
 use language::LanguageConfig;
-use snips_queries_ontology::{IntentClassifierResult, Slot};
-use pipeline::{IntentParser, InternalSlot};
-use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
 use nlu_utils::language::Language;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
-
-use builtin_entities::{BuiltinEntityKind, RustlingParser};
+use pipeline::{IntentParser, InternalSlot};
+use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
 use rustling_ontology::Lang;
+use snips_queries_ontology::{IntentClassifierResult, Slot};
 
-pub struct RuleBasedIntentParser {
+
+pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, String>,
     slot_names_to_entities: HashMap<String, String>,
@@ -28,17 +28,17 @@ pub struct RuleBasedIntentParser {
     language_config: LanguageConfig,
 }
 
-impl RuleBasedIntentParser {
-    pub fn new(configuration: RuleBasedParserConfiguration) -> Result<Self> {
+impl DeterministicIntentParser {
+    pub fn new(configuration: DeterministicParserConfiguration) -> Result<Self> {
         let builtin_entity_parser = Lang::from_str(&configuration.language_code).ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
         let language_config = LanguageConfig::from_str(&configuration.language_code)?;
-        Ok(RuleBasedIntentParser {
-            regexes_per_intent: compile_regexes_per_intent(configuration.regexes_per_intent)?,
+        Ok(DeterministicIntentParser {
+            regexes_per_intent: compile_regexes_per_intent(configuration.patterns)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
             slot_names_to_entities: configuration.slot_names_to_entities,
             builtin_entity_parser,
-            language_config: language_config
+            language_config,
         })
     }
 }
@@ -57,7 +57,7 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>)
         .collect()
 }
 
-impl IntentParser for RuleBasedIntentParser {
+impl IntentParser for DeterministicIntentParser {
     fn get_intent(&self, input: &str, intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
         let formatted_input = if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
             replace_builtin_entities(input, &*builtin_entity_parser).1
@@ -211,18 +211,18 @@ mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
     use snips_queries_ontology::{AmountOfMoneyValue, IntentClassifierResult, Precision, Slot, SlotValue};
-    use pipeline::rule_based::configuration::RuleBasedParserConfiguration;
+    use pipeline::deterministic::configuration::DeterministicParserConfiguration;
     use pipeline::{IntentParser, InternalSlot};
     use builtin_entities::RustlingParser;
     use nlu_utils::language::Language;
     use rustling_ontology::Lang;
-    use super::{RuleBasedIntentParser, deduplicate_overlapping_slots, get_builtin_entity_name,
+    use super::{DeterministicIntentParser, deduplicate_overlapping_slots, get_builtin_entity_name,
                 replace_builtin_entities};
 
-    fn test_configuration() -> RuleBasedParserConfiguration {
-        RuleBasedParserConfiguration {
+    fn test_configuration() -> DeterministicParserConfiguration {
+        DeterministicParserConfiguration {
             language_code: "en".to_string(),
-            regexes_per_intent: hashmap![
+            patterns: hashmap![
                 "dummy_intent_1".to_string() => vec![
                     r"^This is a (?P<group_1>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query with another (?P<group_2>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)$".to_string(),
                     r"^(?P<group_5>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1)$".to_string(),
@@ -258,7 +258,7 @@ mod tests {
     #[test]
     fn should_get_intent() {
         // Given
-        let parser = RuleBasedIntentParser::new(test_configuration()).unwrap();
+        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn should_get_intent_with_builtin_entity() {
         // Given
-        let parser = RuleBasedIntentParser::new(test_configuration()).unwrap();
+        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
         let text = "Send 10 dollars to John";
 
         // When
@@ -294,7 +294,7 @@ mod tests {
     #[test]
     fn should_get_slots() {
         // Given
-        let parser = RuleBasedIntentParser::new(test_configuration()).unwrap();
+        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -306,13 +306,13 @@ mod tests {
                 "dummy_a".to_string(),
                 10..17,
                 "dummy_entity_1".to_string(),
-                "dummy_slot_name".to_string()
+                "dummy_slot_name".to_string(),
             ),
             Slot::new_custom(
                 "dummy_c".to_string(),
                 37..44,
                 "dummy_entity_2".to_string(),
-                "dummy_slot_name2".to_string()
+                "dummy_slot_name2".to_string(),
             ),
         ];
         assert_eq!(slots, expected_slots);
@@ -321,7 +321,7 @@ mod tests {
     #[test]
     fn should_get_slots_with_non_ascii_chars() {
         // Given
-        let parser = RuleBasedIntentParser::new(test_configuration()).unwrap();
+        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
         let text = "This is another über dummy_cc query!";
 
 
@@ -334,7 +334,7 @@ mod tests {
                 "dummy_cc".to_string(),
                 21..29,
                 "dummy_entity_2".to_string(),
-                "dummy_slot_name2".to_string()
+                "dummy_slot_name2".to_string(),
             ),
         ];
         assert_eq!(slots, expected_slots);
@@ -343,7 +343,7 @@ mod tests {
     #[test]
     fn should_get_slots_with_builtin_entity() {
         // Given
-        let parser = RuleBasedIntentParser::new(test_configuration()).unwrap();
+        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
         let text = "Send 10 dollars to John";
 
         // When
@@ -357,7 +357,7 @@ mod tests {
                     AmountOfMoneyValue {
                         value: 10.0,
                         precision: Precision::Exact,
-                        unit: Some("$".to_string())
+                        unit: Some("$".to_string()),
                     }
                 ),
                 range: Some(5..15),
@@ -414,19 +414,19 @@ mod tests {
                 value: "non_overlapping1".to_string(),
                 char_range: 3..7,
                 entity: "e".to_string(),
-                slot_name: "s1".to_string()
+                slot_name: "s1".to_string(),
             },
             InternalSlot {
                 value: "b cccc".to_string(),
                 char_range: 17..23,
                 entity: "e1".to_string(),
-                slot_name: "s4".to_string()
+                slot_name: "s4".to_string(),
             },
             InternalSlot {
                 value: "non_overlapping2".to_string(),
                 char_range: 50..60,
                 entity: "e".to_string(),
-                slot_name: "s5".to_string()
+                slot_name: "s5".to_string(),
             },
         ];
         assert_eq!(deduplicated_slots, expected_slots);

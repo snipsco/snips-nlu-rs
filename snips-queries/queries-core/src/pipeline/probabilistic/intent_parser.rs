@@ -24,36 +24,23 @@ use snips_queries_ontology::{IntentClassifierResult, Slot};
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,
-    slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
-    taggers: HashMap<String, Box<Tagger>>,
-    builtin_entity_parser: Option<Arc<RustlingParser>>,
-    language_config: LanguageConfig,
-    exhaustive_permutations_threshold: usize,
+    slot_fillers: HashMap<String, Box<SlotFiller>>,
 }
 
 impl ProbabilisticIntentParser {
     pub fn new(config: ProbabilisticParserConfiguration) -> Result<Self> {
-        let taggers: Result<Vec<_>> = config
-            .taggers
+        let slot_fillers_vec: Result<Vec<_>> = config
+            .slot_fillers
             .into_iter()
             .map(|(intent_name, tagger_config)| {
                 Ok((intent_name, Box::new(CRFTagger::new(tagger_config)?) as _))
             })
             .collect();
-        let taggers_map = HashMap::from_iter(taggers?);
+        let slot_fillers = HashMap::from_iter(slot_fillers_vec?);
         let intent_classifier =
             Box::new(LogRegIntentClassifier::new(config.intent_classifier)?) as _;
-        let language_config = LanguageConfig::from_str(&config.language_code)?;
-        let builtin_entity_parser = Some(RustlingParser::get(language_config.to_rust_lang()));
 
-        Ok(ProbabilisticIntentParser {
-            intent_classifier,
-            slot_name_to_entity_mapping: config.slot_name_to_entity_mapping,
-            taggers: taggers_map,
-            builtin_entity_parser,
-            language_config: language_config,
-            exhaustive_permutations_threshold: config.config.exhaustive_permutations_threshold,
-        })
+        Ok(ProbabilisticIntentParser { intent_classifier, slot_fillers })
     }
 }
 

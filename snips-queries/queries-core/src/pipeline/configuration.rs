@@ -1,7 +1,5 @@
 use std::collections::HashMap;
-
-use pipeline::rule_based::RuleBasedParserConfiguration;
-use pipeline::probabilistic::ProbabilisticParserConfiguration;
+use serde_json;
 
 pub trait NluEngineConfigurationConvertible {
     fn nlu_engine_configuration(&self) -> &NluEngineConfiguration;
@@ -15,23 +13,23 @@ pub struct ModelVersionConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct NluEngineConfiguration {
-    pub language: String,
-    pub model: Model,
-    pub entities: HashMap<String, Entity>,
-    pub intents_data_sizes: HashMap<String, usize>,
-    pub slot_name_mapping: HashMap<String, HashMap<String, String>>
+    pub dataset_metadata: DatasetMetadata,
+    pub intent_parsers: Vec<serde_json::Value>,
+    pub model_version: String,
+    pub training_package_version: String,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Model {
-    pub rule_based_parser: Option<RuleBasedParserConfiguration>,
-    pub probabilistic_parser: Option<ProbabilisticParserConfiguration>,
+pub struct DatasetMetadata {
+    pub language_code: String,
+    pub entities: HashMap<String, Entity>,
+    pub slot_name_mappings: HashMap<String, HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Entity {
     pub automatically_extensible: bool,
-    pub utterances: HashMap<String, String>
+    pub utterances: HashMap<String, String>,
 }
 
 impl NluEngineConfigurationConvertible for NluEngineConfiguration {
@@ -47,13 +45,32 @@ impl NluEngineConfigurationConvertible for NluEngineConfiguration {
 #[cfg(test)]
 mod tests {
     use super::NluEngineConfiguration;
+    use pipeline::deterministic::DeterministicParserConfiguration;
+    use pipeline::probabilistic::ProbabilisticParserConfiguration;
 
     use testutils::parse_json;
+    use serde_json;
 
     #[test]
     fn deserialization_works() {
+        // When
         let retrieved: NluEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
-        assert_eq!("en", retrieved.model.rule_based_parser.unwrap().language_code);
-        assert_eq!("en", retrieved.model.probabilistic_parser.unwrap().language_code);
+        let deterministic_parser_config: Result<DeterministicParserConfiguration, _> =
+            serde_json::from_value(retrieved.intent_parsers[0].clone());
+        let proba_parser_config: Result<ProbabilisticParserConfiguration, _> =
+            serde_json::from_value(retrieved.intent_parsers[1].clone());
+
+        // Then
+        let deterministic_parser_config_formatted = deterministic_parser_config
+            .map(|_| "ok")
+            .map_err(|err| format!("{:?}", err));
+        let proba_parser_formatted = proba_parser_config
+            .map(|_| "ok")
+            .map_err(|err| format!("{:?}", err));
+
+        assert_eq!("0.11.0", retrieved.model_version);
+        assert_eq!(2, retrieved.intent_parsers.len());
+        assert_eq!(Ok("ok"), deterministic_parser_config_formatted);
+        assert_eq!(Ok("ok"), proba_parser_formatted);
     }
 }

@@ -1,62 +1,56 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::iter::FromIterator;
-use std::ops::Range;
 use std::str::FromStr;
 use std::sync::Arc;
+
 use itertools::Itertools;
 
 use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
-use snips_queries_ontology::{IntentParserResult, Slot, SlotValue, TaggedEntity};
-use pipeline::IntentParser;
-use pipeline::rule_based::RuleBasedIntentParser;
-use pipeline::probabilistic::ProbabilisticIntentParser;
-use pipeline::configuration::{Entity, NluEngineConfigurationConvertible};
-use rustling_ontology::Lang;
-use language::LanguageConfig;
 use nlu_utils::language::Language;
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
+use pipeline::IntentParser;
+use pipeline::deterministic::DeterministicIntentParser;
+use pipeline::probabilistic::ProbabilisticIntentParser;
+use pipeline::configuration::{Entity, NluEngineConfigurationConvertible, DatasetMetadata};
+use rustling_ontology::Lang;
+use serde_json;
+use snips_queries_ontology::{IntentParserResult, Slot, SlotValue};
 
 const MODEL_VERSION: &str = "0.11.0";
 
 pub struct SnipsNluEngine {
-    language_config: LanguageConfig,
+    dataset_metadata: DatasetMetadata,
     parsers: Vec<Box<IntentParser>>,
-    entities: HashMap<String, Entity>,
-    intents_data_sizes: HashMap<String, usize>,
-    slot_name_mapping: HashMap<String, HashMap<String, String>>,
     builtin_entity_parser: Option<Arc<RustlingParser>>,
 }
 
 impl SnipsNluEngine {
     pub fn new<T: NluEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
         let nlu_config = configuration.into_nlu_engine_configuration();
+        let parsers = nlu_config.intent_parsers.into_iter()
+            .map(|value| match value["unit_name"].as_str() {
+                Some("deterministic_intent_parser") => {
+                    let config = serde_json::from_value(value)?;
+                    Ok(Box::new(DeterministicIntentParser::new(config)?) as _)
+                }
+                Some("probabilistic_intent_parser") => {
+                    let config = serde_json::from_value(value)?;
+                    Ok(Box::new(ProbabilisticIntentParser::new(config)?) as _)
+                }
+                Some(_) => Err("Unknown intent parser unit name".into()),
+                None => Err(format!("Intent parser unit name is not properly defined").into()),
+            })
+            .collect::<Result<Vec<_>>>()?;
 
-        let mut parsers: Vec<Box<IntentParser>> = Vec::with_capacity(2);
-
-        let model = nlu_config.model;
-        if let Some(config) = model.rule_based_parser {
-            parsers.push(Box::new(RuleBasedIntentParser::new(config)
-                .chain_err(|| "Can't create RuleBasedIntentParser")?))
-        };
-        if let Some(config) = model.probabilistic_parser {
-            parsers.push(Box::new(ProbabilisticIntentParser::new(config)
-                .chain_err(|| "Can't create ProbabilisticIntentParser")?))
-        };
-        let intents_data_sizes = nlu_config.intents_data_sizes;
-        let slot_name_mapping = nlu_config.slot_name_mapping;
-        let builtin_entity_parser = Lang::from_str(&nlu_config.language)
+        let builtin_entity_parser = Lang::from_str(&nlu_config.dataset_metadata.language_code)
             .ok()
             .map(|rustling_lang| RustlingParser::get(rustling_lang));
-        let language_config = LanguageConfig::from_str(&nlu_config.language)?;
 
         Ok(SnipsNluEngine {
-            language_config: language_config,
+            dataset_metadata: nlu_config.dataset_metadata,
             parsers,
-            entities: nlu_config.entities,
-            intents_data_sizes,
-            slot_name_mapping,
             builtin_entity_parser,
         })
     }
@@ -84,7 +78,7 @@ impl SnipsNluEngine {
                     .get_slots(input, &classification_result.intent_name)?
                     .into_iter()
                     .filter_map(|slot| {
-                        if let Some(entity) = self.entities.get(&slot.entity) {
+                        if let Some(entity) = self.dataset_metadata.entities.get(&slot.entity) {
                             entity
                                 .utterances
                                 .get(&slot.raw_value)
@@ -131,19 +125,20 @@ impl SnipsNluEngine {
         intent_name: &str,
         slot_name: String,
     ) -> Result<Option<Slot>> {
-        let entity_name = self.slot_name_mapping
+        let entity_name = self.dataset_metadata.slot_name_mappings
             .get(intent_name)
             .ok_or(format!("Unknown intent: {}", intent_name))?
             .get(&slot_name)
             .ok_or(format!("Unknown slot: {}", &slot_name))?;
 
-        let slot = if let Some(custom_entity) = self.entities.get(entity_name) {
+        let slot = if let Some(custom_entity) = self.dataset_metadata.entities.get(entity_name) {
+            let language = Language::from_str(&self.dataset_metadata.language_code)?;
             extract_custom_slot(
                 input,
                 entity_name.to_string(),
                 slot_name.to_string(),
                 custom_entity.clone(),
-                self.language_config.language,
+                language,
             )
         } else {
             if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
@@ -200,7 +195,7 @@ fn extract_custom_slot(
                 value: SlotValue::Custom(input.into()),
                 range: None,
                 entity: entity_name,
-                slot_name: slot_name,
+                slot_name,
             })
         } else {
             None
@@ -260,7 +255,7 @@ mod tests {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
                 intent_name: "MakeCoffee".to_string(),
-                probability: 0.7114164,
+                probability: 0.6890294,
             }),
             slots: Some(vec![
                 Slot {
