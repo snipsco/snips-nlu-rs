@@ -4,7 +4,7 @@ use std::collections::HashSet;
 use errors::*;
 use snips_queries_ontology::{IntentClassifierResult, Slot};
 
-pub mod rule_based;
+pub mod deterministic;
 pub mod probabilistic;
 pub mod nlu_engine;
 pub mod assistant_config;
