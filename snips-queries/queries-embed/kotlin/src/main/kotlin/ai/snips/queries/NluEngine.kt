@@ -1,9 +1,7 @@
 package ai.snips.queries
 
 import ai.snips.queries.ontology.IntentParserResult
-import ai.snips.queries.ontology.TaggedEntity
 import ai.snips.queries.ontology.ffi.CIntentParserResult
-import ai.snips.queries.ontology.ffi.CTaggedEntities
 import ai.snips.queries.ontology.ffi.readString
 import ai.snips.queries.ontology.ffi.toPointer
 import com.sun.jna.Library
@@ -77,18 +75,6 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 }
             }
 
-    fun tag(input: String, intent: String): List<TaggedEntity> =
-            CTaggedEntities(PointerByReference().apply {
-                parseError(LIB.nlu_engine_run_tag(client, input.toPointer(), intent.toPointer(), this))
-            }.value).let {
-                it.toTaggedEntityList().apply {
-                    // we don't want jna to try and sync this struct after the call as we're destroying it
-                    // /!\ removing that will make the app crash semi randomly...
-                    it.autoRead = false
-                    LIB.nlu_engine_destroy_tagged_entity_list(it)
-                }
-            }
-
     internal interface SnipsQueriesClientLibrary : Library {
         companion object {
             val INSTANCE: SnipsQueriesClientLibrary = Native.loadLibrary("snips_queries", SnipsQueriesClientLibrary::class.java)
@@ -99,11 +85,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         fun nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun nlu_engine_run_parse(client: Pointer, input: Pointer, result: PointerByReference): Int
         fun nlu_engine_run_parse_into_json(client: Pointer, input: Pointer, result: PointerByReference): Int
-        fun nlu_engine_run_tag(client: Pointer, input: Pointer, intent: Pointer, result: PointerByReference): Int
         fun nlu_engine_get_last_error(error: PointerByReference): Int
         fun nlu_engine_destroy_client(client: Pointer): Int
         fun nlu_engine_destroy_result(result: CIntentParserResult): Int
-        fun nlu_engine_destroy_tagged_entity_list(result: CTaggedEntities): Int
         fun nlu_engine_destroy_string(string: Pointer): Int
     }
 }

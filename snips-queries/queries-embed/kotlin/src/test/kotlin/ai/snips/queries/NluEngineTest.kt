@@ -52,26 +52,6 @@ class NluEngineTest {
     }
 
     @Test
-    fun tagWorks() {
-        NluEngine(File("../../data/tests/configurations")).use {
-            it.tag("make me two cups of hot tea", "MakeTea").apply {
-                assertThat(this).hasSize(2)
-                assertThat(this.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
-            }
-        }
-    }
-
-    @Test
-    fun tagWorksOnEmptyResult() {
-        NluEngine(File("../../data/tests/configurations")).use {
-            println("hello")
-            it.tag("Turn off the lights", "MakeTea").apply {
-                assertThat(this).hasSize(0)
-            }
-        }
-    }
-
-    @Test
     fun funkyCharsArePreserved() {
         NluEngine(File("../../data/tests/configurations")).use {
             it.parse("&€£ôœþかたな刀☺ ̿ ̿ ̿'̿'\\̵͇̿̿\\з=(•_•)=ε/̵͇̿̿/'̿'̿ ̿").apply {

@@ -11,7 +11,6 @@ use snips_queries_ontology::{IntentParserResult, Slot, SlotValue, TaggedEntity};
 use pipeline::IntentParser;
 use pipeline::rule_based::RuleBasedIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
-use pipeline::tagging_utils::{disambiguate_tagged_entities, enrich_entities, tag_builtin_entities};
 use pipeline::configuration::{Entity, NluEngineConfigurationConvertible};
 use rustling_ontology::Lang;
 use language::LanguageConfig;
@@ -231,134 +230,6 @@ fn extract_builtin_slot(
     )
 }
 
-const DEFAULT_THRESHOLD: usize = 5;
-
-#[derive(Debug, Clone, PartialEq, Hash)]
-pub struct PartialTaggedEntity {
-    pub value: String,
-    pub range: Option<Range<usize>>,
-    pub entity: String,
-    pub slot_name: Option<String>,
-}
-
-impl PartialTaggedEntity {
-    fn into_tagged_entity(self) -> Option<TaggedEntity> {
-        if let Some(slot_name) = self.slot_name {
-            Some(TaggedEntity {
-                value: self.value,
-                range: self.range,
-                entity: self.entity,
-                slot_name,
-            })
-        } else {
-            None
-        }
-    }
-}
-
-impl SnipsNluEngine {
-    pub fn tag(
-        &self,
-        text: &str,
-        intent: &str,
-        small_data_regime_threshold: Option<usize>,
-    ) -> Result<Vec<TaggedEntity>> {
-        let intent_data_size: usize = *self.intents_data_sizes
-            .get(intent)
-            .ok_or(format!("Unknown intent: {}", intent))?;
-        let slot_name_mapping = self.slot_name_mapping
-            .get(intent)
-            .ok_or(format!("Unknown intent: {}", intent))?;
-        let intent_entities = HashSet::from_iter(slot_name_mapping.values());
-        let threshold = small_data_regime_threshold.unwrap_or(DEFAULT_THRESHOLD);
-        if intent_data_size >= threshold {
-            Ok(
-                self.parse(text, Some(&[intent.into()]))?
-                    .slots
-                    .map(|slots| {
-                        slots
-                            .into_iter()
-                            .map(|s| {
-                                TaggedEntity {
-                                    value: s.raw_value,
-                                    range: s.range,
-                                    entity: s.entity,
-                                    slot_name: s.slot_name,
-                                }
-                            })
-                            .collect_vec()
-                    })
-                    .unwrap_or(vec![]),
-            )
-        } else {
-            let tagged_seen_entities = self.tag_seen_entities(text, intent_entities, self.language_config.language);
-            let tagged_builtin_entities = tag_builtin_entities(text, self.language_config.language);
-            let tagged_entities = enrich_entities(tagged_seen_entities, tagged_builtin_entities);
-            let disambiguated_entities =
-                disambiguate_tagged_entities(tagged_entities, slot_name_mapping.clone());
-            Ok(
-                disambiguated_entities
-                    .into_iter()
-                    .filter_map(|e| e.into_tagged_entity())
-                    .collect(),
-            )
-        }
-    }
-
-    fn tag_seen_entities(
-        &self,
-        text: &str,
-        intent_entities: HashSet<&String>,
-        language: Language
-    ) -> Vec<PartialTaggedEntity> {
-        let entities = self.entities
-            .clone()
-            .into_iter()
-            .filter_map(|(entity_name, entity)| {
-                if intent_entities.contains(&entity_name) {
-                    Some((entity_name, entity))
-                } else {
-                    None
-                }
-            })
-            .collect_vec();
-        let tokens = tokenize(text, language);
-        let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
-        let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
-        ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
-        let mut tagged_entities = Vec::<PartialTaggedEntity>::new();
-        for (ngram, ngram_indexes) in ngrams {
-            let mut ngram_entity: Option<PartialTaggedEntity> = None;
-            for &(ref entity_name, ref entity_data) in entities.iter() {
-                if entity_data.utterances.contains_key(&normalize(&ngram)) {
-                    if ngram_entity.is_some() {
-                        // If the ngram matches several entities, i.e. there is some ambiguity, we
-                        // don't add it to the tagged entities
-                        ngram_entity = None;
-                        break;
-                    }
-                    if let (Some(first), Some(last)) = (ngram_indexes.first(), ngram_indexes.last()) {
-                        let range_start = tokens[*first].char_range.start;
-                        let range_end = tokens[*last].char_range.end;
-                        let range = range_start..range_end;
-                        let value = substring_with_char_range(text.to_string(), &range);
-                        ngram_entity = Some(PartialTaggedEntity {
-                            value,
-                            range: Some(range),
-                            entity: entity_name.to_string(),
-                            slot_name: None,
-                        })
-                    }
-                }
-            }
-            if let Some(ngram_entity) = ngram_entity {
-                tagged_entities = enrich_entities(tagged_entities, vec![ngram_entity])
-            }
-        }
-        tagged_entities
-    }
-}
-
 pub mod deprecated {
     #[deprecated(since = "0.21.0", note = "please use `SnipsNluEngine` instead")]
     pub type SnipsNLUEngine = super::SnipsNluEngine;
@@ -403,70 +274,6 @@ mod tests {
         };
 
         assert_eq!(expected_result, result)
-    }
-
-    #[test]
-    fn tag_works_above_intent_data_threshold() {
-        // Given
-        let configuration: NluEngineConfiguration =
-            parse_json("tests/configurations/trained_assistant.json");
-        let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
-        let intent_data_threshold = 0;
-
-        // When
-        let tagged_entities = nlu_engine
-            .tag(
-                "Make me two cups of coffee please",
-                "MakeCoffee",
-                Some(intent_data_threshold),
-            )
-            .unwrap();
-
-        // Then
-        let expected_tagged_entities: Vec<TaggedEntity> = vec![
-            TaggedEntity {
-                value: "two".to_string(),
-                range: Some(8..11),
-                entity: "snips/number".to_string(),
-                slot_name: "number_of_cups".to_string(),
-            },
-        ];
-        assert_eq!(expected_tagged_entities, tagged_entities)
-    }
-
-    #[test]
-    fn tag_works_below_intent_data_threshold() {
-        // Given
-        let configuration: NluEngineConfiguration =
-            parse_json("tests/configurations/trained_assistant.json");
-        let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
-        let intent_data_threshold = 1000;
-
-        // When
-        let tagged_entities = nlu_engine
-            .tag(
-                "I want two hot cups of tea !!",
-                "MakeTea",
-                Some(intent_data_threshold),
-            )
-            .unwrap();
-
-        // Then
-        let expected_tagged_entities: Vec<TaggedEntity> = vec![
-            TaggedEntity {
-                value: "hot".to_string(),
-                range: Some(11..14),
-                entity: "Temperature".to_string(),
-                slot_name: "beverage_temperature".to_string(),
-            },
-            TaggedEntity {
-                value: "two".to_string(),
-                range: Some(7..10),
-                entity: "snips/number".to_string(),
-                slot_name: "number_of_cups".to_string(),
-            },
-        ];
-        assert_eq!(expected_tagged_entities, tagged_entities)
     }
 
     #[test]
@@ -545,4 +352,3 @@ mod tests {
         assert_eq!(expected_slot, extracted_slot);
     }
 }
-
