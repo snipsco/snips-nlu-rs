@@ -219,7 +219,7 @@ fn extract_builtin_slot(
                     value: rustlin_entity.entity.clone(),
                     range: None,
                     entity: entity_name,
-                    slot_name: slot_name,
+                    slot_name,
                 }
             }),
     )
