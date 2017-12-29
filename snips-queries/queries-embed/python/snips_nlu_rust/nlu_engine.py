@@ -15,8 +15,7 @@ lib = cdll.LoadLibrary(dylib_path)
 
 
 class NLUEngine(object):
-    def __init__(self, language, data_path=None, data_zip=None):
-        self.language = language
+    def __init__(self, data_path=None, data_zip=None):
         exit_code = 1
 
         if data_path is None and data_zip is None:
