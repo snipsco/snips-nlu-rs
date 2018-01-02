@@ -79,5 +79,5 @@ if [ ! -e $PROJECT_DIR/Dependencies/$SYSTEM/libsnips_queries.a ] ||
     echo "Download $FILENAME"
     URL=https://s3.amazonaws.com/snips/snips-queries-dev/$FILENAME
     cd $PROJECT_DIR/Dependencies/$SYSTEM
-    curl -s $URL | tar zxv
+    curl -s $URL | tar zx
 fi
