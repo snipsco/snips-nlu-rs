@@ -1,14 +1,17 @@
+use std::collections::HashSet;
 use ndarray::prelude::*;
 
 use errors::*;
+use itertools::Itertools;
 use models::logreg::MulticlassLogisticRegression;
 use snips_queries_ontology::IntentClassifierResult;
 use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
-use utils::argmax;
 
 pub trait IntentClassifier: Send + Sync {
-    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>>;
+    fn get_intent(&self,
+                  input: &str,
+                  intents_filter: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>>;
 }
 
 pub struct LogRegIntentClassifier {
@@ -35,13 +38,15 @@ impl LogRegIntentClassifier {
         Ok(Self {
             intent_list: config.intent_list,
             featurizer,
-            logreg
+            logreg,
         })
     }
 }
 
 impl IntentClassifier for LogRegIntentClassifier {
-    fn get_intent(&self, input: &str) -> Result<Option<IntentClassifierResult>> {
+    fn get_intent(&self,
+                  input: &str,
+                  intents_filter: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
         if input.is_empty() || self.intent_list.is_empty() {
             return Ok(None);
         }
@@ -52,22 +57,33 @@ impl IntentClassifier for LogRegIntentClassifier {
             ));
         }
 
-        if self.featurizer.is_none() || self.logreg.is_none() {
-            return Ok(None);
-        }
-
         if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
             let features = featurizer.transform(&input)?;
             let probabilities = logreg.run(&features.view())?;
 
-            let (index_predicted, best_probability) = argmax(&probabilities);
+            let mut intents_proba: Vec<(Option<String>, &f32)> = self.intent_list.clone().into_iter()
+                .zip(probabilities.into_iter())
+                .collect_vec();
 
-            Ok(self.intent_list[index_predicted].as_ref()
-                .map(|intent_name|
-                    IntentClassifierResult {
-                        intent_name: intent_name.clone(),
-                        probability: best_probability
-                    }))
+            // Sort intents by decreasing probabilities
+            intents_proba.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
+
+            let mut filtered_intents = intents_proba.into_iter()
+                .filter(|&(ref opt_intent, _)|
+                    opt_intent.clone().map(|intent|
+                        intents_filter.map(|intents|
+                            intents.contains(&intent)
+                        ).unwrap_or(true)
+                    ).unwrap_or(true));
+
+            filtered_intents.next()
+                .map(|(opt_intent, proba)|
+                    Ok(opt_intent.map(|intent_name|
+                        IntentClassifierResult {
+                            intent_name: intent_name.clone(),
+                            probability: *proba,
+                        })))
+                .unwrap_or(Ok(None))
         } else {
             Ok(None)
         }
@@ -84,9 +100,7 @@ mod tests {
     use pipeline::IntentClassifierResult;
     use pipeline::probabilistic::configuration::{FeaturizerConfiguration, TfIdfVectorizerConfiguration, FeaturizerConfigConfiguration};
 
-    #[test]
-    fn get_intent_works() {
-        // Given
+    fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
         let language_code = "en".to_string();
         let best_features = vec![1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92, 93, 96, 97, 100, 101];
         let entity_utterances_to_feature_names = hashmap![];
@@ -324,7 +338,7 @@ mod tests {
 
         let tfidf_vectorizer = TfIdfVectorizerConfiguration {
             idf_diag,
-            vocab
+            vocab,
         };
 
         let intent_list: Vec<Option<String>> = vec![
@@ -439,22 +453,55 @@ mod tests {
 
         let coeffs: Array2<f32> = Array::from_shape_fn((27, 3), |(i, j)| coeffs_vec[j][i]);
         let logreg = MulticlassLogisticRegression::new(intercept, coeffs).unwrap();
-        let classifier = LogRegIntentClassifier {
+        LogRegIntentClassifier {
             featurizer: Some(featurizer),
             intent_list,
             logreg: Some(logreg),
-        };
+        }
+    }
+
+    #[test]
+    fn get_intent_works() {
+        // Given
+        let classifier = get_sample_log_reg_classifier();
 
         // When
-        let classification_result = classifier.get_intent("Make me two cups of tea");
+        let classification_result = classifier.get_intent("Make me two cups of tea", None);
         let ref actual_result = classification_result.unwrap().unwrap();
         let expected_result = IntentClassifierResult {
             intent_name: "MakeTea".to_string(),
-            probability: 0.48829985
+            probability: 0.48829985,
         };
 
         // Then
         assert_eq!(expected_result.intent_name, actual_result.intent_name);
         assert_eq!(expected_result.probability, actual_result.probability);
+    }
+
+    #[test]
+    fn should_filter_intents() {
+        // Given
+        let classifier = get_sample_log_reg_classifier();
+
+        // When
+        let text1 = "Make me two cups of tea";
+        let result1 = classifier
+            .get_intent(text1, Some(hashset! {"MakeCoffee".to_string(), "MakeTea".to_string()}).as_ref())
+            .unwrap();
+
+        let text2 = "Make me two cups of tea";
+        let result2 = classifier
+            .get_intent(text2, Some(hashset! {"MakeCoffee".to_string()}).as_ref())
+            .unwrap();
+
+        let text3 = "bla bla bla";
+        let result3 = classifier
+            .get_intent(text3, Some(hashset! {"MakeCoffee".to_string()}).as_ref())
+            .unwrap();
+
+        // Then
+        assert_eq!(Some("MakeTea".to_string()), result1.map(|res| res.intent_name));
+        assert_eq!(Some("MakeCoffee".to_string()), result2.map(|res| res.intent_name));
+        assert_eq!(None, result3);
     }
 }
