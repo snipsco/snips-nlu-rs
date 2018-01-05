@@ -61,7 +61,7 @@ impl IntentClassifier for LogRegIntentClassifier {
             let features = featurizer.transform(&input)?;
             let probabilities = logreg.run(&features.view())?;
 
-            let mut intents_proba: Vec<(Option<String>, &f32)> = self.intent_list.clone().into_iter()
+            let mut intents_proba: Vec<(&Option<String>, &f32)> = self.intent_list.iter()
                 .zip(probabilities.into_iter())
                 .collect_vec();
 
@@ -69,16 +69,18 @@ impl IntentClassifier for LogRegIntentClassifier {
             intents_proba.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
 
             let mut filtered_intents = intents_proba.into_iter()
-                .filter(|&(ref opt_intent, _)|
-                    opt_intent.clone().map(|intent|
+                .filter(|&(opt_intent, _)|
+                    if let Some(intent) = opt_intent.as_ref() {
                         intents_filter.map(|intents|
-                            intents.contains(&intent)
+                            intents.contains(intent)
                         ).unwrap_or(true)
-                    ).unwrap_or(true));
+                    } else {
+                        true
+                    });
 
             filtered_intents.next()
                 .map(|(opt_intent, proba)|
-                    Ok(opt_intent.map(|intent_name|
+                    Ok(opt_intent.clone().map(|intent_name|
                         IntentClassifierResult {
                             intent_name: intent_name.clone(),
                             probability: *proba,
