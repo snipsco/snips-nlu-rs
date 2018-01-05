@@ -58,25 +58,10 @@ impl ProbabilisticIntentParser {
 }
 
 impl IntentParser for ProbabilisticIntentParser {
-    fn get_intent(
-        &self,
-        input: &str,
-        intents: Option<&HashSet<String>>,
-    ) -> Result<Option<IntentClassifierResult>> {
-        if let Some(intents_set) = intents {
-            Ok(if intents_set.len() == 1 {
-                Some(IntentClassifierResult {
-                    intent_name: intents_set.into_iter().next().unwrap().to_string(),
-                    probability: 1.0,
-                })
-            } else if let Some(res) = self.intent_classifier.get_intent(input)? {
-                intents_set.get(&res.intent_name).map(|_| res)
-            } else {
-                None
-            })
-        } else {
-            self.intent_classifier.get_intent(input)
-        }
+    fn get_intent(&self,
+                  input: &str,
+                  intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
+        self.intent_classifier.get_intent(input, intents)
     }
 
     fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
@@ -170,7 +155,7 @@ impl IntentParser for ProbabilisticIntentParser {
 fn filter_overlapping_builtins(builtin_entities: Vec<RustlingEntity>,
                                tokens: &[Token],
                                tags: &Vec<String>,
-                               tagging_scheme: TaggingScheme
+                               tagging_scheme: TaggingScheme,
 ) -> Vec<RustlingEntity> {
     let slots_ranges = tags_to_slot_ranges(tokens, tags, tagging_scheme);
     builtin_entities
@@ -264,10 +249,8 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::result::Result as StdResult;
     use nlu_utils::language::Language;
-    use snips_queries_ontology::{Grain, InstantTimeValue, IntentClassifierResult, Precision,
-                                 SlotValue};
+    use snips_queries_ontology::{Grain, InstantTimeValue, Precision, SlotValue};
     use pipeline::probabilistic::crf_utils::TaggingScheme;
 
     struct TestTagger {
@@ -322,17 +305,6 @@ mod tests {
 
         fn get_tagging_scheme(&self) -> TaggingScheme {
             TaggingScheme::BIO
-        }
-    }
-
-    struct TestIntentClassifier {
-        result: Option<IntentClassifierResult>,
-    }
-
-    impl IntentClassifier for TestIntentClassifier {
-        fn get_intent(&self, _: &str) -> StdResult<Option<IntentClassifierResult>, Error> {
-            let res = self.result.clone();
-            Ok(res)
         }
     }
 
@@ -653,77 +625,5 @@ mod tests {
             "O".to_string(),
         ];
         assert_eq!(expected_tags, replaced_tags);
-    }
-
-    #[test]
-    fn should_not_return_filtered_out_intent() {
-        // Given
-        let language = Language::EN;
-        let language_config = LanguageConfig { language };
-        let exhaustive_permutations_threshold = 1;
-        let classifier_result = IntentClassifierResult {
-            intent_name: "disabled_intent".to_string(),
-            probability: 0.8,
-        };
-        let classifier = TestIntentClassifier {
-            result: Some(classifier_result),
-        };
-        let intent_parser = ProbabilisticIntentParser {
-            intent_classifier: Box::new(classifier) as _,
-            slot_name_to_entity_mapping: hashmap! {},
-            taggers: hashmap! {},
-            builtin_entity_parser: None,
-            language_config,
-            exhaustive_permutations_threshold,
-        };
-        let text = "hello world";
-        let intents_set = Some(
-            hashset! {"allowed_intent1".to_string(), "allowed_intent2".to_string()},
-        );
-
-        // When
-        let result = intent_parser
-            .get_intent(text, intents_set.as_ref())
-            .unwrap();
-
-        // Then
-        assert_eq!(None, result)
-    }
-
-    #[test]
-    fn should_return_only_allowed_intent() {
-        // Given
-        let language = Language::EN;
-        let language_config = LanguageConfig::from_str(&language.to_string()).unwrap();
-        let classifier_result = IntentClassifierResult {
-            intent_name: "disabled_intent".to_string(),
-            probability: 0.8,
-        };
-        let classifier = TestIntentClassifier {
-            result: Some(classifier_result),
-        };
-        let exhaustive_permutations_threshold = 1;
-        let intent_parser = ProbabilisticIntentParser {
-            intent_classifier: Box::new(classifier) as _,
-            slot_name_to_entity_mapping: hashmap! {},
-            taggers: hashmap! {},
-            builtin_entity_parser: None,
-            language_config,
-            exhaustive_permutations_threshold,
-        };
-        let text = "hello world";
-        let intents_set = Some(hashset! {"allowed_intent1".to_string()});
-
-        // When
-        let result = intent_parser
-            .get_intent(text, intents_set.as_ref())
-            .unwrap();
-
-        // Then
-        let expected_result = Some(IntentClassifierResult {
-            intent_name: "allowed_intent1".to_string(),
-            probability: 1.0,
-        });
-        assert_eq!(expected_result, result)
     }
 }
