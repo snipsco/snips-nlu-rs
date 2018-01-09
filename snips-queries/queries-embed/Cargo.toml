@@ -1,6 +1,6 @@
 [package]
 name = "queries-embed"
-version = "0.52.0-SNAPSHOT"
+version = "0.51.16"
 authors = [
     "Kevin Lefevre <kevin.lefevre@snips.ai>",
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>"
