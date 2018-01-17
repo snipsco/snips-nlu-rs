@@ -1,4 +1,6 @@
 # coding=utf-8
+from __future__ import absolute_import
+from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
@@ -7,10 +9,10 @@ import json
 import os
 import shutil
 import zipfile
-from pprint import pprint
+from builtins import input, str, bytes
 from tempfile import mkdtemp
 
-from nlu_engine import NLUEngine
+from snips_nlu_rust.nlu_engine import NLUEngine
 
 TRAINED_ENGINE_FILENAME = "trained_assistant.json"
 
@@ -40,8 +42,8 @@ def debug_inference(engine_path):
     engine = NLUEngine(language, data_zip=data_zip)
 
     while True:
-        query = raw_input("Enter a query (type 'q' to quit): ").strip()
-        if isinstance(query, str):
+        query = input("Enter a query (type 'q' to quit): ").strip()
+        if isinstance(query, bytes):
             query = query.decode("utf8")
         if query == "q":
             break
@@ -50,7 +52,7 @@ def debug_inference(engine_path):
 
 def main_debug():
     parser = argparse.ArgumentParser(description="Debug snippets")
-    parser.add_argument("engine_path", type=unicode,
+    parser.add_argument("engine_path", type=str,
                         help="Path to the trained assistant")
     args = vars(parser.parse_args())
     debug_inference(**args)

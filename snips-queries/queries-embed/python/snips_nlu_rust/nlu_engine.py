@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import json
 import os
+from builtins import object
 from ctypes import c_char, c_char_p, c_void_p, string_at, pointer, byref, cdll
 from glob import glob
 
