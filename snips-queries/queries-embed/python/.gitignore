@@ -1,6 +1,9 @@
 venv/
+venv3/
 build/
 dist/
 *.pyc
+*.py.bak
 *.egg-info/
 .idea
+.tox/
