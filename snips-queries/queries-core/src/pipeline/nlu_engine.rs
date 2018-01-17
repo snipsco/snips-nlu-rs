@@ -18,7 +18,7 @@ use rustling_ontology::Lang;
 use serde_json;
 use snips_queries_ontology::{IntentParserResult, Slot, SlotValue};
 
-const MODEL_VERSION: &str = "0.11.0";
+const MODEL_VERSION: &str = "0.12.0";
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
