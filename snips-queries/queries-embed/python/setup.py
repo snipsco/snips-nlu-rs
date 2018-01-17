@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import io
 import os
 import subprocess
@@ -45,6 +47,7 @@ required = [
     "packaging==16.8",
     "pyparsing==2.2.0",
     "six==1.10.0",
+    "future==0.16.0"
 ]
 
 setup(
