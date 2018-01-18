@@ -47,10 +47,6 @@ with io.open(os.path.join(PACKAGE_PATH, VERSION)) as f:
     version = f.readline().strip().replace("-SNAPSHOT", ".dev%i" % timestamp)
 
 required = [
-    "appdirs==1.4.3",
-    "packaging==16.8",
-    "pyparsing==2.2.0",
-    "six==1.10.0",
     "future==0.16.0"
 ]
 
