@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 
 import json
 import os
+from builtins import object, bytes
 from ctypes import c_char, c_char_p, c_void_p, string_at, pointer, byref, cdll
 from glob import glob
 
@@ -15,8 +16,7 @@ lib = cdll.LoadLibrary(dylib_path)
 
 
 class NLUEngine(object):
-    def __init__(self, language, data_path=None, data_zip=None):
-        self.language = language
+    def __init__(self, data_path=None, data_zip=None):
         exit_code = 1
 
         if data_path is None and data_zip is None:
@@ -51,4 +51,4 @@ class NLUEngine(object):
         result = string_at(pointer)
         lib.nlu_engine_destroy_string(pointer)
 
-        return json.loads(result)
+        return json.loads(bytes(result).decode())

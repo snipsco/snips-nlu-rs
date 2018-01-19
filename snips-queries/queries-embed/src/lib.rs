@@ -13,7 +13,7 @@ use std::slice;
 use std::io::Cursor;
 
 use queries_core::{SnipsNluEngine, FileBasedConfiguration, ZipBasedConfiguration};
-use snips_queries_ontology_ffi::{CIntentParserResult, CTaggedEntityList};
+use snips_queries_ontology_ffi::CIntentParserResult;
 
 lazy_static! {
     static ref LAST_ERROR: Mutex<String> = Mutex::new("".to_string());
@@ -114,15 +114,6 @@ pub extern "C" fn nlu_engine_run_parse_into_json(client: *const Opaque,
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_run_tag(client: *const Opaque,
-                                     input: *const libc::c_char,
-                                     intent: *const libc::c_char,
-                                     result: *mut *const CTaggedEntityList)
-                                     -> QUERIESRESULT {
-    wrap!(run_tag(client, input, intent, result))
-}
-
-#[no_mangle]
 pub extern "C" fn nlu_engine_get_last_error(error: *mut *const libc::c_char) -> QUERIESRESULT {
     wrap!(get_last_error(error))
 }
@@ -149,15 +140,6 @@ pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> QUERIESRESUL
 pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) -> QUERIESRESULT {
     unsafe {
         let _: Box<CIntentParserResult> = Box::from_raw(result);
-    }
-
-    QUERIESRESULT::OK
-}
-
-#[no_mangle]
-pub extern "C" fn nlu_engine_destroy_tagged_entity_list(result: *mut CTaggedEntityList) -> QUERIESRESULT {
-    unsafe {
-        let _: Box<CTaggedEntityList> = Box::from_raw(result);
     }
 
     QUERIESRESULT::OK
@@ -219,23 +201,6 @@ fn run_parse_into_json(client: *const Opaque,
     let results = intent_parser.parse(input, None)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
-}
-
-fn run_tag(client: *const Opaque,
-           input: *const libc::c_char,
-           intent: *const libc::c_char,
-           result: *mut *const CTaggedEntityList)
-           -> Result<()> {
-    let input = get_str!(input);
-    let intent = get_str!(intent);
-    let intent_parser = get_intent_parser!(client);
-
-    let results = intent_parser.tag(input, intent, None)?;
-    let b = Box::new(CTaggedEntityList::from(results).chain_err(|| "Can't create CTaggedEntityList")?);
-
-    unsafe { *result = Box::into_raw(b) as *const CTaggedEntityList }
-
-    Ok(())
 }
 
 fn get_last_error(error: *mut *const libc::c_char) -> Result<()> {

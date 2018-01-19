@@ -11,14 +11,14 @@ from snips_nlu_rust.tests.utils import (SAMPLE_ASSISTANT_DIR,
 class TestNLUEngineWrapper(unittest.TestCase):
     def test_should_load_with_path_and_parse(self):
         # Given
-        engine = NLUEngine('en', data_path=SAMPLE_ASSISTANT_DIR)
+        engine = NLUEngine(data_path=SAMPLE_ASSISTANT_DIR)
 
         # When/Then
         engine.parse("Make me two cups of coffee please")
 
     def test_should_load_with_zip_and_parse(self):
         # Given
-        engine = NLUEngine('en', data_zip=SAMPLE_ASSISTANT_ZIP)
+        engine = NLUEngine(data_zip=SAMPLE_ASSISTANT_ZIP)
 
         # When/Then
         engine.parse("Make me two cups of coffee please")

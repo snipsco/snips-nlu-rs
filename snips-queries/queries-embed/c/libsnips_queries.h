@@ -108,19 +108,6 @@ typedef struct CIntentParserResult{
     CSlotList *const slots;
 } CIntentParserResult;
 
-typedef struct CTaggedEntity {
-    char *const value;
-    int range_start;
-    int range_end;
-    char *const entity;
-    char *const slot_name;
-} CTaggedEntity;
-
-typedef struct CTaggedEntityList {
-    CTaggedEntity *const entities;
-    int size;
-} CTaggedEntityList;
-
 typedef struct Opaque Opaque;
 
 typedef enum QUERIESRESULT {
@@ -136,15 +123,11 @@ QUERIESRESULT nlu_engine_run_parse(Opaque const* client, char const* input, CInt
 
 QUERIESRESULT nlu_engine_run_parse_into_json(Opaque const* client, char const* input, char** result_json);
 
-QUERIESRESULT nlu_engine_run_tag(Opaque const* client, char const* input, char const* intent, CTaggedEntityList** result);
-
 QUERIESRESULT nlu_engine_destroy_string(char* string);
 
 QUERIESRESULT nlu_engine_destroy_client(Opaque* client);
 
 QUERIESRESULT nlu_engine_destroy_result(CIntentParserResult* result);
-
-QUERIESRESULT nlu_engine_destroy_tagged_entity_list(CTaggedEntityList* result);
 
 QUERIESRESULT nlu_engine_get_last_error(char **error);
 
