@@ -4,16 +4,8 @@ use serde_json;
 
 #[derive(Debug, Deserialize)]
 pub struct ProbabilisticParserConfiguration {
-    pub language_code: String,
-    pub taggers: HashMap<String, TaggerConfiguration>,
     pub intent_classifier: IntentClassifierConfiguration,
-    pub slot_name_to_entity_mapping: HashMap<String, HashMap<String, String>>,
-    pub config: ProbabilisticParserConfigConfiguration,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct ProbabilisticParserConfigConfiguration {
-    pub exhaustive_permutations_threshold: usize,
+    pub slot_fillers: HashMap<String, SlotFillerConfiguration>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -45,14 +37,23 @@ pub struct TfIdfVectorizerConfiguration {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct TaggerConfiguration {
+pub struct SlotFillerConfiguration {
+    pub language_code: String,
+    pub intent: String,
+    pub slot_name_mapping: HashMap<String, String>,
     pub crf_model_data: String,
-    pub tagging_scheme: u8,
-    pub features_signatures: Vec<Feature>,
+    pub config: SlotFillerConfigConfiguration,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Feature {
+pub struct SlotFillerConfigConfiguration {
+    pub tagging_scheme: u8,
+    pub exhaustive_permutations_threshold: usize,
+    pub feature_factory_configs: Vec<FeatureFactory>
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FeatureFactory {
     pub factory_name: String,
     pub offsets: Vec<i32>,
     pub args: HashMap<String, serde_json::Value>,

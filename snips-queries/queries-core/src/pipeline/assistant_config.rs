@@ -53,7 +53,7 @@ pub struct ZipBasedConfiguration {
 
 impl ZipBasedConfiguration {
     pub fn new<R>(reader: R, bypass_model_version_check: bool) -> Result<Self>
-    where R: Read + Seek {
+        where R: Read + Seek {
         let zip = zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
         let mutex = Arc::new(Mutex::new(zip));
 
@@ -79,7 +79,7 @@ impl ZipBasedConfiguration {
     }
 
     fn read_bytes<R>(zip: Arc<Mutex<zip::read::ZipArchive<R>>>, name: &str) -> Result<Vec<u8>>
-    where R: Read + Seek {
+        where R: Read + Seek {
         let mut locked = zip.lock()?;
         let ref mut zip = *locked;
         let mut file = zip.by_name(name)?;
@@ -100,13 +100,13 @@ impl NluEngineConfigurationConvertible for ZipBasedConfiguration {
 }
 
 pub mod deprecated {
-    #[deprecated(since="0.20.1", note="please use `ZipBasedConfiguration` instead")]
+    #[deprecated(since = "0.20.1", note = "please use `ZipBasedConfiguration` instead")]
     pub type BinaryBasedConfiguration = super::ZipBasedConfiguration;
 
-    #[deprecated(since="0.21.0", note="please use `NluEngineConfigurationConvertible` instead")]
+    #[deprecated(since = "0.21.0", note = "please use `NluEngineConfigurationConvertible` instead")]
     pub type NLUEngineConfigurationConvertible = super::NluEngineConfigurationConvertible;
 
-    #[deprecated(since="0.21.0", note="please use `NluEngineConfiguration` instead")]
+    #[deprecated(since = "0.21.0", note = "please use `NluEngineConfiguration` instead")]
     pub type NLUEngineConfiguration = super::NluEngineConfiguration;
 }
 
@@ -119,22 +119,21 @@ mod tests {
     #[test]
     fn file_based_assistant_works() {
         let file = file_path("tests/configurations/");
-        let nlu_config = FileBasedConfiguration::new(file, false)
-            .unwrap()
-            .into_nlu_engine_configuration();
-        assert_eq!("en", nlu_config.model.rule_based_parser.unwrap().language_code);
-        assert_eq!("en", nlu_config.model.probabilistic_parser.unwrap().language_code);
+        let nlu_config_formatted = FileBasedConfiguration::new(file, false)
+            .map(|_| "ok")
+            .map_err(|err| format!("{:?}", err));
+
+        assert_eq!(Ok("ok"), nlu_config_formatted);
     }
 
     #[test]
     fn zip_based_assistant_works() {
         let file = fs::File::open(file_path("tests/zip_files/sample_config.zip")).unwrap();
-        let nlu_config = ZipBasedConfiguration::new(file, false)
-            .unwrap()
-            .into_nlu_engine_configuration();
+        let nlu_config_formatted = ZipBasedConfiguration::new(file, false)
+            .map(|_| "ok")
+            .map_err(|err| format!("{:?}", err));
 
-        assert_eq!("en", nlu_config.model.rule_based_parser.unwrap().language_code);
-        assert_eq!("en", nlu_config.model.probabilistic_parser.unwrap().language_code);
+        assert_eq!(Ok("ok"), nlu_config_formatted);
     }
 }
 

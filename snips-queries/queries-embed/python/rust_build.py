@@ -42,7 +42,7 @@ class RustBuildCommand(Command):
         try:
             target_tuple = os.environ.get('CARGO_TARGET')
             # TODO Switch to make build-<TARGET>
-            args = (["cargo", "build", "--all", "--exclude", "snips-audio-opensles"] + list(self.extra_cargo_args or []))
+            args = (["cargo", "build"] + list(self.extra_cargo_args or []))
             if not self.debug:
                 args.append("--release")
             if target_tuple:
