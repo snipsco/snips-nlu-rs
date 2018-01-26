@@ -15,17 +15,17 @@ crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs", rev = "fec47c8" }
 rustling-ontology = { git = "https://github.com/snipsco/rustling-ontology", tag = "0.15.3" }
 nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils", tag = "0.5.1" }
 error-chain = { version = "0.11", default-features = false }
-base64 = "0.8"
+base64 = "0.9"
 itertools = { version = "0.7", default-features = false }
 lazy_static = "1.0"
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
-ndarray = "0.10"
+ndarray = "0.11"
 regex = "0.2"
 csv = "0.15"
 yolo = "*"
-zip = { version = "0.2", default-features = false }
+zip = { version = "0.3", features=["deflate"] }
 
 [dev-dependencies]
 bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }

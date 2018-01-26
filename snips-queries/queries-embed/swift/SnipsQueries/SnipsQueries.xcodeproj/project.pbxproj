@@ -14,11 +14,11 @@
 		F76504E81EFD08A8007FF022 /* SnipsQueries.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F76504DF1EFD08A8007FF022 /* SnipsQueries.framework */; };
 		F76505011EFD0A49007FF022 /* NluEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */; };
 		F76505021EFD0A49007FF022 /* NluEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */; };
+		F79B6F5F2016452F00394C57 /* sample_config.zip in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F5E2016452F00394C57 /* sample_config.zip */; };
+		F79B6F602016452F00394C57 /* sample_config.zip in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F5E2016452F00394C57 /* sample_config.zip */; };
+		F79B6F652016456200394C57 /* configurations in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F642016456200394C57 /* configurations */; };
+		F79B6F662016456200394C57 /* configurations in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F642016456200394C57 /* configurations */; };
 		F7AFF3661F82954A0022948A /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7AFF3641F82954A0022948A /* libresolv.tbd */; };
-		F7ED4D5F1F829C0C00703763 /* sample_config.zip in Resources */ = {isa = PBXBuildFile; fileRef = F7AFF36A1F82962F0022948A /* sample_config.zip */; };
-		F7ED4D601F829C1100703763 /* configurations in Resources */ = {isa = PBXBuildFile; fileRef = F7AFF36B1F82966C0022948A /* configurations */; };
-		F7ED4D611F829C8800703763 /* configurations in Resources */ = {isa = PBXBuildFile; fileRef = F7AFF36B1F82966C0022948A /* configurations */; };
-		F7ED4D621F829C8800703763 /* sample_config.zip in Resources */ = {isa = PBXBuildFile; fileRef = F7AFF36A1F82962F0022948A /* sample_config.zip */; };
 		F7ED4D651F829EDC00703763 /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7ED4D641F829EDC00703763 /* libresolv.tbd */; };
 /* End PBXBuildFile section */
 
@@ -49,9 +49,9 @@
 		F76504DF1EFD08A8007FF022 /* SnipsQueries.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SnipsQueries.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504E71EFD08A8007FF022 /* SnipsQueries-macOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SnipsQueries-macOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngineTests.swift; sourceTree = "<group>"; };
+		F79B6F5E2016452F00394C57 /* sample_config.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = sample_config.zip; path = ../../../../data/tests/zip_files/sample_config.zip; sourceTree = "<group>"; };
+		F79B6F642016456200394C57 /* configurations */ = {isa = PBXFileReference; lastKnownFileType = folder; name = configurations; path = ../../../../data/tests/configurations; sourceTree = "<group>"; };
 		F7AFF3641F82954A0022948A /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.0.sdk/usr/lib/libresolv.tbd; sourceTree = DEVELOPER_DIR; };
-		F7AFF36A1F82962F0022948A /* sample_config.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = sample_config.zip; path = ../../../../../data/tests/zip_files/sample_config.zip; sourceTree = "<group>"; };
-		F7AFF36B1F82966C0022948A /* configurations */ = {isa = PBXFileReference; lastKnownFileType = folder; name = configurations; path = ../../../../../data/tests/configurations; sourceTree = "<group>"; };
 		F7ED4D631F829D1700703763 /* build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = build.sh; path = Dependencies/build.sh; sourceTree = "<group>"; };
 		F7ED4D641F829EDC00703763 /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -128,19 +128,19 @@
 			isa = PBXGroup;
 			children = (
 				F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */,
-				F76504FF1EFD0A49007FF022 /* Resources */,
+				F79B6F5D201644A200394C57 /* Resources */,
 				F76504CE1EFD086C007FF022 /* Info.plist */,
 			);
 			path = SnipsQueriesTests;
 			sourceTree = "<group>";
 		};
-		F76504FF1EFD0A49007FF022 /* Resources */ = {
+		F79B6F5D201644A200394C57 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				F7AFF36B1F82966C0022948A /* configurations */,
-				F7AFF36A1F82962F0022948A /* sample_config.zip */,
+				F79B6F642016456200394C57 /* configurations */,
+				F79B6F5E2016452F00394C57 /* sample_config.zip */,
 			);
-			path = Resources;
+			name = Resources;
 			sourceTree = "<group>";
 		};
 		F7AFF35D1F8293710022948A /* Frameworks */ = {
@@ -311,8 +311,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F7ED4D5F1F829C0C00703763 /* sample_config.zip in Resources */,
-				F7ED4D601F829C1100703763 /* configurations in Resources */,
+				F79B6F652016456200394C57 /* configurations in Resources */,
+				F79B6F5F2016452F00394C57 /* sample_config.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,8 +327,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F7ED4D611F829C8800703763 /* configurations in Resources */,
-				F7ED4D621F829C8800703763 /* sample_config.zip in Resources */,
+				F79B6F662016456200394C57 /* configurations in Resources */,
+				F79B6F602016452F00394C57 /* sample_config.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -463,7 +463,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
@@ -517,7 +517,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -660,7 +660,6 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = SnipsQueries/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.snips.SnipsQueriesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
@@ -678,7 +677,6 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				INFOPLIST_FILE = SnipsQueries/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/../Frameworks @loader_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 10.12;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.snips.SnipsQueriesTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
