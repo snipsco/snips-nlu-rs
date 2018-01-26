@@ -83,7 +83,8 @@ pub mod stems {
     }
 
     pub fn de() -> Result<HashMap<String, String>> {
-        let result = parse_lexemes(&include_bytes!("../snips-nlu-resources/de/top_1000_verbs_lexemes.txt")[..])?;
+        let mut result = parse_inflections(&include_bytes!("../snips-nlu-resources/de/top_10000_words_inflected.txt")[..])?;
+        result.extend(parse_lexemes(&include_bytes!("../snips-nlu-resources/de/top_1000_verbs_lexemes.txt")[..])?);
         Ok(result)
     }
 }
