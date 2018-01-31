@@ -1,0 +1,37 @@
+[package]
+name = "snips-nlu-lib"
+version = "0.53.0-SNAPSHOT"
+authors = [
+    "Thibaut Lorrain <thibaut.lorrain@snips.ai>",
+    "Kevin Lefevre <kevin.lefevre@snips.ai>"
+]
+repository = "https://github.com/snipsco/snips-nlu"
+description = "Rust implementation of the Queries SDK"
+
+[dependencies]
+snips-nlu-resources-packed = { path = "../snips-nlu-resources-packed" }
+snips-nlu-ontology = { path = "../../snips-nlu-ontology" }
+crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs", rev = "dc9b595" }
+rustling-ontology = { git = "https://github.com/snipsco/rustling-ontology", tag = "0.15.3" }
+nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils", tag = "0.5.1" }
+error-chain = { version = "0.11", default-features = false }
+base64 = "0.9"
+itertools = { version = "0.7", default-features = false }
+lazy_static = "1.0"
+serde = "1.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+ndarray = "0.11"
+regex = "0.2"
+csv = "0.15"
+yolo = "*"
+zip = { version = "0.3", features=["deflate"] }
+
+[dev-dependencies]
+bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
+dinghy-test = { git="ssh://git@github.com/snipsco/dinghy.git", branch="0.3" }
+maplit = "1.0"
+
+[[bench]]
+name = "nlu_engine"
+harness = false
