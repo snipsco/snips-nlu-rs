@@ -1,4 +1,0 @@
-rootProject.name = "snips-queries"
-
-includeBuild '../../../hermes-protocol/platforms/hermes-kotlin/'
-includeBuild '../../../snips-queries-ontology/platforms/snips-queries-ontology-kotlin/'

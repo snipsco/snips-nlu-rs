@@ -1,0 +1,14 @@
+[package]
+name = "snips-nlu-resources-packed"
+version = "0.53.0-SNAPSHOT"
+authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
+build = "build.rs"
+
+[dependencies]
+error-chain = { version = "0.11", default-features = false }
+phf = { version = "0.7.21", features = ["unicase"] }
+nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils", tag = "0.5.1" }
+
+[build-dependencies]
+snips-nlu-resources = { path = "../snips-nlu-resources"}
+phf_codegen = "0.7.21"
