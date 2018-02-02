@@ -11,7 +11,7 @@ description = "Rust implementation of the Queries SDK"
 [dependencies]
 queries-resources-packed = { path = "../queries-resources-packed" }
 snips-queries-ontology = { path="../../snips-queries-ontology" }
-crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs", rev = "fec47c8" }
+crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs", rev = "dc9b5952d652eebe14f8402c8e30c2bd2a28e477" }
 rustling-ontology = { git = "https://github.com/snipsco/rustling-ontology", tag = "0.15.3" }
 nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils", tag = "0.5.1" }
 error-chain = { version = "0.11", default-features = false }
