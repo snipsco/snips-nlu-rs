@@ -78,6 +78,12 @@ fn main() {
 
         word_clusters!(en, brown_clusters);
 
+        gazetteer!(de, stop_words);
+        gazetteer!(de, top_10000_words);
+
+        gazetteer!(de, stop_words_stem);
+        gazetteer!(de, top_10000_words_stem);
+
         gazetteer!(en, stop_words);
         gazetteer!(en, top_10000_nouns);
         gazetteer!(en, top_10000_words);
@@ -86,15 +92,18 @@ fn main() {
         gazetteer!(en, top_10000_nouns_stem);
         gazetteer!(en, top_10000_words_stem);
 
+        gazetteer!(es, stop_words);
+        gazetteer!(es, top_10000_words);
+
+        gazetteer!(es, stop_words_stem);
+        gazetteer!(es, top_10000_words_stem);
+
         gazetteer!(fr, stop_words);
         gazetteer!(fr, top_10000_words);
 
         gazetteer!(fr, stop_words_stem);
         gazetteer!(fr, top_10000_words_stem);
 
-        gazetteer!(de, stop_words);
-
-        gazetteer!(de, stop_words_stem);
     }
 
     // we generate some files based on dependencies of this build script and not files in this
