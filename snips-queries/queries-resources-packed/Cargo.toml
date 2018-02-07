@@ -1,6 +1,6 @@
 [package]
 name = "queries-resources-packed"
-version = "0.52.7"
+version = "0.53.0-SNAPSHOT"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 build = "build.rs"
 
