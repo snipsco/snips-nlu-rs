@@ -41,25 +41,34 @@ pub fn word_cluster(cluster_name: &str, language: Language, word: &str) -> Resul
 
 pub fn gazetteer_hits(language: Language, gazetteer_name: &str, word: &str) -> Result<bool> {
     Ok(match language {
+        Language::DE => match gazetteer_name {
+            "stop_words" => &GAZETTEER_DE_STOP_WORDS,
+            "stop_words_stem" => &GAZETTEER_DE_STOP_WORDS_STEM,
+            "top_10000_words" => &GAZETTEER_DE_TOP_10000_WORDS,
+            "top_10000_words_stem" => &GAZETTEER_DE_TOP_10000_WORDS_STEM,
+            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
+        },
         Language::EN => match gazetteer_name {
             "stop_words" => &GAZETTEER_EN_STOP_WORDS,
-            "top_10000_nouns" => &GAZETTEER_EN_TOP_10000_NOUNS,
-            "top_10000_words" => &GAZETTEER_EN_TOP_10000_WORDS,
             "stop_words_stem" => &GAZETTEER_EN_STOP_WORDS_STEM,
+            "top_10000_nouns" => &GAZETTEER_EN_TOP_10000_NOUNS,
             "top_10000_nouns_stem" => &GAZETTEER_EN_TOP_10000_NOUNS_STEM,
+            "top_10000_words" => &GAZETTEER_EN_TOP_10000_WORDS,
             "top_10000_words_stem" => &GAZETTEER_EN_TOP_10000_WORDS_STEM,
+            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
+        },
+        Language::ES => match gazetteer_name {
+            "stop_words" => &GAZETTEER_ES_STOP_WORDS,
+            "stop_words_stem" => &GAZETTEER_ES_STOP_WORDS_STEM,
+            "top_10000_words" => &GAZETTEER_ES_TOP_10000_WORDS,
+            "top_10000_words_stem" => &GAZETTEER_ES_TOP_10000_WORDS_STEM,
             _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
         },
         Language::FR => match gazetteer_name {
             "stop_words" => &GAZETTEER_FR_STOP_WORDS,
-            "top_10000_words" => &GAZETTEER_FR_TOP_10000_WORDS,
             "stop_words_stem" => &GAZETTEER_FR_STOP_WORDS_STEM,
+            "top_10000_words" => &GAZETTEER_FR_TOP_10000_WORDS,
             "top_10000_words_stem" => &GAZETTEER_FR_TOP_10000_WORDS_STEM,
-            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
-        },
-        Language::DE => match gazetteer_name {
-            "stop_words" => &GAZETTEER_DE_STOP_WORDS,
-            "stop_words_stem" => &GAZETTEER_DE_STOP_WORDS_STEM,
             _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
         },
         _ => bail!("no gazetteers supported for {} language", language.to_string())
