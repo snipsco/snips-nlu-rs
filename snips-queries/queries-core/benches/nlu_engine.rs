@@ -15,6 +15,7 @@ use yolo::Yolo;
 
 const ASSISTANT_ZIP_ENV: &str = "SNIPS_QUERIES_BENCH_ASSISTANT_ZIP";
 const ASSISTANT_DIR_ENV: &str = "SNIPS_QUERIES_BENCH_ASSISTANT_DIR";
+const BYPASS_MODEL_VERSION_ENV: &str = "SNIPS_QUERIES_BENCH_BYPASS_MODEL_VERSION";
 const SENTENCE_ENV: &str = "SNIPS_QUERIES_BENCH_SENTENCE";
 
 fn load_nlu_engine() -> SnipsNluEngine {
@@ -22,15 +23,21 @@ fn load_nlu_engine() -> SnipsNluEngine {
         panic!("{} and {} env vars are exclusive. Please use only one of both", ASSISTANT_ZIP_ENV, ASSISTANT_DIR_ENV);
     }
 
+    let bypass_model_version_check = if let Ok(value) = env::var(BYPASS_MODEL_VERSION_ENV) {
+        if let Ok(int_value) = value.parse::<i32>() { int_value > 0 } else { true }
+    } else {
+        false
+    };
+
     if let Ok(assistant_zip) = env::var(ASSISTANT_ZIP_ENV) {
         let file = fs::File::open(file_path(&assistant_zip)).yolo();
-        let assistant = ZipBasedConfiguration::new(file).yolo();
+        let assistant = ZipBasedConfiguration::new(file, bypass_model_version_check).yolo();
         SnipsNluEngine::new(assistant).yolo()
     } else if let Ok(assistant_directory) = env::var(ASSISTANT_DIR_ENV) {
-        let assistant = FileBasedConfiguration::new(file_path(&assistant_directory)).yolo();
+        let assistant = FileBasedConfiguration::new(file_path(&assistant_directory), bypass_model_version_check).yolo();
         SnipsNluEngine::new(assistant).yolo()
     } else {
-        let assistant = FileBasedConfiguration::new(file_path("untracked")).yolo();
+        let assistant = FileBasedConfiguration::new(file_path("untracked"), bypass_model_version_check).yolo();
         SnipsNluEngine::new(assistant).yolo()
     }
 }
