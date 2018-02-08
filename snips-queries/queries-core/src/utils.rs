@@ -2,7 +2,7 @@ use std::env;
 use std::path;
 
 pub fn file_path(file_name: &str) -> path::PathBuf {
-    if env::var("DINGHY").is_ok() {
+    if cfg!(any(target_os = "ios", target_os = "android")) || env::var("DINGHY").is_ok() {
         env::current_exe()
             .unwrap()
             .parent()
