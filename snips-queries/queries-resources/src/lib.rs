@@ -228,6 +228,31 @@ pub mod gazetteer {
         }
 
         create_gazetteer!(de, stop_words);
+        create_gazetteer!(de, top_10000_words);
+
         create_gazetteer!(de, stop_words_stem, stop_words, stem_de);
+        create_gazetteer!(de, top_10000_words_stem, top_10000_words, stem_de);
+    }
+
+    pub mod es {
+        use std::collections::{HashMap, HashSet};
+        use std::str::FromStr;
+        use errors::*;
+        use stems;
+
+        use nlu_utils::language::Language;
+
+        fn stem_es(input: String) -> String {
+            lazy_static! {
+                static ref STEMS_ES: HashMap<String, String> = stems::es().unwrap();
+            }
+            STEMS_ES.get(&input).unwrap_or(&input).to_string()
+        }
+
+        create_gazetteer!(es, stop_words);
+        create_gazetteer!(es, top_10000_words);
+
+        create_gazetteer!(es, stop_words_stem, stop_words, stem_es);
+        create_gazetteer!(es, top_10000_words_stem, top_10000_words, stem_es);
     }
 }
