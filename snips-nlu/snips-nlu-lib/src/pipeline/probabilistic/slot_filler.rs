@@ -6,6 +6,7 @@ use std::str::FromStr;
 
 use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
+use base64;
 
 use errors::*;
 use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
@@ -50,7 +51,9 @@ impl SlotFiller for CRFSlotFiller {
             return Ok(vec![]);
         }
         let features = self.feature_processor.compute_features(&&*tokens);
-        let tags = self.tagger.lock()?.tag(&features)?;
+        let tags = self.tagger.lock()?.tag(&features)?.into_iter()
+            .map(|tag| decode_tag(&*tag))
+            .collect::<Result<Vec<String>>>()?;
 
         let builtin_slot_names_iter = self.slot_name_mapping.iter().filter_map(
             |(slot_name, entity)| {
@@ -125,7 +128,9 @@ impl SlotFiller for CRFSlotFiller {
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
         let features = self.feature_processor.compute_features(&tokens);
         let tagger = self.tagger.lock()?;
-        let tagger_labels = tagger.labels()?;
+        let tagger_labels = tagger.labels()?.into_iter()
+            .map(|label| decode_tag(&*label))
+            .collect::<Result<Vec<String>>>()?;
         let tagger_labels_slice = tagger_labels.iter().map(|l| &**l).collect_vec();
         // Substitute tags that were not seen during training
         let cleaned_tags = tags.into_iter()
@@ -135,6 +140,7 @@ impl SlotFiller for CRFSlotFiller {
                 } else {
                     get_substitution_label(&*tagger_labels_slice)
                 })
+            .map(|t| encode_tag(&*t))
             .collect_vec();
         tagger.set(&features)?;
         Ok(tagger.probability(cleaned_tags)?)
@@ -160,6 +166,18 @@ impl CRFSlotFiller {
             exhaustive_permutations_threshold: config.config.exhaustive_permutations_threshold,
         })
     }
+}
+
+// We need to use base64 encoding to ensure ascii encoding because of encoding issues in
+// python-crfsuite
+
+fn decode_tag(tag: &str) -> Result<String> {
+    let bytes = base64::decode(tag)?;
+    Ok(String::from_utf8(bytes)?)
+}
+
+fn encode_tag(tag: &str) -> String {
+    base64::encode(tag)
 }
 
 fn filter_overlapping_builtins(builtin_entities: Vec<RustlingEntity>,
