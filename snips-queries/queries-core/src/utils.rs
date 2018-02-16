@@ -1,17 +1,12 @@
+#[cfg(test)]
+use dinghy_test::test_file_path;
+use ndarray::prelude::*;
 use std::env;
 use std::path;
 
+#[cfg(test)]
 pub fn file_path(file_name: &str) -> path::PathBuf {
-    if cfg!(any(target_os = "ios", target_os = "android")) || env::var("DINGHY").is_ok() {
-        env::current_exe()
-            .unwrap()
-            .parent()
-            .unwrap()
-            .join("test_data/data")
-            .join(file_name)
-    } else {
-        path::PathBuf::from("../data").join(file_name)
-    }
+    test_file_path("data").join(file_name)
 }
 
 pub fn permutations<T: Copy>(v: &[T], permutation_length: i32) -> Vec<Vec<T>> {
