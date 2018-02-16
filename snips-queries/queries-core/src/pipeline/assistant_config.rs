@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn file_based_assistant_works() {
-        let file = file_path("tests/configurations/");
+        let file = file_path("tests/configurations");
         let nlu_config_formatted = FileBasedConfiguration::new(file, false)
             .map(|_| "ok")
             .map_err(|err| format!("{:?}", err));
