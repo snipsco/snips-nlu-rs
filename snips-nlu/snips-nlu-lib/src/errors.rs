@@ -11,6 +11,7 @@ error_chain! {
         Regex(::regex::Error);
         Crfsuite(::crfsuite::Error);
         Base64(::base64::DecodeError);
+        Utf8(::std::string::FromUtf8Error);
         PackedResources(::resources_packed::Error);
         SerdeJson(::serde_json::Error);
     }
