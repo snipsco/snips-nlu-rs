@@ -9,7 +9,7 @@ use models::stemmer::StaticMapStemmer;
 use models::word_clusterer::WordClusterer;
 use super::crf_utils::{TaggingScheme, get_scheme_prefix};
 use super::features_utils::{get_word_chunk, get_shape, initial_string_from_tokens};
-use builtin_entities::{BuiltinEntityKind, RustlingParser};
+use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser};
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::normalize;
 
@@ -119,7 +119,7 @@ pub fn get_word_cluster<C: WordClusterer>(tokens: &[Token],
 
 pub fn get_builtin_entity_match(tokens: &[Token],
                                 token_index: usize,
-                                parser: &RustlingParser,
+                                parser: &BuiltinEntityParser,
                                 builtin_entity_kind: BuiltinEntityKind,
                                 tagging_scheme: TaggingScheme) -> Option<String> {
     if token_index >= tokens.len() {
@@ -148,9 +148,9 @@ fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<St
 mod tests {
     use super::*;
 
-    use nlu_utils::language::Language;
+    use nlu_utils::language::Language as NluUtilsLanguage;
     use nlu_utils::token::tokenize;
-    use rustling_ontology::Lang;
+    use snips_nlu_ontology::Language;
 
     #[test]
     fn is_digit_works() {
@@ -194,7 +194,7 @@ mod tests {
     #[test]
     fn shape_works() {
         // Given
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let tokens = tokenize("Hello BEAUTIFUL world !!!", language);
 
         // When
@@ -219,7 +219,7 @@ mod tests {
 
     #[test]
     fn ngram_works() {
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
 
         let expected_ngrams = vec![vec![Some("i".to_string()),
@@ -245,7 +245,7 @@ mod tests {
     #[test]
     fn ngram_works_with_common_words_gazetteer() {
         // Given
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
         let common_words_gazetteer = HashSetGazetteer::from(
             vec![
@@ -278,7 +278,7 @@ mod tests {
     #[test]
     fn ngram_works_with_stemmer() {
         // Given
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
         struct TestStemmer;
         impl Stemmer for TestStemmer {
@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn get_gazetteer_match_works() {
         // Given
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let gazetteer = HashSetGazetteer::from(
             vec![
                 "bird".to_string(),
@@ -354,7 +354,7 @@ mod tests {
             }
         }
 
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let stemmer = TestStemmer {};
         let gazetteer = HashSetGazetteer::from(
             vec![
@@ -383,11 +383,11 @@ mod tests {
     #[test]
     fn get_builtin_entity_match_works() {
         // Given
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
         let token_index = 5; // 9pm
         let tagging_scheme = TaggingScheme::BILOU;
-        let parser = RustlingParser::get(Lang::EN);
+        let parser = BuiltinEntityParser::get(Language::EN);
 
         // When
         let actual_annotation = get_builtin_entity_match(&tokens,
@@ -414,7 +414,7 @@ mod tests {
             }
         }
 
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let word_clusterer = TestWordClusterer {};
         let tokens = tokenize("I love this bird", language);
         let token_index = 3;

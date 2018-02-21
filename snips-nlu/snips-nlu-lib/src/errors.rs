@@ -1,6 +1,6 @@
 error_chain! {
     links {
-        Rustling(::rustling_ontology::RustlingError, ::rustling_ontology::RustlingErrorKind);
+        SnipsNluOntology(::snips_nlu_ontology::errors::Error, ::snips_nlu_ontology::errors::ErrorKind);
     }
 
     foreign_links {

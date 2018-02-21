@@ -13,9 +13,7 @@ use super::crf_utils::TaggingScheme;
 use models::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
 use models::stemmer::StaticMapStemmer;
 use models::word_clusterer::StaticMapWordClusterer;
-use nlu_utils::language::Language;
-use builtin_entities::{BuiltinEntityKind, RustlingParser};
-use rustling_ontology::Lang;
+use snips_nlu_ontology::{Language, BuiltinEntityKind, BuiltinEntityParser};
 
 struct FeatureFunction {
     function: Box<Fn(&[Token], usize) -> Option<String> + Send + Sync>,
@@ -183,8 +181,7 @@ fn builtin_entity_match_feature_function(args: &HashMap<String, serde_json::Valu
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
     builtin_entity_labels.into_iter()
         .map(|label| {
-            let builtin_parser = Lang::from_str(&language_code).ok()
-                .map(|rust_lang| RustlingParser::get(rust_lang));
+            let builtin_parser = Language::from_str(&language_code).ok().map(BuiltinEntityParser::get);
             let builtin_entity_kind = BuiltinEntityKind::from_identifier(&label).ok();
             Ok(FeatureFunction::new(
                 format!("builtin_entity_match_{}", &label),
