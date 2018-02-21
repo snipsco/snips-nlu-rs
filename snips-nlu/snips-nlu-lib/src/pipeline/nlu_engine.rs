@@ -18,7 +18,7 @@ use rustling_ontology::Lang;
 use serde_json;
 use snips_nlu_ontology::{IntentParserResult, Slot, SlotValue};
 
-const MODEL_VERSION: &str = "0.12.0";
+const MODEL_VERSION: &str = "0.13.0";
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -255,7 +255,7 @@ mod tests {
             input: "Make me two cups of coffee please".to_string(),
             intent: Some(IntentClassifierResult {
                 intent_name: "MakeCoffee".to_string(),
-                probability: 0.6863866,
+                probability: 0.6838855,
             }),
             slots: Some(vec![
                 Slot {
