@@ -8,8 +8,6 @@ extern crate dinghy_test;
 extern crate error_chain;
 extern crate itertools;
 #[macro_use]
-extern crate lazy_static;
-#[macro_use]
 extern crate ndarray;
 extern crate snips_nlu_resources_packed as resources_packed;
 extern crate nlu_utils;
