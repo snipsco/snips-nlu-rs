@@ -3,7 +3,6 @@
 extern crate base64;
 extern crate crfsuite;
 extern crate csv;
-#[cfg(test)]
 extern crate dinghy_test;
 #[macro_use]
 extern crate error_chain;
@@ -45,5 +44,4 @@ pub use pipeline::assistant_config::{FileBasedConfiguration,
 pub use pipeline::nlu_engine::deprecated::*;
 pub use pipeline::assistant_config::deprecated::*;
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
-#[cfg(test)]
-pub use utils::file_path;
+pub use utils::file_path; // This is used by benches
