@@ -12,7 +12,6 @@ description = "Rust implementation of the Queries SDK"
 snips-nlu-resources-packed = { path = "../snips-nlu-resources-packed" }
 snips-nlu-ontology = { git = "ssh://git@github.com/snipsco/snips-nlu-ontology", branch = "develop" }
 crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs", rev = "dc9b595" }
-rustling-ontology = { git = "https://github.com/snipsco/rustling-ontology", tag = "0.15.3" }
 nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils", tag = "0.5.1" }
 error-chain = { version = "0.11", default-features = false }
 base64 = "0.9"

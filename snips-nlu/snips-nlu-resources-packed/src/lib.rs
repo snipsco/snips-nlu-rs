@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate error_chain;
 extern crate phf;
-extern crate nlu_utils;
+extern crate snips_nlu_ontology;
 
 mod errors {
     error_chain! {
@@ -10,7 +10,7 @@ mod errors {
 
 use errors::*;
 pub use errors::Error;
-use nlu_utils::language::Language;
+use snips_nlu_ontology::Language;
 
 include!(concat!(env!("OUT_DIR"), "/phf.rs"));
 

@@ -16,7 +16,6 @@ extern crate snips_nlu_resources_packed as resources_packed;
 extern crate nlu_utils;
 extern crate snips_nlu_ontology;
 extern crate regex;
-extern crate rustling_ontology;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -29,7 +28,6 @@ extern crate zip;
 extern crate maplit;
 
 pub mod errors;
-mod builtin_entities;
 mod models;
 mod pipeline;
 mod utils;
@@ -37,7 +35,6 @@ mod language;
 #[cfg(test)]
 mod testutils;
 
-pub use builtin_entities::ontology::*;
 pub use errors::*;
 pub use pipeline::nlu_engine::SnipsNluEngine;
 pub use pipeline::configuration::{NluEngineConfigurationConvertible,

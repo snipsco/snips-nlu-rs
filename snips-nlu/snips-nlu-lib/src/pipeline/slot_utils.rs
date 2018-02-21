@@ -1,5 +1,4 @@
-use builtin_entities::{BuiltinEntityKind, RustlingParser};
-use snips_nlu_ontology::{Slot, SlotValue};
+use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, Slot, SlotValue};
 use pipeline::InternalSlot;
 
 pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
@@ -25,7 +24,7 @@ pub fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slo
 pub fn resolve_builtin_slots(
     text: &str,
     slots: Vec<InternalSlot>,
-    parser: &RustlingParser,
+    parser: &BuiltinEntityParser,
     filter_entity_kinds: Option<&[BuiltinEntityKind]>,
 ) -> Vec<Slot> {
     let builtin_entities = parser.extract_entities(text, filter_entity_kinds);
@@ -61,7 +60,7 @@ pub fn resolve_builtin_slots(
 mod tests {
     use super::*;
     use snips_nlu_ontology::{AmountOfMoneyValue, OrdinalValue, Precision};
-    use rustling_ontology::Lang;
+    use snips_nlu_ontology::Language;
 
     #[test]
     fn resolve_builtin_slots_works() {
@@ -81,7 +80,7 @@ mod tests {
                 slot_name: "ranking".to_string(),
             },
         ];
-        let parser = RustlingParser::get(Lang::EN);
+        let parser = BuiltinEntityParser::get(Language::EN);
 
         // When
         let filter_entity_kinds = &[BuiltinEntityKind::AmountOfMoney, BuiltinEntityKind::Ordinal];
