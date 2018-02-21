@@ -1,7 +1,5 @@
-#[cfg(test)]
 use dinghy_test::test_file_path;
 
-#[cfg(test)]
 pub fn file_path(file_name: &str) -> ::std::path::PathBuf {
     test_file_path("data").join(file_name)
 }

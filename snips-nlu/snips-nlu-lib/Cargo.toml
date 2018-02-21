@@ -13,6 +13,7 @@ snips-nlu-resources-packed = { path = "../snips-nlu-resources-packed" }
 snips-nlu-ontology = { git = "ssh://git@github.com/snipsco/snips-nlu-ontology", branch = "develop" }
 crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs", rev = "dc9b595" }
 nlu-utils = { git = "ssh://git@github.com/snipsco/nlu-utils", tag = "0.5.1" }
+dinghy-test = { git = "ssh://git@github.com/snipsco/dinghy.git", branch = "0.3" }
 error-chain = { version = "0.11", default-features = false }
 base64 = "0.9"
 itertools = { version = "0.7", default-features = false }
@@ -28,7 +29,6 @@ zip = { version = "0.3", features=["deflate"] }
 
 [dev-dependencies]
 bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
-dinghy-test = { git="ssh://git@github.com/snipsco/dinghy.git", branch="0.3" }
 maplit = "1.0"
 
 [[bench]]
