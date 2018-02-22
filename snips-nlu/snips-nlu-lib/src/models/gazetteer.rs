@@ -8,7 +8,7 @@ use errors::*;
 #[cfg(test)]
 use serde_json;
 use resources_packed::gazetteer_hits;
-use nlu_utils::language::Language;
+use snips_nlu_ontology::Language;
 
 pub trait Gazetteer {
     fn contains(&self, value: &str) -> bool;

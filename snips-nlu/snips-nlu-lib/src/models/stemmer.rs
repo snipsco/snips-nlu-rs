@@ -1,7 +1,7 @@
 use resources_packed::stem as resource_stem;
 use errors::*;
 
-use nlu_utils::language::Language;
+use snips_nlu_ontology::Language;
 
 pub trait Stemmer: Send + Sync {
     fn stem(&self, value: &str) -> String;

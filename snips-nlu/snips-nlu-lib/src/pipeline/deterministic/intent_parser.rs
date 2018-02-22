@@ -6,39 +6,37 @@ use std::sync::Arc;
 use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
-use builtin_entities::{BuiltinEntityKind, RustlingParser};
 use errors::*;
 use super::configuration::DeterministicParserConfiguration;
-use language::LanguageConfig;
-use nlu_utils::language::Language;
+use language::FromLanguage;
+use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use pipeline::{IntentParser, InternalSlot};
 use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
-use rustling_ontology::Lang;
-use snips_nlu_ontology::{IntentClassifierResult, Slot};
-
+use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, Language, IntentClassifierResult, Slot};
 
 pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, String>,
     slot_names_to_entities: HashMap<String, String>,
-    builtin_entity_parser: Option<Arc<RustlingParser>>,
-    language_config: LanguageConfig,
+    builtin_entity_parser: Option<Arc<BuiltinEntityParser>>,
+    language: Language,
 }
 
 impl DeterministicIntentParser {
     pub fn new(configuration: DeterministicParserConfiguration) -> Result<Self> {
-        let builtin_entity_parser = Lang::from_str(&configuration.language_code).ok()
-            .map(|rustling_lang| RustlingParser::get(rustling_lang));
-        let language_config = LanguageConfig::from_str(&configuration.language_code)?;
+        let builtin_entity_parser = Language::from_str(&configuration.language_code).ok()
+            .map(BuiltinEntityParser::get);
+        let language = Language::from_str(&configuration.language_code)?;
+
         Ok(DeterministicIntentParser {
             regexes_per_intent: compile_regexes_per_intent(configuration.patterns)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
             slot_names_to_entities: configuration.slot_names_to_entities,
             builtin_entity_parser,
-            language_config,
+            language,
         })
     }
 }
@@ -123,7 +121,7 @@ impl IntentParser for DeterministicIntentParser {
                 break;
             }
         }
-        let deduplicated_slots = deduplicate_overlapping_slots(result, self.language_config.language);
+        let deduplicated_slots = deduplicate_overlapping_slots(result, self.language);
         if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
             let filter_entity_kinds = self.slot_names_to_entities
                 .values()
@@ -147,6 +145,7 @@ impl IntentParser for DeterministicIntentParser {
 
 fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -> Vec<InternalSlot> {
     let mut deduped: Vec<InternalSlot> = Vec::with_capacity(slots.len());
+    let language = NluUtilsLanguage::from_language(language);
 
     for slot in slots {
         let conflicting_slot_index = deduped
@@ -154,7 +153,7 @@ fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -
             .position(|existing_slot| ranges_overlap(&slot.char_range, &existing_slot.char_range));
 
         if let Some(index) = conflicting_slot_index {
-            fn extract_counts(v: &InternalSlot, l: Language) -> (usize, usize) {
+            fn extract_counts(v: &InternalSlot, l: NluUtilsLanguage) -> (usize, usize) {
                 (tokenize(&v.value, l).len(), v.value.chars().count())
             }
             let (existing_token_count, existing_char_count) = extract_counts(&deduped[index], language);
@@ -173,7 +172,7 @@ fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -
 }
 
 fn replace_builtin_entities(text: &str,
-                            parser: &RustlingParser) -> (HashMap<Range<usize>, Range<usize>>, String) {
+                            parser: &BuiltinEntityParser) -> (HashMap<Range<usize>, Range<usize>>, String) {
     let builtin_entities = parser.extract_entities(text, None);
     if builtin_entities.len() == 0 {
         return (HashMap::new(), text.to_string());
@@ -202,22 +201,18 @@ fn replace_builtin_entities(text: &str,
 
 fn get_builtin_entity_name(entity_label: &str) -> String {
     // Here we don't need language specific tokenization, we just want to generate a feature name, that's why we use EN
-    let normalized_entity_label = tokenize_light(entity_label, Language::EN).join("").to_uppercase();
+    let normalized_entity_label = tokenize_light(entity_label, NluUtilsLanguage::EN).join("").to_uppercase();
     format!("%{}%", normalized_entity_label)
 }
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use snips_nlu_ontology::{AmountOfMoneyValue, IntentClassifierResult, Precision, Slot, SlotValue};
+    use snips_nlu_ontology::{BuiltinEntityParser, Language, AmountOfMoneyValue, IntentClassifierResult, Precision, Slot, SlotValue};
     use pipeline::deterministic::configuration::DeterministicParserConfiguration;
     use pipeline::{IntentParser, InternalSlot};
-    use builtin_entities::RustlingParser;
-    use nlu_utils::language::Language;
-    use rustling_ontology::Lang;
-    use super::{DeterministicIntentParser, deduplicate_overlapping_slots, get_builtin_entity_name,
-                replace_builtin_entities};
 
     fn test_configuration() -> DeterministicParserConfiguration {
         DeterministicParserConfiguration {
@@ -436,7 +431,7 @@ mod tests {
     fn should_replace_builtin_entities() {
         // Given
         let text = "Meeting this evening or tomorrow at 11am !";
-        let parser = RustlingParser::get(Lang::EN);
+        let parser = BuiltinEntityParser::get(Language::EN);
 
         // When
         let (range_mapping, formatted_text) = replace_builtin_entities(text, &*parser);

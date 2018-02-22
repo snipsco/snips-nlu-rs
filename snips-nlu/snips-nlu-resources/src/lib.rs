@@ -4,7 +4,7 @@ extern crate error_chain;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
-extern crate nlu_utils;
+extern crate snips_nlu_utils as nlu_utils;
 
 mod errors {
     error_chain! {

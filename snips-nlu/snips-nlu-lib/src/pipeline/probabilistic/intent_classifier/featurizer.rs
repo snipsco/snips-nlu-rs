@@ -9,9 +9,11 @@ use models::word_clusterer::{StaticMapWordClusterer, WordClusterer};
 use language::LanguageConfig;
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use nlu_utils::string::normalize;
+use nlu_utils::language::Language as NluUtilsLanguage;
 use pipeline::probabilistic::configuration::FeaturizerConfiguration;
 use std::str::FromStr;
 use models::stemmer::{Stemmer, StaticMapStemmer};
+use language::FromLanguage;
 
 pub struct Featurizer {
     best_features: Vec<usize>,
@@ -72,7 +74,7 @@ impl Featurizer {
     }
 
     fn preprocess_query(&self, query: &str) -> Vec<String> {
-        let tokens = tokenize_light(query, self.language_config.language);
+        let tokens = tokenize_light(query, NluUtilsLanguage::from_language(self.language_config.language));
         let mut processed_tokens: Vec<String> = if let Some(ref stemmer) = self.stemmer {
             tokens.iter().map(|t| stemmer.stem(&normalize(&t))).collect()
         } else {

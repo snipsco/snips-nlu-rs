@@ -9,8 +9,8 @@ use itertools::Itertools;
 use base64;
 
 use errors::*;
-use builtin_entities::{BuiltinEntityKind, RustlingEntity, RustlingParser};
-use language::LanguageConfig;
+use nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_ontology::{Language, BuiltinEntityKind, BuiltinEntity, BuiltinEntityParser, Slot};
 use pipeline::{FeatureProcessor, InternalSlot};
 use pipeline::probabilistic::feature_processor::ProbabilisticFeatureProcessor;
 use pipeline::probabilistic::crf_utils::{
@@ -22,7 +22,7 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::token::{Token, tokenize};
 use base64::decode;
 use super::configuration::SlotFillerConfiguration;
-use snips_nlu_ontology::Slot;
+use language::FromLanguage;
 
 pub trait SlotFiller: Send + Sync {
     fn get_tagging_scheme(&self) -> TaggingScheme;
@@ -31,12 +31,12 @@ pub trait SlotFiller: Send + Sync {
 }
 
 pub struct CRFSlotFiller {
-    language_config: LanguageConfig,
+    language: Language,
     tagging_scheme: TaggingScheme,
     tagger: sync::Mutex<CRFSuiteTagger>,
     feature_processor: ProbabilisticFeatureProcessor,
     slot_name_mapping: HashMap<String, String>,
-    builtin_entity_parser: Option<sync::Arc<RustlingParser>>,
+    builtin_entity_parser: Option<sync::Arc<BuiltinEntityParser>>,
     exhaustive_permutations_threshold: usize,
 }
 
@@ -46,7 +46,7 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_slots(&self, text: &str) -> Result<Vec<Slot>> {
-        let tokens = tokenize(text, self.language_config.language);
+        let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
         if tokens.is_empty() {
             return Ok(vec![]);
         }
@@ -154,10 +154,11 @@ impl CRFSlotFiller {
         let feature_processor = ProbabilisticFeatureProcessor::new(&config.config.feature_factory_configs)?;
         let converted_data = decode(&config.crf_model_data)?;
         let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
-        let language_config = LanguageConfig::from_str(&config.language_code)?;
-        let builtin_entity_parser = Some(RustlingParser::get(language_config.to_rust_lang()));
+        let language = Language::from_str(&config.language_code)?;
+        let builtin_entity_parser = Some(BuiltinEntityParser::get(language));
+
         Ok(Self {
-            language_config,
+            language,
             tagging_scheme,
             tagger: sync::Mutex::new(tagger),
             feature_processor,
@@ -180,11 +181,11 @@ fn encode_tag(tag: &str) -> String {
     base64::encode(tag)
 }
 
-fn filter_overlapping_builtins(builtin_entities: Vec<RustlingEntity>,
+fn filter_overlapping_builtins(builtin_entities: Vec<BuiltinEntity>,
                                tokens: &[Token],
                                tags: &Vec<String>,
                                tagging_scheme: TaggingScheme,
-) -> Vec<RustlingEntity> {
+) -> Vec<BuiltinEntity> {
     let slots_ranges = tags_to_slot_ranges(tokens, tags, tagging_scheme);
     builtin_entities
         .into_iter()
@@ -202,11 +203,11 @@ fn augment_slots(
     tags: Vec<String>,
     slot_filler: &SlotFiller,
     intent_slots_mapping: &HashMap<String, String>,
-    builtin_entities: Vec<RustlingEntity>,
+    builtin_entities: Vec<BuiltinEntity>,
     missing_slots: Vec<(String, BuiltinEntityKind)>,
     exhaustive_permutations_threshold: usize,
 ) -> Result<Vec<InternalSlot>> {
-    let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<RustlingEntity>> = HashMap::new();
+    let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<BuiltinEntity>> = HashMap::new();
     for entity in filter_overlapping_builtins(builtin_entities, tokens, &tags, slot_filler.get_tagging_scheme()) {
         grouped_entities.entry(entity.entity_kind).or_insert(vec![]).push(entity);
     }
@@ -356,13 +357,13 @@ mod tests {
         };
 
         let builtin_entities = vec![
-            RustlingEntity {
+            BuiltinEntity {
                 value: "tomorrow at 8am".to_string(),
                 range: 58..73,
                 entity_kind: BuiltinEntityKind::Time,
                 entity: SlotValue::InstantTime(end_time.clone()),
             },
-            RustlingEntity {
+            BuiltinEntity {
                 value: "today at 9pm".to_string(),
                 range: 41..53,
                 entity_kind: BuiltinEntityKind::Time,
@@ -376,7 +377,7 @@ mod tests {
 
         // Then
         let expected_entities = vec![
-            RustlingEntity {
+            BuiltinEntity {
                 value: "tomorrow at 8am".to_string(),
                 range: 58..73,
                 entity_kind: BuiltinEntityKind::Time,
@@ -540,13 +541,13 @@ mod tests {
             precision: Precision::Exact,
         };
         let builtin_entities = vec![
-            RustlingEntity {
+            BuiltinEntity {
                 value: "tomorrow at 8am".to_string(),
                 range: 58..73,
                 entity_kind: BuiltinEntityKind::Time,
                 entity: SlotValue::InstantTime(end_time),
             },
-            RustlingEntity {
+            BuiltinEntity {
                 value: "today at 9pm".to_string(),
                 range: 41..53,
                 entity_kind: BuiltinEntityKind::Time,
