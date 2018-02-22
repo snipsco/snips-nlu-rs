@@ -10,7 +10,7 @@ extern crate itertools;
 #[macro_use]
 extern crate ndarray;
 extern crate snips_nlu_resources_packed as resources_packed;
-extern crate nlu_utils;
+extern crate snips_nlu_utils as nlu_utils;
 extern crate snips_nlu_ontology;
 extern crate regex;
 extern crate serde;
