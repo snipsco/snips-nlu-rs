@@ -1,11 +1,6 @@
-#[cfg(test)]
 use dinghy_test::test_file_path;
-use ndarray::prelude::*;
-use std::env;
-use std::path;
 
-#[cfg(test)]
-pub fn file_path(file_name: &str) -> path::PathBuf {
+pub fn file_path(file_name: &str) -> ::std::path::PathBuf {
     test_file_path("data").join(file_name)
 }
 
@@ -29,7 +24,6 @@ pub fn permutations<T: Copy>(v: &[T], permutation_length: i32) -> Vec<Vec<T>> {
     perms
 }
 
-
 fn partial_cartesian<'b, T>(acc: Vec<Vec<&'b T>>, a: &'b [T]) -> Vec<Vec<&'b T>> {
     acc.into_iter().flat_map(|xs| {
         a.iter().map(|y| {
@@ -39,7 +33,6 @@ fn partial_cartesian<'b, T>(acc: Vec<Vec<&'b T>>, a: &'b [T]) -> Vec<Vec<&'b T>>
         }).collect::<Vec<_>>()
     }).collect()
 }
-
 
 pub fn product<'a, T>(v: &'a [&'a [T]]) -> Vec<Vec<&'a T>> {
     v.split_first()
@@ -51,11 +44,9 @@ pub fn product<'a, T>(v: &'a [&'a [T]]) -> Vec<Vec<&'a T>> {
         })
 }
 
-
 fn exclude_from_list<T: Copy>(list: &[T], i: usize) -> Vec<T> {
     list.iter().enumerate().filter(|&(j, _)| j != i).map(|(_, a)| *a).collect()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -85,7 +76,6 @@ mod tests {
         assert_eq!(expected_perms.len(), perms.len());
         assert_eq!(expected_perms, HashSet::from_iter(perms))
     }
-
 
     #[test]
     fn product_works() {

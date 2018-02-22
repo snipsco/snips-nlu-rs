@@ -1,6 +1,6 @@
 use errors::*;
 use resources_packed::word_cluster;
-use nlu_utils::language::Language;
+use snips_nlu_ontology::Language;
 
 pub trait WordClusterer {
     fn get_cluster(&self, word: &str) -> Option<String>;
