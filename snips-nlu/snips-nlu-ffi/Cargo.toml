@@ -8,7 +8,7 @@ authors = [
 
 [dependencies]
 snips-nlu-lib = { path = "../snips-nlu-lib" }
-snips-nlu-ontology-ffi = { git = "ssh://git@github.com/snipsco/snips-nlu-ontology", rev = "8086bef0" }
+snips-nlu-ontology-ffi = { git = "ssh://git@github.com/snipsco/snips-nlu-ontology", tag = "0.53.0" }
 snips-common-deps = { path = "../../snips-common/snips-common-deps" }
 error-chain = { version = "0.11", default-features = false }
 lazy_static = "1.0"
