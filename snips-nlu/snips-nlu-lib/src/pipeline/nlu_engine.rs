@@ -4,26 +4,26 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use itertools::Itertools;
+use serde_json;
 
-use builtin_entities::{BuiltinEntityKind, RustlingParser};
+use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser};
 use errors::*;
-use nlu_utils::language::Language;
+use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
 use pipeline::IntentParser;
 use pipeline::deterministic::DeterministicIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
 use pipeline::configuration::{Entity, NluEngineConfigurationConvertible, DatasetMetadata};
-use rustling_ontology::Lang;
-use serde_json;
-use snips_nlu_ontology::{IntentParserResult, Slot, SlotValue};
+use snips_nlu_ontology::{Language, IntentParserResult, Slot, SlotValue};
+use language::FromLanguage;
 
 const MODEL_VERSION: &str = "0.13.0";
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
     parsers: Vec<Box<IntentParser>>,
-    builtin_entity_parser: Option<Arc<RustlingParser>>,
+    builtin_entity_parser: Option<Arc<BuiltinEntityParser>>,
 }
 
 impl SnipsNluEngine {
@@ -44,9 +44,9 @@ impl SnipsNluEngine {
             })
             .collect::<Result<Vec<_>>>()?;
 
-        let builtin_entity_parser = Lang::from_str(&nlu_config.dataset_metadata.language_code)
+        let builtin_entity_parser = Language::from_str(&nlu_config.dataset_metadata.language_code)
             .ok()
-            .map(|rustling_lang| RustlingParser::get(rustling_lang));
+            .map(BuiltinEntityParser::get);
 
         Ok(SnipsNluEngine {
             dataset_metadata: nlu_config.dataset_metadata,
@@ -163,7 +163,7 @@ fn extract_custom_slot(
     custom_entity: Entity,
     language: Language,
 ) -> Option<Slot> {
-    let tokens = tokenize(&input, language);
+    let tokens = tokenize(&input, NluUtilsLanguage::from_language(language));
     let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
     let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
     ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
@@ -206,7 +206,7 @@ fn extract_builtin_slot(
     input: String,
     entity_name: String,
     slot_name: String,
-    builtin_entity_parser: Arc<RustlingParser>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(

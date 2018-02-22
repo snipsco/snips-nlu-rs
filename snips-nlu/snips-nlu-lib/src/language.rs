@@ -1,8 +1,8 @@
 use std::result::Result;
 use std::str::FromStr;
 
-use nlu_utils::language::Language;
-use rustling_ontology::Lang as RustLang;
+use snips_nlu_ontology::Language;
+use nlu_utils::language::Language as NluUtilsLanguage;
 
 pub struct LanguageConfig {
     pub language: Language,
@@ -22,14 +22,21 @@ impl LanguageConfig {
             _ => None
         }
     }
+}
 
-    pub fn to_rust_lang(&self) -> RustLang {
-        match self.language {
-            Language::EN => RustLang::EN,
-            Language::FR => RustLang::FR,
-            Language::DE => RustLang::DE,
-            Language::KO => RustLang::KO,
-            Language::ES => RustLang::ES,
+pub trait FromLanguage {
+    fn from_language(Language) -> Self;
+}
+
+impl FromLanguage for NluUtilsLanguage{
+    fn from_language(l: Language) -> Self {
+        match l {
+            Language::DE => NluUtilsLanguage::DE,
+            Language::EN => NluUtilsLanguage::EN,
+            Language::ES => NluUtilsLanguage::ES,
+            Language::FR => NluUtilsLanguage::FR,
+            Language::KO => NluUtilsLanguage::KO,
+            Language::JA => NluUtilsLanguage::JA,
         }
     }
 }
