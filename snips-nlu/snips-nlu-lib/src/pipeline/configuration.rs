@@ -34,7 +34,7 @@ pub struct Entity {
 
 impl NluEngineConfigurationConvertible for NluEngineConfiguration {
     fn nlu_engine_configuration(&self) -> &NluEngineConfiguration {
-        &self
+        self
     }
 
     fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
@@ -54,7 +54,8 @@ mod tests {
     #[test]
     fn deserialization_works() {
         // When
-        let retrieved: NluEngineConfiguration = parse_json("tests/configurations/trained_assistant.json");
+        let retrieved: NluEngineConfiguration =
+            parse_json("tests/configurations/trained_assistant.json");
         let deterministic_parser_config: Result<DeterministicParserConfiguration, _> =
             serde_json::from_value(retrieved.intent_parsers[0].clone());
         let proba_parser_config: Result<ProbabilisticParserConfiguration, _> =

@@ -14,8 +14,8 @@ use nlu_utils::string::{normalize, substring_with_char_range};
 use pipeline::IntentParser;
 use pipeline::deterministic::DeterministicIntentParser;
 use pipeline::probabilistic::ProbabilisticIntentParser;
-use pipeline::configuration::{Entity, NluEngineConfigurationConvertible, DatasetMetadata};
-use snips_nlu_ontology::{Language, IntentParserResult, Slot, SlotValue};
+use pipeline::configuration::{DatasetMetadata, Entity, NluEngineConfigurationConvertible};
+use snips_nlu_ontology::{IntentParserResult, Language, Slot, SlotValue};
 use language::FromLanguage;
 
 const MODEL_VERSION: &str = "0.13.0";
@@ -29,7 +29,9 @@ pub struct SnipsNluEngine {
 impl SnipsNluEngine {
     pub fn new<T: NluEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
         let nlu_config = configuration.into_nlu_engine_configuration();
-        let parsers = nlu_config.intent_parsers.into_iter()
+        let parsers = nlu_config
+            .intent_parsers
+            .into_iter()
             .map(|value| match value["unit_name"].as_str() {
                 Some("deterministic_intent_parser") => {
                     let config = serde_json::from_value(value)?;
@@ -40,7 +42,7 @@ impl SnipsNluEngine {
                     Ok(Box::new(ProbabilisticIntentParser::new(config)?) as _)
                 }
                 Some(_) => Err("Unknown intent parser unit name".into()),
-                None => Err(format!("Intent parser unit name is not properly defined").into()),
+                None => Err("Intent parser unit name is not properly defined".into()),
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -67,11 +69,10 @@ impl SnipsNluEngine {
                 slots: None,
             });
         }
-        let set_intents: Option<HashSet<String>> = intents_filter.map(|intent_list| {
-            HashSet::from_iter(intent_list.iter().map(|name| name.to_string()))
-        });
+        let set_intents: Option<HashSet<String>> = intents_filter
+            .map(|intent_list| HashSet::from_iter(intent_list.iter().map(|name| name.to_string())));
 
-        for parser in self.parsers.iter() {
+        for parser in &self.parsers {
             let classification_result = parser.get_intent(input, set_intents.as_ref())?;
             if let Some(classification_result) = classification_result {
                 let valid_slots = parser
@@ -83,9 +84,9 @@ impl SnipsNluEngine {
                                 .utterances
                                 .get(&slot.raw_value)
                                 .map(|reference_value| {
-                                    Some(slot.clone().with_slot_value(
-                                        SlotValue::Custom(reference_value.to_string().into()),
-                                    ))
+                                    Some(slot.clone().with_slot_value(SlotValue::Custom(
+                                        reference_value.to_string().into(),
+                                    )))
                                 })
                                 .unwrap_or(if entity.automatically_extensible {
                                     Some(slot)
@@ -123,13 +124,14 @@ impl SnipsNluEngine {
         &self,
         input: String,
         intent_name: &str,
-        slot_name: String,
+        slot_name: &str,
     ) -> Result<Option<Slot>> {
-        let entity_name = self.dataset_metadata.slot_name_mappings
+        let entity_name = self.dataset_metadata
+            .slot_name_mappings
             .get(intent_name)
-            .ok_or(format!("Unknown intent: {}", intent_name))?
-            .get(&slot_name)
-            .ok_or(format!("Unknown slot: {}", &slot_name))?;
+            .ok_or_else(|| format!("Unknown intent: {}", intent_name))?
+            .get(slot_name)
+            .ok_or_else(|| format!("Unknown slot: {}", &slot_name))?;
 
         let slot = if let Some(custom_entity) = self.dataset_metadata.entities.get(entity_name) {
             let language = Language::from_str(&self.dataset_metadata.language_code)?;
@@ -137,20 +139,18 @@ impl SnipsNluEngine {
                 input,
                 entity_name.to_string(),
                 slot_name.to_string(),
-                custom_entity.clone(),
+                custom_entity,
                 language,
             )
+        } else if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
+            extract_builtin_slot(
+                input,
+                entity_name.to_string(),
+                slot_name.to_string(),
+                &builtin_entity_parser,
+            )?
         } else {
-            if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
-                extract_builtin_slot(
-                    input,
-                    entity_name.to_string(),
-                    slot_name.to_string(),
-                    builtin_entity_parser,
-                )?
-            } else {
-                None
-            }
+            None
         };
         Ok(slot)
     }
@@ -160,7 +160,7 @@ fn extract_custom_slot(
     input: String,
     entity_name: String,
     slot_name: String,
-    custom_entity: Entity,
+    custom_entity: &Entity,
     language: Language,
 ) -> Option<Slot> {
     let tokens = tokenize(&input, NluUtilsLanguage::from_language(language));
@@ -170,17 +170,12 @@ fn extract_custom_slot(
 
     ngrams
         .into_iter()
-        .find(|&(ref ngram, _)| {
-            custom_entity.utterances.contains_key(&normalize(&ngram))
-        })
+        .find(|&(ref ngram, _)| custom_entity.utterances.contains_key(&normalize(ngram)))
         .map(|(ngram, _)| {
             Some(Slot {
                 raw_value: ngram.clone(),
                 value: SlotValue::Custom(
-                    custom_entity
-                        .utterances
-                        .get(&normalize(&ngram))
-                        .unwrap()
+                    custom_entity.utterances[&normalize(&ngram)]
                         .to_string()
                         .into(),
                 ),
@@ -206,23 +201,19 @@ fn extract_builtin_slot(
     input: String,
     entity_name: String,
     slot_name: String,
-    builtin_entity_parser: Arc<BuiltinEntityParser>,
+    builtin_entity_parser: &BuiltinEntityParser,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
-    Ok(
-        builtin_entity_parser
-            .extract_entities(&input, Some(&[builtin_entity_kind]))
-            .first()
-            .map(|rustlin_entity| {
-                Slot {
-                    raw_value: substring_with_char_range(input, &rustlin_entity.range),
-                    value: rustlin_entity.entity.clone(),
-                    range: None,
-                    entity: entity_name,
-                    slot_name,
-                }
-            }),
-    )
+    Ok(builtin_entity_parser
+        .extract_entities(&input, Some(&[builtin_entity_kind]))
+        .first()
+        .map(|rustlin_entity| Slot {
+            raw_value: substring_with_char_range(input, &rustlin_entity.range),
+            value: rustlin_entity.entity.clone(),
+            range: None,
+            entity: entity_name,
+            slot_name,
+        }))
 }
 
 pub mod deprecated {
@@ -288,7 +279,8 @@ mod tests {
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
+        let extracted_slot =
+            extract_custom_slot(input, entity_name, slot_name, &custom_entity, language);
 
         // Then
         let expected_slot = Some(Slot {
@@ -310,11 +302,12 @@ mod tests {
         let slot_name = "slot".to_string();
         let custom_entity = Entity {
             automatically_extensible: true,
-            utterances: hashmap! {},
+            utterances: hashmap!{},
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
+        let extracted_slot =
+            extract_custom_slot(input, entity_name, slot_name, &custom_entity, language);
 
         // Then
         let expected_slot = Some(Slot {
@@ -336,11 +329,12 @@ mod tests {
         let slot_name = "slot".to_string();
         let custom_entity = Entity {
             automatically_extensible: false,
-            utterances: hashmap! {},
+            utterances: hashmap!{},
         };
 
         // When
-        let extracted_slot = extract_custom_slot(input, entity_name, slot_name, custom_entity, language);
+        let extracted_slot =
+            extract_custom_slot(input, entity_name, slot_name, &custom_entity, language);
 
         // Then
         let expected_slot = None;

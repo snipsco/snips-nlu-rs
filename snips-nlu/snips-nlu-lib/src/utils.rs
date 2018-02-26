@@ -16,7 +16,7 @@ pub fn permutations<T: Copy>(v: &[T], permutation_length: i32) -> Vec<Vec<T>> {
     let mut perms: Vec<Vec<T>> = vec![];
     for (i, tail) in v.iter().enumerate() {
         let sub_vec = exclude_from_list(v, i);
-        for mut p in permutations(&*sub_vec, permutation_length - 1).into_iter() {
+        for mut p in permutations(&*sub_vec, permutation_length - 1) {
             p.push(tail.clone());
             perms.push(p);
         }
@@ -25,27 +25,34 @@ pub fn permutations<T: Copy>(v: &[T], permutation_length: i32) -> Vec<Vec<T>> {
 }
 
 fn partial_cartesian<'b, T>(acc: Vec<Vec<&'b T>>, a: &'b [T]) -> Vec<Vec<&'b T>> {
-    acc.into_iter().flat_map(|xs| {
-        a.iter().map(|y| {
-            let mut vec = xs.clone();
-            vec.push(&y);
-            vec
-        }).collect::<Vec<_>>()
-    }).collect()
+    acc.into_iter()
+        .flat_map(|xs| {
+            a.iter()
+                .map(|y| {
+                    let mut vec = xs.clone();
+                    vec.push(y);
+                    vec
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect()
 }
 
 pub fn product<'a, T>(v: &'a [&'a [T]]) -> Vec<Vec<&'a T>> {
-    v.split_first()
-        .map_or(vec![], |(head, tail)| {
-            let init: Vec<Vec<&T>> = head.iter().map(|n| vec![n]).collect();
-            tail.iter().cloned().fold(init, |vec, list| {
-                partial_cartesian(vec, list)
-            })
-        })
+    v.split_first().map_or(vec![], |(head, tail)| {
+        let init: Vec<Vec<&T>> = head.iter().map(|n| vec![n]).collect();
+        tail.iter()
+            .cloned()
+            .fold(init, |vec, list| partial_cartesian(vec, list))
+    })
 }
 
 fn exclude_from_list<T: Copy>(list: &[T], i: usize) -> Vec<T> {
-    list.iter().enumerate().filter(|&(j, _)| j != i).map(|(_, a)| *a).collect()
+    list.iter()
+        .enumerate()
+        .filter(|&(j, _)| j != i)
+        .map(|(_, a)| *a)
+        .collect()
 }
 
 #[cfg(test)]
@@ -84,10 +91,7 @@ mod tests {
             .map(|range| range.into_iter().collect())
             .collect();
 
-        let ref_pool: Vec<&[i32]> = pool
-            .iter()
-            .map(|v| &v[..])
-            .collect();
+        let ref_pool: Vec<&[i32]> = pool.iter().map(|v| &v[..]).collect();
 
         // When
         let prod: Vec<Vec<&i32>> = product(&ref_pool[..]);

@@ -42,8 +42,9 @@ pub mod stems {
         for row in csv_reader.decode() {
             let (value, keys): (String, String) = row?;
             let normalized_value = normalize(&value);
-            keys.split(",")
-                .foreach(|key| { result.insert(normalize(key).to_string(), normalized_value.clone()); });
+            keys.split(",").foreach(|key| {
+                result.insert(normalize(key).to_string(), normalized_value.clone());
+            });
         }
         Ok(result)
     }
@@ -55,7 +56,6 @@ pub mod stems {
 
         let mut result = HashMap::new();
 
-
         for row in csv_reader.decode() {
             let (key, value): (String, String) = row?;
 
@@ -65,30 +65,45 @@ pub mod stems {
     }
 
     pub fn en() -> Result<HashMap<String, String>> {
-        let mut result = parse_inflections(&include_bytes!("../snips-nlu-resources/en/top_10000_words_inflected.txt")[..])?;
-        result.extend(parse_lexemes(&include_bytes!("../snips-nlu-resources/en/top_1000_verbs_lexemes.txt")[..])?);
+        let mut result = parse_inflections(
+            &include_bytes!("../snips-nlu-resources/en/top_10000_words_inflected.txt")[..],
+        )?;
+        result.extend(parse_lexemes(
+            &include_bytes!("../snips-nlu-resources/en/top_1000_verbs_lexemes.txt")[..],
+        )?);
         Ok(result)
     }
 
     pub fn fr() -> Result<HashMap<String, String>> {
-        let mut result = parse_inflections(&include_bytes!("../snips-nlu-resources/fr/top_10000_words_inflected.txt")[..])?;
-        result.extend(parse_lexemes(&include_bytes!("../snips-nlu-resources/fr/top_2000_verbs_lexemes.txt")[..])?);
+        let mut result = parse_inflections(
+            &include_bytes!("../snips-nlu-resources/fr/top_10000_words_inflected.txt")[..],
+        )?;
+        result.extend(parse_lexemes(
+            &include_bytes!("../snips-nlu-resources/fr/top_2000_verbs_lexemes.txt")[..],
+        )?);
         Ok(result)
     }
 
     pub fn es() -> Result<HashMap<String, String>> {
-        let mut result = parse_inflections(&include_bytes!("../snips-nlu-resources/es/top_10000_words_inflected.txt")[..])?;
-        result.extend(parse_lexemes(&include_bytes!("../snips-nlu-resources/es/top_1000_verbs_lexemes.txt")[..])?);
+        let mut result = parse_inflections(
+            &include_bytes!("../snips-nlu-resources/es/top_10000_words_inflected.txt")[..],
+        )?;
+        result.extend(parse_lexemes(
+            &include_bytes!("../snips-nlu-resources/es/top_1000_verbs_lexemes.txt")[..],
+        )?);
         Ok(result)
     }
 
     pub fn de() -> Result<HashMap<String, String>> {
-        let mut result = parse_inflections(&include_bytes!("../snips-nlu-resources/de/top_10000_words_inflected.txt")[..])?;
-        result.extend(parse_lexemes(&include_bytes!("../snips-nlu-resources/de/top_1000_verbs_lexemes.txt")[..])?);
+        let mut result = parse_inflections(
+            &include_bytes!("../snips-nlu-resources/de/top_10000_words_inflected.txt")[..],
+        )?;
+        result.extend(parse_lexemes(
+            &include_bytes!("../snips-nlu-resources/de/top_1000_verbs_lexemes.txt")[..],
+        )?);
         Ok(result)
     }
 }
-
 
 pub mod word_clusters {
     use std::collections::HashMap;
@@ -112,14 +127,15 @@ pub mod word_clusters {
         Ok(result)
     }
 
-
     pub mod en {
         use std::collections::HashMap;
 
         use errors::*;
 
         pub fn brown_clusters() -> Result<HashMap<String, String>> {
-            super::parse_clusters(&include_bytes!("../snips-nlu-resources/en/brown_clusters.txt")[..])
+            super::parse_clusters(
+                &include_bytes!("../snips-nlu-resources/en/brown_clusters.txt")[..],
+            )
         }
     }
 }
@@ -135,9 +151,14 @@ pub mod gazetteer {
     use nlu_utils::string::normalize;
     use nlu_utils::language::Language;
 
-
-    fn parse_gazetteer<R: Read, F>(gazetteer_reader: R, stem_fn: F, language: Language) -> Result<HashSet<String>>
-        where F: Fn(String) -> String {
+    fn parse_gazetteer<R: Read, F>(
+        gazetteer_reader: R,
+        stem_fn: F,
+        language: Language,
+    ) -> Result<HashSet<String>>
+    where
+        F: Fn(String) -> String,
+    {
         let reader = BufReader::new(gazetteer_reader);
         let mut result = HashSet::new();
 
@@ -145,7 +166,12 @@ pub mod gazetteer {
             let normalized = normalize(&line?);
             if !normalized.is_empty() {
                 let tokens = tokenize_light(&normalized, language);
-                result.insert(tokens.into_iter().map(|t| stem_fn(t)).join(language.default_separator()));
+                result.insert(
+                    tokens
+                        .into_iter()
+                        .map(|t| stem_fn(t))
+                        .join(language.default_separator()),
+                );
             }
         }
         Ok(result)

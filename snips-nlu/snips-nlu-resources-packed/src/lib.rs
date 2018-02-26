@@ -4,8 +4,7 @@ extern crate phf;
 extern crate snips_nlu_ontology;
 
 mod errors {
-    error_chain! {
-    }
+    error_chain!{}
 }
 
 use errors::*;
@@ -21,8 +20,8 @@ pub fn stem(language: Language, word: &str) -> Result<String> {
         Language::ES => &STEMS_ES,
         Language::DE => &STEMS_DE,
         _ => bail!("stem not supported for {}", language.to_string()),
-    }
-        .get(word) {
+    }.get(word)
+    {
         Ok(stem.to_string())
     } else {
         Ok(word.to_string())
@@ -32,10 +31,19 @@ pub fn stem(language: Language, word: &str) -> Result<String> {
 pub fn word_cluster(cluster_name: &str, language: Language, word: &str) -> Result<Option<String>> {
     match language {
         Language::EN => match cluster_name {
-            "brown_clusters" => Ok(WORD_CLUSTERS_EN_BROWN_CLUSTERS.get(word).map(|c| c.to_string())),
-            _ => bail!("word cluster '{}' not supported for language {}", cluster_name, language.to_string())
+            "brown_clusters" => Ok(WORD_CLUSTERS_EN_BROWN_CLUSTERS
+                .get(word)
+                .map(|c| c.to_string())),
+            _ => bail!(
+                "word cluster '{}' not supported for language {}",
+                cluster_name,
+                language.to_string()
+            ),
         },
-        _ => bail!("brown clusters not supported for {} language", language.to_string())
+        _ => bail!(
+            "brown clusters not supported for {} language",
+            language.to_string()
+        ),
     }
 }
 
@@ -46,7 +54,11 @@ pub fn gazetteer_hits(language: Language, gazetteer_name: &str, word: &str) -> R
             "stop_words_stem" => &GAZETTEER_DE_STOP_WORDS_STEM,
             "top_10000_words" => &GAZETTEER_DE_TOP_10000_WORDS,
             "top_10000_words_stem" => &GAZETTEER_DE_TOP_10000_WORDS_STEM,
-            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
+            _ => bail!(
+                "gazetteer {} not supported for language {}",
+                gazetteer_name,
+                language.to_string()
+            ),
         },
         Language::EN => match gazetteer_name {
             "stop_words" => &GAZETTEER_EN_STOP_WORDS,
@@ -55,23 +67,38 @@ pub fn gazetteer_hits(language: Language, gazetteer_name: &str, word: &str) -> R
             "top_10000_nouns_stem" => &GAZETTEER_EN_TOP_10000_NOUNS_STEM,
             "top_10000_words" => &GAZETTEER_EN_TOP_10000_WORDS,
             "top_10000_words_stem" => &GAZETTEER_EN_TOP_10000_WORDS_STEM,
-            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
+            _ => bail!(
+                "gazetteer {} not supported for language {}",
+                gazetteer_name,
+                language.to_string()
+            ),
         },
         Language::ES => match gazetteer_name {
             "stop_words" => &GAZETTEER_ES_STOP_WORDS,
             "stop_words_stem" => &GAZETTEER_ES_STOP_WORDS_STEM,
             "top_10000_words" => &GAZETTEER_ES_TOP_10000_WORDS,
             "top_10000_words_stem" => &GAZETTEER_ES_TOP_10000_WORDS_STEM,
-            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
+            _ => bail!(
+                "gazetteer {} not supported for language {}",
+                gazetteer_name,
+                language.to_string()
+            ),
         },
         Language::FR => match gazetteer_name {
             "stop_words" => &GAZETTEER_FR_STOP_WORDS,
             "stop_words_stem" => &GAZETTEER_FR_STOP_WORDS_STEM,
             "top_10000_words" => &GAZETTEER_FR_TOP_10000_WORDS,
             "top_10000_words_stem" => &GAZETTEER_FR_TOP_10000_WORDS_STEM,
-            _ => bail!("gazetteer {} not supported for language {}", gazetteer_name, language.to_string())
+            _ => bail!(
+                "gazetteer {} not supported for language {}",
+                gazetteer_name,
+                language.to_string()
+            ),
         },
-        _ => bail!("no gazetteers supported for {} language", language.to_string())
+        _ => bail!(
+            "no gazetteers supported for {} language",
+            language.to_string()
+        ),
     }.contains(word))
 }
 
@@ -82,17 +109,38 @@ mod tests {
 
     #[test]
     fn stem_works() {
-        assert_eq!(stem(Language::from_str("en").unwrap(), "billing").unwrap(), "bill")
+        assert_eq!(
+            stem(Language::from_str("en").unwrap(), "billing").unwrap(),
+            "bill"
+        )
     }
 
     #[test]
     fn brown_clusters_works() {
-        assert_eq!(word_cluster("brown_clusters", Language::from_str("en").unwrap(), "groovy").unwrap().unwrap(), "11111000111111")
+        assert_eq!(
+            word_cluster(
+                "brown_clusters",
+                Language::from_str("en").unwrap(),
+                "groovy"
+            ).unwrap()
+                .unwrap(),
+            "11111000111111"
+        )
     }
 
     #[test]
     fn gazetteers_works() {
-        assert_eq!(gazetteer_hits(Language::from_str("en").unwrap(), "top_10000_words", "car").unwrap(), true);
-        assert_eq!(gazetteer_hits(Language::from_str("en").unwrap(), "top_10000_words", "qsmldkfjdk").unwrap(), false)
+        assert_eq!(
+            gazetteer_hits(Language::from_str("en").unwrap(), "top_10000_words", "car").unwrap(),
+            true
+        );
+        assert_eq!(
+            gazetteer_hits(
+                Language::from_str("en").unwrap(),
+                "top_10000_words",
+                "qsmldkfjdk"
+            ).unwrap(),
+            false
+        )
     }
 }

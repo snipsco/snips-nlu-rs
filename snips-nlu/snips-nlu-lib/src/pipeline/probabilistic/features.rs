@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use nlu_utils::token::{Token, compute_all_ngrams};
+use nlu_utils::token::{compute_all_ngrams, Token};
 use models::gazetteer::Gazetteer;
 #[cfg(test)]
 use models::gazetteer::HashSetGazetteer;
@@ -7,8 +7,8 @@ use models::stemmer::Stemmer;
 #[cfg(test)]
 use models::stemmer::StaticMapStemmer;
 use models::word_clusterer::WordClusterer;
-use super::crf_utils::{TaggingScheme, get_scheme_prefix};
-use super::features_utils::{get_word_chunk, get_shape, initial_string_from_tokens};
+use super::crf_utils::{get_scheme_prefix, TaggingScheme};
+use super::features_utils::{get_shape, get_word_chunk, initial_string_from_tokens};
 use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser};
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::normalize;
@@ -22,7 +22,11 @@ pub fn is_digit(string: &str) -> Option<String> {
 }
 
 pub fn is_first(token_index: usize) -> Option<String> {
-    if token_index == 0 { Some("1".to_string()) } else { None }
+    if token_index == 0 {
+        Some("1".to_string())
+    } else {
+        None
+    }
 }
 
 pub fn is_last(tokens: &[Token], token_index: usize) -> Option<String> {
@@ -35,35 +39,37 @@ pub fn is_last(tokens: &[Token], token_index: usize) -> Option<String> {
 
 pub fn prefix(string: &str, prefix_size: usize) -> Option<String> {
     let normalized = normalize(string);
-    get_word_chunk(normalized, prefix_size, 0, false)
+    get_word_chunk(&normalized, prefix_size, 0, false)
 }
 
 pub fn suffix(string: &str, suffix_size: usize) -> Option<String> {
     let normalized = normalize(string);
     let chunk_start = normalized.chars().count();
-    get_word_chunk(normalized, suffix_size, chunk_start, true)
+    get_word_chunk(&normalized, suffix_size, chunk_start, true)
 }
 
 pub fn shape(tokens: &[Token], token_index: usize, ngram_size: usize) -> Option<String> {
     let max_len = tokens.len();
     let end = token_index + ngram_size;
     if token_index < end && end <= max_len {
-        Some(tokens[token_index..end]
-            .iter()
-            .map(|token| get_shape(&token.value))
-            .join(" ")
+        Some(
+            tokens[token_index..end]
+                .iter()
+                .map(|token| get_shape(&token.value))
+                .join(" "),
         )
     } else {
         None
     }
 }
 
-
-pub fn ngram<S: Stemmer, G: Gazetteer>(tokens: &[Token],
-                                       token_index: usize,
-                                       ngram_size: usize,
-                                       stemmer: Option<&S>,
-                                       common_words_gazetteer: Option<&G>) -> Option<String> {
+pub fn ngram<S: Stemmer, G: Gazetteer>(
+    tokens: &[Token],
+    token_index: usize,
+    ngram_size: usize,
+    stemmer: Option<&S>,
+    common_words_gazetteer: Option<&G>,
+) -> Option<String> {
     // TODO we should precompute the lowercase value somewhere, perhaps use NormalizedToken ?
     if token_index + ngram_size > tokens.len() {
         None
@@ -73,60 +79,68 @@ pub fn ngram<S: Stemmer, G: Gazetteer>(tokens: &[Token],
                 .iter()
                 .map(|token| {
                     let normalized_value = normalize(&token.value);
-                    let stemmed_value = stemmer
-                        .map_or(normalized_value.to_string(), |s| s.stem(&normalized_value));
-                    common_words_gazetteer
-                        .map_or(stemmed_value.clone(), |g|
-                            if g.contains(&stemmed_value) {
-                                stemmed_value.clone()
-                            } else {
-                                "rare_word".to_string()
-                            }
-                        )
+                    let stemmed_value =
+                        stemmer.map_or(normalized_value.to_string(), |s| s.stem(&normalized_value));
+                    common_words_gazetteer.map_or(stemmed_value.clone(), |g| {
+                        if g.contains(&stemmed_value) {
+                            stemmed_value.clone()
+                        } else {
+                            "rare_word".to_string()
+                        }
+                    })
                 })
-                .join(" ")
+                .join(" "),
         )
     }
 }
 
-pub fn get_gazetteer_match<S: Stemmer, G: Gazetteer>(tokens: &[Token],
-                                                     token_index: usize,
-                                                     gazetteer: &G,
-                                                     stemmer: Option<&S>,
-                                                     tagging_scheme: TaggingScheme) -> Option<String> {
+pub fn get_gazetteer_match<S: Stemmer, G: Gazetteer>(
+    tokens: &[Token],
+    token_index: usize,
+    gazetteer: &G,
+    stemmer: Option<&S>,
+    tagging_scheme: TaggingScheme,
+) -> Option<String> {
     let normalized_tokens = normalize_tokens(tokens, stemmer);
     let normalized_tokens_ref = normalized_tokens.iter().map(|t| &**t).collect_vec();
-    let mut filtered_ngrams = compute_all_ngrams(&*normalized_tokens_ref, normalized_tokens_ref.len())
-        .into_iter()
-        .filter(|ngram_indexes| ngram_indexes.1.iter().any(|index| *index == token_index))
-        .collect_vec();
+    let mut filtered_ngrams =
+        compute_all_ngrams(&*normalized_tokens_ref, normalized_tokens_ref.len())
+            .into_iter()
+            .filter(|ngram_indexes| ngram_indexes.1.iter().any(|index| *index == token_index))
+            .collect_vec();
 
     filtered_ngrams.sort_by_key(|ngrams| -(ngrams.1.len() as i64));
 
-    filtered_ngrams.iter()
+    filtered_ngrams
+        .iter()
         .find(|ngrams| gazetteer.contains(&ngrams.0))
         .map(|ngrams| get_scheme_prefix(token_index, &ngrams.1, tagging_scheme).to_string())
 }
 
-pub fn get_word_cluster<C: WordClusterer>(tokens: &[Token],
-                                          token_index: usize,
-                                          word_clusterer: &C) -> Option<String> {
+pub fn get_word_cluster<C: WordClusterer>(
+    tokens: &[Token],
+    token_index: usize,
+    word_clusterer: &C,
+) -> Option<String> {
     if token_index >= tokens.len() {
         return None;
     }
     word_clusterer.get_cluster(&tokens[token_index].value.to_lowercase())
 }
 
-pub fn get_builtin_entity_match(tokens: &[Token],
-                                token_index: usize,
-                                parser: &BuiltinEntityParser,
-                                builtin_entity_kind: BuiltinEntityKind,
-                                tagging_scheme: TaggingScheme) -> Option<String> {
+pub fn get_builtin_entity_match(
+    tokens: &[Token],
+    token_index: usize,
+    parser: &BuiltinEntityParser,
+    builtin_entity_kind: BuiltinEntityKind,
+    tagging_scheme: TaggingScheme,
+) -> Option<String> {
     if token_index >= tokens.len() {
         return None;
     }
     let text = initial_string_from_tokens(tokens);
-    parser.extract_entities(&text, Some(&[builtin_entity_kind]))
+    parser
+        .extract_entities(&text, Some(&[builtin_entity_kind]))
         .into_iter()
         .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
         .map(|e| {
@@ -138,10 +152,10 @@ pub fn get_builtin_entity_match(tokens: &[Token],
 }
 
 fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<String> {
-    tokens.iter()
-        .map(|t|
-            stemmer.map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value)))
-        ).collect_vec()
+    tokens
+        .iter()
+        .map(|t| stemmer.map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value))))
+        .collect_vec()
 }
 
 #[cfg(test)]
@@ -205,10 +219,12 @@ mod tests {
         assert_eq!(actual_result, expected_result)
     }
 
-    fn assert_ngrams_eq<S: Stemmer, G: Gazetteer>(expected_ngrams: Vec<Vec<Option<String>>>,
-                                                  tokens: &[Token],
-                                                  stemmer: Option<&S>,
-                                                  gazetteer: Option<&G>) {
+    fn assert_ngrams_eq<S: Stemmer, G: Gazetteer>(
+        expected_ngrams: Vec<Vec<Option<String>>>,
+        tokens: &[Token],
+        stemmer: Option<&S>,
+        gazetteer: Option<&G>,
+    ) {
         for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
             for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
                 let actual_ngrams = ngram(tokens, i, n + 1, stemmer, gazetteer);
@@ -222,25 +238,34 @@ mod tests {
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
 
-        let expected_ngrams = vec![vec![Some("i".to_string()),
-                                        Some("love".to_string()),
-                                        Some("house".to_string()),
-                                        Some("music".to_string())],
-                                   vec![Some("i love".to_string()),
-                                        Some("love house".to_string()),
-                                        Some("house music".to_string()),
-                                        None],
-                                   vec![Some("i love house".to_string()),
-                                        Some("love house music".to_string()),
-                                        None,
-                                        None]];
+        let expected_ngrams = vec![
+            vec![
+                Some("i".to_string()),
+                Some("love".to_string()),
+                Some("house".to_string()),
+                Some("music".to_string()),
+            ],
+            vec![
+                Some("i love".to_string()),
+                Some("love house".to_string()),
+                Some("house music".to_string()),
+                None,
+            ],
+            vec![
+                Some("i love house".to_string()),
+                Some("love house music".to_string()),
+                None,
+                None,
+            ],
+        ];
 
-        assert_ngrams_eq(expected_ngrams,
-                         &tokens,
-                         None as Option<&StaticMapStemmer>,
-                         None as Option<&HashSetGazetteer>);
+        assert_ngrams_eq(
+            expected_ngrams,
+            &tokens,
+            None as Option<&StaticMapStemmer>,
+            None as Option<&HashSetGazetteer>,
+        );
     }
-
 
     #[test]
     fn ngram_works_with_common_words_gazetteer() {
@@ -248,31 +273,37 @@ mod tests {
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
         let common_words_gazetteer = HashSetGazetteer::from(
-            vec![
-                "i".to_string(),
-                "love".to_string(),
-                "music".to_string()
-            ].into_iter()
+            vec!["i".to_string(), "love".to_string(), "music".to_string()].into_iter(),
         );
 
         // Then
-        let expected_ngrams = vec![vec![Some("i".to_string()),
-                                        Some("love".to_string()),
-                                        Some("rare_word".to_string()),
-                                        Some("music".to_string())],
-                                   vec![Some("i love".to_string()),
-                                        Some("love rare_word".to_string()),
-                                        Some("rare_word music".to_string()),
-                                        None],
-                                   vec![Some("i love rare_word".to_string()),
-                                        Some("love rare_word music".to_string()),
-                                        None,
-                                        None]];
+        let expected_ngrams = vec![
+            vec![
+                Some("i".to_string()),
+                Some("love".to_string()),
+                Some("rare_word".to_string()),
+                Some("music".to_string()),
+            ],
+            vec![
+                Some("i love".to_string()),
+                Some("love rare_word".to_string()),
+                Some("rare_word music".to_string()),
+                None,
+            ],
+            vec![
+                Some("i love rare_word".to_string()),
+                Some("love rare_word music".to_string()),
+                None,
+                None,
+            ],
+        ];
 
-        assert_ngrams_eq(expected_ngrams,
-                         &tokens,
-                         None as Option<&StaticMapStemmer>,
-                         Some(&common_words_gazetteer));
+        assert_ngrams_eq(
+            expected_ngrams,
+            &tokens,
+            None as Option<&StaticMapStemmer>,
+            Some(&common_words_gazetteer),
+        );
     }
 
     #[test]
@@ -294,23 +325,33 @@ mod tests {
         let stemmer = TestStemmer {};
 
         // Then
-        let expected_ngrams = vec![vec![Some("i".to_string()),
-                                        Some("love".to_string()),
-                                        Some("hous".to_string()),
-                                        Some("music".to_string())],
-                                   vec![Some("i love".to_string()),
-                                        Some("love hous".to_string()),
-                                        Some("hous music".to_string()),
-                                        None],
-                                   vec![Some("i love hous".to_string()),
-                                        Some("love hous music".to_string()),
-                                        None,
-                                        None]];
+        let expected_ngrams = vec![
+            vec![
+                Some("i".to_string()),
+                Some("love".to_string()),
+                Some("hous".to_string()),
+                Some("music".to_string()),
+            ],
+            vec![
+                Some("i love".to_string()),
+                Some("love hous".to_string()),
+                Some("hous music".to_string()),
+                None,
+            ],
+            vec![
+                Some("i love hous".to_string()),
+                Some("love hous music".to_string()),
+                None,
+                None,
+            ],
+        ];
 
-        assert_ngrams_eq(expected_ngrams,
-                         &tokens,
-                         Some(&stemmer),
-                         None as Option<&HashSetGazetteer>);
+        assert_ngrams_eq(
+            expected_ngrams,
+            &tokens,
+            Some(&stemmer),
+            None as Option<&HashSetGazetteer>,
+        );
     }
 
     #[test]
@@ -321,8 +362,8 @@ mod tests {
             vec![
                 "bird".to_string(),
                 "blue bird".to_string(),
-                "beautiful blue bird".to_string()
-            ].into_iter()
+                "beautiful blue bird".to_string(),
+            ].into_iter(),
         );
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love this beautiful blue Bird !", language);
@@ -334,7 +375,8 @@ mod tests {
             token_index,
             &gazetteer,
             None as Option<&StaticMapStemmer>,
-            tagging_scheme);
+            tagging_scheme,
+        );
 
         // Then
         assert_eq!(Some("L-".to_string()), actual_result)
@@ -360,8 +402,8 @@ mod tests {
             vec![
                 "bird".to_string(),
                 "blue bird".to_string(),
-                "beautiful blue bird".to_string()
-            ].into_iter()
+                "beautiful blue bird".to_string(),
+            ].into_iter(),
         );
 
         let tagging_scheme = TaggingScheme::BILOU;
@@ -374,7 +416,8 @@ mod tests {
             token_index,
             &gazetteer,
             Some(&stemmer),
-            tagging_scheme);
+            tagging_scheme,
+        );
 
         // Then
         assert_eq!(Some("L-".to_string()), actual_result)
@@ -390,11 +433,13 @@ mod tests {
         let parser = BuiltinEntityParser::get(Language::EN);
 
         // When
-        let actual_annotation = get_builtin_entity_match(&tokens,
-                                                         token_index,
-                                                         &*parser,
-                                                         BuiltinEntityKind::Time,
-                                                         tagging_scheme);
+        let actual_annotation = get_builtin_entity_match(
+            &tokens,
+            token_index,
+            &*parser,
+            BuiltinEntityKind::Time,
+            tagging_scheme,
+        );
 
         // Then
         assert_eq!(Some("L-".to_string()), actual_annotation)

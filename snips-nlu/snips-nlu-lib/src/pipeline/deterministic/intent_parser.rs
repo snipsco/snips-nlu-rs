@@ -14,8 +14,9 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use pipeline::{IntentParser, InternalSlot};
-use pipeline::slot_utils::{resolve_builtin_slots, convert_to_custom_slot};
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, Language, IntentClassifierResult, Slot};
+use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
+use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, IntentClassifierResult, Language,
+                         Slot};
 
 pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
@@ -27,7 +28,8 @@ pub struct DeterministicIntentParser {
 
 impl DeterministicIntentParser {
     pub fn new(configuration: DeterministicParserConfiguration) -> Result<Self> {
-        let builtin_entity_parser = Language::from_str(&configuration.language_code).ok()
+        let builtin_entity_parser = Language::from_str(&configuration.language_code)
+            .ok()
             .map(BuiltinEntityParser::get);
         let language = Language::from_str(&configuration.language_code)?;
 
@@ -41,8 +43,9 @@ impl DeterministicIntentParser {
     }
 }
 
-fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>)
-                              -> Result<HashMap<String, Vec<Regex>>> {
+fn compile_regexes_per_intent(
+    patterns: HashMap<String, Vec<String>>,
+) -> Result<HashMap<String, Vec<Regex>>> {
     patterns
         .into_iter()
         .map(|(intent, patterns)| {
@@ -56,68 +59,88 @@ fn compile_regexes_per_intent(patterns: HashMap<String, Vec<String>>)
 }
 
 impl IntentParser for DeterministicIntentParser {
-    fn get_intent(&self, input: &str, intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
-        let formatted_input = if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-            replace_builtin_entities(input, &*builtin_entity_parser).1
-        } else {
-            input.to_string()
-        };
-        Ok(self.regexes_per_intent.iter()
-            .filter(|&(intent, _)|
+    fn get_intent(
+        &self,
+        input: &str,
+        intents: Option<&HashSet<String>>,
+    ) -> Result<Option<IntentClassifierResult>> {
+        let formatted_input =
+            if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
+                replace_builtin_entities(input, &*builtin_entity_parser).1
+            } else {
+                input.to_string()
+            };
+        Ok(self.regexes_per_intent
+            .iter()
+            .filter(|&(intent, _)| {
                 if let Some(intent_set) = intents {
                     intent_set.contains(intent)
                 } else {
                     true
                 }
-            )
-            .find(|&(_, regexes)| regexes.iter().find(|r| r.is_match(&formatted_input)).is_some())
-            .map(|(intent_name, _)| {
-                IntentClassifierResult {
-                    intent_name: intent_name.to_string(),
-                    probability: 1.0,
-                }
             })
-        )
+            .find(|&(_, regexes)| regexes.iter().any(|r| r.is_match(&formatted_input)))
+            .map(|(intent_name, _)| IntentClassifierResult {
+                intent_name: intent_name.to_string(),
+                probability: 1.0,
+            }))
     }
 
     fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
         let regexes = self.regexes_per_intent
             .get(intent_name)
-            .ok_or(format!("intent {:?} not found", intent_name))?;
+            .ok_or_else(|| format!("intent {:?} not found", intent_name))?;
 
-        let (ranges_mapping, formatted_input) = if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-            replace_builtin_entities(input, &*builtin_entity_parser)
-        } else {
-            (HashMap::<Range<usize>, Range<usize>>::new(), input.to_string())
-        };
+        let (ranges_mapping, formatted_input) =
+            if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
+                replace_builtin_entities(input, &*builtin_entity_parser)
+            } else {
+                (
+                    HashMap::<Range<usize>, Range<usize>>::new(),
+                    input.to_string(),
+                )
+            };
 
         let mut result = vec![];
         for regex in regexes {
             for caps in regex.captures_iter(&formatted_input) {
-                if caps.len() == 0 { continue };
+                if caps.len() == 0 {
+                    continue;
+                };
                 caps.iter()
                     .zip(regex.capture_names())
                     .skip(1)
-                    .filter_map(|(opt_match, opt_group_name)|
+                    .filter_map(|(opt_match, opt_group_name)| {
                         if let (Some(a_match), Some(group_name)) = (opt_match, opt_group_name) {
                             Some((a_match, group_name))
                         } else {
                             None
-                        })
+                        }
+                    })
                     .map(|(a_match, group_name)| {
                         let byte_range = a_match.start()..a_match.end();
                         let matched_range = convert_to_char_range(&formatted_input, &byte_range);
                         let (value, range) = if let Some(rng) = ranges_mapping.get(&matched_range) {
-                            (substring_with_char_range(input.to_string(), rng), rng.clone())
+                            (
+                                substring_with_char_range(input.to_string(), rng),
+                                rng.clone(),
+                            )
                         } else {
                             (a_match.as_str().into(), matched_range)
                         };
                         let slot_name = self.group_names_to_slot_names[group_name].to_string();
                         let entity = self.slot_names_to_entities[&slot_name].to_string();
 
-                        InternalSlot { value, char_range: range, entity, slot_name }
+                        InternalSlot {
+                            value,
+                            char_range: range,
+                            entity,
+                            slot_name,
+                        }
                     })
-                    .foreach(|slot| { result.push(slot); });
+                    .foreach(|slot| {
+                        result.push(slot);
+                    });
                 break;
             }
         }
@@ -128,9 +151,15 @@ impl IntentParser for DeterministicIntentParser {
                 .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
                 .unique()
                 .collect::<Vec<_>>();
-            Ok(resolve_builtin_slots(input, deduplicated_slots, &*builtin_entity_parser, Some(&*filter_entity_kinds)))
+            Ok(resolve_builtin_slots(
+                input,
+                deduplicated_slots,
+                &*builtin_entity_parser,
+                Some(&*filter_entity_kinds),
+            ))
         } else {
-            Ok(deduplicated_slots.into_iter()
+            Ok(deduplicated_slots
+                .into_iter()
                 .filter_map(|s| {
                     if BuiltinEntityKind::from_identifier(&s.entity).is_err() {
                         Some(convert_to_custom_slot(s))
@@ -143,7 +172,10 @@ impl IntentParser for DeterministicIntentParser {
     }
 }
 
-fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -> Vec<InternalSlot> {
+fn deduplicate_overlapping_slots(
+    slots: Vec<InternalSlot>,
+    language: Language,
+) -> Vec<InternalSlot> {
     let mut deduped: Vec<InternalSlot> = Vec::with_capacity(slots.len());
     let language = NluUtilsLanguage::from_language(language);
 
@@ -156,11 +188,13 @@ fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -
             fn extract_counts(v: &InternalSlot, l: NluUtilsLanguage) -> (usize, usize) {
                 (tokenize(&v.value, l).len(), v.value.chars().count())
             }
-            let (existing_token_count, existing_char_count) = extract_counts(&deduped[index], language);
+            let (existing_token_count, existing_char_count) =
+                extract_counts(&deduped[index], language);
             let (token_count, char_count) = extract_counts(&slot, language);
 
-            if token_count > existing_token_count ||
-                (token_count == existing_token_count && char_count > existing_char_count) {
+            if token_count > existing_token_count
+                || (token_count == existing_token_count && char_count > existing_char_count)
+            {
                 deduped[index] = slot;
             }
         } else {
@@ -171,10 +205,12 @@ fn deduplicate_overlapping_slots(slots: Vec<InternalSlot>, language: Language) -
     deduped
 }
 
-fn replace_builtin_entities(text: &str,
-                            parser: &BuiltinEntityParser) -> (HashMap<Range<usize>, Range<usize>>, String) {
+fn replace_builtin_entities(
+    text: &str,
+    parser: &BuiltinEntityParser,
+) -> (HashMap<Range<usize>, Range<usize>>, String) {
     let builtin_entities = parser.extract_entities(text, None);
-    if builtin_entities.len() == 0 {
+    if builtin_entities.is_empty() {
         return (HashMap::new(), text.to_string());
     }
 
@@ -185,7 +221,8 @@ fn replace_builtin_entities(text: &str,
 
     for entity in builtin_entities {
         let range_start = (entity.range.start as i16 + offset) as usize;
-        let prefix_text = substring_with_char_range(text.to_string(), &(current_ix..entity.range.start));
+        let prefix_text =
+            substring_with_char_range(text.to_string(), &(current_ix..entity.range.start));
         let entity_text = get_builtin_entity_name(entity.entity_kind.identifier());
         processed_text = format!("{}{}{}", processed_text, prefix_text, entity_text);
         offset += entity_text.chars().count() as i16 - entity.range.clone().count() as i16;
@@ -195,13 +232,19 @@ fn replace_builtin_entities(text: &str,
         range_mapping.insert(new_range, entity.range);
     }
 
-    processed_text = format!("{}{}", processed_text, suffix_from_char_index(text.to_string(), current_ix));
+    processed_text = format!(
+        "{}{}",
+        processed_text,
+        suffix_from_char_index(text.to_string(), current_ix)
+    );
     (range_mapping, processed_text)
 }
 
 fn get_builtin_entity_name(entity_label: &str) -> String {
     // Here we don't need language specific tokenization, we just want to generate a feature name, that's why we use EN
-    let normalized_entity_label = tokenize_light(entity_label, NluUtilsLanguage::EN).join("").to_uppercase();
+    let normalized_entity_label = tokenize_light(entity_label, NluUtilsLanguage::EN)
+        .join("")
+        .to_uppercase();
     format!("%{}%", normalized_entity_label)
 }
 
@@ -210,7 +253,8 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use snips_nlu_ontology::{BuiltinEntityParser, Language, AmountOfMoneyValue, IntentClassifierResult, Precision, Slot, SlotValue};
+    use snips_nlu_ontology::{AmountOfMoneyValue, BuiltinEntityParser, IntentClassifierResult,
+                             Language, Precision, Slot, SlotValue};
     use pipeline::deterministic::configuration::DeterministicParserConfiguration;
     use pipeline::{IntentParser, InternalSlot};
 
@@ -319,7 +363,6 @@ mod tests {
         let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
         let text = "This is another über dummy_cc query!";
 
-
         // When
         let slots = parser.get_slots(text, "dummy_intent_1").unwrap();
 
@@ -348,17 +391,15 @@ mod tests {
         let expected_slots = vec![
             Slot {
                 raw_value: "10 dollars".to_string(),
-                value: SlotValue::AmountOfMoney(
-                    AmountOfMoneyValue {
-                        value: 10.0,
-                        precision: Precision::Exact,
-                        unit: Some("$".to_string()),
-                    }
-                ),
+                value: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                    value: 10.0,
+                    precision: Precision::Exact,
+                    unit: Some("$".to_string()),
+                }),
                 range: Some(5..15),
                 entity: "snips/amountOfMoney".to_string(),
                 slot_name: "dummy_slot_name4".to_string(),
-            }
+            },
         ];
         assert_eq!(slots, expected_slots);
     }
@@ -437,12 +478,8 @@ mod tests {
         let (range_mapping, formatted_text) = replace_builtin_entities(text, &*parser);
 
         // Then
-        let expected_mapping = HashMap::from_iter(
-            vec![
-                (8..23, 8..20),
-                (27..42, 24..40)
-            ].into_iter()
-        );
+        let expected_mapping =
+            HashMap::from_iter(vec![(8..23, 8..20), (27..42, 24..40)].into_iter());
 
         let expected_text = "Meeting %SNIPSDATETIME% or %SNIPSDATETIME% !";
         assert_eq!(expected_mapping, range_mapping);

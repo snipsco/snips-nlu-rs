@@ -31,7 +31,7 @@ pub fn resolve_builtin_slots(
     slots
         .into_iter()
         .filter_map(|slot| {
-            if let Some(entity_kind) = BuiltinEntityKind::from_identifier(&slot.entity).ok() {
+            if let Ok(entity_kind) = BuiltinEntityKind::from_identifier(&slot.entity) {
                 builtin_entities
                     .iter()
                     .find(|entity| {
@@ -45,16 +45,13 @@ pub fn resolve_builtin_slots(
                             .find(|rustling_entity| rustling_entity.entity_kind == entity_kind)
                             .map(|rustling_entity| rustling_entity.entity)
                     })
-                    .map(|matching_entity| {
-                        convert_to_builtin_slot(slot, matching_entity)
-                    })
+                    .map(|matching_entity| convert_to_builtin_slot(slot, matching_entity))
             } else {
                 Some(convert_to_custom_slot(slot))
             }
         })
         .collect()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -111,4 +108,3 @@ mod tests {
         assert_eq!(expected_results, actual_results);
     }
 }
-

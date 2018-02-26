@@ -2,11 +2,20 @@ use std::str;
 use std::iter::FromIterator;
 use nlu_utils::token::Token;
 
-pub fn get_word_chunk(word: String, chunk_size: usize, chunk_start: usize, reverse: bool) -> Option<String> {
+pub fn get_word_chunk(
+    word: &str,
+    chunk_size: usize,
+    chunk_start: usize,
+    reverse: bool,
+) -> Option<String> {
     if reverse && chunk_size > chunk_start {
         return None;
     }
-    let start = if reverse { chunk_start - chunk_size } else { chunk_start };
+    let start = if reverse {
+        chunk_start - chunk_size
+    } else {
+        chunk_start
+    };
     if start + chunk_size > word.chars().count() {
         None
     } else {
@@ -35,7 +44,7 @@ fn is_title_case(string: &str) -> bool {
             _ => return false,
         }
     }
-    return !first;
+    !first
 }
 
 pub fn initial_string_from_tokens(tokens: &[Token]) -> String {
@@ -60,7 +69,7 @@ mod tests {
     #[test]
     fn get_word_chunk_works() {
         // Given
-        let word = "hello_world".to_string();
+        let word = "hello_world";
         let chunk_size = 6;
         let chunk_start = 5;
         let reverse = false;
@@ -76,7 +85,7 @@ mod tests {
     #[test]
     fn get_word_chunk_reversed_works() {
         // Given
-        let word = "hello_world".to_string();
+        let word = "hello_world";
         let chunk_size = 8;
         let chunk_start = 8;
         let reverse = true;
@@ -92,7 +101,7 @@ mod tests {
     #[test]
     fn get_word_chunk_out_of_bound_works() {
         // Given
-        let word = "hello_world".to_string();
+        let word = "hello_world";
         let chunk_size = 4;
         let chunk_start = 8;
         let reverse = false;
@@ -121,21 +130,9 @@ mod tests {
     fn initial_string_from_tokens_works() {
         // Given
         let tokens = vec![
-            Token::new(
-                "hello".to_string(),
-                0..5,
-                0..5,
-            ),
-            Token::new(
-                "world".to_string(),
-                9..14,
-                9..14,
-            ),
-            Token::new(
-                "!!!".to_string(),
-                17..20,
-                17..20,
-            )
+            Token::new("hello".to_string(), 0..5, 0..5),
+            Token::new("world".to_string(), 9..14, 9..14),
+            Token::new("!!!".to_string(), 17..20, 17..20),
         ];
 
         // When

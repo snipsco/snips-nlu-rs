@@ -9,9 +9,11 @@ use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
 use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
 
 pub trait IntentClassifier: Send + Sync {
-    fn get_intent(&self,
-                  input: &str,
-                  intents_filter: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>>;
+    fn get_intent(
+        &self,
+        input: &str,
+        intents_filter: Option<&HashSet<String>>,
+    ) -> Result<Option<IntentClassifierResult>>;
 }
 
 pub struct LogRegIntentClassifier {
@@ -23,17 +25,17 @@ pub struct LogRegIntentClassifier {
 impl LogRegIntentClassifier {
     pub fn new(config: IntentClassifierConfiguration) -> Result<Self> {
         let featurizer = config.featurizer.map(Featurizer::new);
-        let logreg =
-            if let (Some(intercept), Some(coeffs)) = (config.intercept, config.coeffs) {
-                let arr_intercept = Array::from_vec(intercept);
-                let nb_classes = arr_intercept.dim();
-                let nb_features = coeffs[0].len();
-                // Note: the deserialized coeffs matrix is transposed
-                let arr_weights = Array::from_shape_fn((nb_features, nb_classes), |(i, j)| coeffs[j][i]);
-                MulticlassLogisticRegression::new(arr_intercept, arr_weights).map(Some)
-            } else {
-                Ok(None)
-            }?;
+        let logreg = if let (Some(intercept), Some(coeffs)) = (config.intercept, config.coeffs) {
+            let arr_intercept = Array::from_vec(intercept);
+            let nb_classes = arr_intercept.dim();
+            let nb_features = coeffs[0].len();
+            // Note: the deserialized coeffs matrix is transposed
+            let arr_weights =
+                Array::from_shape_fn((nb_features, nb_classes), |(i, j)| coeffs[j][i]);
+            MulticlassLogisticRegression::new(arr_intercept, arr_weights).map(Some)
+        } else {
+            Ok(None)
+        }?;
 
         Ok(Self {
             intent_list: config.intent_list,
@@ -44,47 +46,56 @@ impl LogRegIntentClassifier {
 }
 
 impl IntentClassifier for LogRegIntentClassifier {
-    fn get_intent(&self,
-                  input: &str,
-                  intents_filter: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>> {
+    fn get_intent(
+        &self,
+        input: &str,
+        intents_filter: Option<&HashSet<String>>,
+    ) -> Result<Option<IntentClassifierResult>> {
         if input.is_empty() || self.intent_list.is_empty() {
             return Ok(None);
         }
 
         if self.intent_list.len() == 1 {
-            return Ok(self.intent_list[0].as_ref().map(|intent_name|
-                IntentClassifierResult { intent_name: intent_name.clone(), probability: 1.0 }
-            ));
+            return Ok(self.intent_list[0]
+                .as_ref()
+                .map(|intent_name| IntentClassifierResult {
+                    intent_name: intent_name.clone(),
+                    probability: 1.0,
+                }));
         }
 
         if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
-            let features = featurizer.transform(&input)?;
+            let features = featurizer.transform(input)?;
             let probabilities = logreg.run(&features.view())?;
 
-            let mut intents_proba: Vec<(&Option<String>, &f32)> = self.intent_list.iter()
+            let mut intents_proba: Vec<(&Option<String>, &f32)> = self.intent_list
+                .iter()
                 .zip(probabilities.into_iter())
                 .collect_vec();
 
             // Sort intents by decreasing probabilities
             intents_proba.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
 
-            let mut filtered_intents = intents_proba.into_iter()
-                .filter(|&(opt_intent, _)|
-                    if let Some(intent) = opt_intent.as_ref() {
-                        intents_filter.map(|intents|
-                            intents.contains(intent)
-                        ).unwrap_or(true)
-                    } else {
-                        true
-                    });
+            let mut filtered_intents = intents_proba.into_iter().filter(|&(opt_intent, _)| {
+                if let Some(intent) = opt_intent.as_ref() {
+                    intents_filter
+                        .map(|intents| intents.contains(intent))
+                        .unwrap_or(true)
+                } else {
+                    true
+                }
+            });
 
-            filtered_intents.next()
-                .map(|(opt_intent, proba)|
-                    Ok(opt_intent.clone().map(|intent_name|
-                        IntentClassifierResult {
+            filtered_intents
+                .next()
+                .map(|(opt_intent, proba)| {
+                    Ok(opt_intent
+                        .clone()
+                        .map(|intent_name| IntentClassifierResult {
                             intent_name: intent_name.clone(),
                             probability: *proba,
-                        })))
+                        }))
+                })
                 .unwrap_or(Ok(None))
         } else {
             Ok(None)
@@ -100,11 +111,16 @@ mod tests {
     use ndarray::*;
     use models::logreg::MulticlassLogisticRegression;
     use pipeline::IntentClassifierResult;
-    use pipeline::probabilistic::configuration::{FeaturizerConfiguration, TfIdfVectorizerConfiguration, FeaturizerConfigConfiguration};
+    use pipeline::probabilistic::configuration::{FeaturizerConfigConfiguration,
+                                                 FeaturizerConfiguration,
+                                                 TfIdfVectorizerConfiguration};
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
         let language_code = "en".to_string();
-        let best_features = vec![1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92, 93, 96, 97, 100, 101];
+        let best_features = vec![
+            1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92,
+            93, 96, 97, 100, 101,
+        ];
         let entity_utterances_to_feature_names = hashmap![];
         let vocab = hashmap![
             "!".to_string() => 0,
@@ -335,21 +351,20 @@ mod tests {
             3.97041446557,
             3.97041446557,
             3.97041446557,
-            3.27726728501
+            3.27726728501,
         ];
 
-        let tfidf_vectorizer = TfIdfVectorizerConfiguration {
-            idf_diag,
-            vocab,
-        };
+        let tfidf_vectorizer = TfIdfVectorizerConfiguration { idf_diag, vocab };
 
         let intent_list: Vec<Option<String>> = vec![
             Some("MakeCoffee".to_string()),
             Some("MakeTea".to_string()),
-            None
+            None,
         ];
 
-        let config = FeaturizerConfigConfiguration { sublinear_tf: false };
+        let config = FeaturizerConfigConfiguration {
+            sublinear_tf: false,
+        };
 
         let config = FeaturizerConfiguration {
             tfidf_vectorizer,
@@ -361,7 +376,11 @@ mod tests {
 
         let featurizer = Featurizer::new(config);
 
-        let intercept = array![-0.6769558144299883, -0.6587242944035958, 0.22680835693804338];
+        let intercept = array![
+            -0.6769558144299883,
+            -0.6587242944035958,
+            0.22680835693804338
+        ];
 
         let coeffs_vec = vec![
             [
@@ -391,7 +410,7 @@ mod tests {
                 0.47613450034233684,
                 0.30011894863821786,
                 0.24107723670655656,
-                0.07579876754730583
+                0.07579876754730583,
             ],
             [
                 -0.36011489995898516,
@@ -420,7 +439,7 @@ mod tests {
                 -0.42500086360353684,
                 0.3681826115884594,
                 0.3763435734118238,
-                0.696370959190279
+                0.696370959190279,
             ],
             [
                 -0.3208821394723137,
@@ -449,8 +468,8 @@ mod tests {
                 -0.21437336251972489,
                 -0.61116631674614,
                 -0.6014286441350187,
-                -0.6979309347340573
-            ]
+                -0.6979309347340573,
+            ],
         ];
 
         let coeffs: Array2<f32> = Array::from_shape_fn((27, 3), |(i, j)| coeffs_vec[j][i]);
@@ -488,7 +507,10 @@ mod tests {
         // When
         let text1 = "Make me two cups of tea";
         let result1 = classifier
-            .get_intent(text1, Some(hashset! {"MakeCoffee".to_string(), "MakeTea".to_string()}).as_ref())
+            .get_intent(
+                text1,
+                Some(hashset! {"MakeCoffee".to_string(), "MakeTea".to_string()}).as_ref(),
+            )
             .unwrap();
 
         let text2 = "Make me two cups of tea";
@@ -502,8 +524,14 @@ mod tests {
             .unwrap();
 
         // Then
-        assert_eq!(Some("MakeTea".to_string()), result1.map(|res| res.intent_name));
-        assert_eq!(Some("MakeCoffee".to_string()), result2.map(|res| res.intent_name));
+        assert_eq!(
+            Some("MakeTea".to_string()),
+            result1.map(|res| res.intent_name)
+        );
+        assert_eq!(
+            Some("MakeCoffee".to_string()),
+            result2.map(|res| res.intent_name)
+        );
         assert_eq!(None, result3);
     }
 }
