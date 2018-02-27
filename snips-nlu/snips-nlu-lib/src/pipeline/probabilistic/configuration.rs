@@ -27,7 +27,7 @@ pub struct FeaturizerConfiguration {
 
 #[derive(Debug, Deserialize)]
 pub struct FeaturizerConfigConfiguration {
-    pub sublinear_tf: bool
+    pub sublinear_tf: bool,
 }
 
 #[derive(Debug, Deserialize)]
@@ -49,7 +49,7 @@ pub struct SlotFillerConfiguration {
 pub struct SlotFillerConfigConfiguration {
     pub tagging_scheme: u8,
     pub exhaustive_permutations_threshold: usize,
-    pub feature_factory_configs: Vec<FeatureFactory>
+    pub feature_factory_configs: Vec<FeatureFactory>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -1,18 +1,18 @@
-extern crate snips_nlu_lib;
-extern crate snips_nlu_ontology_ffi;
+#[macro_use]
+extern crate error_chain;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
-#[macro_use]
-extern crate error_chain;
 extern crate serde_json;
+extern crate snips_nlu_lib;
+extern crate snips_nlu_ontology_ffi;
 
 use std::ffi::{CStr, CString};
 use std::sync::Mutex;
 use std::slice;
 use std::io::Cursor;
 
-use snips_nlu_lib::{SnipsNluEngine, FileBasedConfiguration, ZipBasedConfiguration};
+use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine, ZipBasedConfiguration};
 use snips_nlu_ontology_ffi::CIntentParserResult;
 
 lazy_static! {
@@ -83,33 +83,37 @@ macro_rules! get_str {
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_create_from_dir(root_dir: *const libc::c_char,
-                                             client: *mut *const Opaque)
-                                             -> NLURESULT {
+pub extern "C" fn nlu_engine_create_from_dir(
+    root_dir: *const libc::c_char,
+    client: *mut *const Opaque,
+) -> NLURESULT {
     wrap!(create_from_dir(root_dir, client))
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_create_from_zip(zip: *const libc::c_uchar,
-                                             zip_size: libc::c_uint,
-                                             client: *mut *const Opaque)
-                                             -> NLURESULT {
+pub extern "C" fn nlu_engine_create_from_zip(
+    zip: *const libc::c_uchar,
+    zip_size: libc::c_uint,
+    client: *mut *const Opaque,
+) -> NLURESULT {
     wrap!(create_from_zip(zip, zip_size, client))
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_run_parse(client: *const Opaque,
-                                       input: *const libc::c_char,
-                                       result: *mut *const CIntentParserResult)
-                                       -> NLURESULT {
+pub extern "C" fn nlu_engine_run_parse(
+    client: *const Opaque,
+    input: *const libc::c_char,
+    result: *mut *const CIntentParserResult,
+) -> NLURESULT {
     wrap!(run_parse(client, input, result))
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_run_parse_into_json(client: *const Opaque,
-                                                 input: *const libc::c_char,
-                                                 result_json: *mut *const libc::c_char)
-                                                 -> NLURESULT {
+pub extern "C" fn nlu_engine_run_parse_into_json(
+    client: *const Opaque,
+    input: *const libc::c_char,
+    result_json: *mut *const libc::c_char,
+) -> NLURESULT {
     wrap!(run_parse_into_json(client, input, result_json))
 }
 
@@ -161,10 +165,11 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const Opaque) ->
     Ok(())
 }
 
-fn create_from_zip(zip: *const libc::c_uchar,
-                   zip_size: libc::c_uint,
-                   client: *mut *const Opaque)
-                   -> Result<()> {
+fn create_from_zip(
+    zip: *const libc::c_uchar,
+    zip_size: libc::c_uint,
+    client: *mut *const Opaque,
+) -> Result<()> {
     let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
     let reader = Cursor::new(slice.to_owned());
 
@@ -176,10 +181,11 @@ fn create_from_zip(zip: *const libc::c_uchar,
     Ok(())
 }
 
-fn run_parse(client: *const Opaque,
-             input: *const libc::c_char,
-             result: *mut *const CIntentParserResult)
-             -> Result<()> {
+fn run_parse(
+    client: *const Opaque,
+    input: *const libc::c_char,
+    result: *mut *const CIntentParserResult,
+) -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 
@@ -191,10 +197,11 @@ fn run_parse(client: *const Opaque,
     Ok(())
 }
 
-fn run_parse_into_json(client: *const Opaque,
-                       input: *const libc::c_char,
-                       result_json: *mut *const libc::c_char)
-                       -> Result<()> {
+fn run_parse_into_json(
+    client: *const Opaque,
+    input: *const libc::c_char,
+    result_json: *mut *const libc::c_char,
+) -> Result<()> {
     let input = get_str!(input);
     let intent_parser = get_intent_parser!(client);
 

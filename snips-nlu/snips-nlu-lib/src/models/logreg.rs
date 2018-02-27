@@ -32,14 +32,18 @@ impl MulticlassLogisticRegression {
         let nb_classes = intercept.dim();
         let reshaped_intercept = intercept.into_shape((1, nb_classes))?;
         let weights_with_intercept = stack![Axis(0), reshaped_intercept, weights];
-        Ok(Self { weights: weights_with_intercept })
+        Ok(Self {
+            weights: weights_with_intercept,
+        })
     }
 
     pub fn run(&self, features: &ArrayView1<f32>) -> Result<Array1<f32>> {
         let reshaped_features = features.into_shape((1, self.nb_features()))?;
         let reshaped_features = stack![Axis(1), array![[1.]], reshaped_features];
-        let mut result = reshaped_features.dot(&self.weights).into_shape(self.nb_classes())?;
-        result.mapv_inplace(|x| logit(x));
+        let mut result = reshaped_features
+            .dot(&self.weights)
+            .into_shape(self.nb_classes())?;
+        result.mapv_inplace(logit);
         if self.is_binary() {
             return Ok(arr1(&[1.0 - result[0], result[0]]));
         }
@@ -53,7 +57,6 @@ fn logit(x: f32) -> f32 {
     1. / (1. + (-x).exp())
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::MulticlassLogisticRegression;
@@ -63,10 +66,12 @@ mod tests {
     fn multiclass_logistic_regression_works() {
         // Given
         let intercept = array![0.98, 0.32, -0.76];
-        let weights = array![[ 2.5, -0.6,  0.5],
-                             [ 1.2,  2.2, -2.7],
-                             [ 1.5,  0.1, -3.2],
-                             [-0.9, -2.4,  1.8]];
+        let weights = array![
+            [2.5, -0.6, 0.5],
+            [1.2, 2.2, -2.7],
+            [1.5, 0.1, -3.2],
+            [-0.9, -2.4, 1.8]
+        ];
 
         let features = array![0.4, -2.3, 1.9, 1.3];
         let regression = MulticlassLogisticRegression::new(intercept, weights).unwrap();
@@ -83,10 +88,7 @@ mod tests {
     fn multiclass_logistic_regression_works_when_binary() {
         // Given
         let intercept = array![0.98];
-        let weights = array![[ 2.5],
-                             [ 1.2],
-                             [ 1.5],
-                             [-0.9]];
+        let weights = array![[2.5], [1.2], [1.5], [-0.9]];
 
         let features = array![0.4, -2.3, 1.9, 1.3];
         let regression = MulticlassLogisticRegression::new(intercept, weights).unwrap();

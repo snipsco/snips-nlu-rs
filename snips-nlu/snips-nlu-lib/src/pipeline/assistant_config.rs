@@ -8,7 +8,8 @@ use zip;
 
 use errors::*;
 
-use pipeline::configuration::{NluEngineConfiguration, NluEngineConfigurationConvertible, ModelVersionConfiguration};
+use pipeline::configuration::{ModelVersionConfiguration, NluEngineConfiguration,
+                              NluEngineConfigurationConvertible};
 
 const NLU_CONFIGURATION_FILENAME: &str = "trained_assistant.json";
 
@@ -17,19 +18,29 @@ pub struct FileBasedConfiguration {
 }
 
 impl FileBasedConfiguration {
-    pub fn new<P: AsRef<path::Path>>(root_dir: P, bypass_model_version_check: bool) -> Result<Self> {
+    pub fn new<P: AsRef<path::Path>>(
+        root_dir: P,
+        bypass_model_version_check: bool,
+    ) -> Result<Self> {
         let path = root_dir.as_ref().join(NLU_CONFIGURATION_FILENAME);
 
         if !bypass_model_version_check {
-            let config_file = fs::File::open(&path).chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
-            let nlu_configuration_with_version_only: ModelVersionConfiguration = serde_json::from_reader(config_file)
-                .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
-            if nlu_configuration_with_version_only.model_version != ::SnipsNluEngine::model_version() {
-                bail!(ErrorKind::WrongModelVersion(nlu_configuration_with_version_only.model_version));
+            let config_file =
+                fs::File::open(&path).chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
+            let nlu_configuration_with_version_only: ModelVersionConfiguration =
+                serde_json::from_reader(config_file)
+                    .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
+            if nlu_configuration_with_version_only.model_version
+                != ::SnipsNluEngine::model_version()
+            {
+                bail!(ErrorKind::WrongModelVersion(
+                    nlu_configuration_with_version_only.model_version
+                ));
             }
         }
 
-        let config_file = fs::File::open(&path).chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
+        let config_file =
+            fs::File::open(&path).chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
         let nlu_configuration = serde_json::from_reader(config_file)
             .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
 
@@ -53,22 +64,30 @@ pub struct ZipBasedConfiguration {
 
 impl ZipBasedConfiguration {
     pub fn new<R>(reader: R, bypass_model_version_check: bool) -> Result<Self>
-        where R: Read + Seek {
-        let zip = zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
+    where
+        R: Read + Seek,
+    {
+        let zip =
+            zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
         let mutex = Arc::new(Mutex::new(zip));
 
-        let nlu_conf_bytes = Self::read_bytes(mutex.clone(), NLU_CONFIGURATION_FILENAME)
+        let nlu_conf_bytes = Self::read_bytes(&mutex, NLU_CONFIGURATION_FILENAME)
             .or_else(|_| {
                 // Assistants downloaded from the console are in a directory named assistant
-                Self::read_bytes(mutex.clone(), &format!("assistant/{}", NLU_CONFIGURATION_FILENAME))
+                Self::read_bytes(&mutex, &format!("assistant/{}", NLU_CONFIGURATION_FILENAME))
             })
             .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
 
         if !bypass_model_version_check {
-            let nlu_configuration_with_version_only: ModelVersionConfiguration = serde_json::from_slice(&nlu_conf_bytes)
-                .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
-            if nlu_configuration_with_version_only.model_version != ::SnipsNluEngine::model_version() {
-                bail!(ErrorKind::WrongModelVersion(nlu_configuration_with_version_only.model_version));
+            let nlu_configuration_with_version_only: ModelVersionConfiguration =
+                serde_json::from_slice(&nlu_conf_bytes)
+                    .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+            if nlu_configuration_with_version_only.model_version
+                != ::SnipsNluEngine::model_version()
+            {
+                bail!(ErrorKind::WrongModelVersion(
+                    nlu_configuration_with_version_only.model_version
+                ));
             }
         }
 
@@ -78,10 +97,12 @@ impl ZipBasedConfiguration {
         Ok(Self { nlu_configuration })
     }
 
-    fn read_bytes<R>(zip: Arc<Mutex<zip::read::ZipArchive<R>>>, name: &str) -> Result<Vec<u8>>
-        where R: Read + Seek {
+    fn read_bytes<R>(zip: &Mutex<zip::read::ZipArchive<R>>, name: &str) -> Result<Vec<u8>>
+    where
+        R: Read + Seek,
+    {
         let mut locked = zip.lock()?;
-        let ref mut zip = *locked;
+        let zip = &mut (*locked);
         let mut file = zip.by_name(name)?;
         let mut bytes = vec![];
         file.read_to_end(&mut bytes)?;
@@ -136,4 +157,3 @@ mod tests {
         assert_eq!(Ok("ok"), nlu_config_formatted);
     }
 }
-

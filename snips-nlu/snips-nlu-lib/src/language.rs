@@ -19,7 +19,7 @@ impl FromStr for LanguageConfig {
 impl LanguageConfig {
     pub fn intent_classification_clusters(&self) -> Option<&str> {
         match self {
-            _ => None
+            _ => None,
         }
     }
 }
@@ -28,7 +28,7 @@ pub trait FromLanguage {
     fn from_language(Language) -> Self;
 }
 
-impl FromLanguage for NluUtilsLanguage{
+impl FromLanguage for NluUtilsLanguage {
     fn from_language(l: Language) -> Self {
         match l {
             Language::DE => NluUtilsLanguage::DE,

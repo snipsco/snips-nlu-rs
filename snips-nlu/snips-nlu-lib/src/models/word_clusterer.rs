@@ -8,19 +8,17 @@ pub trait WordClusterer {
 
 pub struct StaticMapWordClusterer {
     language: Language,
-    cluster_name: String
+    cluster_name: String,
 }
 
 impl StaticMapWordClusterer {
     pub fn new(language: Language, cluster_name: String) -> Result<Self> {
         // Hack to check that the word cluster exists
         word_cluster(&cluster_name, language, "")?;
-        Ok(
-            Self {
-                language: language,
-                cluster_name: cluster_name
-            }
-        )
+        Ok(Self {
+            language: language,
+            cluster_name: cluster_name,
+        })
     }
 }
 

@@ -9,7 +9,7 @@ pub trait Stemmer: Send + Sync {
 
 #[derive(Copy, Clone, Debug)]
 pub struct StaticMapStemmer {
-    language: Language
+    language: Language,
 }
 
 impl StaticMapStemmer {

@@ -103,7 +103,6 @@ fn main() {
 
         gazetteer!(fr, stop_words_stem);
         gazetteer!(fr, top_10000_words_stem);
-
     }
 
     // we generate some files based on dependencies of this build script and not files in this

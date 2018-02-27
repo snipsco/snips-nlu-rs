@@ -16,11 +16,15 @@ pub struct InternalSlot {
     pub value: String,
     pub char_range: Range<usize>,
     pub entity: String,
-    pub slot_name: String
+    pub slot_name: String,
 }
 
 trait IntentParser: Send + Sync {
-    fn get_intent(&self, input: &str, intents: Option<&HashSet<String>>) -> Result<Option<IntentClassifierResult>>;
+    fn get_intent(
+        &self,
+        input: &str,
+        intents: Option<&HashSet<String>>,
+    ) -> Result<Option<IntentClassifierResult>>;
     fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>>;
 }
 

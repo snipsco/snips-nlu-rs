@@ -6,10 +6,7 @@ extern crate yolo;
 use std::{env, fs};
 
 use bencher::Bencher;
-use snips_nlu_lib::{
-    SnipsNluEngine,
-    FileBasedConfiguration,
-    ZipBasedConfiguration};
+use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine, ZipBasedConfiguration};
 use snips_nlu_lib::file_path;
 use yolo::Yolo;
 
@@ -20,11 +17,18 @@ const SENTENCE_ENV: &str = "SNIPS_NLU_BENCH_SENTENCE";
 
 fn load_nlu_engine() -> SnipsNluEngine {
     if env::var(ASSISTANT_ZIP_ENV).is_ok() && env::var(ASSISTANT_DIR_ENV).is_ok() {
-        panic!("{} and {} env vars are exclusive. Please use only one of both", ASSISTANT_ZIP_ENV, ASSISTANT_DIR_ENV);
+        panic!(
+            "{} and {} env vars are exclusive. Please use only one of both",
+            ASSISTANT_ZIP_ENV, ASSISTANT_DIR_ENV
+        );
     }
 
     let bypass_model_version_check = if let Ok(value) = env::var(BYPASS_MODEL_VERSION_ENV) {
-        if let Ok(int_value) = value.parse::<i32>() { int_value > 0 } else { true }
+        if let Ok(int_value) = value.parse::<i32>() {
+            int_value > 0
+        } else {
+            true
+        }
     } else {
         false
     };
@@ -34,10 +38,14 @@ fn load_nlu_engine() -> SnipsNluEngine {
         let assistant = ZipBasedConfiguration::new(file, bypass_model_version_check).yolo();
         SnipsNluEngine::new(assistant).yolo()
     } else if let Ok(assistant_directory) = env::var(ASSISTANT_DIR_ENV) {
-        let assistant = FileBasedConfiguration::new(file_path(&assistant_directory), bypass_model_version_check).yolo();
+        let assistant = FileBasedConfiguration::new(
+            file_path(&assistant_directory),
+            bypass_model_version_check,
+        ).yolo();
         SnipsNluEngine::new(assistant).yolo()
     } else {
-        let assistant = FileBasedConfiguration::new(file_path("untracked"), bypass_model_version_check).yolo();
+        let assistant =
+            FileBasedConfiguration::new(file_path("untracked"), bypass_model_version_check).yolo();
         SnipsNluEngine::new(assistant).yolo()
     }
 }

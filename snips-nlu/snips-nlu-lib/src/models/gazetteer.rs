@@ -25,7 +25,10 @@ impl StaticMapGazetteer {
         let full_gazetteer_name = format!("{}{}", gazetteer_name, stemming_suffix);
         // Hack to check if gazetteer exists
         gazetteer_hits(language, &full_gazetteer_name, "")?;
-        Ok(Self { name: full_gazetteer_name, language: language })
+        Ok(Self {
+            name: full_gazetteer_name,
+            language: language,
+        })
     }
 }
 
@@ -46,16 +49,22 @@ impl HashSetGazetteer {
         let vec: Vec<String> = serde_json::from_reader(r)
             .map_err(|err| format!("could not parse json: {:?}", err))
             .unwrap();
-        Ok(HashSetGazetteer { values: HashSet::from_iter(vec) })
+        Ok(HashSetGazetteer {
+            values: HashSet::from_iter(vec),
+        })
     }
 }
 
-impl<I> From<I> for HashSetGazetteer where I: Iterator<Item=String> {
+impl<I> From<I> for HashSetGazetteer
+where
+    I: Iterator<Item = String>,
+{
     fn from(values_it: I) -> Self {
-        Self { values: HashSet::from_iter(values_it) }
+        Self {
+            values: HashSet::from_iter(values_it),
+        }
     }
 }
-
 
 impl Gazetteer for HashSetGazetteer {
     fn contains(&self, value: &str) -> bool {
@@ -65,7 +74,7 @@ impl Gazetteer for HashSetGazetteer {
 
 #[cfg(test)]
 mod tests {
-    use super::{HashSetGazetteer, Gazetteer};
+    use super::{Gazetteer, HashSetGazetteer};
 
     #[test]
     fn hashset_gazetteer_works() {
