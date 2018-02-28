@@ -1,7 +1,7 @@
-use dinghy_test::test_file_path;
-
-pub fn file_path(file_name: &str) -> ::std::path::PathBuf {
-    test_file_path("data").join(file_name)
+pub fn file_path(filename: &str) -> ::std::path::PathBuf {
+    ::dinghy_test::try_test_file_path("data")
+        .unwrap_or("../data".into())
+        .join(filename)
 }
 
 pub fn permutations<T: Copy>(v: &[T], permutation_length: i32) -> Vec<Vec<T>> {
