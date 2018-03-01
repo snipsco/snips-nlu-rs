@@ -3,13 +3,9 @@ use std::sync::{Arc, Mutex};
 use std::path;
 use std::fs;
 
-use serde_json;
-use zip;
-
 use errors::*;
-
-use pipeline::configuration::{ModelVersionConfiguration, NluEngineConfiguration,
-                              NluEngineConfigurationConvertible};
+use configurations::{ModelVersionConfiguration, NluEngineConfiguration,
+                     NluEngineConfigurationConvertible};
 
 const NLU_CONFIGURATION_FILENAME: &str = "trained_assistant.json";
 
@@ -28,7 +24,7 @@ impl FileBasedConfiguration {
             let config_file =
                 fs::File::open(&path).chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
             let nlu_configuration_with_version_only: ModelVersionConfiguration =
-                serde_json::from_reader(config_file)
+                ::serde_json::from_reader(config_file)
                     .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
             if nlu_configuration_with_version_only.model_version
                 != ::SnipsNluEngine::model_version()
@@ -41,7 +37,7 @@ impl FileBasedConfiguration {
 
         let config_file =
             fs::File::open(&path).chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
-        let nlu_configuration = serde_json::from_reader(config_file)
+        let nlu_configuration = ::serde_json::from_reader(config_file)
             .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
 
         Ok(Self { nlu_configuration })
@@ -68,7 +64,7 @@ impl ZipBasedConfiguration {
         R: Read + Seek,
     {
         let zip =
-            zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
+            ::zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
         let mutex = Arc::new(Mutex::new(zip));
 
         let nlu_conf_bytes = Self::read_bytes(&mutex, NLU_CONFIGURATION_FILENAME)
@@ -80,7 +76,7 @@ impl ZipBasedConfiguration {
 
         if !bypass_model_version_check {
             let nlu_configuration_with_version_only: ModelVersionConfiguration =
-                serde_json::from_slice(&nlu_conf_bytes)
+                ::serde_json::from_slice(&nlu_conf_bytes)
                     .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
             if nlu_configuration_with_version_only.model_version
                 != ::SnipsNluEngine::model_version()
@@ -91,13 +87,13 @@ impl ZipBasedConfiguration {
             }
         }
 
-        let nlu_configuration = serde_json::from_slice(&nlu_conf_bytes)
+        let nlu_configuration = ::serde_json::from_slice(&nlu_conf_bytes)
             .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
 
         Ok(Self { nlu_configuration })
     }
 
-    fn read_bytes<R>(zip: &Mutex<zip::read::ZipArchive<R>>, name: &str) -> Result<Vec<u8>>
+    fn read_bytes<R>(zip: &Mutex<::zip::read::ZipArchive<R>>, name: &str) -> Result<Vec<u8>>
     where
         R: Read + Seek,
     {
@@ -118,17 +114,6 @@ impl NluEngineConfigurationConvertible for ZipBasedConfiguration {
     fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
         self.nlu_configuration
     }
-}
-
-pub mod deprecated {
-    #[deprecated(since = "0.20.1", note = "please use `ZipBasedConfiguration` instead")]
-    pub type BinaryBasedConfiguration = super::ZipBasedConfiguration;
-
-    #[deprecated(since = "0.21.0", note = "please use `NluEngineConfigurationConvertible` instead")]
-    pub type NLUEngineConfigurationConvertible = super::NluEngineConfigurationConvertible;
-
-    #[deprecated(since = "0.21.0", note = "please use `NluEngineConfiguration` instead")]
-    pub type NLUEngineConfiguration = super::NluEngineConfiguration;
 }
 
 #[cfg(test)]

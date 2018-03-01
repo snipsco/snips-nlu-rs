@@ -16,8 +16,8 @@ impl StaticMapWordClusterer {
         // Hack to check that the word cluster exists
         word_cluster(&cluster_name, language, "")?;
         Ok(Self {
-            language: language,
-            cluster_name: cluster_name,
+            language,
+            cluster_name,
         })
     }
 }

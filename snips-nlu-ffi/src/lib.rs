@@ -23,7 +23,8 @@ mod errors {
     error_chain! {
         links {
             SnipsNluLib(::snips_nlu_lib::Error, ::snips_nlu_lib::ErrorKind);
-            SnipsNluOntology(::snips_nlu_ontology_ffi::OntologyError, ::snips_nlu_ontology_ffi::OntologyErrorKind);
+            SnipsNluOntology(::snips_nlu_ontology_ffi::OntologyError,
+                             ::snips_nlu_ontology_ffi::OntologyErrorKind);
         }
 
         foreign_links {

@@ -1,19 +1,17 @@
 use std::collections::{HashMap, HashSet};
-use itertools::Itertools;
+use std::str::FromStr;
 
+use itertools::Itertools;
 use ndarray::prelude::*;
 
+use configurations::FeaturizerConfiguration;
 use errors::*;
-use models::word_clusterer::{StaticMapWordClusterer, WordClusterer};
-
-use language::LanguageConfig;
+use language::{FromLanguage, LanguageConfig};
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use nlu_utils::string::normalize;
 use nlu_utils::language::Language as NluUtilsLanguage;
-use pipeline::probabilistic::configuration::FeaturizerConfiguration;
-use std::str::FromStr;
-use models::stemmer::{StaticMapStemmer, Stemmer};
-use language::FromLanguage;
+use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
+use resources::stemmer::{StaticMapStemmer, Stemmer};
 
 pub struct Featurizer {
     best_features: Vec<usize>,
@@ -148,13 +146,12 @@ mod tests {
     use super::{get_dataset_entities_features, get_word_cluster_features, Featurizer};
 
     use testutils::assert_epsilon_eq_array1;
-    use models::word_clusterer::WordClusterer;
-    use models::stemmer::Stemmer;
+    use resources::word_clusterer::WordClusterer;
+    use resources::stemmer::Stemmer;
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
-    use pipeline::probabilistic::configuration::{FeaturizerConfigConfiguration,
-                                                 FeaturizerConfiguration,
-                                                 TfIdfVectorizerConfiguration};
+    use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
+                         TfIdfVectorizerConfiguration};
 
     struct TestWordClusterer {}
 

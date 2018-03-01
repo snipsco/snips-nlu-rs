@@ -4,19 +4,16 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use itertools::Itertools;
-use serde_json;
 
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser};
 use errors::*;
+use configurations::{DatasetMetadata, Entity, NluEngineConfigurationConvertible};
+use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
-use pipeline::IntentParser;
-use pipeline::deterministic::DeterministicIntentParser;
-use pipeline::probabilistic::ProbabilisticIntentParser;
-use pipeline::configuration::{DatasetMetadata, Entity, NluEngineConfigurationConvertible};
-use snips_nlu_ontology::{IntentParserResult, Language, Slot, SlotValue};
-use language::FromLanguage;
+use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
+use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, IntentParserResult, Language,
+                         Slot, SlotValue};
 
 const MODEL_VERSION: &str = "0.13.0";
 
@@ -34,11 +31,11 @@ impl SnipsNluEngine {
             .into_iter()
             .map(|value| match value["unit_name"].as_str() {
                 Some("deterministic_intent_parser") => {
-                    let config = serde_json::from_value(value)?;
+                    let config = ::serde_json::from_value(value)?;
                     Ok(Box::new(DeterministicIntentParser::new(config)?) as _)
                 }
                 Some("probabilistic_intent_parser") => {
-                    let config = serde_json::from_value(value)?;
+                    let config = ::serde_json::from_value(value)?;
                     Ok(Box::new(ProbabilisticIntentParser::new(config)?) as _)
                 }
                 Some(_) => Err("Unknown intent parser unit name".into()),
@@ -216,16 +213,11 @@ fn extract_builtin_slot(
         }))
 }
 
-pub mod deprecated {
-    #[deprecated(since = "0.21.0", note = "please use `SnipsNluEngine` instead")]
-    pub type SnipsNLUEngine = super::SnipsNluEngine;
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use snips_nlu_ontology::{IntentClassifierResult, NumberValue};
-    use pipeline::configuration::NluEngineConfiguration;
+    use configurations::NluEngineConfiguration;
     use testutils::parse_json;
 
     #[test]

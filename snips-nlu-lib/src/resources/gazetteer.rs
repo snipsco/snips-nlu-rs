@@ -27,7 +27,7 @@ impl StaticMapGazetteer {
         gazetteer_hits(language, &full_gazetteer_name, "")?;
         Ok(Self {
             name: full_gazetteer_name,
-            language: language,
+            language,
         })
     }
 }

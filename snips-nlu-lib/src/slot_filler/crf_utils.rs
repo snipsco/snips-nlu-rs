@@ -6,9 +6,9 @@ use itertools::{repeat_n, Itertools};
 use yolo::Yolo;
 
 use errors::*;
-use pipeline::InternalSlot;
-use nlu_utils::token::Token;
 use nlu_utils::string::suffix_from_char_index;
+use nlu_utils::token::Token;
+use slot_utils::InternalSlot;
 use utils::{permutations, product};
 
 const BEGINNING_PREFIX: &str = "B-";

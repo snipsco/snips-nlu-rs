@@ -1,7 +1,8 @@
 ## Cargo
 
-/target/
+target/
 Cargo.lock
+/Cargo.toml
 **/*.rs.bk
 
 ## Idea
