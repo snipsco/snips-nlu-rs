@@ -150,8 +150,7 @@ mod tests {
     use resources::stemmer::Stemmer;
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
-    use configurations::{FeaturizerConfigConfiguration,
-                         FeaturizerConfiguration,
+    use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
                          TfIdfVectorizerConfiguration};
 
     struct TestWordClusterer {}

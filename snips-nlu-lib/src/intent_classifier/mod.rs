@@ -1,5 +1,5 @@
-pub mod featurizer;
-pub mod log_reg_intent_classifier;
+mod featurizer;
+mod log_reg_intent_classifier;
 mod logreg;
 
 use std::collections::HashSet;
@@ -8,7 +8,6 @@ use errors::*;
 
 pub use self::log_reg_intent_classifier::LogRegIntentClassifier;
 pub use self::featurizer::Featurizer;
-
 
 pub trait IntentClassifier: Send + Sync {
     fn get_intent(

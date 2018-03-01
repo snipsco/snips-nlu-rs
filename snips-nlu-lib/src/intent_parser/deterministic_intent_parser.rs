@@ -12,15 +12,10 @@ use configurations::DeterministicParserConfiguration;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
-use nlu_utils::string::{convert_to_char_range,
-                        substring_with_char_range,
-                        suffix_from_char_index};
+use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntityKind,
-                         BuiltinEntityParser,
-                         IntentClassifierResult,
-                         Language,
+use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, IntentClassifierResult, Language,
                          Slot};
 
 pub struct DeterministicIntentParser {

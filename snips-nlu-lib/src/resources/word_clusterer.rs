@@ -15,7 +15,10 @@ impl StaticMapWordClusterer {
     pub fn new(language: Language, cluster_name: String) -> Result<Self> {
         // Hack to check that the word cluster exists
         word_cluster(&cluster_name, language, "")?;
-        Ok(Self { language, cluster_name })
+        Ok(Self {
+            language,
+            cluster_name,
+        })
     }
 }
 

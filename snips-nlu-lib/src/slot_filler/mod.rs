@@ -11,7 +11,6 @@ pub use self::crf_slot_filler::*;
 use self::crf_utils::TaggingScheme;
 use nlu_utils::token::Token;
 
-
 pub trait SlotFiller: Send + Sync {
     fn get_tagging_scheme(&self) -> TaggingScheme;
     fn get_slots(&self, text: &str) -> Result<Vec<Slot>>;

@@ -12,7 +12,6 @@ use resources::stemmer::StaticMapStemmer;
 use resources::word_clusterer::StaticMapWordClusterer;
 use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, Language};
 
-
 pub struct ProbabilisticFeatureProcessor {
     functions: Vec<FeatureFunction>,
 }
@@ -59,8 +58,8 @@ struct FeatureFunction {
 
 impl FeatureFunction {
     fn new<T>(key: &str, offsets: Vec<i32>, function: T) -> FeatureFunction
-        where
-            T: Fn(&[Token], usize) -> Option<String> + Send + Sync + 'static,
+    where
+        T: Fn(&[Token], usize) -> Option<String> + Send + Sync + 'static,
     {
         let offsets = offsets
             .into_iter()
@@ -233,16 +232,16 @@ fn builtin_entity_match_feature_function(
                 offsets.to_vec(),
                 move |tokens, token_index| {
                     if let (Some(parser), Some(builtin_entity_kind)) =
-                    (builtin_parser.as_ref(), builtin_entity_kind)
-                        {
-                            features::get_builtin_entity_match(
-                                tokens,
-                                token_index,
-                                &**parser,
-                                builtin_entity_kind,
-                                tagging_scheme,
-                            )
-                        } else {
+                        (builtin_parser.as_ref(), builtin_entity_kind)
+                    {
+                        features::get_builtin_entity_match(
+                            tokens,
+                            token_index,
+                            &**parser,
+                            builtin_entity_kind,
+                            tagging_scheme,
+                        )
+                    } else {
                         None
                     }
                 },

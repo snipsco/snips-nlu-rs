@@ -40,10 +40,8 @@ mod testutils;
 pub use errors::*;
 pub use nlu_engine::SnipsNluEngine;
 pub use nlu_engine::deprecated::*;
-pub use configurations::{NluEngineConfiguration,
-                         NluEngineConfigurationConvertible,
-                         FileBasedConfiguration,
-                         ZipBasedConfiguration};
 pub use configurations::assistant::deprecated::*;
+pub use configurations::{FileBasedConfiguration, NluEngineConfiguration,
+                         NluEngineConfigurationConvertible, ZipBasedConfiguration};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use utils::file_path; // This is used by benches

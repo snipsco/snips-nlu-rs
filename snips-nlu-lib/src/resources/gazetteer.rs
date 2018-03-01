@@ -56,8 +56,8 @@ impl HashSetGazetteer {
 }
 
 impl<I> From<I> for HashSetGazetteer
-    where
-        I: Iterator<Item=String>,
+where
+    I: Iterator<Item = String>,
 {
     fn from(values_it: I) -> Self {
         Self {

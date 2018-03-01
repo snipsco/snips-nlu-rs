@@ -11,7 +11,6 @@ pub struct DeterministicParserConfiguration {
     pub slot_names_to_entities: HashMap<String, String>,
 }
 
-
 #[derive(Debug, Deserialize)]
 pub struct ProbabilisticParserConfiguration {
     pub intent_classifier: IntentClassifierConfiguration,

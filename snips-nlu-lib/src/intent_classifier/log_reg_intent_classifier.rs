@@ -98,15 +98,10 @@ impl IntentClassifier for LogRegIntentClassifier {
 
 #[cfg(test)]
 mod tests {
-    use super::{Featurizer,
-                IntentClassifier,
-                IntentClassifierResult,
-                LogRegIntentClassifier,
-                MulticlassLogisticRegression};
+    use super::*;
 
     use ndarray::*;
-    use configurations::{FeaturizerConfigConfiguration,
-                         FeaturizerConfiguration,
+    use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
                          TfIdfVectorizerConfiguration};
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {

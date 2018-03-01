@@ -30,11 +30,11 @@ impl FileBasedConfiguration {
                     .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
             if nlu_configuration_with_version_only.model_version
                 != ::SnipsNluEngine::model_version()
-                {
-                    bail!(ErrorKind::WrongModelVersion(
+            {
+                bail!(ErrorKind::WrongModelVersion(
                     nlu_configuration_with_version_only.model_version
                 ));
-                }
+            }
         }
 
         let config_file =
@@ -62,8 +62,8 @@ pub struct ZipBasedConfiguration {
 
 impl ZipBasedConfiguration {
     pub fn new<R>(reader: R, bypass_model_version_check: bool) -> Result<Self>
-        where
-            R: Read + Seek,
+    where
+        R: Read + Seek,
     {
         let zip =
             ::zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
@@ -82,11 +82,11 @@ impl ZipBasedConfiguration {
                     .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
             if nlu_configuration_with_version_only.model_version
                 != ::SnipsNluEngine::model_version()
-                {
-                    bail!(ErrorKind::WrongModelVersion(
+            {
+                bail!(ErrorKind::WrongModelVersion(
                     nlu_configuration_with_version_only.model_version
                 ));
-                }
+            }
         }
 
         let nlu_configuration = ::serde_json::from_slice(&nlu_conf_bytes)
@@ -96,8 +96,8 @@ impl ZipBasedConfiguration {
     }
 
     fn read_bytes<R>(zip: &Mutex<::zip::read::ZipArchive<R>>, name: &str) -> Result<Vec<u8>>
-        where
-            R: Read + Seek,
+    where
+        R: Read + Seek,
     {
         let mut locked = zip.lock()?;
         let zip = &mut (*locked);

@@ -12,12 +12,8 @@ use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
 use intent_parser::*;
-use snips_nlu_ontology::{BuiltinEntityKind,
-                         BuiltinEntityParser,
-                         IntentParserResult,
-                         Language,
-                         Slot,
-                         SlotValue};
+use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, IntentParserResult, Language,
+                         Slot, SlotValue};
 
 const MODEL_VERSION: &str = "0.13.0";
 
