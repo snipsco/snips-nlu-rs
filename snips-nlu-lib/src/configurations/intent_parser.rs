@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
-use super::{IntentClassifierConfiguration, SlotFillerConfiguration};
-
+use configurations::{IntentClassifierConfiguration, SlotFillerConfiguration};
 
 #[derive(Debug, Deserialize)]
 pub struct DeterministicParserConfiguration {

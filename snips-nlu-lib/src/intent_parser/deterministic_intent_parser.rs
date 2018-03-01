@@ -7,7 +7,7 @@ use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
 use errors::*;
-use super::IntentParser;
+use intent_parser::IntentParser;
 use configurations::DeterministicParserConfiguration;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;

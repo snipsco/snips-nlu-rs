@@ -11,7 +11,7 @@ use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
-use intent_parser::*;
+use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, IntentParserResult, Language,
                          Slot, SlotValue};
 
@@ -211,11 +211,6 @@ fn extract_builtin_slot(
             entity: entity_name,
             slot_name,
         }))
-}
-
-pub mod deprecated {
-    #[deprecated(since = "0.21.0", note = "please use `SnipsNluEngine` instead")]
-    pub type SnipsNLUEngine = super::SnipsNluEngine;
 }
 
 #[cfg(test)]

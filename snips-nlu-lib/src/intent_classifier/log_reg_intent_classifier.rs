@@ -4,8 +4,8 @@ use itertools::Itertools;
 use ndarray::prelude::*;
 
 use errors::*;
-use super::{Featurizer, IntentClassifier};
-use super::logreg::MulticlassLogisticRegression;
+use intent_classifier::{Featurizer, IntentClassifier};
+use intent_classifier::logreg::MulticlassLogisticRegression;
 use snips_nlu_ontology::IntentClassifierResult;
 use configurations::IntentClassifierConfiguration;
 

@@ -4,10 +4,8 @@ use std::path;
 use std::fs;
 
 use errors::*;
-use super::{NluEngineConfiguration,
-            ModelVersionConfiguration,
-            NluEngineConfigurationConvertible};
-
+use configurations::{ModelVersionConfiguration, NluEngineConfiguration,
+                     NluEngineConfigurationConvertible};
 
 const NLU_CONFIGURATION_FILENAME: &str = "trained_assistant.json";
 
@@ -116,17 +114,6 @@ impl NluEngineConfigurationConvertible for ZipBasedConfiguration {
     fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
         self.nlu_configuration
     }
-}
-
-pub mod deprecated {
-    #[deprecated(since = "0.20.1", note = "please use `ZipBasedConfiguration` instead")]
-    pub type BinaryBasedConfiguration = super::ZipBasedConfiguration;
-
-    #[deprecated(since = "0.21.0", note = "please use `NluEngineConfigurationConvertible` instead")]
-    pub type NLUEngineConfigurationConvertible = super::NluEngineConfigurationConvertible;
-
-    #[deprecated(since = "0.21.0", note = "please use `NluEngineConfiguration` instead")]
-    pub type NLUEngineConfiguration = super::NluEngineConfiguration;
 }
 
 #[cfg(test)]
