@@ -1,20 +1,13 @@
 use std::collections::HashSet;
+
+use itertools::Itertools;
 use ndarray::prelude::*;
 
 use errors::*;
-use itertools::Itertools;
-use models::logreg::MulticlassLogisticRegression;
+use super::{Featurizer, IntentClassifier};
+use super::logreg::MulticlassLogisticRegression;
 use snips_nlu_ontology::IntentClassifierResult;
-use pipeline::probabilistic::intent_classifier::featurizer::Featurizer;
-use pipeline::probabilistic::configuration::IntentClassifierConfiguration;
-
-pub trait IntentClassifier: Send + Sync {
-    fn get_intent(
-        &self,
-        input: &str,
-        intents_filter: Option<&HashSet<String>>,
-    ) -> Result<Option<IntentClassifierResult>>;
-}
+use configurations::IntentClassifierConfiguration;
 
 pub struct LogRegIntentClassifier {
     intent_list: Vec<Option<String>>,
@@ -105,15 +98,16 @@ impl IntentClassifier for LogRegIntentClassifier {
 
 #[cfg(test)]
 mod tests {
-    use super::{IntentClassifier, LogRegIntentClassifier};
-    use super::Featurizer;
+    use super::{Featurizer,
+                IntentClassifier,
+                IntentClassifierResult,
+                LogRegIntentClassifier,
+                MulticlassLogisticRegression};
 
     use ndarray::*;
-    use models::logreg::MulticlassLogisticRegression;
-    use pipeline::IntentClassifierResult;
-    use pipeline::probabilistic::configuration::{FeaturizerConfigConfiguration,
-                                                 FeaturizerConfiguration,
-                                                 TfIdfVectorizerConfiguration};
+    use configurations::{FeaturizerConfigConfiguration,
+                         FeaturizerConfiguration,
+                         TfIdfVectorizerConfiguration};
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
         let language_code = "en".to_string();

@@ -25,19 +25,25 @@ extern crate zip;
 extern crate maplit;
 
 pub mod errors;
-mod models;
-mod pipeline;
+mod configurations;
+mod intent_classifier;
+mod intent_parser;
+mod resources;
+mod nlu_engine;
+mod slot_utils;
+mod slot_filler;
 mod utils;
 mod language;
 #[cfg(test)]
 mod testutils;
 
 pub use errors::*;
-pub use pipeline::nlu_engine::SnipsNluEngine;
-pub use pipeline::configuration::{NluEngineConfiguration, NluEngineConfigurationConvertible};
-pub use pipeline::assistant_config::{FileBasedConfiguration, ZipBasedConfiguration};
-
-pub use pipeline::nlu_engine::deprecated::*;
-pub use pipeline::assistant_config::deprecated::*;
+pub use nlu_engine::SnipsNluEngine;
+pub use nlu_engine::deprecated::*;
+pub use configurations::{NluEngineConfiguration,
+                         NluEngineConfigurationConvertible,
+                         FileBasedConfiguration,
+                         ZipBasedConfiguration};
+pub use configurations::assistant::deprecated::*;
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use utils::file_path; // This is used by benches

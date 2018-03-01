@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use serde_json;
 
 pub trait NluEngineConfigurationConvertible {
     fn nlu_engine_configuration(&self) -> &NluEngineConfiguration;
@@ -14,7 +13,7 @@ pub struct ModelVersionConfiguration {
 #[derive(Debug, Deserialize)]
 pub struct NluEngineConfiguration {
     pub dataset_metadata: DatasetMetadata,
-    pub intent_parsers: Vec<serde_json::Value>,
+    pub intent_parsers: Vec<::serde_json::Value>,
     pub model_version: String,
     pub training_package_version: String,
 }
@@ -45,11 +44,9 @@ impl NluEngineConfigurationConvertible for NluEngineConfiguration {
 #[cfg(test)]
 mod tests {
     use super::NluEngineConfiguration;
-    use pipeline::deterministic::DeterministicParserConfiguration;
-    use pipeline::probabilistic::ProbabilisticParserConfiguration;
+    use configurations::{DeterministicParserConfiguration, ProbabilisticParserConfiguration};
 
     use testutils::parse_json;
-    use serde_json;
 
     #[test]
     fn deserialization_works() {
@@ -57,9 +54,9 @@ mod tests {
         let retrieved: NluEngineConfiguration =
             parse_json("tests/configurations/trained_assistant.json");
         let deterministic_parser_config: Result<DeterministicParserConfiguration, _> =
-            serde_json::from_value(retrieved.intent_parsers[0].clone());
+            ::serde_json::from_value(retrieved.intent_parsers[0].clone());
         let proba_parser_config: Result<ProbabilisticParserConfiguration, _> =
-            serde_json::from_value(retrieved.intent_parsers[1].clone());
+            ::serde_json::from_value(retrieved.intent_parsers[1].clone());
 
         // Then
         let deterministic_parser_config_formatted = deterministic_parser_config

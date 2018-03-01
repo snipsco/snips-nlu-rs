@@ -2,18 +2,55 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use pipeline::FeatureProcessor;
-use pipeline::probabilistic::configuration::FeatureFactory;
-use nlu_utils::token::Token;
-use serde_json;
-
-use errors::*;
-use super::features;
 use super::crf_utils::TaggingScheme;
-use models::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
-use models::stemmer::StaticMapStemmer;
-use models::word_clusterer::StaticMapWordClusterer;
+use super::features;
+use configurations::FeatureFactory;
+use errors::*;
+use nlu_utils::token::Token;
+use resources::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
+use resources::stemmer::StaticMapStemmer;
+use resources::word_clusterer::StaticMapWordClusterer;
 use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, Language};
+
+
+pub struct ProbabilisticFeatureProcessor {
+    functions: Vec<FeatureFunction>,
+}
+
+impl ProbabilisticFeatureProcessor {
+    // TODO add a `GazetteerProvider` to this signature
+    pub fn new(features: &[FeatureFactory]) -> Result<ProbabilisticFeatureProcessor> {
+        let functions = features
+            .iter()
+            .map(|f| get_feature_function(f))
+            .collect::<Result<Vec<Vec<_>>>>()?
+            .into_iter()
+            .flat_map(|fs| fs)
+            .collect();
+
+        Ok(ProbabilisticFeatureProcessor { functions })
+    }
+}
+
+impl ProbabilisticFeatureProcessor {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
+    pub fn compute_features(&self, input: &&[Token]) -> Vec<Vec<(String, String)>> {
+        self.functions
+            .iter()
+            .fold(vec![vec![]; input.len()], |mut acc, f| {
+                (0..input.len()).foreach(|i| {
+                    if let Some(value) = (f.function)(input, i) {
+                        f.offsets.iter().foreach(|&(offset, ref key)| {
+                            if i as i32 - offset >= 0 && i as i32 - offset < input.len() as i32 {
+                                acc[(i as i32 - offset) as usize].push((key.clone(), value.clone()));
+                            }
+                        });
+                    }
+                });
+                acc
+            })
+    }
+}
 
 struct FeatureFunction {
     function: Box<Fn(&[Token], usize) -> Option<String> + Send + Sync>,
@@ -22,8 +59,8 @@ struct FeatureFunction {
 
 impl FeatureFunction {
     fn new<T>(key: &str, offsets: Vec<i32>, function: T) -> FeatureFunction
-    where
-        T: Fn(&[Token], usize) -> Option<String> + Send + Sync + 'static,
+        where
+            T: Fn(&[Token], usize) -> Option<String> + Send + Sync + 'static,
     {
         let offsets = offsets
             .into_iter()
@@ -42,47 +79,6 @@ impl FeatureFunction {
             offsets,
             function: Box::new(function),
         }
-    }
-}
-
-pub struct ProbabilisticFeatureProcessor {
-    functions: Vec<FeatureFunction>,
-}
-
-impl<'a> FeatureProcessor<&'a [Token], Vec<Vec<(String, String)>>>
-    for ProbabilisticFeatureProcessor
-{
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn compute_features(&self, input: &&'a [Token]) -> Vec<Vec<(String, String)>> {
-        self.functions
-            .iter()
-            .fold(vec![vec![]; input.len()], |mut acc, f| {
-                (0..input.len()).foreach(|i| {
-                    if let Some(value) = (f.function)(input, i) {
-                        f.offsets.iter().foreach(|&(offset, ref key)| {
-                            if i as i32 - offset >= 0 && i as i32 - offset < input.len() as i32 {
-                                acc[(i as i32 - offset) as usize].push((key.clone(), value.clone()));
-                            }
-                        });
-                    }
-                });
-                acc
-            })
-    }
-}
-
-impl ProbabilisticFeatureProcessor {
-    // TODO add a `GazetteerProvider` to this signature
-    pub fn new(features: &[FeatureFactory]) -> Result<ProbabilisticFeatureProcessor> {
-        let functions = features
-            .iter()
-            .map(|f| get_feature_function(f))
-            .collect::<Result<Vec<Vec<_>>>>()?
-            .into_iter()
-            .flat_map(|fs| fs)
-            .collect();
-
-        Ok(ProbabilisticFeatureProcessor { functions })
     }
 }
 
@@ -122,7 +118,7 @@ fn is_last_feature_function(offsets: Vec<i32>) -> Result<FeatureFunction> {
 }
 
 fn ngram_feature_function(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     offsets: Vec<i32>,
 ) -> Result<FeatureFunction> {
     let n = parse_as_u64(args, "n")? as usize;
@@ -151,7 +147,7 @@ fn ngram_feature_function(
 }
 
 fn shape_ngram_feature_function(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     offsets: Vec<i32>,
 ) -> Result<FeatureFunction> {
     let n = parse_as_u64(args, "n")? as usize;
@@ -163,7 +159,7 @@ fn shape_ngram_feature_function(
 }
 
 fn prefix_feature_function(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     offsets: Vec<i32>,
 ) -> Result<FeatureFunction> {
     let n = parse_as_u64(args, "prefix_size")? as usize;
@@ -175,7 +171,7 @@ fn prefix_feature_function(
 }
 
 fn suffix_feature_function(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     offsets: Vec<i32>,
 ) -> Result<FeatureFunction> {
     let n = parse_as_u64(args, "suffix_size")? as usize;
@@ -187,7 +183,7 @@ fn suffix_feature_function(
 }
 
 fn entity_match_feature_function(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     offsets: &[i32],
 ) -> Result<Vec<FeatureFunction>> {
     let collections = parse_as_vec_of_vec(args, "collections")?;
@@ -218,7 +214,7 @@ fn entity_match_feature_function(
 }
 
 fn builtin_entity_match_feature_function(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     offsets: &[i32],
 ) -> Result<Vec<FeatureFunction>> {
     let builtin_entity_labels = parse_as_vec_string(args, "entity_labels")?;
@@ -237,16 +233,16 @@ fn builtin_entity_match_feature_function(
                 offsets.to_vec(),
                 move |tokens, token_index| {
                     if let (Some(parser), Some(builtin_entity_kind)) =
-                        (builtin_parser.as_ref(), builtin_entity_kind)
-                    {
-                        features::get_builtin_entity_match(
-                            tokens,
-                            token_index,
-                            &**parser,
-                            builtin_entity_kind,
-                            tagging_scheme,
-                        )
-                    } else {
+                    (builtin_parser.as_ref(), builtin_entity_kind)
+                        {
+                            features::get_builtin_entity_match(
+                                tokens,
+                                token_index,
+                                &**parser,
+                                builtin_entity_kind,
+                                tagging_scheme,
+                            )
+                        } else {
                         None
                     }
                 },
@@ -256,7 +252,7 @@ fn builtin_entity_match_feature_function(
 }
 
 fn word_cluster_feature_function(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     offsets: Vec<i32>,
 ) -> Result<FeatureFunction> {
     let cluster_name = parse_as_string(args, "cluster_name")?;
@@ -269,7 +265,7 @@ fn word_cluster_feature_function(
     ))
 }
 
-fn parse_as_string(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<String> {
+fn parse_as_string(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<String> {
     Ok(args.get(arg_name)
         .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
         .as_str()
@@ -278,7 +274,7 @@ fn parse_as_string(args: &HashMap<String, serde_json::Value>, arg_name: &str) ->
 }
 
 fn parse_as_opt_string(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     arg_name: &str,
 ) -> Result<Option<String>> {
     Ok(args.get(arg_name)
@@ -288,7 +284,7 @@ fn parse_as_opt_string(
 }
 
 fn parse_as_vec_string(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     arg_name: &str,
 ) -> Result<Vec<String>> {
     args.get(arg_name)
@@ -305,7 +301,7 @@ fn parse_as_vec_string(
 }
 
 fn parse_as_vec_of_vec(
-    args: &HashMap<String, serde_json::Value>,
+    args: &HashMap<String, ::serde_json::Value>,
     arg_name: &str,
 ) -> Result<Vec<(String, Vec<String>)>> {
     args.get(arg_name)
@@ -328,14 +324,14 @@ fn parse_as_vec_of_vec(
         .collect()
 }
 
-fn parse_as_bool(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<bool> {
+fn parse_as_bool(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<bool> {
     Ok(args.get(arg_name)
         .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
         .as_bool()
         .ok_or_else(|| format!("'{}' isn't a bool", arg_name))?)
 }
 
-fn parse_as_u64(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<u64> {
+fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<u64> {
     Ok(args.get(arg_name)
         .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
         .as_u64()
@@ -353,8 +349,6 @@ fn get_stemmer(language: Language, use_stemming: bool) -> Option<StaticMapStemme
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use pipeline::FeatureProcessor;
 
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize;

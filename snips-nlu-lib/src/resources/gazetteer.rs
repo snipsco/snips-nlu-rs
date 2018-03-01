@@ -27,7 +27,7 @@ impl StaticMapGazetteer {
         gazetteer_hits(language, &full_gazetteer_name, "")?;
         Ok(Self {
             name: full_gazetteer_name,
-            language: language,
+            language,
         })
     }
 }
@@ -56,8 +56,8 @@ impl HashSetGazetteer {
 }
 
 impl<I> From<I> for HashSetGazetteer
-where
-    I: Iterator<Item = String>,
+    where
+        I: Iterator<Item=String>,
 {
     fn from(values_it: I) -> Self {
         Self {

@@ -7,15 +7,20 @@ use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
 use errors::*;
-use super::configuration::DeterministicParserConfiguration;
+use super::IntentParser;
+use configurations::DeterministicParserConfiguration;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
-use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
+use nlu_utils::string::{convert_to_char_range,
+                        substring_with_char_range,
+                        suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
-use pipeline::{IntentParser, InternalSlot};
-use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, IntentClassifierResult, Language,
+use slot_utils::*;
+use snips_nlu_ontology::{BuiltinEntityKind,
+                         BuiltinEntityParser,
+                         IntentClassifierResult,
+                         Language,
                          Slot};
 
 pub struct DeterministicIntentParser {
@@ -255,8 +260,9 @@ mod tests {
     use std::iter::FromIterator;
     use snips_nlu_ontology::{AmountOfMoneyValue, BuiltinEntityParser, IntentClassifierResult,
                              Language, Precision, Slot, SlotValue};
-    use pipeline::deterministic::configuration::DeterministicParserConfiguration;
-    use pipeline::{IntentParser, InternalSlot};
+    use configurations::DeterministicParserConfiguration;
+    use intent_parser::IntentParser;
+    use slot_utils::InternalSlot;
 
     fn test_configuration() -> DeterministicParserConfiguration {
         DeterministicParserConfiguration {

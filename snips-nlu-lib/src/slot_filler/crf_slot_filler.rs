@@ -6,28 +6,18 @@ use std::str::FromStr;
 
 use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
-use base64;
 
 use errors::*;
+use configurations::SlotFillerConfiguration;
+use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
-use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, BuiltinEntityParser, Language, Slot};
-use pipeline::{FeatureProcessor, InternalSlot};
-use pipeline::probabilistic::feature_processor::ProbabilisticFeatureProcessor;
-use pipeline::probabilistic::crf_utils::{generate_slots_permutations, get_substitution_label,
-                                         positive_tagging, replace_builtin_tags,
-                                         tags_to_slot_ranges, tags_to_slots, TaggingScheme};
-use pipeline::slot_utils::{convert_to_custom_slot, resolve_builtin_slots};
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::token::{tokenize, Token};
-use base64::decode;
-use super::configuration::SlotFillerConfiguration;
-use language::FromLanguage;
-
-pub trait SlotFiller: Send + Sync {
-    fn get_tagging_scheme(&self) -> TaggingScheme;
-    fn get_slots(&self, text: &str) -> Result<Vec<Slot>>;
-    fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64>;
-}
+use slot_filler::crf_utils::*;
+use slot_filler::SlotFiller;
+use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
+use slot_utils::*;
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, BuiltinEntityParser, Language, Slot};
 
 pub struct CRFSlotFiller {
     language: Language,
@@ -159,7 +149,7 @@ impl CRFSlotFiller {
         let slot_name_mapping = config.slot_name_mapping;
         let feature_processor =
             ProbabilisticFeatureProcessor::new(&config.config.feature_factory_configs)?;
-        let converted_data = decode(&config.crf_model_data)?;
+        let converted_data = ::base64::decode(&config.crf_model_data)?;
         let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
         let language = Language::from_str(&config.language_code)?;
         let builtin_entity_parser = Some(BuiltinEntityParser::get(language));
@@ -180,12 +170,12 @@ impl CRFSlotFiller {
 // python-crfsuite
 
 fn decode_tag(tag: &str) -> Result<String> {
-    let bytes = base64::decode(tag)?;
+    let bytes = ::base64::decode(tag)?;
     Ok(String::from_utf8(bytes)?)
 }
 
 fn encode_tag(tag: &str) -> String {
-    base64::encode(tag)
+    ::base64::encode(tag)
 }
 
 fn filter_overlapping_builtins(
@@ -304,7 +294,6 @@ mod tests {
     use super::*;
     use nlu_utils::language::Language;
     use snips_nlu_ontology::{Grain, InstantTimeValue, Precision, SlotValue};
-    use pipeline::probabilistic::crf_utils::TaggingScheme;
 
     struct TestSlotFiller {
         tags1: Vec<String>,

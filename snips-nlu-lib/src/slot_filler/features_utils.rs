@@ -1,5 +1,6 @@
-use std::str;
 use std::iter::FromIterator;
+use std::str;
+
 use nlu_utils::token::Token;
 
 pub fn get_word_chunk(

@@ -1,5 +1,14 @@
+use std::ops::Range;
+
 use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, Slot, SlotValue};
-use pipeline::InternalSlot;
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct InternalSlot {
+    pub value: String,
+    pub char_range: Range<usize>,
+    pub entity: String,
+    pub slot_name: String,
+}
 
 pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
     Slot {
@@ -56,8 +65,7 @@ pub fn resolve_builtin_slots(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use snips_nlu_ontology::{AmountOfMoneyValue, OrdinalValue, Precision};
-    use snips_nlu_ontology::Language;
+    use snips_nlu_ontology::{AmountOfMoneyValue, Language, OrdinalValue, Precision};
 
     #[test]
     fn resolve_builtin_slots_works() {

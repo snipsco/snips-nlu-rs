@@ -1,11 +1,11 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
+use configurations::ProbabilisticParserConfiguration;
 use errors::*;
-use pipeline::IntentParser;
-use pipeline::probabilistic::configuration::ProbabilisticParserConfiguration;
-use pipeline::probabilistic::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
-use pipeline::probabilistic::slot_filler::{CRFSlotFiller, SlotFiller};
+use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
+use intent_parser::IntentParser;
+use slot_filler::{CRFSlotFiller, SlotFiller};
 use snips_nlu_ontology::{IntentClassifierResult, Slot};
 
 pub struct ProbabilisticIntentParser {

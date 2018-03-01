@@ -1,12 +1,13 @@
 use itertools::Itertools;
+
 use nlu_utils::token::{compute_all_ngrams, Token};
-use models::gazetteer::Gazetteer;
+use resources::gazetteer::Gazetteer;
 #[cfg(test)]
-use models::gazetteer::HashSetGazetteer;
-use models::stemmer::Stemmer;
+use resources::gazetteer::HashSetGazetteer;
+use resources::stemmer::Stemmer;
 #[cfg(test)]
-use models::stemmer::StaticMapStemmer;
-use models::word_clusterer::WordClusterer;
+use resources::stemmer::StaticMapStemmer;
+use resources::word_clusterer::WordClusterer;
 use super::crf_utils::{get_scheme_prefix, TaggingScheme};
 use super::features_utils::{get_shape, get_word_chunk, initial_string_from_tokens};
 use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser};
