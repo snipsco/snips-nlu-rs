@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-ffi"
-version = "0.54.0-SNAPSHOT"
+version = "0.54.0"
 authors = [
     "Kevin Lefevre <kevin.lefevre@snips.ai>",
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>"
@@ -15,5 +15,4 @@ libc = "0.2"
 serde_json = "1.0"
 
 [lib]
-name = "snips_nlu"
-crate-type = ["staticlib", "cdylib"]
+crate-type = ["rlib", "staticlib", "cdylib"]

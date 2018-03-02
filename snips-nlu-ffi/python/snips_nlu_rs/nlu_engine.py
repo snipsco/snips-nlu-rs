@@ -5,25 +5,21 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import json
-import os
-from builtins import object, bytes
-from ctypes import c_char, c_char_p, c_void_p, string_at, pointer, byref, cdll
-from glob import glob
+from builtins import object
+from ctypes import c_char, c_char_p, c_void_p, string_at, pointer, byref
 
-dylib_path = glob(
-    os.path.join(os.path.dirname(__file__), "dylib", "libsnips_nlu*"))[0]
-lib = cdll.LoadLibrary(dylib_path)
+from snips_nlu_rs.utils import lib, string_pointer
 
 
 class NLUEngine(object):
     def __init__(self, data_path=None, data_zip=None):
         exit_code = 1
+        self._engine = None
 
         if data_path is None and data_zip is None:
             raise ValueError("Please specify data_path or data_zip")
 
         if data_path is not None:
-            self.data_path = data_path
             self._engine = pointer(c_void_p())
             exit_code = lib.nlu_engine_create_from_dir(
                 data_path.encode("utf-8"), byref(self._engine))
@@ -40,15 +36,13 @@ class NLUEngine(object):
                               'intent parser. See stderr.')
 
     def __del__(self):
-        lib.nlu_engine_destroy_client(self._engine)
+        if self._engine is not None:
+            lib.nlu_engine_destroy_client(self._engine)
 
     def parse(self, query):
-        pointer = c_char_p()
-        lib.nlu_engine_run_parse_into_json(
-            self._engine,
-            query.encode("utf-8"),
-            byref(pointer))
-        result = string_at(pointer)
-        lib.nlu_engine_destroy_string(pointer)
+        with string_pointer(c_char_p()) as ptr:
+            lib.nlu_engine_run_parse_into_json(
+                self._engine, query.encode("utf-8"), byref(ptr))
+            result = string_at(ptr)
 
-        return json.loads(bytes(result).decode())
+        return json.loads(result.decode("utf-8"))
