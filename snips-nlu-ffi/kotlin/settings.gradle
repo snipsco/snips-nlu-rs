@@ -1,4 +1,1 @@
 rootProject.name = "snips-nlu"
-
-includeBuild '../../../hermes-protocol/platforms/hermes-kotlin/'
-includeBuild '../../../snips-nlu-ontology/snips-nlu-ontology-ffi/platforms/snips-nlu-ontology-kotlin/'

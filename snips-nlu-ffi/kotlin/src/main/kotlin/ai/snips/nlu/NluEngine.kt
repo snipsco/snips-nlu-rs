@@ -77,7 +77,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     internal interface SnipsNluClientLibrary : Library {
         companion object {
-            val INSTANCE: SnipsNluClientLibrary = Native.loadLibrary("snips_nlu", SnipsNluClientLibrary::class.java)
+            val INSTANCE: SnipsNluClientLibrary = Native.loadLibrary("snips_nlu_ffi", SnipsNluClientLibrary::class.java)
         }
 
         fun nlu_engine_get_model_version(version: PointerByReference): Int
