@@ -10,10 +10,10 @@ description = "Rust implementation of Snips NLU"
 
 [dependencies]
 snips-nlu-resources-packed = { path = "../snips-nlu-resources-packed" }
-snips-nlu-ontology = { git = "ssh://git@github.com/snipsco/snips-nlu-ontology", tag = "0.53.2" }
-crfsuite = { git = "ssh://git@github.com/snipsco/crfsuite-rs", rev = "dc9b595" }
-snips-nlu-utils = { git = "ssh://git@github.com/snipsco/snips-nlu-utils", tag = "0.6.0" }
-dinghy-test = { git = "ssh://git@github.com/snipsco/dinghy.git", branch = "0.3" }
+snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.53.2" }
+crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "6694998" }
+snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.6.0" }
+dinghy-test = { git = "https://github.com/snipsco/dinghy.git", branch = "0.3" }
 error-chain = { version = "0.11", default-features = false }
 base64 = "0.9"
 itertools = { version = "0.7", default-features = false }
