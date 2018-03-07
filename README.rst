@@ -1,6 +1,9 @@
 Snips NLU Rust
 ==============
 
+.. image:: https://travis-ci.org/snipsco/snips-nlu-rs.svg?branch=develop
+   :target: https://travis-ci.org/snipsco/snips-nlu-rs
+
 Installation
 ------------
 
@@ -8,8 +11,8 @@ Add it to your ``Cargo.toml``:
 
 .. code-block:: toml
 
-    [dependencies]
-    snips-nlu-lib = { git = "https://github.com/snipsco/snips-nlu-rs", tag = "0.54.0" }
+   [dependencies]
+   snips-nlu-lib = { git = "https://github.com/snipsco/snips-nlu-rs", branch = "master" }
 
 Add ``extern crate snips_nlu_lib`` to your crate root and you are good to go!
 
@@ -24,33 +27,33 @@ Let’s take an example to illustrate the main purpose of this lib, and consider
 
 .. code-block:: text
 
-    "What will be the weather in paris at 9pm?"
+   "What will be the weather in paris at 9pm?"
 
 Properly trained, the Snips NLU engine will be able to extract structured data such as:
 
 .. code-block:: json
 
-    {
-       "intent": {
-          "intentName": "searchWeatherForecast",
-          "probability": 0.95
-       },
-       "slots": [
-          {
-             "value": "paris",
-             "entity": "locality",
-             "slotName": "forecast_locality"
-          },
-          {
-             "value": {
-                "kind": "InstantTime",
-                "value": "2018-02-08 20:00:00 +00:00"
-             },
-             "entity": "snips/datetime",
-             "slotName": "forecast_start_datetime"
-          }
-       ]
-    }
+   {
+      "intent": {
+         "intentName": "searchWeatherForecast",
+         "probability": 0.95
+      },
+      "slots": [
+         {
+            "value": "paris",
+            "entity": "locality",
+            "slotName": "forecast_locality"
+         },
+         {
+            "value": {
+               "kind": "InstantTime",
+               "value": "2018-02-08 20:00:00 +00:00"
+            },
+            "entity": "snips/datetime",
+            "slotName": "forecast_start_datetime"
+         }
+      ]
+   }
 
 
 In order to achieve such a result, the NLU engine needs to be fed with a trained model (json file).
@@ -66,8 +69,8 @@ Here is how you can run the example:
 
 .. code-block:: bash
 
-    cd snips-nlu-lib
-    cargo run --example weather examples/trained_assistant.json "What will be the weather in London tomorrow at 8am?"
+   cd snips-nlu-lib
+   cargo run --example weather examples/trained_assistant.json "What will be the weather in London tomorrow at 8am?"
 
 
 License
