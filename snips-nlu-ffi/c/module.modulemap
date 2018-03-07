@@ -1,5 +1,5 @@
 module Clibsnips_nlu {
     header "./libsnips_nlu.h"
-    link "snips_nlu"
+    link "snips_nlu_ffi"
     export *
 }

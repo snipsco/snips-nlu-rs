@@ -100,7 +100,6 @@ impl IntentClassifier for LogRegIntentClassifier {
 mod tests {
     use super::*;
 
-    use ndarray::*;
     use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
                          TfIdfVectorizerConfiguration};
 
