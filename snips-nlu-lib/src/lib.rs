@@ -1,11 +1,9 @@
-#![recursion_limit = "128"]
-
 extern crate base64;
 extern crate crfsuite;
 extern crate csv;
 extern crate dinghy_test;
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate itertools;
 #[macro_use]
 extern crate ndarray;

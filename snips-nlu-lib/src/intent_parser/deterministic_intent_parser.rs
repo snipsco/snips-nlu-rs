@@ -89,7 +89,7 @@ impl IntentParser for DeterministicIntentParser {
     fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
         let regexes = self.regexes_per_intent
             .get(intent_name)
-            .ok_or_else(|| format!("intent {:?} not found", intent_name))?;
+            .ok_or_else(|| format_err!("intent {} not found", intent_name))?;
 
         let (ranges_mapping, formatted_input) =
             if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {

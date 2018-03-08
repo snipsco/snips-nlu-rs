@@ -1,15 +1,11 @@
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate phf;
 extern crate snips_nlu_ontology;
 
-mod errors {
-    error_chain!{}
-}
-
-use errors::*;
-pub use errors::Error;
 use snips_nlu_ontology::Language;
+
+type Result<T> = ::std::result::Result<T, ::failure::Error>;
 
 include!(concat!(env!("OUT_DIR"), "/phf.rs"));
 

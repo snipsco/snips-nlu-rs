@@ -266,9 +266,9 @@ fn word_cluster_feature_function(
 
 fn parse_as_string(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<String> {
     Ok(args.get(arg_name)
-        .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
+        .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_str()
-        .ok_or_else(|| format!("'{}' isn't a string", arg_name))?
+        .ok_or_else(|| format_err!("'{}' isn't a string", arg_name))?
         .to_string())
 }
 
@@ -277,7 +277,7 @@ fn parse_as_opt_string(
     arg_name: &str,
 ) -> Result<Option<String>> {
     Ok(args.get(arg_name)
-        .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
+        .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_str()
         .map(|s| s.to_string()))
 }
@@ -287,13 +287,13 @@ fn parse_as_vec_string(
     arg_name: &str,
 ) -> Result<Vec<String>> {
     args.get(arg_name)
-        .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
+        .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_array()
-        .ok_or_else(|| format!("'{}' isn't an array", arg_name))?
+        .ok_or_else(|| format_err!("'{}' isn't an array", arg_name))?
         .iter()
         .map(|v| {
             Ok(v.as_str()
-                .ok_or_else(|| format!("'{}' is not a string", v))?
+                .ok_or_else(|| format_err!("'{}' is not a string", v))?
                 .to_string())
         })
         .collect()
@@ -304,17 +304,17 @@ fn parse_as_vec_of_vec(
     arg_name: &str,
 ) -> Result<Vec<(String, Vec<String>)>> {
     args.get(arg_name)
-        .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
+        .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_object()
-        .ok_or_else(|| format!("'{}' isn't a map", arg_name))?
+        .ok_or_else(|| format_err!("'{}' isn't a map", arg_name))?
         .into_iter()
         .map(|(k, v)| {
             let values: Result<Vec<_>> = v.as_array()
-                .ok_or_else(|| format!("'{}' is not a vec", v))?
+                .ok_or_else(|| format_err!("'{}' is not a vec", v))?
                 .into_iter()
                 .map(|item| {
                     Ok(item.as_str()
-                        .ok_or_else(|| format!("'{}' is not a string", item))?
+                        .ok_or_else(|| format_err!("'{}' is not a string", item))?
                         .to_string())
                 })
                 .collect();
@@ -325,16 +325,16 @@ fn parse_as_vec_of_vec(
 
 fn parse_as_bool(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<bool> {
     Ok(args.get(arg_name)
-        .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
+        .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_bool()
-        .ok_or_else(|| format!("'{}' isn't a bool", arg_name))?)
+        .ok_or_else(|| format_err!("'{}' isn't a bool", arg_name))?)
 }
 
 fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<u64> {
     Ok(args.get(arg_name)
-        .ok_or_else(|| format!("can't retrieve '{}' parameter", arg_name))?
+        .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_u64()
-        .ok_or_else(|| format!("'{}' isn't a u64", arg_name))?)
+        .ok_or_else(|| format_err!("'{}' isn't a u64", arg_name))?)
 }
 
 fn get_stemmer(language: Language, use_stemming: bool) -> Option<StaticMapStemmer> {

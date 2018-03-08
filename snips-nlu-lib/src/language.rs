@@ -9,10 +9,11 @@ pub struct LanguageConfig {
 }
 
 impl FromStr for LanguageConfig {
-    type Err = String;
+    type Err = ::failure::Error;
     fn from_str(it: &str) -> Result<LanguageConfig, Self::Err> {
-        let language = Language::from_str(it)?;
-        Ok(Self { language })
+        Ok(Self {
+            language: Language::from_str(it)?,
+        })
     }
 }
 

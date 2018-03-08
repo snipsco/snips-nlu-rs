@@ -5,9 +5,9 @@ authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 build = "build.rs"
 
 [dependencies]
-error-chain = { version = "0.11", default-features = false }
+failure = "0.1"
 phf = { version = "0.7.21", features = ["unicase"] }
-snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.53.2" }
+snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", branch = "task/failure-migration" }
 
 [build-dependencies]
 snips-nlu-resources = { path = "../snips-nlu-resources"}

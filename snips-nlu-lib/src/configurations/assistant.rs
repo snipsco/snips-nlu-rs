@@ -3,6 +3,8 @@ use std::sync::{Arc, Mutex};
 use std::path;
 use std::fs;
 
+use failure::ResultExt;
+
 use errors::*;
 use configurations::{ModelVersionConfiguration, NluEngineConfiguration,
                      NluEngineConfigurationConvertible};
@@ -22,23 +24,24 @@ impl FileBasedConfiguration {
 
         if !bypass_model_version_check {
             let config_file =
-                fs::File::open(&path).chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
+                fs::File::open(&path).context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
             let nlu_configuration_with_version_only: ModelVersionConfiguration =
                 ::serde_json::from_reader(config_file)
-                    .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
+                    .context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
             if nlu_configuration_with_version_only.model_version
                 != ::SnipsNluEngine::model_version()
             {
-                bail!(ErrorKind::WrongModelVersion(
-                    nlu_configuration_with_version_only.model_version
+                bail!(SnipsNluError::WrongModelVersion(
+                    nlu_configuration_with_version_only.model_version,
+                    ::SnipsNluEngine::model_version(),
                 ));
             }
         }
 
         let config_file =
-            fs::File::open(&path).chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
+            fs::File::open(&path).context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
         let nlu_configuration = ::serde_json::from_reader(config_file)
-            .chain_err(|| ErrorKind::ConfigLoad(format!("{:?}", path)))?;
+            .context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
 
         Ok(Self { nlu_configuration })
     }
@@ -63,8 +66,7 @@ impl ZipBasedConfiguration {
     where
         R: Read + Seek,
     {
-        let zip =
-            ::zip::ZipArchive::new(reader).chain_err(|| "Could not load ZipBasedConfiguration")?;
+        let zip = ::zip::ZipArchive::new(reader).context("Could not load ZipBasedConfiguration")?;
         let mutex = Arc::new(Mutex::new(zip));
 
         let nlu_conf_bytes = Self::read_bytes(&mutex, NLU_CONFIGURATION_FILENAME)
@@ -72,23 +74,24 @@ impl ZipBasedConfiguration {
                 // Assistants downloaded from the console are in a directory named assistant
                 Self::read_bytes(&mutex, &format!("assistant/{}", NLU_CONFIGURATION_FILENAME))
             })
-            .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+            .context(SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
 
         if !bypass_model_version_check {
             let nlu_configuration_with_version_only: ModelVersionConfiguration =
                 ::serde_json::from_slice(&nlu_conf_bytes)
-                    .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+                    .context(SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
             if nlu_configuration_with_version_only.model_version
                 != ::SnipsNluEngine::model_version()
             {
-                bail!(ErrorKind::WrongModelVersion(
-                    nlu_configuration_with_version_only.model_version
+                bail!(SnipsNluError::WrongModelVersion(
+                    nlu_configuration_with_version_only.model_version,
+                    ::SnipsNluEngine::model_version(),
                 ));
             }
         }
 
         let nlu_configuration = ::serde_json::from_slice(&nlu_conf_bytes)
-            .chain_err(|| ErrorKind::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+            .context(SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
 
         Ok(Self { nlu_configuration })
     }
@@ -97,7 +100,8 @@ impl ZipBasedConfiguration {
     where
         R: Read + Seek,
     {
-        let mut locked = zip.lock()?;
+        let mut locked = zip.lock()
+            .map_err(|e| format_err!("Can't lock zip file: {}", e))?;
         let zip = &mut (*locked);
         let mut file = zip.by_name(name)?;
         let mut bytes = vec![];

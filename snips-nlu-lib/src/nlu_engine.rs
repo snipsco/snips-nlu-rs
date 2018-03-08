@@ -38,8 +38,8 @@ impl SnipsNluEngine {
                     let config = ::serde_json::from_value(value)?;
                     Ok(Box::new(ProbabilisticIntentParser::new(config)?) as _)
                 }
-                Some(_) => Err("Unknown intent parser unit name".into()),
-                None => Err("Intent parser unit name is not properly defined".into()),
+                Some(_) => bail!("Unknown intent parser unit name"),
+                None => bail!("Intent parser unit name is not properly defined"),
             })
             .collect::<Result<Vec<_>>>()?;
 
@@ -126,9 +126,9 @@ impl SnipsNluEngine {
         let entity_name = self.dataset_metadata
             .slot_name_mappings
             .get(intent_name)
-            .ok_or_else(|| format!("Unknown intent: {}", intent_name))?
+            .ok_or_else(|| format_err!("Unknown intent: {}", intent_name))?
             .get(slot_name)
-            .ok_or_else(|| format!("Unknown slot: {}", &slot_name))?;
+            .ok_or_else(|| format_err!("Unknown slot: {}", &slot_name))?;
 
         let slot = if let Some(custom_entity) = self.dataset_metadata.entities.get(entity_name) {
             let language = Language::from_str(&self.dataset_metadata.language_code)?;
