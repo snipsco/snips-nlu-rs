@@ -1,11 +1,11 @@
-extern crate snips_nlu_lib;
 extern crate serde_json;
+extern crate snips_nlu_lib;
 
 use std::io::prelude::*;
 use std::fs::File;
 use std::env;
 
-use snips_nlu_lib::{SnipsNluEngine, NluEngineConfiguration};
+use snips_nlu_lib::{NluEngineConfiguration, SnipsNluEngine};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
