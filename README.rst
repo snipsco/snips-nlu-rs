@@ -69,6 +69,9 @@ Here is how you can run the example:
 
 .. code-block:: bash
 
+   git clone https://github.com/snipsco/snips-nlu-rs
+   cd snips-nlu-rs
+   git submodule update --init --recursive
    cd snips-nlu-lib
    cargo run --example weather examples/trained_assistant.json "What will be the weather in London tomorrow at 8am?"
 
