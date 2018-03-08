@@ -68,6 +68,7 @@ Check out the `rust example <snips-nlu-lib/examples>`_ to see how to use Snips.
 Here is how you can run the example:
 
 .. code-block:: bash
+
    git clone https://github.com/snipsco/snips-nlu-rs
    cd snips-nlu-rs
    git submodule update --init --recursive
