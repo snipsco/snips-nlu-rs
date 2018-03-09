@@ -6,7 +6,8 @@ use errors::*;
 use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use intent_parser::IntentParser;
 use slot_filler::{CRFSlotFiller, SlotFiller};
-use snips_nlu_ontology::{IntentClassifierResult, Slot};
+use snips_nlu_ontology::IntentClassifierResult;
+use slot_utils::InternalSlot;
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,
@@ -45,7 +46,7 @@ impl IntentParser for ProbabilisticIntentParser {
         self.intent_classifier.get_intent(input, intents)
     }
 
-    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
+    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<InternalSlot>> {
         self.slot_fillers
             .get(intent_name)
             .ok_or_else(|| format_err!("intent {} not found in slot fillers", intent_name))?

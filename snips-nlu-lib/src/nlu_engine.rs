@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::iter::FromIterator;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -14,6 +14,7 @@ use nlu_utils::string::{normalize, substring_with_char_range};
 use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
+use slot_utils::resolve_builtin_slots;
 
 const MODEL_VERSION: &str = "0.13.0";
 
@@ -70,8 +71,18 @@ impl SnipsNluEngine {
         for parser in &self.parsers {
             let classification_result = parser.get_intent(input, set_intents.as_ref())?;
             if let Some(classification_result) = classification_result {
-                let valid_slots = parser
-                    .get_slots(input, &classification_result.intent_name)?
+                let internal_slots = parser.get_slots(input, &classification_result.intent_name)?;
+                let filter_entity_kinds = self.dataset_metadata.slot_name_mappings
+                    .values()
+                    .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<String, String>| intent_mapping.values().collect())
+                    .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
+                    .unique()
+                    .collect::<Vec<_>>();
+
+                let valid_slots = resolve_builtin_slots(input,
+                                                        internal_slots,
+                                                        &*self.builtin_entity_parser,
+                                                        Some(&*filter_entity_kinds))
                     .into_iter()
                     .filter_map(|slot| {
                         if let Some(entity) = self.dataset_metadata.entities.get(&slot.entity) {

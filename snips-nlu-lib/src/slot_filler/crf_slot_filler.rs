@@ -18,7 +18,7 @@ use slot_filler::crf_utils::*;
 use slot_filler::SlotFiller;
 use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language, Slot};
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct CRFSlotFiller {
@@ -59,7 +59,7 @@ impl SlotFiller for CRFSlotFiller {
         self.tagging_scheme
     }
 
-    fn get_slots(&self, text: &str) -> Result<Vec<Slot>> {
+    fn get_slots(&self, text: &str) -> Result<Vec<InternalSlot>> {
         let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
         if tokens.is_empty() {
             return Ok(vec![]);
@@ -89,10 +89,7 @@ impl SlotFiller for CRFSlotFiller {
         let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
 
         if builtin_slot_names.is_empty() {
-            return Ok(slots
-                .into_iter()
-                .map(convert_to_custom_slot)
-                .collect());
+            return Ok(slots)
         }
 
         let updated_tags = replace_builtin_tags(tags, &builtin_slot_names);
@@ -112,7 +109,6 @@ impl SlotFiller for CRFSlotFiller {
             .unique()
             .collect_vec();
 
-
         let builtin_entities = self.builtin_entity_parser
             .extract_entities(text, Some(&builtin_entity_kinds));
         let augmented_slots = augment_slots(
@@ -124,12 +120,7 @@ impl SlotFiller for CRFSlotFiller {
             builtin_entities,
             &builtin_slots,
             self.exhaustive_permutations_threshold)?;
-        Ok(resolve_builtin_slots(
-            text,
-            augmented_slots,
-            &*self.builtin_entity_parser,
-            Some(&builtin_entity_kinds),
-        ))
+        Ok(augmented_slots)
     }
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
@@ -343,7 +334,7 @@ mod tests {
             TaggingScheme::BIO
         }
 
-        fn get_slots(&self, _text: &str) -> Result<Vec<Slot>> {
+        fn get_slots(&self, _text: &str) -> Result<Vec<InternalSlot>> {
             Ok(vec![])
         }
 

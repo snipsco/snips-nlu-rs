@@ -15,7 +15,7 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language, Slot};
+use snips_nlu_ontology::{IntentClassifierResult, Language};
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct DeterministicIntentParser {
@@ -78,7 +78,7 @@ impl IntentParser for DeterministicIntentParser {
             }))
     }
 
-    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
+    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<InternalSlot>> {
         let regexes = self.regexes_per_intent
             .get(intent_name)
             .ok_or_else(|| format_err!("intent {} not found", intent_name))?;
@@ -129,19 +129,7 @@ impl IntentParser for DeterministicIntentParser {
             }
         }
         let deduplicated_slots = deduplicate_overlapping_slots(result, self.language);
-
-        let filter_entity_kinds = self.slot_names_to_entities
-            .values()
-            .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
-            .unique()
-            .collect::<Vec<_>>();
-        Ok(resolve_builtin_slots(
-            input,
-            deduplicated_slots,
-            &*self.builtin_entity_parser,
-            Some(&*filter_entity_kinds),
-        ))
-
+        Ok(deduplicated_slots)
     }
 }
 
@@ -226,8 +214,7 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use snips_nlu_ontology::{AmountOfMoneyValue, IntentClassifierResult, Language, Precision,
-                             Slot, SlotValue};
+    use snips_nlu_ontology::{IntentClassifierResult, Language};
     use snips_nlu_ontology_parsers::BuiltinEntityParser;
     use configurations::DeterministicParserConfiguration;
     use intent_parser::IntentParser;
@@ -316,18 +303,18 @@ mod tests {
 
         // Then
         let expected_slots = vec![
-            Slot::new_custom(
-                "dummy_a".to_string(),
-                10..17,
-                "dummy_entity_1".to_string(),
-                "dummy_slot_name".to_string(),
-            ),
-            Slot::new_custom(
-                "dummy_c".to_string(),
-                37..44,
-                "dummy_entity_2".to_string(),
-                "dummy_slot_name2".to_string(),
-            ),
+            InternalSlot {
+                value: "dummy_a".to_string(),
+                char_range: 10..17,
+                entity: "dummy_entity_1".to_string(),
+                slot_name: "dummy_slot_name".to_string(),
+            },
+            InternalSlot {
+                value: "dummy_c".to_string(),
+                char_range: 37..44,
+                entity: "dummy_entity_2".to_string(),
+                slot_name: "dummy_slot_name2".to_string(),
+            },
         ];
         assert_eq!(slots, expected_slots);
     }
@@ -343,12 +330,12 @@ mod tests {
 
         // Then
         let expected_slots = vec![
-            Slot::new_custom(
-                "dummy_cc".to_string(),
-                21..29,
-                "dummy_entity_2".to_string(),
-                "dummy_slot_name2".to_string(),
-            ),
+            InternalSlot {
+                value: "dummy_cc".to_string(),
+                char_range: 21..29,
+                entity: "dummy_entity_2".to_string(),
+                slot_name: "dummy_slot_name2".to_string(),
+            },
         ];
         assert_eq!(slots, expected_slots);
     }
@@ -364,14 +351,9 @@ mod tests {
 
         // Then
         let expected_slots = vec![
-            Slot {
-                raw_value: "10 dollars".to_string(),
-                value: SlotValue::AmountOfMoney(AmountOfMoneyValue {
-                    value: 10.0,
-                    precision: Precision::Exact,
-                    unit: Some("$".to_string()),
-                }),
-                range: Some(5..15),
+            InternalSlot {
+                value: "10 dollars".to_string(),
+                char_range: 5..15,
                 entity: "snips/amountOfMoney".to_string(),
                 slot_name: "dummy_slot_name4".to_string(),
             },
