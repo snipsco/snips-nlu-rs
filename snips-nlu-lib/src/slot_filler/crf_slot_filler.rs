@@ -26,8 +26,31 @@ pub struct CRFSlotFiller {
     tagger: sync::Mutex<CRFSuiteTagger>,
     feature_processor: ProbabilisticFeatureProcessor,
     slot_name_mapping: HashMap<String, String>,
-    builtin_entity_parser: Option<sync::Arc<BuiltinEntityParser>>,
+    builtin_entity_parser: sync::Arc<BuiltinEntityParser>,
     exhaustive_permutations_threshold: usize,
+}
+
+impl CRFSlotFiller {
+    pub fn new(config: SlotFillerConfiguration) -> Result<CRFSlotFiller> {
+        let tagging_scheme = TaggingScheme::from_u8(config.config.tagging_scheme)?;
+        let slot_name_mapping = config.slot_name_mapping;
+        let feature_processor =
+            ProbabilisticFeatureProcessor::new(&config.config.feature_factory_configs)?;
+        let converted_data = ::base64::decode(&config.crf_model_data)?;
+        let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
+        let language = Language::from_str(&config.language_code)?;
+        let builtin_entity_parser = BuiltinEntityParser::get(language);
+
+        Ok(Self {
+            language,
+            tagging_scheme,
+            tagger: sync::Mutex::new(tagger),
+            feature_processor,
+            slot_name_mapping,
+            builtin_entity_parser,
+            exhaustive_permutations_threshold: config.config.exhaustive_permutations_threshold,
+        })
+    }
 }
 
 impl SlotFiller for CRFSlotFiller {
@@ -93,31 +116,24 @@ impl SlotFiller for CRFSlotFiller {
             .unique()
             .collect_vec();
 
-        if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-            let builtin_entities =
-                builtin_entity_parser.extract_entities(text, Some(&builtin_entity_kinds));
-            let augmented_slots = augment_slots(
-                text,
-                &tokens,
-                &updated_tags,
-                self,
-                &self.slot_name_mapping,
-                builtin_entities,
-                &builtin_slots,
-                self.exhaustive_permutations_threshold,
-            )?;
-            Ok(resolve_builtin_slots(
-                text,
-                augmented_slots,
-                &*builtin_entity_parser,
-                Some(&builtin_entity_kinds),
-            ))
-        } else {
-            Ok(custom_slots
-                .into_iter()
-                .map(convert_to_custom_slot)
-                .collect())
-        }
+
+        let builtin_entities = self.builtin_entity_parser
+            .extract_entities(text, Some(&builtin_entity_kinds));
+        let augmented_slots = augment_slots(
+            text,
+            &tokens,
+            &updated_tags,
+            self,
+            &self.slot_name_mapping,
+            builtin_entities,
+            &builtin_slots,
+            self.exhaustive_permutations_threshold)?;
+        Ok(resolve_builtin_slots(
+            text,
+            augmented_slots,
+            &*self.builtin_entity_parser,
+            Some(&builtin_entity_kinds),
+        ))
     }
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
@@ -144,29 +160,6 @@ impl SlotFiller for CRFSlotFiller {
             .collect_vec();
         tagger.set(&features)?;
         Ok(tagger.probability(cleaned_tags)?)
-    }
-}
-
-impl CRFSlotFiller {
-    pub fn new(config: SlotFillerConfiguration) -> Result<CRFSlotFiller> {
-        let tagging_scheme = TaggingScheme::from_u8(config.config.tagging_scheme)?;
-        let slot_name_mapping = config.slot_name_mapping;
-        let feature_processor =
-            ProbabilisticFeatureProcessor::new(&config.config.feature_factory_configs)?;
-        let converted_data = ::base64::decode(&config.crf_model_data)?;
-        let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
-        let language = Language::from_str(&config.language_code)?;
-        let builtin_entity_parser = Some(BuiltinEntityParser::get(language));
-
-        Ok(Self {
-            language,
-            tagging_scheme,
-            tagger: sync::Mutex::new(tagger),
-            feature_processor,
-            slot_name_mapping,
-            builtin_entity_parser,
-            exhaustive_permutations_threshold: config.config.exhaustive_permutations_threshold,
-        })
     }
 }
 
@@ -310,6 +303,10 @@ mod tests {
     }
 
     impl SlotFiller for TestSlotFiller {
+        fn get_tagging_scheme(&self) -> TaggingScheme {
+            TaggingScheme::BIO
+        }
+
         fn get_slots(&self, _text: &str) -> Result<Vec<Slot>> {
             Ok(vec![])
         }
@@ -332,10 +329,6 @@ mod tests {
             } else {
                 bail!("Unexpected tags: {:?}", tags)
             }
-        }
-
-        fn get_tagging_scheme(&self) -> TaggingScheme {
-            TaggingScheme::BIO
         }
     }
 

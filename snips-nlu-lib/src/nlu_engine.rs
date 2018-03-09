@@ -20,7 +20,7 @@ const MODEL_VERSION: &str = "0.13.0";
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
     parsers: Vec<Box<IntentParser>>,
-    builtin_entity_parser: Option<Arc<BuiltinEntityParser>>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
 }
 
 impl SnipsNluEngine {
@@ -42,10 +42,8 @@ impl SnipsNluEngine {
                 None => bail!("Intent parser unit name is not properly defined"),
             })
             .collect::<Result<Vec<_>>>()?;
-
-        let builtin_entity_parser = Language::from_str(&nlu_config.dataset_metadata.language_code)
-            .ok()
-            .map(BuiltinEntityParser::get);
+        let language = Language::from_str(&nlu_config.dataset_metadata.language_code)?;
+        let builtin_entity_parser = BuiltinEntityParser::get(language);
 
         Ok(SnipsNluEngine {
             dataset_metadata: nlu_config.dataset_metadata,
@@ -139,15 +137,13 @@ impl SnipsNluEngine {
                 custom_entity,
                 language,
             )
-        } else if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
+        } else {
             extract_builtin_slot(
                 input,
                 entity_name.to_string(),
                 slot_name.to_string(),
-                &builtin_entity_parser,
+                &self.builtin_entity_parser,
             )?
-        } else {
-            None
         };
         Ok(slot)
     }
@@ -223,8 +219,8 @@ mod tests {
     #[test]
     fn parse_works() {
         // Given
-        let configuration: NluEngineConfiguration =
-            parse_json("tests/configurations/trained_assistant.json");
+        let configuration: NluEngineConfiguration = parse_json(
+            "tests/configurations/trained_assistant.json");
         let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
 
         // When

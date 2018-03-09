@@ -22,17 +22,14 @@ pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, String>,
     slot_names_to_entities: HashMap<String, String>,
-    builtin_entity_parser: Option<Arc<BuiltinEntityParser>>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
     language: Language,
 }
 
 impl DeterministicIntentParser {
     pub fn new(configuration: DeterministicParserConfiguration) -> Result<Self> {
-        let builtin_entity_parser = Language::from_str(&configuration.language_code)
-            .ok()
-            .map(BuiltinEntityParser::get);
         let language = Language::from_str(&configuration.language_code)?;
-
+        let builtin_entity_parser = BuiltinEntityParser::get(language);
         Ok(DeterministicIntentParser {
             regexes_per_intent: compile_regexes_per_intent(configuration.patterns)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
@@ -64,12 +61,7 @@ impl IntentParser for DeterministicIntentParser {
         input: &str,
         intents: Option<&HashSet<String>>,
     ) -> Result<Option<IntentClassifierResult>> {
-        let formatted_input =
-            if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-                replace_builtin_entities(input, &*builtin_entity_parser).1
-            } else {
-                input.to_string()
-            };
+        let formatted_input = replace_builtin_entities(input, &*self.builtin_entity_parser).1;
         Ok(self.regexes_per_intent
             .iter()
             .filter(|&(intent, _)| {
@@ -91,15 +83,7 @@ impl IntentParser for DeterministicIntentParser {
             .get(intent_name)
             .ok_or_else(|| format_err!("intent {} not found", intent_name))?;
 
-        let (ranges_mapping, formatted_input) =
-            if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-                replace_builtin_entities(input, &*builtin_entity_parser)
-            } else {
-                (
-                    HashMap::<Range<usize>, Range<usize>>::new(),
-                    input.to_string(),
-                )
-            };
+        let (ranges_mapping, formatted_input) = replace_builtin_entities(input, &*self.builtin_entity_parser);
 
         let mut result = vec![];
         for regex in regexes {
@@ -145,30 +129,19 @@ impl IntentParser for DeterministicIntentParser {
             }
         }
         let deduplicated_slots = deduplicate_overlapping_slots(result, self.language);
-        if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-            let filter_entity_kinds = self.slot_names_to_entities
-                .values()
-                .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
-                .unique()
-                .collect::<Vec<_>>();
-            Ok(resolve_builtin_slots(
-                input,
-                deduplicated_slots,
-                &*builtin_entity_parser,
-                Some(&*filter_entity_kinds),
-            ))
-        } else {
-            Ok(deduplicated_slots
-                .into_iter()
-                .filter_map(|s| {
-                    if BuiltinEntityKind::from_identifier(&s.entity).is_err() {
-                        Some(convert_to_custom_slot(s))
-                    } else {
-                        None
-                    }
-                })
-                .collect())
-        }
+
+        let filter_entity_kinds = self.slot_names_to_entities
+            .values()
+            .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
+            .unique()
+            .collect::<Vec<_>>();
+        Ok(resolve_builtin_slots(
+            input,
+            deduplicated_slots,
+            &*self.builtin_entity_parser,
+            Some(&*filter_entity_kinds),
+        ))
+
     }
 }
 
