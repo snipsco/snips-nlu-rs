@@ -12,6 +12,7 @@ use configurations::SlotFillerConfiguration;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
+use nlu_utils::string::substring_with_char_range;
 use nlu_utils::token::{tokenize, Token};
 use slot_filler::crf_utils::*;
 use slot_filler::SlotFiller;
@@ -79,21 +80,16 @@ impl SlotFiller for CRFSlotFiller {
                     .map(|_| slot_name.to_string())
             },
         );
+        let slots = tags_to_slots(text,
+                                  &tokens,
+                                  &tags,
+                                  self.tagging_scheme,
+                                  &self.slot_name_mapping)?;
+
         let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
 
-        // Remove slots corresponding to builtin entities
-        let custom_slots = tags_to_slots(
-            text,
-            &tokens,
-            &tags,
-            self.tagging_scheme,
-            &self.slot_name_mapping,
-        )?.into_iter()
-            .filter(|s| !builtin_slot_names.contains(&s.slot_name))
-            .collect_vec();
-
         if builtin_slot_names.is_empty() {
-            return Ok(custom_slots
+            return Ok(slots
                 .into_iter()
                 .map(convert_to_custom_slot)
                 .collect());
@@ -203,12 +199,13 @@ fn augment_slots(
     exhaustive_permutations_threshold: usize,
 ) -> Result<Vec<InternalSlot>> {
     let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<BuiltinEntity>> = HashMap::new();
-    for entity in filter_overlapping_builtins(
+    let filtered_entities = filter_overlapping_builtins(
         builtin_entities,
         tokens,
         tags,
         slot_filler.get_tagging_scheme(),
-    ) {
+    );
+    for entity in filtered_entities {
         grouped_entities
             .entry(entity.entity_kind)
             .or_insert_with(|| vec![])
@@ -216,14 +213,14 @@ fn augment_slots(
     }
 
     let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
-    for (entity_kind, group) in grouped_entities {
-        let spans_ranges = group.into_iter().map(|e| e.range).collect_vec();
+    for (entity_kind, group) in grouped_entities.iter() {
+        let spans_ranges = group.into_iter().map(|e| e.range.clone()).collect_vec();
         let num_detected_builtins = spans_ranges.len();
         let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
         let related_slots: Vec<&str> = missing_slots
             .iter()
             .filter_map(|&(ref slot_name, kind)| {
-                if kind == entity_kind {
+                if kind == *entity_kind {
                     let name: &str = &*slot_name;
                     Some(name)
                 } else {
@@ -257,14 +254,53 @@ fn augment_slots(
         }
         augmented_tags = best_updated_tags;
     }
-
-    Ok(tags_to_slots(
+    let slots = tags_to_slots(
         text,
         tokens,
         &augmented_tags,
         slot_filler.get_tagging_scheme(),
         intent_slots_mapping,
-    )?)
+    )?;
+    let filtered_builtin_entities = grouped_entities
+        .into_iter()
+        .flat_map(|(_, e)| e)
+        .collect();
+    Ok(reconciliate_builtin_slots(text, slots, filtered_builtin_entities))
+}
+
+fn reconciliate_builtin_slots(text: &str,
+                              slots: Vec<InternalSlot>,
+                              builtin_entities: Vec<BuiltinEntity>) -> Vec<InternalSlot> {
+    slots
+        .iter()
+        .map(|slot|
+            BuiltinEntityKind::from_identifier(&slot.entity)
+                .ok()
+                .map(|kind|
+                    builtin_entities
+                        .iter()
+                        .find_position(|builtin_entity| {
+                            if builtin_entity.entity_kind != kind {
+                                return false;
+                            }
+                            let be_start = builtin_entity.range.start;
+                            let be_end = builtin_entity.range.end;
+                            let be_length = be_end - be_start;
+                            let slot_start = slot.char_range.start;
+                            let slot_end = slot.char_range.end;
+                            let slot_length = slot_end - slot_start;
+                            be_start <= slot_start && be_end >= slot_end && be_length > slot_length
+                        })
+                        .map(|(_, be): (_, &BuiltinEntity)|
+                            InternalSlot {
+                                value: substring_with_char_range(text.to_string(), &be.range),
+                                char_range: be.range.clone(),
+                                entity: slot.entity.clone(),
+                                slot_name: slot.slot_name.clone(),
+                            })
+                        .unwrap_or(slot.clone()))
+                .unwrap_or(slot.clone()))
+        .collect()
 }
 
 fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<usize>> {
@@ -630,6 +666,46 @@ mod tests {
         // Then
         let expected_indexes = vec![vec![0], vec![0, 1], vec![1], vec![2]];
         assert_eq!(expected_indexes, actual_indexes);
+    }
+
+    #[test]
+    fn test_reconciliate_builtin_slots_works() {
+        // Given
+        let text = "tomorrow at 8a.m. please";
+        let slots = vec![
+            InternalSlot {
+                value: "tomorrow at 8a.m".to_string(),
+                char_range: 0..16,
+                entity: BuiltinEntityKind::Time.identifier().to_string(),
+                slot_name: "datetime".to_string(),
+            }
+        ];
+        let builtin_entities = vec![
+            BuiltinEntity {
+                value: "tomorrow at 8a.m.".to_string(),
+                range: 0..17,
+                entity: SlotValue::InstantTime(InstantTimeValue {
+                    value: "2018-03-10 08:00:00 +00:00".to_string(),
+                    grain: Grain::Minute,
+                    precision: Precision::Exact,
+                }),
+                entity_kind: BuiltinEntityKind::Time,
+            }
+        ];
+
+        // When
+        let reconciliated_slots = reconciliate_builtin_slots(text, slots, builtin_entities);
+
+        // Then
+        let expected_slots = vec![
+            InternalSlot {
+                value: "tomorrow at 8a.m.".to_string(),
+                char_range: 0..17,
+                entity: BuiltinEntityKind::Time.identifier().to_string(),
+                slot_name: "datetime".to_string(),
+            }
+        ];
+        assert_eq!(expected_slots, reconciliated_slots);
     }
 
     #[test]
