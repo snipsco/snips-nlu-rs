@@ -18,8 +18,9 @@
 		F79B6F602016452F00394C57 /* sample_config.zip in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F5E2016452F00394C57 /* sample_config.zip */; };
 		F79B6F652016456200394C57 /* configurations in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F642016456200394C57 /* configurations */; };
 		F79B6F662016456200394C57 /* configurations in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F642016456200394C57 /* configurations */; };
-		F7AFF3661F82954A0022948A /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7AFF3641F82954A0022948A /* libresolv.tbd */; };
-		F7ED4D651F829EDC00703763 /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7ED4D641F829EDC00703763 /* libresolv.tbd */; };
+		F7FC427F2058178F0047F56A /* libbz2.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7FC427E2058178F0047F56A /* libbz2.tbd */; };
+		F7FC4282205819C40047F56A /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7FC42802058198B0047F56A /* libresolv.tbd */; };
+		F7FC428420581A270047F56A /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7FC428320581A270047F56A /* libresolv.tbd */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -51,9 +52,10 @@
 		F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngineTests.swift; sourceTree = "<group>"; };
 		F79B6F5E2016452F00394C57 /* sample_config.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = sample_config.zip; path = ../../../../data/tests/zip_files/sample_config.zip; sourceTree = "<group>"; };
 		F79B6F642016456200394C57 /* configurations */ = {isa = PBXFileReference; lastKnownFileType = folder; name = configurations; path = ../../../../data/tests/configurations; sourceTree = "<group>"; };
-		F7AFF3641F82954A0022948A /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.0.sdk/usr/lib/libresolv.tbd; sourceTree = DEVELOPER_DIR; };
 		F7ED4D631F829D1700703763 /* build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = build.sh; path = Dependencies/build.sh; sourceTree = "<group>"; };
-		F7ED4D641F829EDC00703763 /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
+		F7FC427E2058178F0047F56A /* libbz2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libbz2.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.2.sdk/usr/lib/libbz2.tbd; sourceTree = DEVELOPER_DIR; };
+		F7FC42802058198B0047F56A /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.2.sdk/usr/lib/libresolv.tbd; sourceTree = DEVELOPER_DIR; };
+		F7FC428320581A270047F56A /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,7 +63,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F7AFF3661F82954A0022948A /* libresolv.tbd in Frameworks */,
+				F7FC4282205819C40047F56A /* libresolv.tbd in Frameworks */,
+				F7FC427F2058178F0047F56A /* libbz2.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,7 +80,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F7ED4D651F829EDC00703763 /* libresolv.tbd in Frameworks */,
+				F7FC428420581A270047F56A /* libresolv.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -146,8 +149,9 @@
 		F7AFF35D1F8293710022948A /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				F7ED4D641F829EDC00703763 /* libresolv.tbd */,
-				F7AFF3641F82954A0022948A /* libresolv.tbd */,
+				F7FC42802058198B0047F56A /* libresolv.tbd */,
+				F7FC428320581A270047F56A /* libresolv.tbd */,
+				F7FC427E2058178F0047F56A /* libbz2.tbd */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
