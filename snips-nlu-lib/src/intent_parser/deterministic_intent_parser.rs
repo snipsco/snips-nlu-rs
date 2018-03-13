@@ -83,7 +83,8 @@ impl IntentParser for DeterministicIntentParser {
             .get(intent_name)
             .ok_or_else(|| format_err!("intent {} not found", intent_name))?;
 
-        let (ranges_mapping, formatted_input) = replace_builtin_entities(input, &*self.builtin_entity_parser);
+        let (ranges_mapping, formatted_input) =
+            replace_builtin_entities(input, &*self.builtin_entity_parser);
 
         let mut result = vec![];
         for regex in regexes {

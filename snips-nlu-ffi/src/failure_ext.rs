@@ -26,5 +26,7 @@ pub trait ErrorExt {
 }
 
 impl ErrorExt for Error {
-    fn pretty(&self) -> PrettyFail { PrettyFail(self.cause()) }
+    fn pretty(&self) -> PrettyFail {
+        PrettyFail(self.cause())
+    }
 }

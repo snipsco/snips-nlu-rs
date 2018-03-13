@@ -80,16 +80,18 @@ impl SlotFiller for CRFSlotFiller {
                     .map(|_| slot_name.to_string())
             },
         );
-        let slots = tags_to_slots(text,
-                                  &tokens,
-                                  &tags,
-                                  self.tagging_scheme,
-                                  &self.slot_name_mapping)?;
+        let slots = tags_to_slots(
+            text,
+            &tokens,
+            &tags,
+            self.tagging_scheme,
+            &self.slot_name_mapping,
+        )?;
 
         let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
 
         if builtin_slot_names.is_empty() {
-            return Ok(slots)
+            return Ok(slots);
         }
 
         let updated_tags = replace_builtin_tags(tags, &builtin_slot_names);
@@ -119,7 +121,8 @@ impl SlotFiller for CRFSlotFiller {
             &self.slot_name_mapping,
             builtin_entities,
             &builtin_slots,
-            self.exhaustive_permutations_threshold)?;
+            self.exhaustive_permutations_threshold,
+        )?;
         Ok(augmented_slots)
     }
 
@@ -252,22 +255,25 @@ fn augment_slots(
         slot_filler.get_tagging_scheme(),
         intent_slots_mapping,
     )?;
-    let filtered_builtin_entities = grouped_entities
-        .into_iter()
-        .flat_map(|(_, e)| e)
-        .collect();
-    Ok(reconciliate_builtin_slots(text, slots, filtered_builtin_entities))
+    let filtered_builtin_entities = grouped_entities.into_iter().flat_map(|(_, e)| e).collect();
+    Ok(reconciliate_builtin_slots(
+        text,
+        slots,
+        filtered_builtin_entities,
+    ))
 }
 
-fn reconciliate_builtin_slots(text: &str,
-                              slots: Vec<InternalSlot>,
-                              builtin_entities: Vec<BuiltinEntity>) -> Vec<InternalSlot> {
+fn reconciliate_builtin_slots(
+    text: &str,
+    slots: Vec<InternalSlot>,
+    builtin_entities: Vec<BuiltinEntity>,
+) -> Vec<InternalSlot> {
     slots
         .iter()
-        .map(|slot|
+        .map(|slot| {
             BuiltinEntityKind::from_identifier(&slot.entity)
                 .ok()
-                .map(|kind|
+                .map(|kind| {
                     builtin_entities
                         .iter()
                         .find_position(|builtin_entity| {
@@ -282,15 +288,16 @@ fn reconciliate_builtin_slots(text: &str,
                             let slot_length = slot_end - slot_start;
                             be_start <= slot_start && be_end >= slot_end && be_length > slot_length
                         })
-                        .map(|(_, be): (_, &BuiltinEntity)|
-                            InternalSlot {
-                                value: substring_with_char_range(text.to_string(), &be.range),
-                                char_range: be.range.clone(),
-                                entity: slot.entity.clone(),
-                                slot_name: slot.slot_name.clone(),
-                            })
-                        .unwrap_or(slot.clone()))
-                .unwrap_or(slot.clone()))
+                        .map(|(_, be): (_, &BuiltinEntity)| InternalSlot {
+                            value: substring_with_char_range(text.to_string(), &be.range),
+                            char_range: be.range.clone(),
+                            entity: slot.entity.clone(),
+                            slot_name: slot.slot_name.clone(),
+                        })
+                        .unwrap_or(slot.clone())
+                })
+                .unwrap_or(slot.clone())
+        })
         .collect()
 }
 
@@ -669,7 +676,7 @@ mod tests {
                 char_range: 0..16,
                 entity: BuiltinEntityKind::Time.identifier().to_string(),
                 slot_name: "datetime".to_string(),
-            }
+            },
         ];
         let builtin_entities = vec![
             BuiltinEntity {
@@ -681,7 +688,7 @@ mod tests {
                     precision: Precision::Exact,
                 }),
                 entity_kind: BuiltinEntityKind::Time,
-            }
+            },
         ];
 
         // When
@@ -694,7 +701,7 @@ mod tests {
                 char_range: 0..17,
                 entity: BuiltinEntityKind::Time.identifier().to_string(),
                 slot_name: "datetime".to_string(),
-            }
+            },
         ];
         assert_eq!(expected_slots, reconciliated_slots);
     }

@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -72,18 +72,22 @@ impl SnipsNluEngine {
             let classification_result = parser.get_intent(input, set_intents.as_ref())?;
             if let Some(classification_result) = classification_result {
                 let internal_slots = parser.get_slots(input, &classification_result.intent_name)?;
-                let filter_entity_kinds = self.dataset_metadata.slot_name_mappings
+                let filter_entity_kinds = self.dataset_metadata
+                    .slot_name_mappings
                     .values()
-                    .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<String, String>| intent_mapping.values().collect())
+                    .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<String, String>| {
+                        intent_mapping.values().collect()
+                    })
                     .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
                     .unique()
                     .collect::<Vec<_>>();
 
-                let valid_slots = resolve_builtin_slots(input,
-                                                        internal_slots,
-                                                        &*self.builtin_entity_parser,
-                                                        Some(&*filter_entity_kinds))
-                    .into_iter()
+                let valid_slots = resolve_builtin_slots(
+                    input,
+                    internal_slots,
+                    &*self.builtin_entity_parser,
+                    Some(&*filter_entity_kinds),
+                ).into_iter()
                     .filter_map(|slot| {
                         if let Some(entity) = self.dataset_metadata.entities.get(&slot.entity) {
                             entity
@@ -230,8 +234,8 @@ mod tests {
     #[test]
     fn parse_works() {
         // Given
-        let configuration: NluEngineConfiguration = parse_json(
-            "tests/configurations/trained_assistant.json");
+        let configuration: NluEngineConfiguration =
+            parse_json("tests/configurations/trained_assistant.json");
         let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
 
         // When
