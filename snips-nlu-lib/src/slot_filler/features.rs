@@ -10,7 +10,8 @@ use resources::stemmer::StaticMapStemmer;
 use resources::word_clusterer::WordClusterer;
 use super::crf_utils::{get_scheme_prefix, TaggingScheme};
 use super::features_utils::{get_shape, get_word_chunk, initial_string_from_tokens};
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser};
+use snips_nlu_ontology::BuiltinEntityKind;
+use snips_nlu_ontology_parsers::BuiltinEntityParser;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::normalize;
 

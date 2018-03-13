@@ -15,8 +15,8 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, IntentClassifierResult, Language,
-                         Slot};
+use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language, Slot};
+use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
@@ -89,7 +89,7 @@ impl IntentParser for DeterministicIntentParser {
     fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
         let regexes = self.regexes_per_intent
             .get(intent_name)
-            .ok_or_else(|| format!("intent {:?} not found", intent_name))?;
+            .ok_or_else(|| format_err!("intent {} not found", intent_name))?;
 
         let (ranges_mapping, formatted_input) =
             if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
@@ -253,8 +253,9 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use snips_nlu_ontology::{AmountOfMoneyValue, BuiltinEntityParser, IntentClassifierResult,
-                             Language, Precision, Slot, SlotValue};
+    use snips_nlu_ontology::{AmountOfMoneyValue, IntentClassifierResult, Language, Precision,
+                             Slot, SlotValue};
+    use snips_nlu_ontology_parsers::BuiltinEntityParser;
     use configurations::DeterministicParserConfiguration;
     use intent_parser::IntentParser;
     use slot_utils::InternalSlot;

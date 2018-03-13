@@ -1,48 +1,28 @@
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 #[macro_use]
 extern crate lazy_static;
 extern crate libc;
 extern crate serde_json;
 extern crate snips_nlu_lib;
-extern crate snips_nlu_ontology_ffi;
+extern crate snips_nlu_ontology_ffi_macros;
+
+mod failure_ext;
 
 use std::ffi::{CStr, CString};
 use std::sync::Mutex;
 use std::slice;
 use std::io::Cursor;
 
+use failure_ext::ErrorExt;
 use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine, ZipBasedConfiguration};
-use snips_nlu_ontology_ffi::CIntentParserResult;
+use snips_nlu_ontology_ffi_macros::CIntentParserResult;
+
+type Result<T> = ::std::result::Result<T, ::failure::Error>;
 
 lazy_static! {
     static ref LAST_ERROR: Mutex<String> = Mutex::new("".to_string());
 }
-
-mod errors {
-    error_chain! {
-        links {
-            SnipsNluLib(::snips_nlu_lib::Error, ::snips_nlu_lib::ErrorKind);
-            SnipsNluOntology(::snips_nlu_ontology_ffi::OntologyError,
-                             ::snips_nlu_ontology_ffi::OntologyErrorKind);
-        }
-
-        foreign_links {
-            Io(::std::io::Error);
-            Serde(::serde_json::Error);
-            Utf8Error(::std::str::Utf8Error);
-            NulError(::std::ffi::NulError);
-        }
-    }
-
-    impl<T> ::std::convert::From<::std::sync::PoisonError<T>> for Error {
-        fn from(pe: ::std::sync::PoisonError<T>) -> Error {
-            format!("Poisoning error: {:?}", pe).into()
-        }
-    }
-}
-
-use errors::*;
 
 #[repr(C)]
 pub struct Opaque(std::sync::Mutex<SnipsNluEngine>);
@@ -58,8 +38,7 @@ macro_rules! wrap {
     ($e:expr) => { match $e {
         Ok(_) => { NLURESULT::OK }
         Err(e) => {
-            use error_chain::ChainedError;
-            let msg = e.display_chain().to_string();
+            let msg = e.pretty().to_string();
             eprintln!("{}", msg);
             match LAST_ERROR.lock() {
                 Ok(mut guard) => *guard = msg,
@@ -73,7 +52,7 @@ macro_rules! wrap {
 macro_rules! get_intent_parser {
     ($opaque:ident) => {{
         let client: &Opaque = unsafe { &*$opaque };
-        client.0.lock()?
+        client.0.lock().map_err(|e| format_err!("Poisoning pointer: {}", e))?
     }};
 }
 
@@ -212,7 +191,11 @@ fn run_parse_into_json(
 }
 
 fn get_last_error(error: *mut *const libc::c_char) -> Result<()> {
-    point_to_string(error, LAST_ERROR.lock()?.clone())
+    let last_error = LAST_ERROR
+        .lock()
+        .map_err(|e| format_err!("Can't retrieve last error: {}", e))?
+        .clone();
+    point_to_string(error, last_error)
 }
 
 fn get_model_version(version: *mut *const libc::c_char) -> Result<()> {

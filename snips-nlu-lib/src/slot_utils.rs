@@ -1,6 +1,7 @@
 use std::ops::Range;
 
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, Slot, SlotValue};
+use snips_nlu_ontology::{BuiltinEntityKind, Slot, SlotValue};
+use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InternalSlot {

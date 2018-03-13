@@ -1,21 +1,13 @@
 extern crate csv;
-#[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate itertools;
 #[macro_use]
 extern crate lazy_static;
 extern crate snips_nlu_utils as nlu_utils;
 
-mod errors {
-    error_chain! {
-        foreign_links {
-            Io(::std::io::Error);
-            Csv(::csv::Error);
-        }
-    }
+pub mod errors {
+    pub type Result<T> = ::std::result::Result<T, ::failure::Error>;
 }
-
-pub use errors::Error;
 
 pub mod stems {
     use std::collections::HashMap;
@@ -181,13 +173,13 @@ pub mod gazetteer {
             ($language:ident, $gazetteer_name:ident) => {
                 pub fn $gazetteer_name() -> Result<HashSet<String>> {
                     super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/", stringify!($language), "/", stringify!($gazetteer_name), ".txt"))[..],
-                                           stems::no_stem, Language::from_str(stringify!($language))?)
+                                           stems::no_stem, Language::from_str(stringify!($language)).map_err(::failure::err_msg)?)
                 }
             };
             ($language:ident, $function_name:ident, $gazetteer_name:ident, $stem:ident) => {
                 pub fn $function_name() -> Result<HashSet<String>> {
                     super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/", stringify!($language), "/", stringify!($gazetteer_name), ".txt"))[..],
-                                           $stem, Language::from_str(stringify!($language))?)
+                                           $stem, Language::from_str(stringify!($language)).map_err(::failure::err_msg)?)
                 }
             };
         }

@@ -30,7 +30,7 @@ impl TaggingScheme {
             0 => Ok(TaggingScheme::IO),
             1 => Ok(TaggingScheme::BIO),
             2 => Ok(TaggingScheme::BILOU),
-            _ => Err(format!("Unknown tagging scheme identifier: {}", i))?,
+            _ => bail!("Unknown tagging scheme identifier: {}", i),
         }
     }
 }
@@ -219,7 +219,7 @@ pub fn tags_to_slots(
                 entity: intent_slots_mapping
                     .get(&s.slot_name)
                     .ok_or_else(|| {
-                        format!(
+                        format_err!(
                             "Missing slot to entity mapping for slot name: {}",
                             s.slot_name
                         )

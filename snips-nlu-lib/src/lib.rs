@@ -1,11 +1,9 @@
-#![recursion_limit = "128"]
-
 extern crate base64;
 extern crate crfsuite;
 extern crate csv;
 extern crate dinghy_test;
 #[macro_use]
-extern crate error_chain;
+extern crate failure;
 extern crate itertools;
 #[macro_use]
 extern crate ndarray;
@@ -15,6 +13,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate snips_nlu_ontology;
+extern crate snips_nlu_ontology_parsers;
 extern crate snips_nlu_resources_packed as resources_packed;
 extern crate snips_nlu_utils as nlu_utils;
 extern crate yolo;

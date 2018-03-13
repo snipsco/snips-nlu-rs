@@ -17,7 +17,8 @@ use slot_filler::crf_utils::*;
 use slot_filler::SlotFiller;
 use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, BuiltinEntityParser, Language, Slot};
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language, Slot};
+use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct CRFSlotFiller {
     language: Language,
@@ -41,7 +42,8 @@ impl SlotFiller for CRFSlotFiller {
         }
         let features = self.feature_processor.compute_features(&&*tokens);
         let tags = self.tagger
-            .lock()?
+            .lock()
+            .map_err(|e| format_err!("Poisonous mutex: {}", e))?
             .tag(&features)?
             .into_iter()
             .map(|tag| decode_tag(&*tag))
@@ -120,7 +122,9 @@ impl SlotFiller for CRFSlotFiller {
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
         let features = self.feature_processor.compute_features(&tokens);
-        let tagger = self.tagger.lock()?;
+        let tagger = self.tagger
+            .lock()
+            .map_err(|e| format_err!("poisonous mutex: {}", e))?;
         let tagger_labels = tagger
             .labels()?
             .into_iter()
@@ -326,7 +330,7 @@ mod tests {
             } else if tags == self.tags7 {
                 Ok(0.4)
             } else {
-                Err(format!("Unexpected tags: {:?}", tags).into())
+                bail!("Unexpected tags: {:?}", tags)
             }
         }
 

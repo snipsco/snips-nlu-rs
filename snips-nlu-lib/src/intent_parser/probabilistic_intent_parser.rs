@@ -48,7 +48,7 @@ impl IntentParser for ProbabilisticIntentParser {
     fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>> {
         self.slot_fillers
             .get(intent_name)
-            .ok_or_else(|| format!("intent {:?} not found in slot fillers", intent_name))?
+            .ok_or_else(|| format_err!("intent {} not found in slot fillers", intent_name))?
             .get_slots(input)
     }
 }
