@@ -12,12 +12,13 @@ use configurations::SlotFillerConfiguration;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
+use nlu_utils::string::substring_with_char_range;
 use nlu_utils::token::{tokenize, Token};
 use slot_filler::crf_utils::*;
 use slot_filler::SlotFiller;
 use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language, Slot};
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct CRFSlotFiller {
@@ -26,8 +27,31 @@ pub struct CRFSlotFiller {
     tagger: sync::Mutex<CRFSuiteTagger>,
     feature_processor: ProbabilisticFeatureProcessor,
     slot_name_mapping: HashMap<String, String>,
-    builtin_entity_parser: Option<sync::Arc<BuiltinEntityParser>>,
+    builtin_entity_parser: sync::Arc<BuiltinEntityParser>,
     exhaustive_permutations_threshold: usize,
+}
+
+impl CRFSlotFiller {
+    pub fn new(config: SlotFillerConfiguration) -> Result<CRFSlotFiller> {
+        let tagging_scheme = TaggingScheme::from_u8(config.config.tagging_scheme)?;
+        let slot_name_mapping = config.slot_name_mapping;
+        let feature_processor =
+            ProbabilisticFeatureProcessor::new(&config.config.feature_factory_configs)?;
+        let converted_data = ::base64::decode(&config.crf_model_data)?;
+        let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
+        let language = Language::from_str(&config.language_code)?;
+        let builtin_entity_parser = BuiltinEntityParser::get(language);
+
+        Ok(Self {
+            language,
+            tagging_scheme,
+            tagger: sync::Mutex::new(tagger),
+            feature_processor,
+            slot_name_mapping,
+            builtin_entity_parser,
+            exhaustive_permutations_threshold: config.config.exhaustive_permutations_threshold,
+        })
+    }
 }
 
 impl SlotFiller for CRFSlotFiller {
@@ -35,7 +59,7 @@ impl SlotFiller for CRFSlotFiller {
         self.tagging_scheme
     }
 
-    fn get_slots(&self, text: &str) -> Result<Vec<Slot>> {
+    fn get_slots(&self, text: &str) -> Result<Vec<InternalSlot>> {
         let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
         if tokens.is_empty() {
             return Ok(vec![]);
@@ -56,24 +80,18 @@ impl SlotFiller for CRFSlotFiller {
                     .map(|_| slot_name.to_string())
             },
         );
-        let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
-
-        // Remove slots corresponding to builtin entities
-        let custom_slots = tags_to_slots(
+        let slots = tags_to_slots(
             text,
             &tokens,
             &tags,
             self.tagging_scheme,
             &self.slot_name_mapping,
-        )?.into_iter()
-            .filter(|s| !builtin_slot_names.contains(&s.slot_name))
-            .collect_vec();
+        )?;
+
+        let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
 
         if builtin_slot_names.is_empty() {
-            return Ok(custom_slots
-                .into_iter()
-                .map(convert_to_custom_slot)
-                .collect());
+            return Ok(slots);
         }
 
         let updated_tags = replace_builtin_tags(tags, &builtin_slot_names);
@@ -93,31 +111,19 @@ impl SlotFiller for CRFSlotFiller {
             .unique()
             .collect_vec();
 
-        if let Some(builtin_entity_parser) = self.builtin_entity_parser.as_ref() {
-            let builtin_entities =
-                builtin_entity_parser.extract_entities(text, Some(&builtin_entity_kinds));
-            let augmented_slots = augment_slots(
-                text,
-                &tokens,
-                &updated_tags,
-                self,
-                &self.slot_name_mapping,
-                builtin_entities,
-                &builtin_slots,
-                self.exhaustive_permutations_threshold,
-            )?;
-            Ok(resolve_builtin_slots(
-                text,
-                augmented_slots,
-                &*builtin_entity_parser,
-                Some(&builtin_entity_kinds),
-            ))
-        } else {
-            Ok(custom_slots
-                .into_iter()
-                .map(convert_to_custom_slot)
-                .collect())
-        }
+        let builtin_entities = self.builtin_entity_parser
+            .extract_entities(text, Some(&builtin_entity_kinds));
+        let augmented_slots = augment_slots(
+            text,
+            &tokens,
+            &updated_tags,
+            self,
+            &self.slot_name_mapping,
+            builtin_entities,
+            &builtin_slots,
+            self.exhaustive_permutations_threshold,
+        )?;
+        Ok(augmented_slots)
     }
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
@@ -144,29 +150,6 @@ impl SlotFiller for CRFSlotFiller {
             .collect_vec();
         tagger.set(&features)?;
         Ok(tagger.probability(cleaned_tags)?)
-    }
-}
-
-impl CRFSlotFiller {
-    pub fn new(config: SlotFillerConfiguration) -> Result<CRFSlotFiller> {
-        let tagging_scheme = TaggingScheme::from_u8(config.config.tagging_scheme)?;
-        let slot_name_mapping = config.slot_name_mapping;
-        let feature_processor =
-            ProbabilisticFeatureProcessor::new(&config.config.feature_factory_configs)?;
-        let converted_data = ::base64::decode(&config.crf_model_data)?;
-        let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
-        let language = Language::from_str(&config.language_code)?;
-        let builtin_entity_parser = Some(BuiltinEntityParser::get(language));
-
-        Ok(Self {
-            language,
-            tagging_scheme,
-            tagger: sync::Mutex::new(tagger),
-            feature_processor,
-            slot_name_mapping,
-            builtin_entity_parser,
-            exhaustive_permutations_threshold: config.config.exhaustive_permutations_threshold,
-        })
     }
 }
 
@@ -210,12 +193,13 @@ fn augment_slots(
     exhaustive_permutations_threshold: usize,
 ) -> Result<Vec<InternalSlot>> {
     let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<BuiltinEntity>> = HashMap::new();
-    for entity in filter_overlapping_builtins(
+    let filtered_entities = filter_overlapping_builtins(
         builtin_entities,
         tokens,
         tags,
         slot_filler.get_tagging_scheme(),
-    ) {
+    );
+    for entity in filtered_entities {
         grouped_entities
             .entry(entity.entity_kind)
             .or_insert_with(|| vec![])
@@ -223,14 +207,14 @@ fn augment_slots(
     }
 
     let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
-    for (entity_kind, group) in grouped_entities {
-        let spans_ranges = group.into_iter().map(|e| e.range).collect_vec();
+    for (entity_kind, group) in grouped_entities.iter() {
+        let spans_ranges = group.into_iter().map(|e| e.range.clone()).collect_vec();
         let num_detected_builtins = spans_ranges.len();
         let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
         let related_slots: Vec<&str> = missing_slots
             .iter()
             .filter_map(|&(ref slot_name, kind)| {
-                if kind == entity_kind {
+                if kind == *entity_kind {
                     let name: &str = &*slot_name;
                     Some(name)
                 } else {
@@ -264,14 +248,57 @@ fn augment_slots(
         }
         augmented_tags = best_updated_tags;
     }
-
-    Ok(tags_to_slots(
+    let slots = tags_to_slots(
         text,
         tokens,
         &augmented_tags,
         slot_filler.get_tagging_scheme(),
         intent_slots_mapping,
-    )?)
+    )?;
+    let filtered_builtin_entities = grouped_entities.into_iter().flat_map(|(_, e)| e).collect();
+    Ok(reconciliate_builtin_slots(
+        text,
+        slots,
+        filtered_builtin_entities,
+    ))
+}
+
+fn reconciliate_builtin_slots(
+    text: &str,
+    slots: Vec<InternalSlot>,
+    builtin_entities: Vec<BuiltinEntity>,
+) -> Vec<InternalSlot> {
+    slots
+        .iter()
+        .map(|slot| {
+            BuiltinEntityKind::from_identifier(&slot.entity)
+                .ok()
+                .map(|kind| {
+                    builtin_entities
+                        .iter()
+                        .find_position(|builtin_entity| {
+                            if builtin_entity.entity_kind != kind {
+                                return false;
+                            }
+                            let be_start = builtin_entity.range.start;
+                            let be_end = builtin_entity.range.end;
+                            let be_length = be_end - be_start;
+                            let slot_start = slot.char_range.start;
+                            let slot_end = slot.char_range.end;
+                            let slot_length = slot_end - slot_start;
+                            be_start <= slot_start && be_end >= slot_end && be_length > slot_length
+                        })
+                        .map(|(_, be): (_, &BuiltinEntity)| InternalSlot {
+                            value: substring_with_char_range(text.to_string(), &be.range),
+                            char_range: be.range.clone(),
+                            entity: slot.entity.clone(),
+                            slot_name: slot.slot_name.clone(),
+                        })
+                        .unwrap_or(slot.clone())
+                })
+                .unwrap_or(slot.clone())
+        })
+        .collect()
 }
 
 fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<usize>> {
@@ -310,7 +337,11 @@ mod tests {
     }
 
     impl SlotFiller for TestSlotFiller {
-        fn get_slots(&self, _text: &str) -> Result<Vec<Slot>> {
+        fn get_tagging_scheme(&self) -> TaggingScheme {
+            TaggingScheme::BIO
+        }
+
+        fn get_slots(&self, _text: &str) -> Result<Vec<InternalSlot>> {
             Ok(vec![])
         }
 
@@ -332,10 +363,6 @@ mod tests {
             } else {
                 bail!("Unexpected tags: {:?}", tags)
             }
-        }
-
-        fn get_tagging_scheme(&self) -> TaggingScheme {
-            TaggingScheme::BIO
         }
     }
 
@@ -637,6 +664,46 @@ mod tests {
         // Then
         let expected_indexes = vec![vec![0], vec![0, 1], vec![1], vec![2]];
         assert_eq!(expected_indexes, actual_indexes);
+    }
+
+    #[test]
+    fn test_reconciliate_builtin_slots_works() {
+        // Given
+        let text = "tomorrow at 8a.m. please";
+        let slots = vec![
+            InternalSlot {
+                value: "tomorrow at 8a.m".to_string(),
+                char_range: 0..16,
+                entity: BuiltinEntityKind::Time.identifier().to_string(),
+                slot_name: "datetime".to_string(),
+            },
+        ];
+        let builtin_entities = vec![
+            BuiltinEntity {
+                value: "tomorrow at 8a.m.".to_string(),
+                range: 0..17,
+                entity: SlotValue::InstantTime(InstantTimeValue {
+                    value: "2018-03-10 08:00:00 +00:00".to_string(),
+                    grain: Grain::Minute,
+                    precision: Precision::Exact,
+                }),
+                entity_kind: BuiltinEntityKind::Time,
+            },
+        ];
+
+        // When
+        let reconciliated_slots = reconciliate_builtin_slots(text, slots, builtin_entities);
+
+        // Then
+        let expected_slots = vec![
+            InternalSlot {
+                value: "tomorrow at 8a.m.".to_string(),
+                char_range: 0..17,
+                entity: BuiltinEntityKind::Time.identifier().to_string(),
+                slot_name: "datetime".to_string(),
+            },
+        ];
+        assert_eq!(expected_slots, reconciliated_slots);
     }
 
     #[test]

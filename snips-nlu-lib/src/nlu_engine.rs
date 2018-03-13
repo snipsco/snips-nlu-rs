@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -14,13 +14,14 @@ use nlu_utils::string::{normalize, substring_with_char_range};
 use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
+use slot_utils::resolve_builtin_slots;
 
 const MODEL_VERSION: &str = "0.13.0";
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
     parsers: Vec<Box<IntentParser>>,
-    builtin_entity_parser: Option<Arc<BuiltinEntityParser>>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
 }
 
 impl SnipsNluEngine {
@@ -42,10 +43,8 @@ impl SnipsNluEngine {
                 None => bail!("Intent parser unit name is not properly defined"),
             })
             .collect::<Result<Vec<_>>>()?;
-
-        let builtin_entity_parser = Language::from_str(&nlu_config.dataset_metadata.language_code)
-            .ok()
-            .map(BuiltinEntityParser::get);
+        let language = Language::from_str(&nlu_config.dataset_metadata.language_code)?;
+        let builtin_entity_parser = BuiltinEntityParser::get(language);
 
         Ok(SnipsNluEngine {
             dataset_metadata: nlu_config.dataset_metadata,
@@ -72,9 +71,23 @@ impl SnipsNluEngine {
         for parser in &self.parsers {
             let classification_result = parser.get_intent(input, set_intents.as_ref())?;
             if let Some(classification_result) = classification_result {
-                let valid_slots = parser
-                    .get_slots(input, &classification_result.intent_name)?
-                    .into_iter()
+                let internal_slots = parser.get_slots(input, &classification_result.intent_name)?;
+                let filter_entity_kinds = self.dataset_metadata
+                    .slot_name_mappings
+                    .values()
+                    .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<String, String>| {
+                        intent_mapping.values().collect()
+                    })
+                    .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
+                    .unique()
+                    .collect::<Vec<_>>();
+
+                let valid_slots = resolve_builtin_slots(
+                    input,
+                    internal_slots,
+                    &*self.builtin_entity_parser,
+                    Some(&*filter_entity_kinds),
+                ).into_iter()
                     .filter_map(|slot| {
                         if let Some(entity) = self.dataset_metadata.entities.get(&slot.entity) {
                             entity
@@ -139,15 +152,13 @@ impl SnipsNluEngine {
                 custom_entity,
                 language,
             )
-        } else if let Some(builtin_entity_parser) = self.builtin_entity_parser.clone() {
+        } else {
             extract_builtin_slot(
                 input,
                 entity_name.to_string(),
                 slot_name.to_string(),
-                &builtin_entity_parser,
+                &self.builtin_entity_parser,
             )?
-        } else {
-            None
         };
         Ok(slot)
     }

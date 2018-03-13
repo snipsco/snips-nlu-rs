@@ -4,10 +4,11 @@ pub mod probabilistic_intent_parser;
 use std::collections::HashSet;
 
 use errors::*;
-use snips_nlu_ontology::{IntentClassifierResult, Slot};
+use snips_nlu_ontology::IntentClassifierResult;
 
 pub use self::deterministic_intent_parser::DeterministicIntentParser;
 pub use self::probabilistic_intent_parser::ProbabilisticIntentParser;
+pub use slot_utils::InternalSlot;
 
 pub trait IntentParser: Send + Sync {
     fn get_intent(
@@ -15,5 +16,5 @@ pub trait IntentParser: Send + Sync {
         input: &str,
         intents: Option<&HashSet<String>>,
     ) -> Result<Option<IntentClassifierResult>>;
-    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<Slot>>;
+    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<InternalSlot>>;
 }
