@@ -14,7 +14,7 @@ crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "bf30dc0" }
 snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.54.0" }
 snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.54.0" }
 snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.6.0" }
-dinghy-test = { git = "https://github.com/snipsco/dinghy", branch = "0.3" }
+dinghy-test = "0.3"
 failure = "0.1"
 base64 = "0.9"
 itertools = { version = "0.7", default-features = false }
