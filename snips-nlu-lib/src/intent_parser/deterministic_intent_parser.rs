@@ -15,8 +15,8 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, IntentClassifierResult, Language,
-                         Slot};
+use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language, Slot};
+use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
@@ -253,8 +253,9 @@ mod tests {
     use super::*;
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use snips_nlu_ontology::{AmountOfMoneyValue, BuiltinEntityParser, IntentClassifierResult,
-                             Language, Precision, Slot, SlotValue};
+    use snips_nlu_ontology::{AmountOfMoneyValue, IntentClassifierResult, Language, Precision,
+                             Slot, SlotValue};
+    use snips_nlu_ontology_parsers::BuiltinEntityParser;
     use configurations::DeterministicParserConfiguration;
     use intent_parser::IntentParser;
     use slot_utils::InternalSlot;

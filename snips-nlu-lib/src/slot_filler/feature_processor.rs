@@ -10,7 +10,8 @@ use nlu_utils::token::Token;
 use resources::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
 use resources::stemmer::StaticMapStemmer;
 use resources::word_clusterer::StaticMapWordClusterer;
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntityParser, Language};
+use snips_nlu_ontology::{BuiltinEntityKind, Language};
+use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct ProbabilisticFeatureProcessor {
     functions: Vec<FeatureFunction>,

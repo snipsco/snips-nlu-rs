@@ -17,7 +17,8 @@ use slot_filler::crf_utils::*;
 use slot_filler::SlotFiller;
 use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, BuiltinEntityParser, Language, Slot};
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language, Slot};
+use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct CRFSlotFiller {
     language: Language,

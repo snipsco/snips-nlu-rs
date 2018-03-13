@@ -13,6 +13,7 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate snips_nlu_ontology;
+extern crate snips_nlu_ontology_parsers;
 extern crate snips_nlu_resources_packed as resources_packed;
 extern crate snips_nlu_utils as nlu_utils;
 extern crate yolo;
