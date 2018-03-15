@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-resources-packed"
-version = "0.53.3"
+version = "0.54.0"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 build = "build.rs"
 

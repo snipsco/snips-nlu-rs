@@ -9,4 +9,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 libc = "0.2"
-snips-nlu-ffi = { git = "https://github.com/snipsco/snips-nlu-rs", tag = "0.53.3" }
+snips-nlu-ffi = { git = "https://github.com/snipsco/snips-nlu-rs", tag = "0.54.0" }
