@@ -41,9 +41,9 @@ def buildType = project.hasProperty("debug") ? "debug" : "release"
 println "Using build type $buildType"
 
 def soForJar = [
-        ["../../target/$buildType/libsnips_nlu_ffi.so", com.sun.jna.Platform.RESOURCE_PREFIX, "linuxNative" ],
-        ["../../target/$buildType/libsnips_nlu_ffi.dylib", com.sun.jna.Platform.RESOURCE_PREFIX, "macOsNative" ],
-        ["../../target/arm-unknown-linux-gnueabihf/$buildType/libsnips_nlu_ffi.so", "linux-arm", "linuxArmCross"]
+        ["../target/$buildType/libsnips_nlu_ffi.so", "linux-x86-64", "linuxNative" ],
+        ["../target/$buildType/libsnips_nlu_ffi.dylib", "darwin", "macOsNative" ],
+        ["../target/arm-unknown-linux-gnueabihf/$buildType/libsnips_nlu_ffi.so", "linux-arm", "linuxArmCross"]
 ]
 
 def jarClassifier = {
