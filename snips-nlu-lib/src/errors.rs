@@ -2,7 +2,7 @@
 pub enum SnipsNluError {
     #[fail(display = "Unable to read file '{}'", _0)]
     ConfigLoad(String),
-    #[fail(display = "Given model version {} doesn't match. Expected model version {}", _0, _1)]
+    #[fail(display = "Expected model version {} but found {}", _1, _0)]
     WrongModelVersion(String, &'static str),
 }
 
