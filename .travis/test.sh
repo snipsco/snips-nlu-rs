@@ -26,7 +26,7 @@ if [ "${KOTLIN_TESTS}" == "true" ]; then
     echo "Running kotlin tests..."
     cargo build -p snips-nlu-ffi
     cd snips-nlu-ffi/kotlin
-    ./gradlew -Pdebug test --info
+    ./gradlew -Pdebug -PrustTargetPath=../../target test --info
     cd -
 fi
 

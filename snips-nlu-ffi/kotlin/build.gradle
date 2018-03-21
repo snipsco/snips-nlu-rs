@@ -40,10 +40,13 @@ dependencies {
 def buildType = project.hasProperty("debug") ? "debug" : "release"
 println "Using build type $buildType"
 
+def rustTargetPath = project.hasProperty("rustTargetPath") ? project.rustTargetPath : "../target"
+println "Using rust target path $rustTargetPath"
+
 def soForJar = [
-        ["../../target/$buildType/libsnips_nlu_ffi.so", com.sun.jna.Platform.RESOURCE_PREFIX, "linuxNative" ],
-        ["../../target/$buildType/libsnips_nlu_ffi.dylib", com.sun.jna.Platform.RESOURCE_PREFIX, "macOsNative" ],
-        ["../../target/arm-unknown-linux-gnueabihf/$buildType/libsnips_nlu_ffi.so", "linux-arm", "linuxArmCross"]
+        ["$rustTargetPath/$buildType/libsnips_nlu_ffi.so", "linux-x86-64", "linuxNative" ],
+        ["$rustTargetPath/$buildType/libsnips_nlu_ffi.dylib", "darwin", "macOsNative" ],
+        ["$rustTargetPath/arm-unknown-linux-gnueabihf/$buildType/libsnips_nlu_ffi.so", "linux-arm", "linuxArmCross"]
 ]
 
 def jarClassifier = {
@@ -107,11 +110,11 @@ task("manifestForAar", type: Copy) {
 aar.dependsOn(manifestForAar)
 
 def soForAar = [
-        ["../../target/arm-linux-androideabi/$buildType/libsnips_nlu.so", "armeabi"],
-        ["../../target/armv7-linux-androideabi/$buildType/libsnips_nlu.so", "armeabi-v7a"],
-        ["../../target/aarch64-linux-android/$buildType/libsnips_nlu.so", "arm64-v8a"],
-        ["../../target/i686-linux-android/$buildType/libsnips_nlu.so", "x86"],
-        ["../../target/x86_64-linux-android/$buildType/libsnips_nlu.so", "x86_64"]
+        ["$rustTargetPath/arm-linux-androideabi/$buildType/libsnips_nlu.so", "armeabi"],
+        ["$rustTargetPath/armv7-linux-androideabi/$buildType/libsnips_nlu.so", "armeabi-v7a"],
+        ["$rustTargetPath/aarch64-linux-android/$buildType/libsnips_nlu.so", "arm64-v8a"],
+        ["$rustTargetPath/i686-linux-android/$buildType/libsnips_nlu.so", "x86"],
+        ["$rustTargetPath/x86_64-linux-android/$buildType/libsnips_nlu.so", "x86_64"]
 ]
 
 soForAar.forEach {
