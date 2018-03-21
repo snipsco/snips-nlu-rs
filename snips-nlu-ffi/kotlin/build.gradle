@@ -107,11 +107,11 @@ task("manifestForAar", type: Copy) {
 aar.dependsOn(manifestForAar)
 
 def soForAar = [
-        ["../../target/arm-linux-androideabi/$buildType/libsnips_nlu.so", "armeabi"],
-        ["../../target/armv7-linux-androideabi/$buildType/libsnips_nlu.so", "armeabi-v7a"],
-        ["../../target/aarch64-linux-android/$buildType/libsnips_nlu.so", "arm64-v8a"],
-        ["../../target/i686-linux-android/$buildType/libsnips_nlu.so", "x86"],
-        ["../../target/x86_64-linux-android/$buildType/libsnips_nlu.so", "x86_64"]
+        ["../target/arm-linux-androideabi/$buildType/libsnips_nlu.so", "armeabi"],
+        ["../target/armv7-linux-androideabi/$buildType/libsnips_nlu.so", "armeabi-v7a"],
+        ["../target/aarch64-linux-android/$buildType/libsnips_nlu.so", "arm64-v8a"],
+        ["../target/i686-linux-android/$buildType/libsnips_nlu.so", "x86"],
+        ["../target/x86_64-linux-android/$buildType/libsnips_nlu.so", "x86_64"]
 ]
 
 soForAar.forEach {
