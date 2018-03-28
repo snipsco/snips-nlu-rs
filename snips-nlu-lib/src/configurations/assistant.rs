@@ -27,10 +27,10 @@ impl FileBasedConfiguration {
                 .with_context(|_| SnipsNluError::ConfigLoad(path.to_str().unwrap().to_string()))?;
         }
 
-        let config_file =
-            fs::File::open(&path).context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
+        let config_file = fs::File::open(&path)
+            .with_context(|_| SnipsNluError::ConfigLoad(path.to_str().unwrap().to_string()))?;
         let nlu_configuration = ::serde_json::from_reader(config_file)
-            .context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
+            .with_context(|_| SnipsNluError::ConfigLoad(path.to_str().unwrap().to_string()))?;
 
         Ok(Self { nlu_configuration })
     }
@@ -76,7 +76,7 @@ impl ZipBasedConfiguration {
                 // Assistants downloaded from the console are in a directory named assistant
                 Self::read_bytes(&mutex, &format!("assistant/{}", NLU_CONFIGURATION_FILENAME))
             })
-            .context(SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+            .with_context(|_| SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
 
         if !bypass_model_version_check {
             Self::check_model_version(&nlu_conf_bytes)
@@ -84,7 +84,7 @@ impl ZipBasedConfiguration {
         }
 
         let nlu_configuration = ::serde_json::from_slice(&nlu_conf_bytes)
-            .context(SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+            .with_context(|_| SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
 
         Ok(Self { nlu_configuration })
     }
