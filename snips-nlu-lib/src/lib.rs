@@ -36,6 +36,8 @@ mod language;
 #[cfg(test)]
 mod testutils;
 
+pub const MODEL_VERSION: &str = "0.13.0";
+
 pub use errors::*;
 pub use nlu_engine::SnipsNluEngine;
 pub use configurations::{FileBasedConfiguration, NluEngineConfiguration,

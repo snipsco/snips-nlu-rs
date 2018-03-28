@@ -16,8 +16,6 @@ use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, 
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
 use slot_utils::resolve_builtin_slots;
 
-const MODEL_VERSION: &str = "0.13.0";
-
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
     parsers: Vec<Box<IntentParser>>,
@@ -121,11 +119,6 @@ impl SnipsNluEngine {
             intent: None,
             slots: None,
         })
-    }
-
-    // TODO: Expose directly a static variable
-    pub fn model_version() -> &'static str {
-        MODEL_VERSION
     }
 }
 

@@ -199,7 +199,7 @@ fn get_last_error(error: *mut *const libc::c_char) -> Result<()> {
 }
 
 fn get_model_version(version: *mut *const libc::c_char) -> Result<()> {
-    point_to_string(version, SnipsNluEngine::model_version().to_string())
+    point_to_string(version, snips_nlu_lib::MODEL_VERSION.to_string())
 }
 
 fn point_to_string(pointer: *mut *const libc::c_char, string: String) -> Result<()> {

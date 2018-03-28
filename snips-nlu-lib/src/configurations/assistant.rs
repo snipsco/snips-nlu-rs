@@ -23,19 +23,8 @@ impl FileBasedConfiguration {
         let path = root_dir.as_ref().join(NLU_CONFIGURATION_FILENAME);
 
         if !bypass_model_version_check {
-            let config_file =
-                fs::File::open(&path).context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
-            let nlu_configuration_with_version_only: ModelVersionConfiguration =
-                ::serde_json::from_reader(config_file)
-                    .context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
-            if nlu_configuration_with_version_only.model_version
-                != ::SnipsNluEngine::model_version()
-            {
-                bail!(SnipsNluError::WrongModelVersion(
-                    nlu_configuration_with_version_only.model_version,
-                    ::SnipsNluEngine::model_version(),
-                ));
-            }
+            Self::check_model_version(&path)
+                .with_context(|_| SnipsNluError::ConfigLoad(path.to_str().unwrap().to_string()))?;
         }
 
         let config_file =
@@ -44,6 +33,19 @@ impl FileBasedConfiguration {
             .context(SnipsNluError::ConfigLoad(format!("{:?}", path)))?;
 
         Ok(Self { nlu_configuration })
+    }
+
+    fn check_model_version<P: AsRef<path::Path>>(path: P) -> Result<()> {
+        let config_file = fs::File::open(&path)?;
+
+        let config: ModelVersionConfiguration = ::serde_json::from_reader(config_file)?;
+        if config.model_version != ::MODEL_VERSION {
+            bail!(SnipsNluError::WrongModelVersion(
+                config.model_version,
+                ::MODEL_VERSION
+            ));
+        }
+        Ok(())
     }
 }
 
@@ -77,17 +79,8 @@ impl ZipBasedConfiguration {
             .context(SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
 
         if !bypass_model_version_check {
-            let nlu_configuration_with_version_only: ModelVersionConfiguration =
-                ::serde_json::from_slice(&nlu_conf_bytes)
-                    .context(SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
-            if nlu_configuration_with_version_only.model_version
-                != ::SnipsNluEngine::model_version()
-            {
-                bail!(SnipsNluError::WrongModelVersion(
-                    nlu_configuration_with_version_only.model_version,
-                    ::SnipsNluEngine::model_version(),
-                ));
-            }
+            Self::check_model_version(&nlu_conf_bytes)
+                .with_context(|_| SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
         }
 
         let nlu_configuration = ::serde_json::from_slice(&nlu_conf_bytes)
@@ -107,6 +100,17 @@ impl ZipBasedConfiguration {
         let mut bytes = vec![];
         file.read_to_end(&mut bytes)?;
         Ok(bytes)
+    }
+
+    fn check_model_version(nlu_conf_bytes: &[u8]) -> Result<()> {
+        let config: ModelVersionConfiguration = ::serde_json::from_slice(nlu_conf_bytes)?;
+        if config.model_version != ::MODEL_VERSION {
+            bail!(SnipsNluError::WrongModelVersion(
+                config.model_version,
+                ::MODEL_VERSION
+            ));
+        }
+        Ok(())
     }
 }
 
