@@ -26,7 +26,7 @@ impl LanguageConfig {
 }
 
 pub trait FromLanguage {
-    fn from_language(Language) -> Self;
+    fn from_language(l: Language) -> Self;
 }
 
 impl FromLanguage for NluUtilsLanguage {

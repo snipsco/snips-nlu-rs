@@ -93,7 +93,8 @@ impl Featurizer {
     fn preprocess_query(&self, query: &str) -> Vec<String> {
         let language = NluUtilsLanguage::from_language(self.language_config.language);
         let tokens = tokenize_light(query, language);
-        let word_cluster_features = self.word_clusterer.as_ref()
+        let word_cluster_features = self.word_clusterer
+            .as_ref()
             .map(|clusterer| get_word_cluster_features(&tokens, clusterer))
             .unwrap_or(vec![]);
         let normalized_stemmed_tokens = normalize_stem(tokens, self.stemmer);
@@ -102,27 +103,33 @@ impl Featurizer {
             &self.entity_utterances_to_feature_names,
         );
         let builtin_entities = self.builtin_entity_parser.extract_entities(query, None);
-        let entities_ranges = builtin_entities.iter()
-            .sorted_by_key(|ent| ent.range.start).iter()
+        let entities_ranges = builtin_entities
+            .iter()
+            .sorted_by_key(|ent| ent.range.start)
+            .iter()
             .map(|ent| ent.range.clone())
             .collect();
-        let builtin_entities_features: Vec<String> = builtin_entities.iter()
-            .map(|ent| get_builtin_entity_feature(ent.entity_kind, language))
+        let builtin_entities_features: Vec<String> = builtin_entities
+            .iter()
+            .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, language))
             .sorted();
         let filtered_query = remove_ranges(query, entities_ranges);
         let filtered_query_tokens = tokenize_light(&*filtered_query, language);
-        let filtered_normalized_stemmed_tokens = normalize_stem(filtered_query_tokens, self.stemmer);
+        let filtered_normalized_stemmed_tokens =
+            normalize_stem(filtered_query_tokens, self.stemmer);
 
         vec![
             filtered_normalized_stemmed_tokens,
             builtin_entities_features,
             entities_features,
-            word_cluster_features
-        ].into_iter().flatten().collect()
+            word_cluster_features,
+        ].into_iter()
+            .flatten()
+            .collect()
     }
 }
 
-fn get_builtin_entity_feature(
+fn get_builtin_entity_feature_name(
     entity_kind: BuiltinEntityKind,
     language: NluUtilsLanguage,
 ) -> String {
@@ -154,10 +161,7 @@ fn get_dataset_entities_features(
         .sorted()
 }
 
-fn normalize_stem<S: Stemmer>(
-    tokens: Vec<String>,
-    opt_stemmer: Option<S>,
-) -> Vec<String> {
+fn normalize_stem<S: Stemmer>(tokens: Vec<String>, opt_stemmer: Option<S>) -> Vec<String> {
     opt_stemmer
         .map(|stemmer| tokens.iter().map(|t| stemmer.stem(&normalize(t))).collect())
         .unwrap_or(tokens.iter().map(|t| normalize(t)).collect())
@@ -176,14 +180,10 @@ fn remove_ranges(text: &str, ranges: Vec<Range<usize>>) -> String {
     filtered_text
 }
 
-
 #[cfg(test)]
 mod tests {
-    use super::{get_dataset_entities_features,
-                get_word_cluster_features,
-                normalize_stem,
-                remove_ranges,
-                Featurizer};
+    use super::{get_dataset_entities_features, get_word_cluster_features, normalize_stem,
+                remove_ranges, Featurizer};
 
     use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
                          TfIdfVectorizerConfiguration};
@@ -296,10 +296,8 @@ mod tests {
         let augmented_query = get_word_cluster_features(&query_tokens, &word_clusterer);
 
         // Then
-        let expected_augmented_query = vec![
-            "cluster_house".to_string(),
-            "cluster_love".to_string()
-        ];
+        let expected_augmented_query =
+            vec!["cluster_house".to_string(), "cluster_love".to_string()];
         assert_eq!(augmented_query, expected_augmented_query)
     }
 
