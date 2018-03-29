@@ -73,7 +73,7 @@ Here is how you can run the example:
    cd snips-nlu-rs
    git submodule update --init --recursive
    cd snips-nlu-lib
-   cargo run --example weather examples "What will be the weather in London tomorrow at 8am?"
+   cargo run --example weather examples/trained_assistant.json "What will be the weather in London tomorrow at 8am?"
 
 
 License

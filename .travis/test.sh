@@ -9,7 +9,7 @@ if [ "${RUST_TESTS}" == "true" ]; then
     #cargo test --all || die "Rust tests failed"
     cargo run -p snips-nlu-lib \
         --example weather \
-        snips-nlu-lib/examples \
+        snips-nlu-lib/examples/trained_assistant.json \
         "What will be the weather in London tomorrow at 8am?" \
         || die "Rust example failed"
 fi
