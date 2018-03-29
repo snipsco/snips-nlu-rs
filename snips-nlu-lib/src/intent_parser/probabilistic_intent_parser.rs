@@ -6,8 +6,8 @@ use errors::*;
 use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use intent_parser::IntentParser;
 use slot_filler::{CRFSlotFiller, SlotFiller};
-use snips_nlu_ontology::IntentClassifierResult;
 use slot_utils::InternalSlot;
+use snips_nlu_ontology::IntentClassifierResult;
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,

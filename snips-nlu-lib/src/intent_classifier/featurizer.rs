@@ -7,11 +7,11 @@ use ndarray::prelude::*;
 use configurations::FeaturizerConfiguration;
 use errors::*;
 use language::{FromLanguage, LanguageConfig};
-use nlu_utils::token::{compute_all_ngrams, tokenize_light};
-use nlu_utils::string::normalize;
 use nlu_utils::language::Language as NluUtilsLanguage;
-use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
+use nlu_utils::string::normalize;
+use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use resources::stemmer::{StaticMapStemmer, Stemmer};
+use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
 
 pub struct Featurizer {
     best_features: Vec<usize>,
@@ -145,13 +145,13 @@ fn stem<S: Stemmer>(input: &str, stemmer: &S) -> String {
 mod tests {
     use super::{get_dataset_entities_features, get_word_cluster_features, Featurizer};
 
-    use testutils::assert_epsilon_eq_array1;
-    use resources::word_clusterer::WordClusterer;
-    use resources::stemmer::Stemmer;
-    use nlu_utils::language::Language;
-    use nlu_utils::token::tokenize_light;
     use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
                          TfIdfVectorizerConfiguration};
+    use nlu_utils::language::Language;
+    use nlu_utils::token::tokenize_light;
+    use resources::stemmer::Stemmer;
+    use resources::word_clusterer::WordClusterer;
+    use testutils::assert_epsilon_eq_array1;
 
     struct TestWordClusterer {}
 

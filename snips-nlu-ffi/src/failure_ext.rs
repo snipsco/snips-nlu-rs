@@ -1,7 +1,7 @@
-use std::fmt;
-use std::fmt::Display;
 use failure::Error;
 use failure::Fail;
+use std::fmt;
+use std::fmt::Display;
 
 pub struct PrettyFail<'a>(&'a Fail);
 

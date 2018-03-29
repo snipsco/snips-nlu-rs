@@ -1,5 +1,5 @@
-use resources_packed::stem as resource_stem;
 use errors::*;
+use resources_packed::stem as resource_stem;
 
 use snips_nlu_ontology::Language;
 

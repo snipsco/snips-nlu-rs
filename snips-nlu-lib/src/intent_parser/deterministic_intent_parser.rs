@@ -6,9 +6,9 @@ use std::sync::Arc;
 use itertools::Itertools;
 use regex::{Regex, RegexBuilder};
 
+use configurations::DeterministicParserConfiguration;
 use errors::*;
 use intent_parser::IntentParser;
-use configurations::DeterministicParserConfiguration;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
@@ -213,13 +213,13 @@ fn get_builtin_entity_name(entity_label: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-    use std::iter::FromIterator;
-    use snips_nlu_ontology::{IntentClassifierResult, Language};
-    use snips_nlu_ontology_parsers::BuiltinEntityParser;
     use configurations::DeterministicParserConfiguration;
     use intent_parser::IntentParser;
     use slot_utils::InternalSlot;
+    use snips_nlu_ontology::{IntentClassifierResult, Language};
+    use snips_nlu_ontology_parsers::BuiltinEntityParser;
+    use std::collections::HashMap;
+    use std::iter::FromIterator;
 
     fn test_configuration() -> DeterministicParserConfiguration {
         DeterministicParserConfiguration {

@@ -5,18 +5,16 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 
-use errors::*;
 use configurations::{DatasetMetadata, Entity, NluEngineConfigurationConvertible};
+use errors::*;
+use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
-use nlu_utils::token::{compute_all_ngrams, tokenize};
 use nlu_utils::string::{normalize, substring_with_char_range};
-use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
+use nlu_utils::token::{compute_all_ngrams, tokenize};
+use slot_utils::resolve_builtin_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
-use slot_utils::resolve_builtin_slots;
-
-const MODEL_VERSION: &str = "0.13.0";
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -122,11 +120,6 @@ impl SnipsNluEngine {
             slots: None,
         })
     }
-
-    // TODO: Expose directly a static variable
-    pub fn model_version() -> &'static str {
-        MODEL_VERSION
-    }
 }
 
 impl SnipsNluEngine {
@@ -227,8 +220,8 @@ fn extract_builtin_slot(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use snips_nlu_ontology::{IntentClassifierResult, NumberValue};
     use configurations::NluEngineConfiguration;
+    use snips_nlu_ontology::{IntentClassifierResult, NumberValue};
     use testutils::parse_json;
 
     #[test]

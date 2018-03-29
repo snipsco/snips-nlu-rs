@@ -58,9 +58,9 @@ fn exclude_from_list<T: Copy>(list: &[T], i: usize) -> Vec<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use itertools::repeat_n;
     use std::collections::HashSet;
     use std::iter::FromIterator;
-    use itertools::repeat_n;
 
     #[test]
     fn permutations_works() {
