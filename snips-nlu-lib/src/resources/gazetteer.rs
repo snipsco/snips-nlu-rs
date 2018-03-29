@@ -5,9 +5,9 @@ use std::io::prelude::Read;
 use std::iter::FromIterator;
 
 use errors::*;
+use resources_packed::gazetteer_hits;
 #[cfg(test)]
 use serde_json;
-use resources_packed::gazetteer_hits;
 use snips_nlu_ontology::Language;
 
 pub trait Gazetteer {

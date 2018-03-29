@@ -1,6 +1,6 @@
-use std::ops::Range;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
+use std::ops::Range;
 
 use itertools::{repeat_n, Itertools};
 use yolo::Yolo;
@@ -355,9 +355,9 @@ pub fn generate_slots_permutations<'a>(
 mod tests {
     use itertools::Itertools;
 
+    use super::*;
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize;
-    use super::*;
 
     struct Test {
         text: String,
@@ -1164,7 +1164,7 @@ mod tests {
             vec!["O", "slot2", "O"],
             vec!["slot1", "O", "O"],
             vec!["slot2", "O", "O"],
-            vec!["O", "O", "O"]
+            vec!["O", "O", "O"],
         ];
         assert_eq!(
             slot_names_permutations.len(),

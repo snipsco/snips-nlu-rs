@@ -1,8 +1,8 @@
 use std::result::Result;
 use std::str::FromStr;
 
-use snips_nlu_ontology::Language;
 use nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_ontology::Language;
 
 pub struct LanguageConfig {
     pub language: Language,

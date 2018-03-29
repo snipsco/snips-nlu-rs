@@ -3,11 +3,11 @@ use std::collections::HashSet;
 use itertools::Itertools;
 use ndarray::prelude::*;
 
-use errors::*;
-use intent_classifier::{Featurizer, IntentClassifier};
-use intent_classifier::logreg::MulticlassLogisticRegression;
-use snips_nlu_ontology::IntentClassifierResult;
 use configurations::IntentClassifierConfiguration;
+use errors::*;
+use intent_classifier::logreg::MulticlassLogisticRegression;
+use intent_classifier::{Featurizer, IntentClassifier};
+use snips_nlu_ontology::IntentClassifierResult;
 
 pub struct LogRegIntentClassifier {
     intent_list: Vec<Option<String>>,

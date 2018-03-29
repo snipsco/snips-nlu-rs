@@ -1,21 +1,21 @@
-use std::sync;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use std::ops::Range;
 use std::str::FromStr;
+use std::sync;
 
 use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
 
-use errors::*;
 use configurations::SlotFillerConfiguration;
+use errors::*;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::substring_with_char_range;
 use nlu_utils::token::{tokenize, Token};
-use slot_filler::crf_utils::*;
 use slot_filler::SlotFiller;
+use slot_filler::crf_utils::*;
 use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
 use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};

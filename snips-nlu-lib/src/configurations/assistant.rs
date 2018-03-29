@@ -1,13 +1,13 @@
-use std::io::{Read, Seek};
-use std::sync::{Arc, Mutex};
-use std::path;
 use std::fs;
+use std::io::{Read, Seek};
+use std::path;
+use std::sync::{Arc, Mutex};
 
 use failure::ResultExt;
 
-use errors::*;
 use configurations::{ModelVersionConfiguration, NluEngineConfiguration,
                      NluEngineConfigurationConvertible};
+use errors::*;
 
 const NLU_CONFIGURATION_FILENAME: &str = "trained_assistant.json";
 
@@ -136,8 +136,8 @@ impl NluEngineConfigurationConvertible for ZipBasedConfiguration {
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
     use super::*;
+    use std::fs;
     use utils::file_path;
 
     #[test]

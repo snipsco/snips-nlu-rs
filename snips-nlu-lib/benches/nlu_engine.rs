@@ -6,8 +6,8 @@ extern crate yolo;
 use std::{env, fs};
 
 use bencher::Bencher;
-use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine, ZipBasedConfiguration};
 use snips_nlu_lib::file_path;
+use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine, ZipBasedConfiguration};
 use yolo::Yolo;
 
 const ASSISTANT_ZIP_ENV: &str = "SNIPS_NLU_BENCH_ASSISTANT_ZIP";
