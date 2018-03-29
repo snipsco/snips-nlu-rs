@@ -479,7 +479,7 @@ mod tests {
         let ref actual_result = classification_result.unwrap().unwrap();
         let expected_result = IntentClassifierResult {
             intent_name: "MakeTea".to_string(),
-            probability: 0.48829985,
+            probability: 0.45877472,
         };
 
         // Then
