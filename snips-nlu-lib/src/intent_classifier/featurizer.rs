@@ -96,7 +96,7 @@ impl Featurizer {
         let word_cluster_features = self.word_clusterer
             .as_ref()
             .map(|clusterer| get_word_cluster_features(&tokens, clusterer))
-            .unwrap_or(vec![]);
+            .unwrap_or_else(|| vec![]);
         let normalized_stemmed_tokens = normalize_stem(tokens, self.stemmer);
         let entities_features = get_dataset_entities_features(
             &*normalized_stemmed_tokens,
@@ -134,7 +134,7 @@ fn get_builtin_entity_feature_name(
     language: NluUtilsLanguage,
 ) -> String {
     let e = tokenize_light(entity_kind.identifier(), language).join("");
-    return format!("builtinentityfeature{}", e);
+    format!("builtinentityfeature{}", e)
 }
 
 fn get_word_cluster_features<C: WordClusterer>(
@@ -164,13 +164,13 @@ fn get_dataset_entities_features(
 fn normalize_stem<S: Stemmer>(tokens: Vec<String>, opt_stemmer: Option<S>) -> Vec<String> {
     opt_stemmer
         .map(|stemmer| tokens.iter().map(|t| stemmer.stem(&normalize(t))).collect())
-        .unwrap_or(tokens.iter().map(|t| normalize(t)).collect())
+        .unwrap_or_else(|| tokens.iter().map(|t| normalize(t)).collect())
 }
 
 fn remove_ranges(text: &str, ranges: Vec<Range<usize>>) -> String {
     let mut filtered_text = String::new();
     let mut idx = 0;
-    for range in ranges.iter() {
+    for range in &ranges {
         let substring = substring_with_char_range(text.to_string(), &(idx..range.start));
         filtered_text.push_str(&*substring);
         idx = range.end;
