@@ -5,6 +5,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import json
+import os
 from builtins import object
 from ctypes import c_char, c_char_p, c_void_p, string_at, pointer, byref
 
@@ -19,9 +20,12 @@ class NLUEngine(object):
         if data_path is None and data_zip is None:
             raise ValueError("Please specify data_path or data_zip")
 
-        if data_path is not None:
-            self._engine = pointer(c_void_p())
+        self._engine = pointer(c_void_p())
+        if os.path.isdir(data_path):
             exit_code = lib.nlu_engine_create_from_dir(
+                data_path.encode("utf-8"), byref(self._engine))
+        else:
+            exit_code = lib.nlu_engine_create_from_file(
                 data_path.encode("utf-8"), byref(self._engine))
 
         if data_zip is not None:

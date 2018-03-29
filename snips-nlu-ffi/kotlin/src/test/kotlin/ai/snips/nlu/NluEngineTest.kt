@@ -13,6 +13,19 @@ class NluEngineTest {
     }
 
     @Test
+    fun createFromFileWorks() {
+        NluEngine(File("../../data/tests/configurations/trained_assistant.json")).use {
+            it.parse("make me two cups of hot tea").apply {
+                assertThat(input).isEqualTo("make me two cups of hot tea")
+                assertThat(intent).isNotNull()
+                assertThat(intent!!.intentName).isEqualTo("MakeTea")
+                assertThat(slots).hasSize(2)
+                assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
+            }
+        }
+    }
+
+    @Test
     fun createFromDirWorks() {
         NluEngine(File("../../data/tests/configurations")).use {
             it.parse("make me two cups of hot tea").apply {

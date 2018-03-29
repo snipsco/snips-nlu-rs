@@ -71,6 +71,14 @@ pub extern "C" fn nlu_engine_create_from_dir(
 }
 
 #[no_mangle]
+pub extern "C" fn nlu_engine_create_from_file(
+    file_path: *const libc::c_char,
+    client: *mut *const Opaque,
+) -> NLURESULT {
+    wrap!(create_from_file(file_path, client))
+}
+
+#[no_mangle]
 pub extern "C" fn nlu_engine_create_from_zip(
     zip: *const libc::c_uchar,
     zip_size: libc::c_uint,
@@ -137,7 +145,18 @@ pub extern "C" fn nlu_engine_get_model_version(version: *mut *const libc::c_char
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let assistant_config = FileBasedConfiguration::new(root_dir, false)?;
+    let assistant_config = FileBasedConfiguration::from_dir(root_dir, false)?;
+    let intent_parser = SnipsNluEngine::new(assistant_config)?;
+
+    unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
+
+    Ok(())
+}
+
+fn create_from_file(file_path: *const libc::c_char, client: *mut *const Opaque) -> Result<()> {
+    let file_path = get_str!(file_path);
+
+    let assistant_config = FileBasedConfiguration::from_path(file_path, false)?;
     let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };

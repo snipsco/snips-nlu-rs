@@ -33,10 +33,14 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         }
     }
 
-    constructor(assistantDir: File) :
+    constructor(assistant: File) :
             this({
                      PointerByReference().apply {
-                         parseError(LIB.nlu_engine_create_from_dir(assistantDir.absolutePath.toPointer(), this))
+                         if (assistant.isDirectory) {
+                             parseError(LIB.nlu_engine_create_from_dir(assistant.absolutePath.toPointer(), this))
+                         } else {
+                             parseError(LIB.nlu_engine_create_from_file(assistant.absolutePath.toPointer(), this))
+                         }
                      }.value
                  })
 
@@ -81,6 +85,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         }
 
         fun nlu_engine_get_model_version(version: PointerByReference): Int
+        fun nlu_engine_create_from_file(file_path: Pointer, pointer: PointerByReference): Int
         fun nlu_engine_create_from_dir(root_dir: Pointer, pointer: PointerByReference): Int
         fun nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun nlu_engine_run_parse(client: Pointer, input: Pointer, result: PointerByReference): Int

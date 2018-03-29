@@ -16,11 +16,21 @@ pub struct FileBasedConfiguration {
 }
 
 impl FileBasedConfiguration {
-    pub fn new<P: AsRef<path::Path>>(
+    pub fn from_dir<P: AsRef<path::Path>>(
         root_dir: P,
         bypass_model_version_check: bool,
     ) -> Result<Self> {
-        let path = root_dir.as_ref().join(NLU_CONFIGURATION_FILENAME);
+        Self::from_path(
+            root_dir.as_ref().join(NLU_CONFIGURATION_FILENAME),
+            bypass_model_version_check,
+        )
+    }
+
+    pub fn from_path<P: AsRef<path::Path>>(
+        file_path: P,
+        bypass_model_version_check: bool,
+    ) -> Result<Self> {
+        let path = file_path.as_ref();
 
         if !bypass_model_version_check {
             Self::check_model_version(&path)
@@ -132,8 +142,18 @@ mod tests {
 
     #[test]
     fn file_based_assistant_works() {
+        let file = file_path("tests/configurations/trained_assistant.json");
+        let nlu_config_formatted = FileBasedConfiguration::from_path(file, false)
+            .map(|_| "ok")
+            .map_err(|err| format!("{:?}", err));
+
+        assert_eq!(Ok("ok"), nlu_config_formatted);
+    }
+
+    #[test]
+    fn dir_based_assistant_works() {
         let file = file_path("tests/configurations");
-        let nlu_config_formatted = FileBasedConfiguration::new(file, false)
+        let nlu_config_formatted = FileBasedConfiguration::from_dir(file, false)
             .map(|_| "ok")
             .map_err(|err| format!("{:?}", err));
 
