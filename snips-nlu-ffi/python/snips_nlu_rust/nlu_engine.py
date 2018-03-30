@@ -9,7 +9,7 @@ import os
 from builtins import object
 from ctypes import c_char, c_char_p, c_void_p, string_at, pointer, byref
 
-from snips_nlu_rs.utils import lib, string_pointer
+from snips_nlu_rust.utils import lib, string_pointer
 
 
 class NLUEngine(object):
