@@ -3,10 +3,10 @@ from __future__ import unicode_literals
 
 import unittest
 
-from snips_nlu_rs import NLUEngine
-from snips_nlu_rs.tests.utils import (SAMPLE_ASSISTANT_FILE,
-                                      SAMPLE_ASSISTANT_DIR,
-                                      SAMPLE_ASSISTANT_ZIP)
+from snips_nlu_rust import NLUEngine
+from snips_nlu_rust.tests.utils import (SAMPLE_ASSISTANT_FILE,
+                                        SAMPLE_ASSISTANT_DIR,
+                                        SAMPLE_ASSISTANT_ZIP)
 
 
 class TestNLUEngineWrapper(unittest.TestCase):
