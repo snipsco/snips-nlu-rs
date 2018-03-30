@@ -9,7 +9,7 @@ from setuptools_rust import Binding, RustExtension
 
 packages = [p for p in find_packages() if "tests" not in p]
 
-PACKAGE_NAME = "snips_nlu_rs"
+PACKAGE_NAME = "snips_nlu_rust"
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 PACKAGE_PATH = os.path.join(ROOT_PATH, PACKAGE_NAME)
 VERSION = "__version__"
