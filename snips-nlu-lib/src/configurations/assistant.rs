@@ -124,6 +124,21 @@ impl ZipBasedConfiguration {
     }
 }
 
+pub struct BytesBasedConfiguration {
+    nlu_configuration: NluEngineConfiguration,
+}
+
+impl BytesBasedConfiguration {
+    pub fn new(
+        nlu_conf_bytes: &[u8],
+    ) -> Result<Self> {
+        let nlu_configuration = ::serde_json::from_slice(nlu_conf_bytes)
+            .context(SnipsNluError::ConfigLoad(NLU_CONFIGURATION_FILENAME.into()))?;
+
+        Ok(Self { nlu_configuration })
+    }
+}
+
 impl NluEngineConfigurationConvertible for ZipBasedConfiguration {
     fn nlu_engine_configuration(&self) -> &NluEngineConfiguration {
         &self.nlu_configuration
@@ -164,6 +179,22 @@ mod tests {
     fn zip_based_assistant_works() {
         let file = fs::File::open(file_path("tests/zip_files/sample_config.zip")).unwrap();
         let nlu_config_formatted = ZipBasedConfiguration::new(file, false)
+            .map(|_| "ok")
+            .map_err(|err| format!("{:?}", err));
+
+        assert_eq!(Ok("ok"), nlu_config_formatted);
+    }
+
+    #[test]
+    fn bytes_based_assistant_works() {
+
+        let mut f = fs::File::open("examples/trained_assistant.json").expect("file not found");
+
+        let mut config_string = String::new();
+            f.read_to_string(&mut config_string)
+            .expect("something went wrong reading the file");
+
+        let nlu_config_formatted = BytesBasedConfiguration::new(config_string.as_bytes())
             .map(|_| "ok")
             .map_err(|err| format!("{:?}", err));
 
