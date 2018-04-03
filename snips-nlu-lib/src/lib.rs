@@ -39,7 +39,7 @@ mod utils;
 pub const MODEL_VERSION: &str = "0.13.0";
 
 pub use configurations::{FileBasedConfiguration, NluEngineConfiguration,
-                         NluEngineConfigurationConvertible, ZipBasedConfiguration};
+                         NluEngineConfigurationConvertible, ZipBasedConfiguration, BytesBasedConfiguration};
 pub use errors::*;
 pub use nlu_engine::SnipsNluEngine;
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
