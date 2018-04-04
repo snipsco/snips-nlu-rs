@@ -180,15 +180,11 @@ fn augment_slots(
     builtin_entity_parser: &sync::Arc<BuiltinEntityParser>,
     missing_slots: &[(String, BuiltinEntityKind)],
 ) -> Result<Vec<InternalSlot>> {
-    let builtin_entity_kinds: Vec<BuiltinEntityKind> = missing_slots
+    let builtin_entities = missing_slots
         .iter()
         .map(|&(_, kind)| kind)
         .unique()
-        .collect_vec();
-
-    let builtin_entities = builtin_entity_kinds
-        .iter()
-        .flat_map(|kind| builtin_entity_parser.extract_entities(text, Some(&[*kind])))
+        .flat_map(|kind| builtin_entity_parser.extract_entities(text, Some(&[kind])))
         .collect();
     let filtered_entities = filter_overlapping_builtins(
         builtin_entities,
@@ -344,7 +340,7 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 mod tests {
     use super::*;
     use nlu_utils::language::Language as NluUtilsLanguage;
-    use snips_nlu_ontology::{Language, Grain, InstantTimeValue, Precision, SlotValue, NumberValue};
+    use snips_nlu_ontology::{Grain, InstantTimeValue, Language, NumberValue, Precision, SlotValue};
 
     #[derive(Debug, Fail)]
     pub enum TestError {
@@ -358,17 +354,10 @@ mod tests {
     }
 
     impl TestSlotFiller {
-        fn new(
-            tags_slice: &[&[&str]],
-            tags_probabilities: Vec<f64>,
-        ) -> Self {
+        fn new(tags_slice: &[&[&str]], tags_probabilities: Vec<f64>) -> Self {
             let tags_list = tags_slice
                 .iter()
-                .map(|tags|
-                    tags
-                        .iter()
-                        .map(|t| t.to_string())
-                        .collect())
+                .map(|tags| tags.iter().map(|t| t.to_string()).collect())
                 .collect();
             Self {
                 tags_list,

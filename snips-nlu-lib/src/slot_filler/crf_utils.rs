@@ -317,17 +317,10 @@ pub fn generate_slots_permutations(
             slot_names
         })
         .collect();
-    let possible_slots_slice: Vec<&[String]> = possible_slots
-        .iter()
-        .map(|s| &**s)
-        .collect();
+    let possible_slots_slice: Vec<&[String]> = possible_slots.iter().map(|s| &**s).collect();
     product(possible_slots_slice.as_slice())
         .into_iter()
-        .map(|perm|
-            perm.into_iter()
-                .map(|s| s.to_string())
-                .collect()
-        )
+        .map(|perm| perm.into_iter().map(|s| s.to_string()).collect())
         .collect()
 }
 
@@ -1099,15 +1092,13 @@ mod tests {
             "start_date".to_string() => "snips/datetime".to_string(),
             "end_date".to_string() => "snips/datetime".to_string(),
             "temperature".to_string() => "snips/temperature".to_string()
-        }     ;
+        };
         let grouped_entities = &[
             vec![
                 mock_builtin_entity(BuiltinEntityKind::Time),
-                mock_builtin_entity(BuiltinEntityKind::Temperature)
+                mock_builtin_entity(BuiltinEntityKind::Temperature),
             ],
-            vec![
-                mock_builtin_entity(BuiltinEntityKind::Temperature)
-            ]
+            vec![mock_builtin_entity(BuiltinEntityKind::Temperature)],
         ];
 
         // When
@@ -1117,14 +1108,14 @@ mod tests {
 
         // Then
         let expected_permutations = vec![
-            vec!["O".to_string(),"O".to_string()],
-            vec!["O".to_string(),"temperature".to_string()],
-            vec!["end_date".to_string(),"O".to_string()],
-            vec!["end_date".to_string(),"temperature".to_string()],
-            vec!["start_date".to_string(),"O".to_string()],
+            vec!["O".to_string(), "O".to_string()],
+            vec!["O".to_string(), "temperature".to_string()],
+            vec!["end_date".to_string(), "O".to_string()],
+            vec!["end_date".to_string(), "temperature".to_string()],
+            vec!["start_date".to_string(), "O".to_string()],
             vec!["start_date".to_string(), "temperature".to_string()],
-            vec!["temperature".to_string(),"O".to_string()],
-            vec!["temperature".to_string(),"temperature".to_string()],
+            vec!["temperature".to_string(), "O".to_string()],
+            vec!["temperature".to_string(), "temperature".to_string()],
         ];
         assert_eq!(expected_permutations, slots_permutations);
     }
