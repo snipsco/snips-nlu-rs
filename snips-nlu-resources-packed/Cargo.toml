@@ -7,7 +7,7 @@ build = "build.rs"
 [dependencies]
 failure = "0.1"
 phf = { version = "0.7.21", features = ["unicase"] }
-snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.54.0" }
+snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.54.1" }
 
 [build-dependencies]
 snips-nlu-resources = { path = "../snips-nlu-resources"}
