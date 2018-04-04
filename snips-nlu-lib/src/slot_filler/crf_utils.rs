@@ -1,15 +1,15 @@
 use std::collections::{HashMap, HashSet};
-use std::iter::FromIterator;
 use std::ops::Range;
 
-use itertools::{repeat_n, Itertools};
+use itertools::Itertools;
 use yolo::Yolo;
 
 use errors::*;
 use nlu_utils::string::suffix_from_char_index;
 use nlu_utils::token::Token;
 use slot_utils::InternalSlot;
-use utils::{permutations, product};
+use utils::product;
+use snips_nlu_ontology::BuiltinEntity;
 
 const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
@@ -291,64 +291,37 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
     }
 }
 
-fn conservative_permutations<'a>(
-    num_detected_builtins: usize,
-    possible_slots_names: &'a [&str],
-) -> Vec<Vec<&'a str>> {
-    let pool_size = possible_slots_names.len() + (num_detected_builtins as usize);
-    let permutations_pool: Vec<usize> = Vec::from_iter(0..pool_size);
-    // Generate all permutations of indexes
-    // Replace slot indexes with slot names or OUTSIDE
-    let mut slot_permutations: Vec<Vec<&str>> =
-        permutations(&*permutations_pool, num_detected_builtins as i32)
-            .into_iter()
-            .map(|perm| -> Vec<&str> {
-                perm.into_iter()
-                    .map(|slot_index| possible_slots_names.get(slot_index).map_or(OUTSIDE, |x| *x))
-                    .collect()
-            })
-            .collect();
-    // Return unique permutations
-    slot_permutations.sort();
-    slot_permutations.dedup();
-    Vec::from_iter(slot_permutations)
-}
-
-fn exhaustive_permutations<'a>(
-    num_detected_builtins: usize,
-    possible_slots_names: &[&'a str],
-) -> Vec<Vec<&'a str>> {
-    let pool_size = possible_slots_names.len() + 1; // For OUTSIDE
-    let permutations_pool: Vec<Vec<usize>> = repeat_n(0..pool_size, num_detected_builtins)
-        .map(|range| range.into_iter().collect())
-        .collect();
-
-    let ref_permutation_pool: Vec<&[usize]> = permutations_pool.iter().map(|v| &v[..]).collect();
-
-    product(&ref_permutation_pool[..])
+pub fn generate_slots_permutations(
+    grouped_entities: &[Vec<BuiltinEntity>],
+    slot_name_mapping: &HashMap<String, String>,
+) -> Vec<Vec<String>> {
+    let possible_slots: Vec<Vec<String>> = grouped_entities
         .into_iter()
-        .map(|perm| {
-            perm.into_iter()
-                .map(|&slot_index| *possible_slots_names.get(slot_index).unwrap_or(&OUTSIDE))
-                .collect()
+        .map(|entities| {
+            let mut slot_names: Vec<String> = entities
+                .into_iter()
+                .flat_map::<Vec<String>, _>(|entity|
+                    slot_name_mapping
+                        .into_iter()
+                        .filter_map(|(slot_name, entity_name)| {
+                            if entity_name == entity.entity_kind.identifier() {
+                                Some(slot_name.to_string())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect()
+                )
+                .collect();
+            slot_names.push(OUTSIDE.to_string());
+            slot_names
         })
+        .collect();
+    let possible_slots_slice: Vec<&[String]> = possible_slots.iter().map(|s| &**s).collect();
+    product(possible_slots_slice.as_slice())
+        .into_iter()
+        .map(|perm| perm.into_iter().map(|s| s.to_string()).collect())
         .collect()
-}
-
-pub fn generate_slots_permutations<'a>(
-    num_detected_builtins: usize,
-    possible_slots_names: &'a [&str],
-    exhaustive_permutations_threshold: usize,
-) -> Vec<Vec<&'a str>> {
-    if num_detected_builtins == 0 {
-        return vec![];
-    }
-    let num_exhaustive_perms = (possible_slots_names.len() + 1).pow(num_detected_builtins as u32);
-    if num_exhaustive_perms <= exhaustive_permutations_threshold {
-        exhaustive_permutations(num_detected_builtins, possible_slots_names)
-    } else {
-        conservative_permutations(num_detected_builtins, possible_slots_names)
-    }
 }
 
 #[cfg(test)]
@@ -358,6 +331,7 @@ mod tests {
     use super::*;
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize;
+    use snips_nlu_ontology::{BuiltinEntityKind, NumberValue, SlotValue};
 
     struct Test {
         text: String,
@@ -1104,74 +1078,45 @@ mod tests {
     }
 
     #[test]
-    fn generate_slots_exhaustive_permutations_works() {
+    fn test_should_generate_slots_permutations() {
         // Given
-        let s_1 = "slot1";
-        let builtin_slot_names = &[s_1];
-        let n_builtin_slot_in_sentences = 2;
-        let exhaustive_permutations_threshold = 1000;
+        fn mock_builtin_entity(entity_kind: BuiltinEntityKind) -> BuiltinEntity {
+            BuiltinEntity {
+                value: "0".to_string(),
+                range: 0..1,
+                entity: SlotValue::Number(NumberValue { value: 0.0 }),
+                entity_kind,
+            }
+        }
+        let slot_name_mapping = hashmap! {
+            "start_date".to_string() => "snips/datetime".to_string(),
+            "end_date".to_string() => "snips/datetime".to_string(),
+            "temperature".to_string() => "snips/temperature".to_string()
+        };
+        let grouped_entities = &[
+            vec![
+                mock_builtin_entity(BuiltinEntityKind::Time),
+                mock_builtin_entity(BuiltinEntityKind::Temperature),
+            ],
+            vec![mock_builtin_entity(BuiltinEntityKind::Temperature)],
+        ];
 
         // When
-        let slot_names_permutations = generate_slots_permutations(
-            n_builtin_slot_in_sentences,
-            builtin_slot_names,
-            exhaustive_permutations_threshold,
-        );
+        let slots_permutations = generate_slots_permutations(grouped_entities, &slot_name_mapping)
+            .into_iter()
+            .sorted_by_key(|permutation| permutation.iter().join("||"));
 
         // Then
-        let expected_slot_names_permutations = hashset![
-            vec!["slot1", "slot1"],
-            vec!["slot1", OUTSIDE],
-            vec![OUTSIDE, "slot1"],
-            vec![OUTSIDE, OUTSIDE],
+        let expected_permutations = vec![
+            vec!["O".to_string(), "O".to_string()],
+            vec!["O".to_string(), "temperature".to_string()],
+            vec!["end_date".to_string(), "O".to_string()],
+            vec!["end_date".to_string(), "temperature".to_string()],
+            vec!["start_date".to_string(), "O".to_string()],
+            vec!["start_date".to_string(), "temperature".to_string()],
+            vec!["temperature".to_string(), "O".to_string()],
+            vec!["temperature".to_string(), "temperature".to_string()],
         ];
-        assert_eq!(
-            slot_names_permutations.len(),
-            expected_slot_names_permutations.len()
-        );
-        for perm in slot_names_permutations {
-            assert!(expected_slot_names_permutations.contains(&perm))
-        }
-    }
-
-    #[test]
-    fn generate_slots_conservative_permutations_works() {
-        // Given
-        let s_1 = "slot1";
-        let s_2 = "slot2";
-        let builtin_slot_names = &[s_1, s_2];
-        let n_builtin_slot_in_sentences = 3;
-        let exhaustive_permutations_threshold = 1;
-
-        // When
-        let slot_names_permutations = generate_slots_permutations(
-            n_builtin_slot_in_sentences,
-            builtin_slot_names,
-            exhaustive_permutations_threshold,
-        );
-
-        // Then
-        let expected_slot_names_permutations = hashset![
-            vec!["slot1", "slot2", "O"],
-            vec!["slot2", "slot1", "O"],
-            vec!["slot2", "O", "slot1"],
-            vec!["slot1", "O", "slot2"],
-            vec!["O", "slot2", "slot1"],
-            vec!["O", "slot1", "slot2"],
-            vec!["O", "O", "slot1"],
-            vec!["O", "O", "slot2"],
-            vec!["O", "slot1", "O"],
-            vec!["O", "slot2", "O"],
-            vec!["slot1", "O", "O"],
-            vec!["slot2", "O", "O"],
-            vec!["O", "O", "O"],
-        ];
-        assert_eq!(
-            slot_names_permutations.len(),
-            expected_slot_names_permutations.len()
-        );
-        for perm in slot_names_permutations {
-            assert!(expected_slot_names_permutations.contains(&perm))
-        }
+        assert_eq!(expected_permutations, slots_permutations);
     }
 }

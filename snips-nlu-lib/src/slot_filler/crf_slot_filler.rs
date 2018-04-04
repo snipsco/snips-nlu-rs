@@ -28,7 +28,6 @@ pub struct CRFSlotFiller {
     feature_processor: ProbabilisticFeatureProcessor,
     slot_name_mapping: HashMap<String, String>,
     builtin_entity_parser: sync::Arc<BuiltinEntityParser>,
-    exhaustive_permutations_threshold: usize,
 }
 
 impl CRFSlotFiller {
@@ -49,7 +48,6 @@ impl CRFSlotFiller {
             feature_processor,
             slot_name_mapping,
             builtin_entity_parser,
-            exhaustive_permutations_threshold: config.config.exhaustive_permutations_threshold,
         })
     }
 }
@@ -105,23 +103,14 @@ impl SlotFiller for CRFSlotFiller {
             })
             .collect_vec();
 
-        let builtin_entity_kinds = builtin_slots
-            .iter()
-            .map(|&(_, kind)| kind)
-            .unique()
-            .collect_vec();
-
-        let builtin_entities = self.builtin_entity_parser
-            .extract_entities(text, Some(&builtin_entity_kinds));
         let augmented_slots = augment_slots(
             text,
             &tokens,
             &updated_tags,
             self,
             &self.slot_name_mapping,
-            builtin_entities,
+            &self.builtin_entity_parser,
             &builtin_slots,
-            self.exhaustive_permutations_threshold,
         )?;
         Ok(augmented_slots)
     }
@@ -188,74 +177,67 @@ fn augment_slots(
     tags: &[String],
     slot_filler: &SlotFiller,
     intent_slots_mapping: &HashMap<String, String>,
-    builtin_entities: Vec<BuiltinEntity>,
+    builtin_entity_parser: &sync::Arc<BuiltinEntityParser>,
     missing_slots: &[(String, BuiltinEntityKind)],
-    exhaustive_permutations_threshold: usize,
 ) -> Result<Vec<InternalSlot>> {
-    let mut grouped_entities: HashMap<BuiltinEntityKind, Vec<BuiltinEntity>> = HashMap::new();
+    let builtin_entities = missing_slots
+        .iter()
+        .map(|&(_, kind)| kind)
+        .unique()
+        .flat_map(|kind| builtin_entity_parser.extract_entities(text, Some(&[kind])))
+        .collect();
     let filtered_entities = filter_overlapping_builtins(
         builtin_entities,
         tokens,
         tags,
         slot_filler.get_tagging_scheme(),
     );
-    for entity in filtered_entities {
-        grouped_entities
-            .entry(entity.entity_kind)
-            .or_insert_with(|| vec![])
-            .push(entity);
-    }
+    let disambiguated_entities = disambiguate_builtin_entities(filtered_entities);
+    let grouped_entities = disambiguated_entities
+        .into_iter()
+        .fold(HashMap::new(), |mut acc, entity| {
+            acc.entry(entity.range.start)
+                .or_insert_with(|| vec![])
+                .push(entity);
+            acc
+        })
+        .into_iter()
+        .map(|(_, entities)| entities)
+        .sorted_by_key(|entities| entities[0].range.start);
 
-    let mut augmented_tags: Vec<String> = tags.iter().map(|s| s.to_string()).collect();
-    for (entity_kind, group) in grouped_entities.iter() {
-        let spans_ranges = group.into_iter().map(|e| e.range.clone()).collect_vec();
-        let num_detected_builtins = spans_ranges.len();
-        let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
-        let related_slots: Vec<&str> = missing_slots
-            .iter()
-            .filter_map(|&(ref slot_name, kind)| {
-                if kind == *entity_kind {
-                    let name: &str = &*slot_name;
-                    Some(name)
-                } else {
-                    None
-                }
-            })
-            .collect_vec();
+    let spans_ranges = grouped_entities
+        .iter()
+        .map(|entities| entities[0].range.clone())
+        .collect_vec();
+    let tokens_indexes = spans_to_tokens_indexes(&spans_ranges, tokens);
+    let slots_permutations = generate_slots_permutations(&*grouped_entities, intent_slots_mapping);
 
-        let slots_permutations = generate_slots_permutations(
-            num_detected_builtins,
-            related_slots.as_slice(),
-            exhaustive_permutations_threshold,
-        );
-        let mut best_updated_tags = augmented_tags.clone();
-        let mut best_permutation_score: f64 = -1.0;
-        for slots in &slots_permutations {
-            let mut updated_tags = augmented_tags.clone();
-            for (slot_index, slot) in slots.iter().enumerate() {
-                let indexes = &tokens_indexes[slot_index];
-                let tagging_scheme = slot_filler.get_tagging_scheme();
-                let sub_tags_sequence = positive_tagging(tagging_scheme, slot, indexes.len());
-                for (index_position, index) in indexes.iter().enumerate() {
-                    updated_tags[*index] = sub_tags_sequence[index_position].clone();
-                }
-            }
-            let score = slot_filler.get_sequence_probability(tokens, updated_tags.clone())?;
-            if score > best_permutation_score {
-                best_updated_tags = updated_tags;
-                best_permutation_score = score;
+    let mut best_updated_tags = tags.to_vec();
+    let mut best_permutation_score: f64 = -1.0;
+    for slots in slots_permutations {
+        let mut updated_tags = tags.to_vec();
+        for (slot_index, slot) in slots.iter().enumerate() {
+            let indexes = &tokens_indexes[slot_index];
+            let tagging_scheme = slot_filler.get_tagging_scheme();
+            let sub_tags_sequence = positive_tagging(tagging_scheme, slot, indexes.len());
+            for (index_position, index) in indexes.iter().enumerate() {
+                updated_tags[*index] = sub_tags_sequence[index_position].clone();
             }
         }
-        augmented_tags = best_updated_tags;
+        let score = slot_filler.get_sequence_probability(tokens, updated_tags.to_vec())?;
+        if score > best_permutation_score {
+            best_updated_tags = updated_tags;
+            best_permutation_score = score;
+        }
     }
     let slots = tags_to_slots(
         text,
         tokens,
-        &augmented_tags,
+        &best_updated_tags,
         slot_filler.get_tagging_scheme(),
         intent_slots_mapping,
     )?;
-    let filtered_builtin_entities = grouped_entities.into_iter().flat_map(|(_, e)| e).collect();
+    let filtered_builtin_entities = grouped_entities.into_iter().flatten().collect();
     Ok(reconciliate_builtin_slots(
         text,
         slots,
@@ -301,6 +283,40 @@ fn reconciliate_builtin_slots(
         .collect()
 }
 
+fn disambiguate_builtin_entities(builtin_entities: Vec<BuiltinEntity>) -> Vec<BuiltinEntity> {
+    if builtin_entities.is_empty() {
+        return builtin_entities;
+    }
+    let sorted_entities = builtin_entities
+        .into_iter()
+        .sorted_by_key(|ent| -(ent.range.clone().count() as i8));
+
+    let first_disambiguated_value = sorted_entities[0].clone();
+
+    sorted_entities
+        .into_iter()
+        .skip(1)
+        .fold(vec![first_disambiguated_value], |acc, entity| {
+            let mut new_acc = acc.clone();
+            let mut conflict = false;
+            for disambiguated_entity in acc {
+                if ranges_overlap(&entity.range, &disambiguated_entity.range) {
+                    conflict = true;
+                    if entity.range == disambiguated_entity.range {
+                        new_acc.push(entity.clone());
+                    }
+                    break;
+                }
+            }
+            if !conflict {
+                new_acc.push(entity);
+            }
+            new_acc
+        })
+        .into_iter()
+        .sorted_by_key(|ent| ent.range.start)
+}
+
 fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<usize>> {
     spans
         .iter()
@@ -323,17 +339,31 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nlu_utils::language::Language;
-    use snips_nlu_ontology::{Grain, InstantTimeValue, Precision, SlotValue};
+    use nlu_utils::language::Language as NluUtilsLanguage;
+    use snips_nlu_ontology::{Grain, InstantTimeValue, Language, NumberValue, Precision, SlotValue};
+
+    #[derive(Debug, Fail)]
+    pub enum TestError {
+        #[fail(display = "Unexpected tags: {:?}", _0)]
+        UnknownTags(Vec<String>)
+    }
 
     struct TestSlotFiller {
-        tags1: Vec<String>,
-        tags2: Vec<String>,
-        tags3: Vec<String>,
-        tags4: Vec<String>,
-        tags5: Vec<String>,
-        tags6: Vec<String>,
-        tags7: Vec<String>,
+        tags_list: Vec<Vec<String>>,
+        tags_probabilities: Vec<f64>,
+    }
+
+    impl TestSlotFiller {
+        fn new(tags_slice: &[&[&str]], tags_probabilities: Vec<f64>) -> Self {
+            let tags_list = tags_slice
+                .iter()
+                .map(|tags| tags.iter().map(|t| t.to_string()).collect())
+                .collect();
+            Self {
+                tags_list,
+                tags_probabilities,
+            }
+        }
     }
 
     impl SlotFiller for TestSlotFiller {
@@ -346,30 +376,18 @@ mod tests {
         }
 
         fn get_sequence_probability(&self, _: &[Token], tags: Vec<String>) -> Result<f64> {
-            if tags == self.tags1 {
-                Ok(0.9)
-            } else if tags == self.tags2 {
-                Ok(0.2)
-            } else if tags == self.tags3 {
-                Ok(0.4)
-            } else if tags == self.tags4 {
-                Ok(0.3)
-            } else if tags == self.tags5 {
-                Ok(0.8)
-            } else if tags == self.tags6 {
-                Ok(0.26)
-            } else if tags == self.tags7 {
-                Ok(0.4)
-            } else {
-                bail!("Unexpected tags: {:?}", tags)
-            }
+            self.tags_list
+                .iter()
+                .find_position(|t| **t == tags)
+                .map(|(i, _)| self.tags_probabilities[i])
+                .ok_or(TestError::UnknownTags(tags).into())
         }
     }
 
     #[test]
     fn filter_overlapping_builtin_works() {
         // Given
-        let language = Language::EN;
+        let language = NluUtilsLanguage::EN;
         let text =
             "Fïnd ä flïght leävïng from Paris bëtwëen today at 9pm and tomorrow at 8am";
         let tokens = tokenize(text, language);
@@ -435,178 +453,43 @@ mod tests {
     #[test]
     fn augment_slots_works() {
         // Given
-        let language = Language::EN;
-        let text = "Find a flight leaving from Paris between today at 9pm and tomorrow at 8am";
+        let language = NluUtilsLanguage::EN;
+        let text = "Find me a flight before 10pm and after 8pm";
         let tokens = tokenize(text, language);
-        let exhaustive_permutations_threshold = 1;
 
-        let tags = vec![
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-location".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-        ];
-        let tags1 = vec![
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-location".to_string(),
-            "O".to_string(),
-            "B-start_date".to_string(),
-            "I-start_date".to_string(),
-            "I-start_date".to_string(),
-            "O".to_string(),
-            "B-end_date".to_string(),
-            "I-end_date".to_string(),
-            "I-end_date".to_string(),
-        ];
-        let tags2 = vec![
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-location".to_string(),
-            "O".to_string(),
-            "B-end_date".to_string(),
-            "I-end_date".to_string(),
-            "I-end_date".to_string(),
-            "O".to_string(),
-            "B-start_date".to_string(),
-            "I-start_date".to_string(),
-            "I-start_date".to_string(),
-        ];
-        let tags3 = vec![
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-location".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-end_date".to_string(),
-            "I-end_date".to_string(),
-            "I-end_date".to_string(),
-        ];
-        let tags4 = vec![
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-location".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-start_date".to_string(),
-            "I-start_date".to_string(),
-            "I-start_date".to_string(),
-        ];
-        let tags5 = vec![
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-location".to_string(),
-            "O".to_string(),
-            "B-end_date".to_string(),
-            "I-end_date".to_string(),
-            "I-end_date".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-        ];
-        let tags6 = vec![
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-location".to_string(),
-            "O".to_string(),
-            "B-start_date".to_string(),
-            "I-start_date".to_string(),
-            "I-start_date".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-        ];
-        let tags7 = vec![
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "B-location".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
-            "O".to_string(),
+        let tags: Vec<String> = tokens.iter().map(|_| "O".to_string()).collect();
+
+        let tags_list: &[&[&str]] = &[
+            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "B-end_date", "I-end_date"],
+            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "B-start_date", "I-start_date"],
+            &["O", "O", "O", "O", "O", "O", "O", "O", "O"],
+            &["O", "O", "O", "O", "O", "O", "O", "B-start_date", "I-start_date"],
+            &["O", "O", "O", "O", "O", "O", "O", "B-end_date", "I-end_date"],
+            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "O", "O"],
+            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "O", "O"],
+            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "B-start_date", "I-start_date"],
+            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "B-end_date", "I-end_date"],
         ];
 
-        let slot_filler = TestSlotFiller {
-            tags1,
-            tags2,
-            tags3,
-            tags4,
-            tags5,
-            tags6,
-            tags7,
-        };
+        let probabilities = vec![
+            0.6,
+            0.8,
+            0.2,
+            0.2,
+            0.99,
+            0.0,
+            0.0,
+            0.5,
+            0.5
+        ];
+
+        let slot_filler = TestSlotFiller::new(tags_list, probabilities);
         let intent_slots_mapping = hashmap! {
             "location".to_string() => "location_entity".to_string(),
             "start_date".to_string() => "snips/datetime".to_string(),
             "end_date".to_string() => "snips/datetime".to_string(),
         };
-        let start_time = InstantTimeValue {
-            value: "today at 9pm".to_string(),
-            grain: Grain::Hour,
-            precision: Precision::Exact,
-        };
-        let end_time = InstantTimeValue {
-            value: "tomorrow at 8am".to_string(),
-            grain: Grain::Hour,
-            precision: Precision::Exact,
-        };
-        let builtin_entities = vec![
-            BuiltinEntity {
-                value: "tomorrow at 8am".to_string(),
-                range: 58..73,
-                entity_kind: BuiltinEntityKind::Time,
-                entity: SlotValue::InstantTime(end_time),
-            },
-            BuiltinEntity {
-                value: "today at 9pm".to_string(),
-                range: 41..53,
-                entity_kind: BuiltinEntityKind::Time,
-                entity: SlotValue::InstantTime(start_time),
-            },
-        ];
+        let builtin_entity_parser = BuiltinEntityParser::get(Language::EN);
         let missing_slots = vec![
             ("start_date".to_string(), BuiltinEntityKind::Time),
             ("end_date".to_string(), BuiltinEntityKind::Time),
@@ -619,28 +502,15 @@ mod tests {
             &tags,
             &slot_filler,
             &intent_slots_mapping,
-            builtin_entities,
+            &builtin_entity_parser,
             &missing_slots,
-            exhaustive_permutations_threshold,
         ).unwrap();
 
         // Then
-        let expected_slots: Vec<InternalSlot> = vec![
+        let expected_slots = vec![
             InternalSlot {
-                value: "Paris".to_string(),
-                char_range: 27..32,
-                entity: "location_entity".to_string(),
-                slot_name: "location".to_string(),
-            },
-            InternalSlot {
-                value: "today at 9pm".to_string(),
-                char_range: 41..53,
-                entity: "snips/datetime".to_string(),
-                slot_name: "start_date".to_string(),
-            },
-            InternalSlot {
-                value: "tomorrow at 8am".to_string(),
-                char_range: 58..73,
+                value: "after 8pm".to_string(),
+                char_range: 33..42,
                 entity: "snips/datetime".to_string(),
                 slot_name: "end_date".to_string(),
             },
@@ -732,5 +602,42 @@ mod tests {
             "O".to_string(),
         ];
         assert_eq!(expected_tags, replaced_tags);
+    }
+
+    #[test]
+    fn test_should_disambiguate_builtin_entities() {
+        // Given
+        fn mock_builtin_entity(range: Range<usize>) -> BuiltinEntity {
+            BuiltinEntity {
+                value: range.clone().map(|i| format!("{}", i)).join(""),
+                range,
+                entity: SlotValue::Number(NumberValue { value: 0.0 }),
+                entity_kind: BuiltinEntityKind::Number,
+            }
+        }
+        let builtin_entities = vec![
+            mock_builtin_entity(7..10),
+            mock_builtin_entity(9..15),
+            mock_builtin_entity(10..17),
+            mock_builtin_entity(12..19),
+            mock_builtin_entity(9..15),
+            mock_builtin_entity(0..5),
+            mock_builtin_entity(0..5),
+            mock_builtin_entity(0..8),
+            mock_builtin_entity(2..5),
+            mock_builtin_entity(0..8),
+        ];
+
+        // When
+        let disambiguated_entities = disambiguate_builtin_entities(builtin_entities);
+
+        // Then
+        let expected_entities = vec![
+            mock_builtin_entity(0..8),
+            mock_builtin_entity(0..8),
+            mock_builtin_entity(10..17),
+        ];
+
+        assert_eq!(expected_entities, disambiguated_entities);
     }
 }
