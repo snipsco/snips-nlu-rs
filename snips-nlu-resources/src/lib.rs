@@ -130,6 +130,18 @@ pub mod word_clusters {
             )
         }
     }
+
+    pub mod ja {
+        use std::collections::HashMap;
+
+        use errors::*;
+
+        pub fn w2v_clusters() -> Result<HashMap<String, String>> {
+            super::parse_clusters(
+                &include_bytes!("../snips-nlu-resources/ja/w2v_clusters.txt")[..],
+            )
+        }
+    }
 }
 
 pub mod gazetteer {
