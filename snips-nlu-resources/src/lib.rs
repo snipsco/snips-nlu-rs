@@ -137,9 +137,7 @@ pub mod word_clusters {
         use errors::*;
 
         pub fn w2v_clusters() -> Result<HashMap<String, String>> {
-            super::parse_clusters(
-                &include_bytes!("../snips-nlu-resources/ja/w2v_clusters.txt")[..],
-            )
+            super::parse_clusters(&include_bytes!("../snips-nlu-resources/ja/w2v_clusters.txt")[..])
         }
     }
 }
