@@ -1,29 +1,8 @@
+use nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_ontology::Language;
 use std::result::Result;
 use std::str::FromStr;
 
-use nlu_utils::language::Language as NluUtilsLanguage;
-use snips_nlu_ontology::Language;
-
-pub struct LanguageConfig {
-    pub language: Language,
-}
-
-impl FromStr for LanguageConfig {
-    type Err = ::failure::Error;
-    fn from_str(it: &str) -> Result<LanguageConfig, Self::Err> {
-        Ok(Self {
-            language: Language::from_str(it)?,
-        })
-    }
-}
-
-impl LanguageConfig {
-    pub fn intent_classification_clusters(&self) -> Option<&str> {
-        match self {
-            _ => None,
-        }
-    }
-}
 
 pub trait FromLanguage {
     fn from_language(l: Language) -> Self;

@@ -14,7 +14,7 @@ use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use resources::stemmer::{StaticMapStemmer, Stemmer};
 use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
-use snips_nlu_ontology::BuiltinEntityKind;
+use snips_nlu_ontology::{BuiltinEntityKind, Language};
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct Featurizer {
@@ -22,7 +22,6 @@ pub struct Featurizer {
     vocabulary: HashMap<String, usize>,
     idf_diag: Vec<f32>,
     sublinear: bool,
-    language_config: LanguageConfig,
     word_clusterer: Option<StaticMapWordClusterer>,
     stemmer: Option<StaticMapStemmer>,
     entity_utterances_to_feature_names: HashMap<String, Vec<String>>,
@@ -34,12 +33,10 @@ impl Featurizer {
         let best_features = config.best_features;
         let vocabulary = config.tfidf_vectorizer.vocab;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
-        let language_config = LanguageConfig::from_str(&config.language_code).unwrap();
         let builtin_entity_parser = BuiltinEntityParser::get(language_config.language);
-        let word_clusterer = language_config
-            .intent_classification_clusters()
+        let word_clusterer = config.word_cluster_name
             .map(|clusters_name| {
-                StaticMapWordClusterer::new(language_config.language, clusters_name.to_string())
+                StaticMapWordClusterer::new(Language::from_string(config.language_code), clusters_name)
                     .ok()
             })
             .unwrap_or(None);
@@ -51,7 +48,6 @@ impl Featurizer {
             vocabulary,
             idf_diag,
             sublinear: config.config.sublinear_tf,
-            language_config,
             word_clusterer,
             stemmer,
             entity_utterances_to_feature_names,
