@@ -42,7 +42,9 @@ impl ProbabilisticFeatureProcessor {
                     if let Some(value) = (f.function)(input, i) {
                         f.offsets.iter().foreach(|&(offset, ref key)| {
                             if i as i32 - offset >= 0 && i as i32 - offset < input.len() as i32 {
-                                acc[(i as i32 - offset) as usize].push((key.clone(), value.clone()));
+                                acc[(i as i32 - offset) as usize].push(
+                                    (key.clone(), value.clone())
+                                );
                             }
                         });
                     }
