@@ -17,7 +17,13 @@ pub struct LogRegIntentClassifier {
 
 impl LogRegIntentClassifier {
     pub fn new(config: IntentClassifierConfiguration) -> Result<Self> {
-        let featurizer = config.featurizer.map(Featurizer::new);
+
+        let featurizer: Option<Featurizer> = if let Some(featurizer_config) = config.featurizer {
+            Some(Featurizer::new(featurizer_config)?)
+        } else {
+            None
+        };
+
         let logreg = if let (Some(intercept), Some(coeffs)) = (config.intercept, config.coeffs) {
             let arr_intercept = Array::from_vec(intercept);
             let nb_classes = arr_intercept.dim();
@@ -352,6 +358,7 @@ mod tests {
 
         let config = FeaturizerConfigConfiguration {
             sublinear_tf: false,
+            word_clusters_name: None,
         };
 
         let config = FeaturizerConfiguration {
@@ -362,7 +369,7 @@ mod tests {
             entity_utterances_to_feature_names,
         };
 
-        let featurizer = Featurizer::new(config);
+        let featurizer = Featurizer::new(config).unwrap();
 
         let intercept = array![
             -0.6769558144299883,

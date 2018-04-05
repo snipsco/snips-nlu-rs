@@ -1,8 +1,5 @@
 use nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_ontology::Language;
-use std::result::Result;
-use std::str::FromStr;
-
 
 pub trait FromLanguage {
     fn from_language(l: Language) -> Self;

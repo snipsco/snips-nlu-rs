@@ -8,7 +8,7 @@ use ndarray::prelude::*;
 
 use configurations::FeaturizerConfiguration;
 use errors::*;
-use language::{FromLanguage, LanguageConfig};
+use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
@@ -26,24 +26,26 @@ pub struct Featurizer {
     stemmer: Option<StaticMapStemmer>,
     entity_utterances_to_feature_names: HashMap<String, Vec<String>>,
     builtin_entity_parser: Arc<BuiltinEntityParser>,
+    language: Language,
 }
 
 impl Featurizer {
-    pub fn new(config: FeaturizerConfiguration) -> Self {
+    pub fn new(config: FeaturizerConfiguration) -> Result<Self> {
         let best_features = config.best_features;
         let vocabulary = config.tfidf_vectorizer.vocab;
+        let language = Language::from_str(&*config.language_code)?;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
-        let builtin_entity_parser = BuiltinEntityParser::get(language_config.language);
-        let word_clusterer = config.word_cluster_name
+        let builtin_entity_parser = BuiltinEntityParser::get(language);
+        let word_clusterer = config.config.word_clusters_name
             .map(|clusters_name| {
-                StaticMapWordClusterer::new(Language::from_string(config.language_code), clusters_name)
+                StaticMapWordClusterer::new(language, clusters_name)
                     .ok()
             })
             .unwrap_or(None);
-        let stemmer = StaticMapStemmer::new(language_config.language).ok();
+        let stemmer = StaticMapStemmer::new(language).ok();
         let entity_utterances_to_feature_names = config.entity_utterances_to_feature_names;
 
-        Self {
+        Ok(Self {
             best_features,
             vocabulary,
             idf_diag,
@@ -52,7 +54,8 @@ impl Featurizer {
             stemmer,
             entity_utterances_to_feature_names,
             builtin_entity_parser,
-        }
+            language,
+        })
     }
 
     pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
@@ -87,7 +90,7 @@ impl Featurizer {
     }
 
     fn preprocess_query(&self, query: &str) -> Vec<String> {
-        let language = NluUtilsLanguage::from_language(self.language_config.language);
+        let language = NluUtilsLanguage::from_language(self.language);
         let tokens = tokenize_light(query, language);
         let word_cluster_features = self.word_clusterer
             .as_ref()
@@ -256,12 +259,13 @@ mod tests {
             tfidf_vectorizer,
             config: FeaturizerConfigConfiguration {
                 sublinear_tf: false,
+                word_clusters_name: None
             },
             best_features,
             entity_utterances_to_feature_names,
         };
 
-        let featurizer = Featurizer::new(featurizer_config);
+        let featurizer = Featurizer::new(featurizer_config).unwrap();
 
         // When
         let input = "Hëllo this bïrd is a beautiful Bïrd";
