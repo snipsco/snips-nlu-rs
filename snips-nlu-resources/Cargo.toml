@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-resources"
-version = "0.55.0-SNAPSHOT"
+version = "0.55.0"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 
 [dependencies]
