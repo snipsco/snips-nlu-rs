@@ -1,13 +1,38 @@
 #[macro_use]
 extern crate failure;
+#[macro_use]
+extern crate lazy_static;
 extern crate phf;
 extern crate snips_nlu_ontology;
+
+use std::collections::HashMap;
+use std::io::{BufRead, BufReader, Read};
 
 use snips_nlu_ontology::Language;
 
 type Result<T> = ::std::result::Result<T, ::failure::Error>;
 
 include!(concat!(env!("OUT_DIR"), "/phf.rs"));
+
+fn parse_clusters<R: Read>(clusters_file_reader: R) -> Result<HashMap<String, String>> {
+        let mut result = HashMap::new();
+        let f = BufReader::new(clusters_file_reader);
+        for (i, row) in f.lines().enumerate() {
+            let line = row?;
+            let split: Vec<&str> = line.split("\t").collect();
+            if split.len() == 2 {
+                result.insert(split[0].to_string(), split[1].to_string());
+            } else {
+                Err(format_err!("Invalid lines at index {:?}", i))?;
+            }
+        }
+        Ok(result)
+    }
+
+lazy_static!{
+    static ref WORD_CLUSTERS_JA_W2V_CLUSTERS: HashMap<String, String> = parse_clusters(&include_bytes!("../../snips-nlu-resources/snips-nlu-resources/ja/w2v_clusters.txt")[..]).unwrap();
+}
+
 
 pub fn stem(language: Language, word: &str) -> Result<String> {
     if let Some(stem) = match language {
@@ -28,6 +53,16 @@ pub fn word_cluster(cluster_name: &str, language: Language, word: &str) -> Resul
     match language {
         Language::EN => match cluster_name {
             "brown_clusters" => Ok(WORD_CLUSTERS_EN_BROWN_CLUSTERS
+                .get(word)
+                .map(|c| c.to_string())),
+            _ => bail!(
+                "word cluster '{}' not supported for language {}",
+                cluster_name,
+                language.to_string()
+            ),
+        },
+        Language::JA => match cluster_name {
+            "w2v_clusters" => Ok(WORD_CLUSTERS_JA_W2V_CLUSTERS
                 .get(word)
                 .map(|c| c.to_string())),
             _ => bail!(
@@ -121,6 +156,19 @@ mod tests {
             ).unwrap()
                 .unwrap(),
             "11111000111111"
+        )
+    }
+
+    #[test]
+    fn ja_w2v_clusters_works() {
+        assert_eq!(
+            word_cluster(
+                "w2v_clusters",
+                Language::from_str("ja").unwrap(),
+                "スメラ"
+            ).unwrap()
+                .unwrap(),
+            "0"
         )
     }
 
