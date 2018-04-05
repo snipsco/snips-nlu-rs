@@ -28,7 +28,7 @@
   }, 
   "unit_name": "nlu_engine", 
   "training_package_version": "0.12.1", 
-  "model_version": "0.13.0", 
+  "model_version": "0.14.0",
   "intent_parsers": [
     {
       "unit_name": "deterministic_intent_parser", 
