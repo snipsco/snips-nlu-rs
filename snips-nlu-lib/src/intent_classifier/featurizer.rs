@@ -36,11 +36,10 @@ impl Featurizer {
         let language = Language::from_str(&*config.language_code)?;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
         let builtin_entity_parser = BuiltinEntityParser::get(language);
-        let word_clusterer = config.config.word_clusters_name
-            .map(|clusters_name| {
-                StaticMapWordClusterer::new(language, clusters_name)
-                    .ok()
-            })
+        let word_clusterer = config
+            .config
+            .word_clusters_name
+            .map(|clusters_name| StaticMapWordClusterer::new(language, clusters_name).ok())
             .unwrap_or(None);
         let stemmer = StaticMapStemmer::new(language).ok();
         let entity_utterances_to_feature_names = config.entity_utterances_to_feature_names;
@@ -259,7 +258,7 @@ mod tests {
             tfidf_vectorizer,
             config: FeaturizerConfigConfiguration {
                 sublinear_tf: false,
-                word_clusters_name: None
+                word_clusters_name: None,
             },
             best_features,
             entity_utterances_to_feature_names,

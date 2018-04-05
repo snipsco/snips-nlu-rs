@@ -344,8 +344,7 @@ mod tests {
 
     #[derive(Debug, Fail)]
     pub enum TestError {
-        #[fail(display = "Unexpected tags: {:?}", _0)]
-        UnknownTags(Vec<String>)
+        #[fail(display = "Unexpected tags: {:?}", _0)] UnknownTags(Vec<String>),
     }
 
     struct TestSlotFiller {
@@ -460,28 +459,98 @@ mod tests {
         let tags: Vec<String> = tokens.iter().map(|_| "O".to_string()).collect();
 
         let tags_list: &[&[&str]] = &[
-            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "B-end_date", "I-end_date"],
-            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "B-start_date", "I-start_date"],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-start_date",
+                "I-start_date",
+                "O",
+                "B-end_date",
+                "I-end_date",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-end_date",
+                "I-end_date",
+                "O",
+                "B-start_date",
+                "I-start_date",
+            ],
             &["O", "O", "O", "O", "O", "O", "O", "O", "O"],
-            &["O", "O", "O", "O", "O", "O", "O", "B-start_date", "I-start_date"],
-            &["O", "O", "O", "O", "O", "O", "O", "B-end_date", "I-end_date"],
-            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "O", "O"],
-            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "O", "O"],
-            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "B-start_date", "I-start_date"],
-            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "B-end_date", "I-end_date"],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-start_date",
+                "I-start_date",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-end_date",
+                "I-end_date",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-start_date",
+                "I-start_date",
+                "O",
+                "O",
+                "O",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-end_date",
+                "I-end_date",
+                "O",
+                "O",
+                "O",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-start_date",
+                "I-start_date",
+                "O",
+                "B-start_date",
+                "I-start_date",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-end_date",
+                "I-end_date",
+                "O",
+                "B-end_date",
+                "I-end_date",
+            ],
         ];
 
-        let probabilities = vec![
-            0.6,
-            0.8,
-            0.2,
-            0.2,
-            0.99,
-            0.0,
-            0.0,
-            0.5,
-            0.5
-        ];
+        let probabilities = vec![0.6, 0.8, 0.2, 0.2, 0.99, 0.0, 0.0, 0.5, 0.5];
 
         let slot_filler = TestSlotFiller::new(tags_list, probabilities);
         let intent_slots_mapping = hashmap! {

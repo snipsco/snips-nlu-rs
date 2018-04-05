@@ -300,7 +300,7 @@ pub fn generate_slots_permutations(
         .map(|entities| {
             let mut slot_names: Vec<String> = entities
                 .into_iter()
-                .flat_map::<Vec<String>, _>(|entity|
+                .flat_map::<Vec<String>, _>(|entity| {
                     slot_name_mapping
                         .into_iter()
                         .filter_map(|(slot_name, entity_name)| {
@@ -311,7 +311,7 @@ pub fn generate_slots_permutations(
                             }
                         })
                         .collect()
-                )
+                })
                 .collect();
             slot_names.push(OUTSIDE.to_string());
             slot_names

@@ -20,7 +20,7 @@ pub struct FeaturizerConfiguration {
 #[derive(Debug, Deserialize)]
 pub struct FeaturizerConfigConfiguration {
     pub sublinear_tf: bool,
-    pub word_clusters_name: Option<String>
+    pub word_clusters_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]

@@ -17,7 +17,6 @@ pub struct LogRegIntentClassifier {
 
 impl LogRegIntentClassifier {
     pub fn new(config: IntentClassifierConfiguration) -> Result<Self> {
-
         let featurizer: Option<Featurizer> = if let Some(featurizer_config) = config.featurizer {
             Some(Featurizer::new(featurizer_config)?)
         } else {

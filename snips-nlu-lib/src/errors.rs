@@ -1,7 +1,6 @@
 #[derive(Debug, Fail)]
 pub enum SnipsNluError {
-    #[fail(display = "Unable to read file '{}'", _0)]
-    ConfigLoad(String),
+    #[fail(display = "Unable to read file '{}'", _0)] ConfigLoad(String),
     #[fail(display = "Expected model version {} but found {}", _1, _0)]
     WrongModelVersion(String, &'static str),
 }
