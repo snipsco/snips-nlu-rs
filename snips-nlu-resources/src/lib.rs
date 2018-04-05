@@ -113,7 +113,7 @@ pub mod word_clusters {
             if split.len() == 2 {
                 result.insert(split[0].to_string(), split[1].to_string());
             } else {
-                Err(format_err!("Invalid lines at index {:?}", i))?;
+                Err(format_err!("Invalid line at index {:?}", i))?;
             }
         }
         Ok(result)
