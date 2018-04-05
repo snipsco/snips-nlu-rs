@@ -6,6 +6,7 @@ build = "build.rs"
 
 [dependencies]
 failure = "0.1"
+lazy_static = "1.0"
 phf = { version = "0.7.21", features = ["unicase"] }
 snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.54.1" }
 

@@ -86,6 +86,11 @@ fn main() {
 
         word_clusters!(en, brown_clusters);
 
+        // Don't load the JA clusters here as they are too big
+        // they are loaded at run time in a lazy way
+
+        // word_clusters!(ja, w2v_clusters);
+
         gazetteer!(de, stop_words);
         gazetteer!(de, top_10000_words);
 

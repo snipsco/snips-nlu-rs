@@ -1,4 +1,5 @@
 extern crate csv;
+#[macro_use]
 extern crate failure;
 extern crate itertools;
 #[macro_use]
@@ -99,22 +100,21 @@ pub mod stems {
 
 pub mod word_clusters {
     use std::collections::HashMap;
-    use std::io::Read;
-
-    use csv;
+    use std::io::{BufRead, BufReader, Read};
 
     use errors::*;
 
     fn parse_clusters<R: Read>(clusters_file_reader: R) -> Result<HashMap<String, String>> {
-        let mut csv_reader = csv::Reader::from_reader(clusters_file_reader)
-            .delimiter(b'\t')
-            .has_headers(false);
-
         let mut result = HashMap::new();
-
-        for row in csv_reader.decode() {
-            let (key, value): (String, String) = row?;
-            result.insert(key, value);
+        let f = BufReader::new(clusters_file_reader);
+        for (i, row) in f.lines().enumerate() {
+            let line = row?;
+            let split: Vec<&str> = line.split("\t").collect();
+            if split.len() == 2 {
+                result.insert(split[0].to_string(), split[1].to_string());
+            } else {
+                Err(format_err!("Invalid line at index {:?}", i))?;
+            }
         }
         Ok(result)
     }
