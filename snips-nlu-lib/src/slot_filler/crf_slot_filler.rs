@@ -345,7 +345,7 @@ mod tests {
     #[derive(Debug, Fail)]
     pub enum TestError {
         #[fail(display = "Unexpected tags: {:?}", _0)]
-        UnknownTags(Vec<String>)
+        UnknownTags(Vec<String>),
     }
 
     struct TestSlotFiller {
