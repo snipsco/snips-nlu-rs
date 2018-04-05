@@ -85,6 +85,7 @@ fn main() {
         stem!(de);
 
         word_clusters!(en, brown_clusters);
+        word_clusters!(ja, w2v_clusters);
 
         // Don't load the JA clusters here as they are too big
         // they are loaded at run time in a lazy way
