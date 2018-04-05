@@ -1,5 +1,5 @@
-use ndarray::prelude::*;
 use errors::*;
+use ndarray::prelude::*;
 
 /// The multiclass probability estimates are derived from binary (one-vs.-rest)
 /// estimates by simple normalization

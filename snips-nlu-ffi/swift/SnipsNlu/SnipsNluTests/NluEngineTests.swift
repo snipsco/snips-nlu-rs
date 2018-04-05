@@ -20,6 +20,14 @@ class NluEngineTests: XCTestCase {
         XCTAssertNotNil(nluEngine)
     }
 
+    func testCreationFromFilepath() {
+        let directoryURL = Bundle(for: type(of: self)).url(forResource: "configurations", withExtension: nil)!
+
+        let nluEngine = try? NluEngine(assistantDirectoryURL: directoryURL)
+
+        XCTAssertNotNil(nluEngine)
+    }
+
     func testCreationFromDirectory() {
         let directoryURL = Bundle(for: type(of: self)).url(forResource: "configurations", withExtension: nil)!
 

@@ -1,55 +1,60 @@
 use std::collections::{HashMap, HashSet};
+use std::ops::Range;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use itertools::Itertools;
 use ndarray::prelude::*;
 
 use configurations::FeaturizerConfiguration;
 use errors::*;
-use language::{FromLanguage, LanguageConfig};
-use nlu_utils::token::{compute_all_ngrams, tokenize_light};
-use nlu_utils::string::normalize;
+use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
-use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
+use nlu_utils::string::{normalize, substring_with_char_range};
+use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use resources::stemmer::{StaticMapStemmer, Stemmer};
+use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
+use snips_nlu_ontology::{BuiltinEntityKind, Language};
+use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct Featurizer {
     best_features: Vec<usize>,
     vocabulary: HashMap<String, usize>,
     idf_diag: Vec<f32>,
     sublinear: bool,
-    language_config: LanguageConfig,
     word_clusterer: Option<StaticMapWordClusterer>,
     stemmer: Option<StaticMapStemmer>,
     entity_utterances_to_feature_names: HashMap<String, Vec<String>>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
+    language: Language,
 }
 
 impl Featurizer {
-    pub fn new(config: FeaturizerConfiguration) -> Self {
+    pub fn new(config: FeaturizerConfiguration) -> Result<Self> {
         let best_features = config.best_features;
         let vocabulary = config.tfidf_vectorizer.vocab;
+        let language = Language::from_str(&*config.language_code)?;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
-        let language_config = LanguageConfig::from_str(&config.language_code).unwrap();
-        let word_clusterer = language_config
-            .intent_classification_clusters()
-            .map(|clusters_name| {
-                StaticMapWordClusterer::new(language_config.language, clusters_name.to_string())
-                    .ok()
-            })
+        let builtin_entity_parser = BuiltinEntityParser::get(language);
+        let word_clusterer = config
+            .config
+            .word_clusters_name
+            .map(|clusters_name| StaticMapWordClusterer::new(language, clusters_name).ok())
             .unwrap_or(None);
-        let stemmer = StaticMapStemmer::new(language_config.language).ok();
+        let stemmer = StaticMapStemmer::new(language).ok();
         let entity_utterances_to_feature_names = config.entity_utterances_to_feature_names;
 
-        Self {
+        Ok(Self {
             best_features,
             vocabulary,
             idf_diag,
             sublinear: config.config.sublinear_tf,
-            language_config,
             word_clusterer,
             stemmer,
             entity_utterances_to_feature_names,
-        }
+            builtin_entity_parser,
+            language,
+        })
     }
 
     pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
@@ -84,25 +89,50 @@ impl Featurizer {
     }
 
     fn preprocess_query(&self, query: &str) -> Vec<String> {
-        let tokens = tokenize_light(
-            query,
-            NluUtilsLanguage::from_language(self.language_config.language),
-        );
-        let mut processed_tokens: Vec<String> = if let Some(ref stemmer) = self.stemmer {
-            tokens.iter().map(|t| stemmer.stem(&normalize(t))).collect()
-        } else {
-            tokens.iter().map(|t| normalize(t)).collect()
-        };
-        if let Some(ref clusterer) = self.word_clusterer {
-            processed_tokens.append(&mut get_word_cluster_features(&tokens, clusterer))
-        }
-        processed_tokens.append(&mut get_dataset_entities_features(
-            &tokens,
-            self.stemmer.as_ref(),
+        let language = NluUtilsLanguage::from_language(self.language);
+        let tokens = tokenize_light(query, language);
+        let word_cluster_features = self.word_clusterer
+            .as_ref()
+            .map(|clusterer| get_word_cluster_features(&tokens, clusterer))
+            .unwrap_or_else(|| vec![]);
+        let normalized_stemmed_tokens = normalize_stem(tokens, self.stemmer);
+        let entities_features = get_dataset_entities_features(
+            &*normalized_stemmed_tokens,
             &self.entity_utterances_to_feature_names,
-        ));
-        processed_tokens
+        );
+        let builtin_entities = self.builtin_entity_parser.extract_entities(query, None);
+        let entities_ranges = builtin_entities
+            .iter()
+            .sorted_by_key(|ent| ent.range.start)
+            .iter()
+            .map(|ent| ent.range.clone())
+            .collect();
+        let builtin_entities_features: Vec<String> = builtin_entities
+            .iter()
+            .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, language))
+            .sorted();
+        let filtered_query = remove_ranges(query, entities_ranges);
+        let filtered_query_tokens = tokenize_light(&*filtered_query, language);
+        let filtered_normalized_stemmed_tokens =
+            normalize_stem(filtered_query_tokens, self.stemmer);
+
+        vec![
+            filtered_normalized_stemmed_tokens,
+            builtin_entities_features,
+            entities_features,
+            word_cluster_features,
+        ].into_iter()
+            .flatten()
+            .collect()
     }
+}
+
+fn get_builtin_entity_feature_name(
+    entity_kind: BuiltinEntityKind,
+    language: NluUtilsLanguage,
+) -> String {
+    let e = tokenize_light(entity_kind.identifier(), language).join("");
+    format!("builtinentityfeature{}", e)
 }
 
 fn get_word_cluster_features<C: WordClusterer>(
@@ -113,45 +143,53 @@ fn get_word_cluster_features<C: WordClusterer>(
     compute_all_ngrams(&tokens_ref[..], tokens_ref.len())
         .into_iter()
         .filter_map(|ngram| word_clusterer.get_cluster(&ngram.0.to_lowercase()))
-        .collect()
+        .sorted()
 }
 
-fn get_dataset_entities_features<S: Stemmer>(
-    query_tokens: &[String],
-    stemmer: Option<&S>,
+fn get_dataset_entities_features(
+    normalized_stemmed_tokens: &[String],
     entity_utterances_to_feature_names: &HashMap<String, Vec<String>>,
 ) -> Vec<String> {
-    let normalized_tokens: Vec<String> = query_tokens.iter().map(|t| normalize(t)).collect();
-    let normalized_stemmed_tokens = stemmer.map_or(normalized_tokens.clone(), |stemmer| {
-        normalized_tokens
-            .into_iter()
-            .map(|t| stem(&t, stemmer))
-            .collect()
-    });
     let tokens_ref = normalized_stemmed_tokens.iter().map(|t| &**t).collect_vec();
     compute_all_ngrams(&*tokens_ref, tokens_ref.len())
         .into_iter()
         .filter_map(|ngrams| entity_utterances_to_feature_names.get(&ngrams.0))
         .flat_map(|features| features)
         .map(|s| normalize(s))
-        .collect()
+        .sorted()
 }
 
-fn stem<S: Stemmer>(input: &str, stemmer: &S) -> String {
-    stemmer.stem(input)
+fn normalize_stem<S: Stemmer>(tokens: Vec<String>, opt_stemmer: Option<S>) -> Vec<String> {
+    opt_stemmer
+        .map(|stemmer| tokens.iter().map(|t| stemmer.stem(&normalize(t))).collect())
+        .unwrap_or_else(|| tokens.iter().map(|t| normalize(t)).collect())
+}
+
+fn remove_ranges(text: &str, ranges: Vec<Range<usize>>) -> String {
+    let mut filtered_text = String::new();
+    let mut idx = 0;
+    for range in &ranges {
+        let substring = substring_with_char_range(text.to_string(), &(idx..range.start));
+        filtered_text.push_str(&*substring);
+        idx = range.end;
+    }
+    let suffix = substring_with_char_range(text.to_string(), &(idx..text.chars().count()));
+    filtered_text.push_str(&*suffix);
+    filtered_text
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{get_dataset_entities_features, get_word_cluster_features, Featurizer};
+    use super::{get_dataset_entities_features, get_word_cluster_features, normalize_stem,
+                remove_ranges, Featurizer};
 
-    use testutils::assert_epsilon_eq_array1;
-    use resources::word_clusterer::WordClusterer;
-    use resources::stemmer::Stemmer;
-    use nlu_utils::language::Language;
-    use nlu_utils::token::tokenize_light;
     use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
                          TfIdfVectorizerConfiguration};
+    use nlu_utils::language::Language;
+    use nlu_utils::token::tokenize_light;
+    use resources::stemmer::Stemmer;
+    use resources::word_clusterer::WordClusterer;
+    use testutils::assert_epsilon_eq_array1;
 
     struct TestWordClusterer {}
 
@@ -210,7 +248,7 @@ mod tests {
 
         let entity_utterances_to_feature_names = hashmap![
             "bird".to_string() => vec!["featureentityanimal".to_string()],
-            "hello".to_string() => vec!["featureentityword".to_string(), "featureentitygreeting".to_string()]
+            "hello".to_string() => vec!["featureentitygreeting".to_string(), "featureentityword".to_string()]
         ];
         let language_code = "en";
         let tfidf_vectorizer = TfIdfVectorizerConfiguration { idf_diag, vocab };
@@ -220,12 +258,13 @@ mod tests {
             tfidf_vectorizer,
             config: FeaturizerConfigConfiguration {
                 sublinear_tf: false,
+                word_clusters_name: None,
             },
             best_features,
             entity_utterances_to_feature_names,
         };
 
-        let featurizer = Featurizer::new(featurizer_config);
+        let featurizer = Featurizer::new(featurizer_config).unwrap();
 
         // When
         let input = "Hëllo this bïrd is a beautiful Bïrd";
@@ -257,7 +296,7 @@ mod tests {
 
         // Then
         let expected_augmented_query =
-            vec!["cluster_love".to_string(), "cluster_house".to_string()];
+            vec!["cluster_house".to_string(), "cluster_love".to_string()];
         assert_eq!(augmented_query, expected_augmented_query)
     }
 
@@ -271,21 +310,34 @@ mod tests {
             "hell this".to_string() => vec!["featureentityWord".to_string(), "featureentityGreeting".to_string()]
         ];
         let stemmer = TestStemmer {};
+        let normalized_stemmed_tokens = normalize_stem(query_tokens, Some(stemmer));
 
         // When
         let entities_features = get_dataset_entities_features(
-            &query_tokens,
-            Some(&stemmer),
+            &normalized_stemmed_tokens,
             &entity_utterances_to_feature_names,
         );
 
         // Then
         let expected_entities_features = vec![
-            "featureentityword".to_string(),
+            "featureentityanimal".to_string(),
+            "featureentityanimal".to_string(),
             "featureentitygreeting".to_string(),
-            "featureentityanimal".to_string(),
-            "featureentityanimal".to_string(),
+            "featureentityword".to_string(),
         ];
         assert_eq!(entities_features, expected_entities_features)
+    }
+
+    #[test]
+    fn remove_range_works() {
+        // Given
+        let text = "hello world";
+        let ranges = vec![1..3, 6..9];
+
+        // When
+        let filtered_text = remove_ranges(text, ranges);
+
+        // Then
+        assert_eq!("hlo ld", filtered_text);
     }
 }

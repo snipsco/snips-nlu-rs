@@ -252,6 +252,10 @@ public struct Slot {
 public class NluEngine {
     private var client: OpaquePointer? = nil
 
+    public init(assistantFileURL: URL) throws {
+        guard nlu_engine_create_from_file(assistantFileURL.path, &client) == OK else { throw NluEngineError.getLast }
+    }
+
     public init(assistantDirectoryURL: URL) throws {
         guard nlu_engine_create_from_dir(assistantDirectoryURL.path, &client) == OK else { throw NluEngineError.getLast }
     }

@@ -17,9 +17,11 @@ fn main() {
 
         macro_rules! stem {
             ($lang:ident) => {
-                write!(&mut file,
-                       "static STEMS_{}: ::phf::Map<&'static str, &'static str> = ",
-                       stringify!($lang).to_uppercase()).unwrap();
+                write!(
+                    &mut file,
+                    "static STEMS_{}: ::phf::Map<&'static str, &'static str> = ",
+                    stringify!($lang).to_uppercase()
+                ).unwrap();
                 let mut builder = phf_codegen::Map::new();
                 let stems = snips_nlu_resources::stems::$lang().unwrap();
 
@@ -35,12 +37,15 @@ fn main() {
 
         macro_rules! word_clusters {
             ($lang:ident, $cluster_name:ident) => {
-                write!(&mut file,
-                       "static WORD_CLUSTERS_{}_{}: ::phf::Map<&'static str, &'static str> = ",
-                       stringify!($lang).to_uppercase(),
-                       stringify!($cluster_name).to_uppercase()).unwrap();
+                write!(
+                    &mut file,
+                    "static WORD_CLUSTERS_{}_{}: ::phf::Map<&'static str, &'static str> = ",
+                    stringify!($lang).to_uppercase(),
+                    stringify!($cluster_name).to_uppercase()
+                ).unwrap();
                 let mut builder = phf_codegen::Map::new();
-                let clusters = snips_nlu_resources::word_clusters::$lang::$cluster_name().unwrap();
+                let clusters =
+                    snips_nlu_resources::word_clusters::$lang::$cluster_name().unwrap();
 
                 for (key, value) in clusters.into_iter() {
                     builder.entry(key, &format!("\"{}\"", value));
@@ -54,12 +59,15 @@ fn main() {
 
         macro_rules! gazetteer {
             ($lang:ident, $gazetteer_name:ident) => {
-                write!(&mut file,
-                       "static GAZETTEER_{}_{}: ::phf::Set<&'static str> = ",
-                       stringify!($lang).to_uppercase(),
-                       stringify!($gazetteer_name).to_uppercase()).unwrap();
+                write!(
+                    &mut file,
+                    "static GAZETTEER_{}_{}: ::phf::Set<&'static str> = ",
+                    stringify!($lang).to_uppercase(),
+                    stringify!($gazetteer_name).to_uppercase()
+                ).unwrap();
                 let mut builder = phf_codegen::Set::new();
-                let clusters = snips_nlu_resources::gazetteer::$lang::$gazetteer_name().unwrap();
+                let clusters =
+                    snips_nlu_resources::gazetteer::$lang::$gazetteer_name().unwrap();
 
                 for value in clusters.into_iter() {
                     builder.entry(value);
@@ -77,6 +85,11 @@ fn main() {
         stem!(de);
 
         word_clusters!(en, brown_clusters);
+
+        // Don't load the JA clusters here as they are too big
+        // they are loaded at run time in a lazy way
+
+        // word_clusters!(ja, w2v_clusters);
 
         gazetteer!(de, stop_words);
         gazetteer!(de, top_10000_words);

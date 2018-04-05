@@ -1,22 +1,18 @@
 extern crate serde_json;
 extern crate snips_nlu_lib;
 
-use std::io::prelude::*;
-use std::fs::File;
 use std::env;
 
-use snips_nlu_lib::{NluEngineConfiguration, SnipsNluEngine};
+use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let modelfilename = &args[1];
+    let model_file = &args[1];
     let query = &args[2];
-    let mut file = File::open(modelfilename).expect("Unable to open the file");
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)
-        .expect("Unable to read the file");
-
-    let configuration: NluEngineConfiguration = serde_json::from_str(&contents).unwrap();
+    let configuration = match FileBasedConfiguration::from_path(model_file, false) {
+        Ok(conf) => conf,
+        Err(e) => panic!(format!("{}", e)),
+    };
     let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
 
     let result = nlu_engine.parse(query, None).unwrap();

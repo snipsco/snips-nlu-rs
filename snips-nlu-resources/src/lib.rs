@@ -1,4 +1,5 @@
 extern crate csv;
+#[macro_use]
 extern crate failure;
 extern crate itertools;
 #[macro_use]
@@ -99,22 +100,21 @@ pub mod stems {
 
 pub mod word_clusters {
     use std::collections::HashMap;
-    use std::io::Read;
-
-    use csv;
+    use std::io::{BufRead, BufReader, Read};
 
     use errors::*;
 
     fn parse_clusters<R: Read>(clusters_file_reader: R) -> Result<HashMap<String, String>> {
-        let mut csv_reader = csv::Reader::from_reader(clusters_file_reader)
-            .delimiter(b'\t')
-            .has_headers(false);
-
         let mut result = HashMap::new();
-
-        for row in csv_reader.decode() {
-            let (key, value): (String, String) = row?;
-            result.insert(key, value);
+        let f = BufReader::new(clusters_file_reader);
+        for (i, row) in f.lines().enumerate() {
+            let line = row?;
+            let split: Vec<&str> = line.split("\t").collect();
+            if split.len() == 2 {
+                result.insert(split[0].to_string(), split[1].to_string());
+            } else {
+                Err(format_err!("Invalid line at index {:?}", i))?;
+            }
         }
         Ok(result)
     }
@@ -139,9 +139,9 @@ pub mod gazetteer {
     use itertools::Itertools;
 
     use errors::*;
-    use nlu_utils::token::tokenize_light;
-    use nlu_utils::string::normalize;
     use nlu_utils::language::Language;
+    use nlu_utils::string::normalize;
+    use nlu_utils::token::tokenize_light;
 
     fn parse_gazetteer<R: Read, F>(
         gazetteer_reader: R,
@@ -170,24 +170,42 @@ pub mod gazetteer {
     }
 
     macro_rules! create_gazetteer {
-            ($language:ident, $gazetteer_name:ident) => {
-                pub fn $gazetteer_name() -> Result<HashSet<String>> {
-                    super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/", stringify!($language), "/", stringify!($gazetteer_name), ".txt"))[..],
-                                           stems::no_stem, Language::from_str(stringify!($language)).map_err(::failure::err_msg)?)
-                }
-            };
-            ($language:ident, $function_name:ident, $gazetteer_name:ident, $stem:ident) => {
-                pub fn $function_name() -> Result<HashSet<String>> {
-                    super::parse_gazetteer(&include_bytes!(concat!("../snips-nlu-resources/", stringify!($language), "/", stringify!($gazetteer_name), ".txt"))[..],
-                                           $stem, Language::from_str(stringify!($language)).map_err(::failure::err_msg)?)
-                }
-            };
-        }
+        ($language:ident, $gazetteer_name:ident) => {
+            pub fn $gazetteer_name() -> Result<HashSet<String>> {
+                super::parse_gazetteer(
+                    &include_bytes!(concat!(
+                        "../snips-nlu-resources/",
+                        stringify!($language),
+                        "/",
+                        stringify!($gazetteer_name),
+                        ".txt"
+                    ))[..],
+                    stems::no_stem,
+                    Language::from_str(stringify!($language)).map_err(::failure::err_msg)?,
+                )
+            }
+        };
+        ($language:ident, $function_name:ident, $gazetteer_name:ident, $stem:ident) => {
+            pub fn $function_name() -> Result<HashSet<String>> {
+                super::parse_gazetteer(
+                    &include_bytes!(concat!(
+                        "../snips-nlu-resources/",
+                        stringify!($language),
+                        "/",
+                        stringify!($gazetteer_name),
+                        ".txt"
+                    ))[..],
+                    $stem,
+                    Language::from_str(stringify!($language)).map_err(::failure::err_msg)?,
+                )
+            }
+        };
+    }
 
     pub mod en {
+        use errors::*;
         use std::collections::{HashMap, HashSet};
         use std::str::FromStr;
-        use errors::*;
         use stems;
 
         use nlu_utils::language::Language;
@@ -209,9 +227,9 @@ pub mod gazetteer {
     }
 
     pub mod fr {
+        use errors::*;
         use std::collections::{HashMap, HashSet};
         use std::str::FromStr;
-        use errors::*;
         use stems;
 
         use nlu_utils::language::Language;
@@ -231,9 +249,9 @@ pub mod gazetteer {
     }
 
     pub mod de {
+        use errors::*;
         use std::collections::{HashMap, HashSet};
         use std::str::FromStr;
-        use errors::*;
         use stems;
 
         use nlu_utils::language::Language;
@@ -253,9 +271,9 @@ pub mod gazetteer {
     }
 
     pub mod es {
+        use errors::*;
         use std::collections::{HashMap, HashSet};
         use std::str::FromStr;
-        use errors::*;
         use stems;
 
         use nlu_utils::language::Language;

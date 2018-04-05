@@ -1,19 +1,19 @@
 use itertools::Itertools;
 
+use super::crf_utils::{get_scheme_prefix, TaggingScheme};
+use super::features_utils::{get_shape, get_word_chunk, initial_string_from_tokens};
+use nlu_utils::range::ranges_overlap;
+use nlu_utils::string::normalize;
 use nlu_utils::token::{compute_all_ngrams, Token};
 use resources::gazetteer::Gazetteer;
 #[cfg(test)]
 use resources::gazetteer::HashSetGazetteer;
-use resources::stemmer::Stemmer;
 #[cfg(test)]
 use resources::stemmer::StaticMapStemmer;
+use resources::stemmer::Stemmer;
 use resources::word_clusterer::WordClusterer;
-use super::crf_utils::{get_scheme_prefix, TaggingScheme};
-use super::features_utils::{get_shape, get_word_chunk, initial_string_from_tokens};
 use snips_nlu_ontology::BuiltinEntityKind;
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
-use nlu_utils::range::ranges_overlap;
-use nlu_utils::string::normalize;
 
 pub fn is_digit(string: &str) -> Option<String> {
     if string.chars().all(|c| c.is_digit(10)) {

@@ -12,7 +12,6 @@ pub struct SlotFillerConfiguration {
 #[derive(Debug, Deserialize)]
 pub struct SlotFillerConfigConfiguration {
     pub tagging_scheme: u8,
-    pub exhaustive_permutations_threshold: usize,
     pub feature_factory_configs: Vec<FeatureFactory>,
 }
 

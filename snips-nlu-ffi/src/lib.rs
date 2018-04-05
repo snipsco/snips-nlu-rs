@@ -10,9 +10,9 @@ extern crate snips_nlu_ontology_ffi_macros;
 mod failure_ext;
 
 use std::ffi::{CStr, CString};
-use std::sync::Mutex;
-use std::slice;
 use std::io::Cursor;
+use std::slice;
+use std::sync::Mutex;
 
 use failure_ext::ErrorExt;
 use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine, ZipBasedConfiguration};
@@ -35,24 +35,29 @@ pub enum NLURESULT {
 }
 
 macro_rules! wrap {
-    ($e:expr) => { match $e {
-        Ok(_) => { NLURESULT::OK }
-        Err(e) => {
-            let msg = e.pretty().to_string();
-            eprintln!("{}", msg);
-            match LAST_ERROR.lock() {
-                Ok(mut guard) => *guard = msg,
-                Err(_) => () /* curl up and cry */
+    ($e:expr) => {
+        match $e {
+            Ok(_) => NLURESULT::OK,
+            Err(e) => {
+                let msg = e.pretty().to_string();
+                eprintln!("{}", msg);
+                match LAST_ERROR.lock() {
+                    Ok(mut guard) => *guard = msg,
+                    Err(_) => (), /* curl up and cry */
+                }
+                NLURESULT::KO
             }
-            NLURESULT::KO
         }
-    }}
+    };
 }
 
 macro_rules! get_intent_parser {
     ($opaque:ident) => {{
         let client: &Opaque = unsafe { &*$opaque };
-        client.0.lock().map_err(|e| format_err!("Poisoning pointer: {}", e))?
+        client
+            .0
+            .lock()
+            .map_err(|e| format_err!("Poisoning pointer: {}", e))?
     }};
 }
 
@@ -68,6 +73,14 @@ pub extern "C" fn nlu_engine_create_from_dir(
     client: *mut *const Opaque,
 ) -> NLURESULT {
     wrap!(create_from_dir(root_dir, client))
+}
+
+#[no_mangle]
+pub extern "C" fn nlu_engine_create_from_file(
+    file_path: *const libc::c_char,
+    client: *mut *const Opaque,
+) -> NLURESULT {
+    wrap!(create_from_file(file_path, client))
 }
 
 #[no_mangle]
@@ -137,7 +150,18 @@ pub extern "C" fn nlu_engine_get_model_version(version: *mut *const libc::c_char
 fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const Opaque) -> Result<()> {
     let root_dir = get_str!(root_dir);
 
-    let assistant_config = FileBasedConfiguration::new(root_dir, false)?;
+    let assistant_config = FileBasedConfiguration::from_dir(root_dir, false)?;
+    let intent_parser = SnipsNluEngine::new(assistant_config)?;
+
+    unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
+
+    Ok(())
+}
+
+fn create_from_file(file_path: *const libc::c_char, client: *mut *const Opaque) -> Result<()> {
+    let file_path = get_str!(file_path);
+
+    let assistant_config = FileBasedConfiguration::from_path(file_path, false)?;
     let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     unsafe { *client = Box::into_raw(Box::new(Opaque(Mutex::new(intent_parser)))) };
@@ -199,7 +223,7 @@ fn get_last_error(error: *mut *const libc::c_char) -> Result<()> {
 }
 
 fn get_model_version(version: *mut *const libc::c_char) -> Result<()> {
-    point_to_string(version, SnipsNluEngine::model_version().to_string())
+    point_to_string(version, snips_nlu_lib::MODEL_VERSION.to_string())
 }
 
 fn point_to_string(pointer: *mut *const libc::c_char, string: String) -> Result<()> {

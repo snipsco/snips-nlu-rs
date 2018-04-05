@@ -23,22 +23,24 @@ extern crate zip;
 #[macro_use]
 extern crate maplit;
 
-pub mod errors;
 mod configurations;
+pub mod errors;
 mod intent_classifier;
 mod intent_parser;
-mod resources;
-mod nlu_engine;
-mod slot_utils;
-mod slot_filler;
-mod utils;
 mod language;
+mod nlu_engine;
+mod resources;
+mod slot_filler;
+mod slot_utils;
 #[cfg(test)]
 mod testutils;
+mod utils;
 
-pub use errors::*;
-pub use nlu_engine::SnipsNluEngine;
+pub const MODEL_VERSION: &str = "0.14.0";
+
 pub use configurations::{FileBasedConfiguration, NluEngineConfiguration,
                          NluEngineConfigurationConvertible, ZipBasedConfiguration};
+pub use errors::*;
+pub use nlu_engine::SnipsNluEngine;
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use utils::file_path; // This is used by benches

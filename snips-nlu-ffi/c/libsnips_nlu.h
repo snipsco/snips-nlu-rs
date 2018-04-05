@@ -115,6 +115,8 @@ typedef enum NLURESULT {
 	OK = 1,
 } NLURESULT;
 
+NLURESULT nlu_engine_create_from_file(char const* file_path, Opaque** client);
+
 NLURESULT nlu_engine_create_from_dir(char const* root_dir, Opaque** client);
 
 NLURESULT nlu_engine_create_from_zip(unsigned char const* zip, unsigned int zip_size, Opaque** client);
