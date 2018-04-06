@@ -6,7 +6,7 @@ echo "Updating versions to version ${NEW_VERSION}"
 perl -p -i -e "s/^version = \".*\"\$/version = \"$NEW_VERSION\"/g" */Cargo.toml
 perl -p -i -e "s/^version = \".*\"\$/version = \"$NEW_VERSION\"/g" */**/build.gradle
 perl -p -i -e "s/^VERSION=\".*\"\$/VERSION=\"$NEW_VERSION\"/g" */**/**/**/build.sh
-echo "$NEW_VERSION" > snips-nlu-ffi/python/snips_nlu_rs/__version__
+echo "$NEW_VERSION" > snips-nlu-ffi/python/snips_nlu_rust/__version__
 
 if [[ "${NEW_VERSION}" == "${NEW_VERSION/-SNAPSHOT/}" ]]
 then
