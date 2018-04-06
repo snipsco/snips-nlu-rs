@@ -36,7 +36,7 @@ mod slot_utils;
 mod testutils;
 mod utils;
 
-pub const MODEL_VERSION: &str = "0.13.0";
+pub const MODEL_VERSION: &str = "0.14.0";
 
 pub use configurations::{FileBasedConfiguration, NluEngineConfiguration,
                          NluEngineConfigurationConvertible, ZipBasedConfiguration};
