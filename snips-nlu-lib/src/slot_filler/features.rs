@@ -23,6 +23,10 @@ pub fn is_digit(string: &str) -> Option<String> {
     }
 }
 
+pub fn length(string: &str) -> Option<String> {
+    Some(format!("{:?}", string.chars().count()))
+}
+
 pub fn is_first(token_index: usize) -> Option<String> {
     if token_index == 0 {
         Some("1".to_string())
@@ -179,6 +183,30 @@ mod tests {
         // Then
         let expected_results = vec![None, None, Some("1".to_string()), None];
         assert_eq!(results, expected_results)
+    }
+
+    #[test]
+    fn length_works() {
+        // Given
+        let inputs = vec![
+            "hello",
+            "こんにちは",
+            "hello こんにちは",
+            ""
+        ];
+
+        // When
+        let results : Vec<Option<String>> = inputs.iter().map(|s| length(s)).collect();
+
+        // Then
+        let expected_lengths = vec![
+            Some("5".to_string()),
+            Some("5".to_string()),
+            Some("11".to_string()),
+            Some("0".to_string())
+        ];
+
+        assert_eq!(expected_lengths, results);
     }
 
     #[test]
