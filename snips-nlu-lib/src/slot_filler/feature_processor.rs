@@ -88,6 +88,7 @@ fn get_feature_function(f: &FeatureFactory) -> Result<Vec<FeatureFunction>> {
     let offsets = f.offsets.clone();
     match &*f.factory_name {
         "is_digit" => Ok(vec![is_digit_feature_function(offsets)?]),
+        "length" => Ok(vec![length_feature_function(offsets)?]),
         "is_first" => Ok(vec![is_first_feature_function(offsets)?]),
         "is_last" => Ok(vec![is_last_feature_function(offsets)?]),
         "ngram" => Ok(vec![ngram_feature_function(&f.args, offsets)?]),
@@ -104,6 +105,12 @@ fn get_feature_function(f: &FeatureFactory) -> Result<Vec<FeatureFunction>> {
 fn is_digit_feature_function(offsets: Vec<i32>) -> Result<FeatureFunction> {
     Ok(FeatureFunction::new("is_digit", offsets, |t, i| {
         features::is_digit(&t[i].value)
+    }))
+}
+
+fn length_feature_function(offsets: Vec<i32>) -> Result<FeatureFunction> {
+    Ok(FeatureFunction::new("length", offsets, |t, i| {
+        features::length(&t[i].value)
     }))
 }
 
