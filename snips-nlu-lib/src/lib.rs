@@ -38,9 +38,11 @@ mod utils;
 
 pub const MODEL_VERSION: &str = "0.14.0";
 
-pub use configurations::{FileBasedConfiguration, NluEngineConfiguration,
-                         NluEngineConfigurationConvertible, ZipBasedConfiguration};
+pub use configurations::*;
 pub use errors::*;
+pub use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
+pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 pub use nlu_engine::SnipsNluEngine;
+pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use utils::file_path; // This is used by benches

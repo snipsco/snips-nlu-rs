@@ -142,6 +142,16 @@ impl SlotFiller for CRFSlotFiller {
     }
 }
 
+impl CRFSlotFiller {
+    pub fn compute_features(&self, text: &str) -> Vec<Vec<(String, String)>> {
+        let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
+        if tokens.is_empty() {
+            return vec![];
+        };
+        self.feature_processor.compute_features(&&*tokens)
+    }
+}
+
 // We need to use base64 encoding to ensure ascii encoding because of encoding issues in
 // python-crfsuite
 
