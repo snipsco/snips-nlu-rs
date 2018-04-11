@@ -1,7 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.55.1] - 2018-04-10
+
+### Added
+- Add support for the `length` feature function in slot filling feature extractrion
+
+### Changed
+- Bump ontology from `0.54.1` to `0.54.2`
 
 ## [0.55.0] - 2018-04-05
 ### Added
@@ -17,5 +23,5 @@ All notable changes to this project will be documented in this file.
 - Rename python package to `snips_nlu_rust`
 
 
-[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.55.0...HEAD
+[0.55.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.55.0...0.55.1
 [0.55.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.54.0...0.55.0
