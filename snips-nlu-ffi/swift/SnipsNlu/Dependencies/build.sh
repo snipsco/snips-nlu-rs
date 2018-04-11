@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="0.55.0"
+VERSION="0.55.1"
 SYSTEM=$1
 
 if [ $SYSTEM != ios ] && [ $SYSTEM != macos ]; then

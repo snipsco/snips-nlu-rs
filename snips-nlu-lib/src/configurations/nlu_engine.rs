@@ -44,6 +44,7 @@ impl NluEngineConfigurationConvertible for NluEngineConfiguration {
 #[cfg(test)]
 mod tests {
     use super::NluEngineConfiguration;
+    use MODEL_VERSION;
     use configurations::{DeterministicParserConfiguration, ProbabilisticParserConfiguration};
 
     use testutils::parse_json;
@@ -66,7 +67,7 @@ mod tests {
             .map(|_| "ok")
             .map_err(|err| format!("{:?}", err));
 
-        assert_eq!("0.13.0", retrieved.model_version);
+        assert_eq!(MODEL_VERSION, retrieved.model_version);
         assert_eq!(2, retrieved.intent_parsers.len());
         assert_eq!(Ok("ok"), deterministic_parser_config_formatted);
         assert_eq!(Ok("ok"), proba_parser_formatted);
