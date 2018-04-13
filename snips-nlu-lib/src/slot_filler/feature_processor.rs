@@ -173,7 +173,7 @@ fn prefix_feature_function(
 ) -> Result<FeatureFunction> {
     let n = parse_as_u64(args, "prefix_size")? as usize;
     Ok(FeatureFunction::new(
-        &format!("prefix-{}", n),
+        &format!("prefix_{}", n),
         offsets,
         move |t, i| features::prefix(&t[i].value, n),
     ))
@@ -185,7 +185,7 @@ fn suffix_feature_function(
 ) -> Result<FeatureFunction> {
     let n = parse_as_u64(args, "suffix_size")? as usize;
     Ok(FeatureFunction::new(
-        &format!("suffix-{}", n),
+        &format!("suffix_{}", n),
         offsets,
         move |t, i| features::suffix(&t[i].value, n),
     ))
