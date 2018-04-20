@@ -48,6 +48,7 @@ mod tests {
     use configurations::{DeterministicParserConfiguration, ProbabilisticParserConfiguration};
 
     use testutils::parse_json;
+    use MODEL_VERSION;
 
     #[test]
     fn deserialization_works() {
