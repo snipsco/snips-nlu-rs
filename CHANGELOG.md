@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [0.55.2] - 2018-04-20
 ### Changed
 - Make configurations and pipeline objects public
+- Bump snips-nlu-ontology to `0.54.3`
 
 ### Fixed
 - Bug with prefix and suffix features
