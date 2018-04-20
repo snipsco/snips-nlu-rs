@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-resources-packed"
-version = "0.55.1"
+version = "0.55.2"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 build = "build.rs"
 
@@ -8,7 +8,7 @@ build = "build.rs"
 failure = "0.1"
 lazy_static = "1.0"
 phf = { version = "0.7.21", features = ["unicase"] }
-snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.54.2" }
+snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.54.3" }
 
 [build-dependencies]
 snips-nlu-resources = { path = "../snips-nlu-resources"}

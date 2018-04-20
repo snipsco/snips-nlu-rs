@@ -24,30 +24,6 @@ pub fn get_word_chunk(
     }
 }
 
-pub fn get_shape(string: &str) -> String {
-    if string.chars().all(char::is_lowercase) {
-        "xxx".to_string()
-    } else if string.chars().all(char::is_uppercase) {
-        "XXX".to_string()
-    } else if is_title_case(string) {
-        "Xxx".to_string()
-    } else {
-        "xX".to_string()
-    }
-}
-
-fn is_title_case(string: &str) -> bool {
-    let mut first = true;
-    for c in string.chars() {
-        match (first, c.is_uppercase()) {
-            (true, true) => first = false,
-            (false, false) => continue,
-            _ => return false,
-        }
-    }
-    !first
-}
-
 pub fn initial_string_from_tokens(tokens: &[Token]) -> String {
     let mut current_index = 0;
     let mut chunks: Vec<String> = Vec::with_capacity(2 * tokens.len() - 1);
@@ -112,19 +88,6 @@ mod tests {
 
         // Then
         assert_eq!(word_chunk, None);
-    }
-
-    #[test]
-    fn get_shape_works() {
-        // Given
-        let inputs = vec!["héllo", "Héllo", "HÉLLO", "hélLo", "!!", "Éllo", "É"];
-
-        // When
-        let actual_shapes: Vec<String> = inputs.into_iter().map(|i| get_shape(i)).collect();
-
-        // Then
-        let expected_shapes = vec!["xxx", "Xxx", "XXX", "xX", "xX", "Xxx", "XXX"];
-        assert_eq!(actual_shapes, expected_shapes)
     }
 
     #[test]

@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-resources"
-version = "0.55.1"
+version = "0.55.2"
 authors = ["Thibaut Lorrain <thibaut.lorrain@snips.ai>"]
 
 [dependencies]
@@ -8,4 +8,4 @@ csv = "0.15"
 failure = "0.1"
 itertools = { version = "0.7", default-features = false }
 lazy_static = "1.0"
-snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.6.0" }
+snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.6.1" }

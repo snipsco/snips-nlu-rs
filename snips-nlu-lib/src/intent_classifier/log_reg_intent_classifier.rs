@@ -101,6 +101,15 @@ impl IntentClassifier for LogRegIntentClassifier {
     }
 }
 
+impl LogRegIntentClassifier {
+    pub fn compute_features(&self, input: &str) -> Result<Array1<f32>> {
+        self.featurizer
+            .as_ref()
+            .map(|featurizer| featurizer.transform(input))
+            .unwrap_or_else(|| Ok(Array::from_iter(vec![])))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
