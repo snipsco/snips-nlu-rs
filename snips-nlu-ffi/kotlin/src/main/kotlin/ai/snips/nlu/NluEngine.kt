@@ -18,9 +18,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         private fun parseError(returnCode: Int) {
             if (returnCode != 1) {
                 PointerByReference().apply {
-                    LIB.nlu_engine_get_last_error(this)
+                    LIB.snips_nlu_engine_get_last_error(this)
                     throw RuntimeException(value.getString(0).apply {
-                        LIB.nlu_engine_destroy_string(value)
+                        LIB.snips_nlu_engine_destroy_string(value)
                     })
                 }
             }
@@ -28,8 +28,8 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
         @JvmStatic
         fun modelVersion(): String = PointerByReference().run {
-            parseError(LIB.nlu_engine_get_model_version(this))
-            value.getString(0).apply { LIB.nlu_engine_destroy_string(value) }
+            parseError(LIB.snips_nlu_engine_get_model_version(this))
+            value.getString(0).apply { LIB.snips_nlu_engine_destroy_string(value) }
         }
     }
 
@@ -37,9 +37,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             this({
                      PointerByReference().apply {
                          if (assistant.isDirectory) {
-                             parseError(LIB.nlu_engine_create_from_dir(assistant.absolutePath.toPointer(), this))
+                             parseError(LIB.snips_nlu_engine_create_from_dir(assistant.absolutePath.toPointer(), this))
                          } else {
-                             parseError(LIB.nlu_engine_create_from_file(assistant.absolutePath.toPointer(), this))
+                             parseError(LIB.snips_nlu_engine_create_from_file(assistant.absolutePath.toPointer(), this))
                          }
                      }.value
                  })
@@ -47,7 +47,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
     constructor(data: ByteArray) :
             this({
                      PointerByReference().apply {
-                         parseError(LIB.nlu_engine_create_from_zip(data, data.size, this))
+                         parseError(LIB.snips_nlu_engine_create_from_zip(data, data.size, this))
                      }.value
                  })
 
@@ -55,27 +55,27 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
     val client: Pointer = clientBuilder()
 
     override fun close() {
-        LIB.nlu_engine_destroy_client(client)
+        LIB.snips_nlu_engine_destroy_client(client)
     }
 
     fun parse(input: String): IntentParserResult =
             CIntentParserResult(PointerByReference().apply {
-                parseError(LIB.nlu_engine_run_parse(client, input.toPointer(), this))
+                parseError(LIB.snips_nlu_engine_run_parse(client, input.toPointer(), this))
             }.value).let {
                 it.toIntentParserResult().apply {
                     // we don't want jna to try and sync this struct after the call as we're destroying it
                     // /!\ removing that will make the app crash semi randomly...
                     it.autoRead = false
-                    LIB.nlu_engine_destroy_result(it)
+                    LIB.snips_nlu_engine_destroy_result(it)
                 }
             }
 
     fun parseIntoJson(input: String): String =
             PointerByReference().apply {
-                parseError(LIB.nlu_engine_run_parse_into_json(client, input.toPointer(), this))
+                parseError(LIB.snips_nlu_engine_run_parse_into_json(client, input.toPointer(), this))
             }.value.let {
                 it.readString().apply {
-                    LIB.nlu_engine_destroy_string(it)
+                    LIB.snips_nlu_engine_destroy_string(it)
                 }
             }
 
@@ -84,15 +84,15 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             val INSTANCE: SnipsNluClientLibrary = Native.loadLibrary("snips_nlu_ffi", SnipsNluClientLibrary::class.java)
         }
 
-        fun nlu_engine_get_model_version(version: PointerByReference): Int
-        fun nlu_engine_create_from_file(file_path: Pointer, pointer: PointerByReference): Int
-        fun nlu_engine_create_from_dir(root_dir: Pointer, pointer: PointerByReference): Int
-        fun nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
-        fun nlu_engine_run_parse(client: Pointer, input: Pointer, result: PointerByReference): Int
-        fun nlu_engine_run_parse_into_json(client: Pointer, input: Pointer, result: PointerByReference): Int
-        fun nlu_engine_get_last_error(error: PointerByReference): Int
-        fun nlu_engine_destroy_client(client: Pointer): Int
-        fun nlu_engine_destroy_result(result: CIntentParserResult): Int
-        fun nlu_engine_destroy_string(string: Pointer): Int
+        fun snips_nlu_engine_get_model_version(version: PointerByReference): Int
+        fun snips_nlu_engine_create_from_file(file_path: Pointer, pointer: PointerByReference): Int
+        fun snips_nlu_engine_create_from_dir(root_dir: Pointer, pointer: PointerByReference): Int
+        fun snips_nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
+        fun snips_nlu_engine_run_parse(client: Pointer, input: Pointer, result: PointerByReference): Int
+        fun snips_nlu_engine_run_parse_into_json(client: Pointer, input: Pointer, result: PointerByReference): Int
+        fun snips_nlu_engine_get_last_error(error: PointerByReference): Int
+        fun snips_nlu_engine_destroy_client(client: Pointer): Int
+        fun snips_nlu_engine_destroy_result(result: CIntentParserResult): Int
+        fun snips_nlu_engine_destroy_string(string: Pointer): Int
     }
 }

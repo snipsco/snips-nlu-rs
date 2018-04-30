@@ -14,7 +14,7 @@ public struct NluEngineError: Error {
 
     static var getLast: NluEngineError {
         let buffer = UnsafeMutablePointer<UnsafeMutablePointer<Int8>?>.allocate(capacity: 1024)
-        nlu_engine_get_last_error(buffer)
+        snips_nlu_engine_get_last_error(buffer)
         return NluEngineError(message: String(cString: buffer.pointee!))
     }
 }
@@ -253,30 +253,30 @@ public class NluEngine {
     private var client: OpaquePointer? = nil
 
     public init(assistantFileURL: URL) throws {
-        guard nlu_engine_create_from_file(assistantFileURL.path, &client) == OK else { throw NluEngineError.getLast }
+        guard snips_nlu_engine_create_from_file(assistantFileURL.path, &client) == OK else { throw NluEngineError.getLast }
     }
 
     public init(assistantDirectoryURL: URL) throws {
-        guard nlu_engine_create_from_dir(assistantDirectoryURL.path, &client) == OK else { throw NluEngineError.getLast }
+        guard snips_nlu_engine_create_from_dir(assistantDirectoryURL.path, &client) == OK else { throw NluEngineError.getLast }
     }
 
     public init(assistantZipFile: Data) throws {
         try assistantZipFile.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) in
-            guard nlu_engine_create_from_zip(bytes, UInt32(assistantZipFile.count), &client) == OK else { throw NluEngineError.getLast }
+            guard snips_nlu_engine_create_from_zip(bytes, UInt32(assistantZipFile.count), &client) == OK else { throw NluEngineError.getLast }
         }
     }
 
     deinit {
         if client != nil {
-            nlu_engine_destroy_client(client)
+            snips_nlu_engine_destroy_client(client)
             client = nil
         }
     }
 
     public func parse(string: String) throws -> IntentParserResult {
         var cResult: UnsafeMutablePointer<CIntentParserResult>? = nil;
-        guard nlu_engine_run_parse(self.client, string, &cResult) == OK else { throw NluEngineError.getLast }
-        defer { nlu_engine_destroy_result(cResult) }
+        guard snips_nlu_engine_run_parse(self.client, string, &cResult) == OK else { throw NluEngineError.getLast }
+        defer { snips_nlu_engine_destroy_result(cResult) }
         guard let result = cResult?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
         return try IntentParserResult(cResult: result)
     }

@@ -13,4 +13,4 @@ def string_pointer(ptr):
     try:
         yield ptr
     finally:
-        lib.nlu_engine_destroy_string(ptr)
+        lib.snips_nlu_engine_destroy_string(ptr)

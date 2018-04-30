@@ -68,7 +68,7 @@ macro_rules! get_str {
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_create_from_dir(
+pub extern "C" fn snips_nlu_engine_create_from_dir(
     root_dir: *const libc::c_char,
     client: *mut *const Opaque,
 ) -> NLURESULT {
@@ -76,7 +76,7 @@ pub extern "C" fn nlu_engine_create_from_dir(
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_create_from_file(
+pub extern "C" fn snips_nlu_engine_create_from_file(
     file_path: *const libc::c_char,
     client: *mut *const Opaque,
 ) -> NLURESULT {
@@ -84,7 +84,7 @@ pub extern "C" fn nlu_engine_create_from_file(
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_create_from_zip(
+pub extern "C" fn snips_nlu_engine_create_from_zip(
     zip: *const libc::c_uchar,
     zip_size: libc::c_uint,
     client: *mut *const Opaque,
@@ -93,7 +93,7 @@ pub extern "C" fn nlu_engine_create_from_zip(
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_run_parse(
+pub extern "C" fn snips_nlu_engine_run_parse(
     client: *const Opaque,
     input: *const libc::c_char,
     result: *mut *const CIntentParserResult,
@@ -102,7 +102,7 @@ pub extern "C" fn nlu_engine_run_parse(
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_run_parse_into_json(
+pub extern "C" fn snips_nlu_engine_run_parse_into_json(
     client: *const Opaque,
     input: *const libc::c_char,
     result_json: *mut *const libc::c_char,
@@ -111,12 +111,12 @@ pub extern "C" fn nlu_engine_run_parse_into_json(
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_get_last_error(error: *mut *const libc::c_char) -> NLURESULT {
+pub extern "C" fn snips_nlu_engine_get_last_error(error: *mut *const libc::c_char) -> NLURESULT {
     wrap!(get_last_error(error))
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_destroy_string(string: *mut libc::c_char) -> NLURESULT {
+pub extern "C" fn snips_nlu_engine_destroy_string(string: *mut libc::c_char) -> NLURESULT {
     unsafe {
         let _: CString = CString::from_raw(string);
     }
@@ -125,7 +125,7 @@ pub extern "C" fn nlu_engine_destroy_string(string: *mut libc::c_char) -> NLURES
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> NLURESULT {
+pub extern "C" fn snips_nlu_engine_destroy_client(client: *mut Opaque) -> NLURESULT {
     unsafe {
         let _: Box<Opaque> = Box::from_raw(client);
     }
@@ -134,7 +134,7 @@ pub extern "C" fn nlu_engine_destroy_client(client: *mut Opaque) -> NLURESULT {
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) -> NLURESULT {
+pub extern "C" fn snips_nlu_engine_destroy_result(result: *mut CIntentParserResult) -> NLURESULT {
     unsafe {
         let _: Box<CIntentParserResult> = Box::from_raw(result);
     }
@@ -143,7 +143,7 @@ pub extern "C" fn nlu_engine_destroy_result(result: *mut CIntentParserResult) ->
 }
 
 #[no_mangle]
-pub extern "C" fn nlu_engine_get_model_version(version: *mut *const libc::c_char) -> NLURESULT {
+pub extern "C" fn snips_nlu_engine_get_model_version(version: *mut *const libc::c_char) -> NLURESULT {
     wrap!(get_model_version(version))
 }
 
