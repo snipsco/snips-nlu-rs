@@ -36,7 +36,7 @@ class NLUEngine(object):
                 bytearray_type.from_buffer(data_zip), len(data_zip),
                 byref(self._engine))
 
-        if exit_code != 1:
+        if exit_code:
             raise ImportError('Something wrong happened while creating the '
                               'intent parser. See stderr.')
 

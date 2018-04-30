@@ -253,16 +253,16 @@ public class NluEngine {
     private var client: OpaquePointer? = nil
 
     public init(assistantFileURL: URL) throws {
-        guard snips_nlu_engine_create_from_file(assistantFileURL.path, &client) == OK else { throw NluEngineError.getLast }
+        guard snips_nlu_engine_create_from_file(assistantFileURL.path, &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
     }
 
     public init(assistantDirectoryURL: URL) throws {
-        guard snips_nlu_engine_create_from_dir(assistantDirectoryURL.path, &client) == OK else { throw NluEngineError.getLast }
+        guard snips_nlu_engine_create_from_dir(assistantDirectoryURL.path, &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
     }
 
     public init(assistantZipFile: Data) throws {
         try assistantZipFile.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) in
-            guard snips_nlu_engine_create_from_zip(bytes, UInt32(assistantZipFile.count), &client) == OK else { throw NluEngineError.getLast }
+            guard snips_nlu_engine_create_from_zip(bytes, UInt32(assistantZipFile.count), &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
         }
     }
 
@@ -275,7 +275,7 @@ public class NluEngine {
 
     public func parse(string: String) throws -> IntentParserResult {
         var cResult: UnsafeMutablePointer<CIntentParserResult>? = nil;
-        guard snips_nlu_engine_run_parse(self.client, string, &cResult) == OK else { throw NluEngineError.getLast }
+        guard snips_nlu_engine_run_parse(self.client, string, &cResult) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
         defer { snips_nlu_engine_destroy_result(cResult) }
         guard let result = cResult?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
         return try IntentParserResult(cResult: result)

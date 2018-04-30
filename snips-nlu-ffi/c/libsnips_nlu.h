@@ -108,32 +108,32 @@ typedef struct CIntentParserResult{
     CSlotList *const slots;
 } CIntentParserResult;
 
-typedef struct Opaque Opaque;
+typedef struct CSnipsNluEngine CSnipsNluEngine;
 
-typedef enum NLURESULT {
-	KO = 0,
-	OK = 1,
-} NLURESULT;
+typedef enum SNIPS_RESULT {
+	SNIPS_RESULT_OK = 0,
+	SNIPS_RESULT_KO = 1,
+} SNIPS_RESULT;
 
-NLURESULT snips_nlu_engine_create_from_file(char const* file_path, Opaque** client);
+SNIPS_RESULT snips_nlu_engine_create_from_file(char const* file_path, CSnipsNluEngine** client);
 
-NLURESULT snips_nlu_engine_create_from_dir(char const* root_dir, Opaque** client);
+SNIPS_RESULT snips_nlu_engine_create_from_dir(char const* root_dir, CSnipsNluEngine** client);
 
-NLURESULT snips_nlu_engine_create_from_zip(unsigned char const* zip, unsigned int zip_size, Opaque** client);
+SNIPS_RESULT snips_nlu_engine_create_from_zip(unsigned char const* zip, unsigned int zip_size, CSnipsNluEngine** client);
 
-NLURESULT snips_nlu_engine_run_parse(Opaque const* client, char const* input, CIntentParserResult** result);
+SNIPS_RESULT snips_nlu_engine_run_parse(CSnipsNluEngine const* client, char const* input, CIntentParserResult** result);
 
-NLURESULT snips_nlu_engine_run_parse_into_json(Opaque const* client, char const* input, char** result_json);
+SNIPS_RESULT snips_nlu_engine_run_parse_into_json(CSnipsNluEngine const* client, char const* input, char** result_json);
 
-NLURESULT snips_nlu_engine_engine_destroy_string(char* string);
+SNIPS_RESULT snips_nlu_engine_engine_destroy_string(char* string);
 
-NLURESULT snips_nlu_engine_destroy_client(Opaque* client);
+SNIPS_RESULT snips_nlu_engine_destroy_client(CSnipsNluEngine* client);
 
-NLURESULT snips_nlu_engine_engine_destroy_result(CIntentParserResult* result);
+SNIPS_RESULT snips_nlu_engine_engine_destroy_result(CIntentParserResult* result);
 
-NLURESULT snips_nlu_engine_engine_get_last_error(char **error);
+SNIPS_RESULT snips_nlu_engine_engine_get_last_error(char **error);
 
-NLURESULT snips_nlu_engine_engine_get_model_version(char **version);
+SNIPS_RESULT snips_nlu_engine_engine_get_model_version(char **version);
 
 #ifdef __cplusplus
 }

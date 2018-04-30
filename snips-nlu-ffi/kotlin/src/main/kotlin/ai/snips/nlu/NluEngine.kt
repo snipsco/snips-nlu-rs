@@ -16,7 +16,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     companion object {
         private fun parseError(returnCode: Int) {
-            if (returnCode != 1) {
+            if (returnCode != 0) {
                 PointerByReference().apply {
                     LIB.snips_nlu_engine_get_last_error(this)
                     throw RuntimeException(value.getString(0).apply {
