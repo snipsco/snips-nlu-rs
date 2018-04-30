@@ -64,39 +64,39 @@ public enum SlotValue {
 
     init(cSlotValue: CSlotValue) throws {
         switch cSlotValue.value_type {
-        case CUSTOM:
+        case SNIPS_SLOT_VALUE_TYPE_CUSTOM:
             let x = cSlotValue.value.assumingMemoryBound(to: CChar.self)
             self = .custom(String(cString: x))
 
-        case NUMBER:
+        case SNIPS_SLOT_VALUE_TYPE_NUMBER:
             let x = cSlotValue.value.assumingMemoryBound(to: CDouble.self)
             self = .number(x.pointee)
 
-        case ORDINAL:
+        case SNIPS_SLOT_VALUE_TYPE_ORDINAL:
             let x = cSlotValue.value.assumingMemoryBound(to: CInt.self)
             self = .ordinal(OrdinalValue(x.pointee))
 
-        case INSTANTTIME:
+        case SNIPS_SLOT_VALUE_TYPE_INSTANTTIME:
             let x = cSlotValue.value.assumingMemoryBound(to:  CInstantTimeValue.self)
             self = .instantTime(try InstantTimeValue(cValue: x.pointee))
 
-        case TIMEINTERVAL:
+        case SNIPS_SLOT_VALUE_TYPE_TIMEINTERVAL:
             let x = cSlotValue.value.assumingMemoryBound(to: CTimeIntervalValue.self)
             self = .timeInterval(TimeIntervalValue(cValue: x.pointee))
 
-        case AMOUNTOFMONEY:
+        case SNIPS_SLOT_VALUE_TYPE_AMOUNTOFMONEY:
             let x = cSlotValue.value.assumingMemoryBound(to: CAmountOfMoneyValue.self)
             self = .amountOfMoney(try AmountOfMoneyValue(cValue: x.pointee))
 
-        case TEMPERATURE:
+        case SNIPS_SLOT_VALUE_TYPE_TEMPERATURE:
             let x = cSlotValue.value.assumingMemoryBound(to: CTemperatureValue.self)
             self = .temperature(TemperatureValue(cValue: x.pointee))
 
-        case DURATION:
+        case SNIPS_SLOT_VALUE_TYPE_DURATION:
             let x = cSlotValue.value.assumingMemoryBound(to: CDurationValue.self)
             self = .duration(try DurationValue(cValue: x.pointee))
 
-        case PERCENTAGE:
+        case SNIPS_SLOT_VALUE_TYPE_PERCENTAGE:
             let x = cSlotValue.value.assumingMemoryBound(to: CDouble.self)
             self = .percentage(x.pointee)
 
@@ -205,16 +205,16 @@ public enum Grain {
     case minute
     case second
 
-    init(cValue: CGrain) throws {
+    init(cValue: SNIPS_GRAIN) throws {
         switch cValue {
-        case YEAR: self = .year
-        case QUARTER: self = .quarter
-        case MONTH: self = .month
-        case WEEK: self = .week
-        case DAY: self = .day
-        case HOUR: self = .hour
-        case MINUTE: self = .minute
-        case SECOND: self = .second
+        case SNIPS_GRAIN_YEAR: self = .year
+        case SNIPS_GRAIN_QUARTER: self = .quarter
+        case SNIPS_GRAIN_MONTH: self = .month
+        case SNIPS_GRAIN_WEEK: self = .week
+        case SNIPS_GRAIN_DAY: self = .day
+        case SNIPS_GRAIN_HOUR: self = .hour
+        case SNIPS_GRAIN_MINUTE: self = .minute
+        case SNIPS_GRAIN_SECOND: self = .second
         default: throw NluEngineError(message: "Internal error: Bad type conversion")
         }
     }
@@ -224,10 +224,10 @@ public enum Precision {
     case approximate
     case exact
 
-    init(cValue: CPrecision) throws {
+    init(cValue: SNIPS_PRECISION) throws {
         switch cValue {
-        case APPROXIMATE: self = .approximate
-        case EXACT: self = .exact
+        case SNIPS_PRECISION_APPROXIMATE: self = .approximate
+        case SNIPS_PRECISION_EXACT: self = .exact
         default: throw NluEngineError(message: "Internal error: Bad type conversion")
         }
     }

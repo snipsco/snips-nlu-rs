@@ -5,33 +5,33 @@
 extern "C" {
 #endif
 
-typedef enum CPrecision {
-    APPROXIMATE = 0,
-    EXACT = 1,
-} CPrecision;
+typedef enum SNIPS_PRECISION {
+    SNIPS_PRECISION_APPROXIMATE = 0,
+    SNIPS_PRECISION_EXACT = 1,
+} SNIPS_PRECISION;
 
-typedef enum CGrain {
-    YEAR = 0,
-    QUARTER = 1,
-    MONTH = 2,
-    WEEK = 3,
-    DAY = 4,
-    HOUR = 5,
-    MINUTE = 6,
-    SECOND = 7,
-} CGrain;
+typedef enum SNIPS_GRAIN {
+    SNIPS_GRAIN_YEAR = 0,
+    SNIPS_GRAIN_QUARTER = 1,
+    SNIPS_GRAIN_MONTH = 2,
+    SNIPS_GRAIN_WEEK = 3,
+    SNIPS_GRAIN_DAY = 4,
+    SNIPS_GRAIN_HOUR = 5,
+    SNIPS_GRAIN_MINUTE = 6,
+    SNIPS_GRAIN_SECOND = 7,
+} SNIPS_GRAIN;
 
-typedef enum CSlotValueType {
-    CUSTOM = 1,
-    NUMBER = 2,
-    ORDINAL = 3,
-    INSTANTTIME = 4,
-    TIMEINTERVAL = 5,
-    AMOUNTOFMONEY = 6,
-    TEMPERATURE = 7,
-    DURATION = 8,
-    PERCENTAGE = 9,
-} CSlotValueType;
+typedef enum SNIPS_SLOT_VALUE_TYPE {
+    SNIPS_SLOT_VALUE_TYPE_CUSTOM = 1,
+    SNIPS_SLOT_VALUE_TYPE_NUMBER = 2,
+    SNIPS_SLOT_VALUE_TYPE_ORDINAL = 3,
+    SNIPS_SLOT_VALUE_TYPE_INSTANTTIME = 4,
+    SNIPS_SLOT_VALUE_TYPE_TIMEINTERVAL = 5,
+    SNIPS_SLOT_VALUE_TYPE_AMOUNTOFMONEY = 6,
+    SNIPS_SLOT_VALUE_TYPE_TEMPERATURE = 7,
+    SNIPS_SLOT_VALUE_TYPE_DURATION = 8,
+    SNIPS_SLOT_VALUE_TYPE_PERCENTAGE = 9,
+} SNIPS_SLOT_VALUE_TYPE;
 
 typedef double CNumberValue;
 
@@ -41,8 +41,8 @@ typedef long COrdinalValue;
 
 typedef struct CInstantTimeValue {
     char *const value;
-    CGrain grain;
-    CPrecision precision;
+    SNIPS_GRAIN grain;
+    SNIPS_PRECISION precision;
 } CInstantTimeValue;
 
 typedef struct CTimeIntervalValue {
@@ -52,7 +52,7 @@ typedef struct CTimeIntervalValue {
 
 typedef struct CAmountOfMoneyValue {
     float value;
-    CPrecision precision;
+    SNIPS_PRECISION precision;
     char *const unit;
 } CAmountOfMoneyValue;
 
@@ -70,11 +70,11 @@ typedef struct CDurationValue {
     long hours;
     long minutes;
     long seconds;
-    CPrecision precision;
+    SNIPS_PRECISION precision;
 } CDurationValue;
 
 typedef struct CSlotValue {
-    CSlotValueType value_type;
+    SNIPS_SLOT_VALUE_TYPE value_type;
     /**
       * Points to either a char *const, a CNumberValue, a COrdinalValue,
       * a CInstantTimeValue, a CTimeIntervalValue, a CAmountOfMoneyValue,
