@@ -52,6 +52,7 @@
 		F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngineTests.swift; sourceTree = "<group>"; };
 		F79B6F5E2016452F00394C57 /* sample_config.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = sample_config.zip; path = ../../../../data/tests/zip_files/sample_config.zip; sourceTree = "<group>"; };
 		F79B6F642016456200394C57 /* configurations */ = {isa = PBXFileReference; lastKnownFileType = folder; name = configurations; path = ../../../../data/tests/configurations; sourceTree = "<group>"; };
+		F7A829062099E58A007554FE /* Dependencies */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Dependencies; sourceTree = "<group>"; };
 		F7ED4D631F829D1700703763 /* build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = build.sh; path = Dependencies/build.sh; sourceTree = "<group>"; };
 		F7FC427E2058178F0047F56A /* libbz2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libbz2.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.2.sdk/usr/lib/libbz2.tbd; sourceTree = DEVELOPER_DIR; };
 		F7FC42802058198B0047F56A /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.2.sdk/usr/lib/libresolv.tbd; sourceTree = DEVELOPER_DIR; };
@@ -99,6 +100,7 @@
 			isa = PBXGroup;
 			children = (
 				F7ED4D631F829D1700703763 /* build.sh */,
+				F7A829062099E58A007554FE /* Dependencies */,
 				F76504C01EFD086C007FF022 /* SnipsNlu */,
 				F76504CB1EFD086C007FF022 /* SnipsNluTests */,
 				F76504BF1EFD086C007FF022 /* Products */,
