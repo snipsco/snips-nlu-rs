@@ -125,15 +125,15 @@ SNIPS_RESULT snips_nlu_engine_run_parse(CSnipsNluEngine const* client, char cons
 
 SNIPS_RESULT snips_nlu_engine_run_parse_into_json(CSnipsNluEngine const* client, char const* input, char** result_json);
 
-SNIPS_RESULT snips_nlu_engine_engine_destroy_string(char* string);
+SNIPS_RESULT snips_nlu_engine_destroy_string(char* string);
 
 SNIPS_RESULT snips_nlu_engine_destroy_client(CSnipsNluEngine* client);
 
-SNIPS_RESULT snips_nlu_engine_engine_destroy_result(CIntentParserResult* result);
+SNIPS_RESULT snips_nlu_engine_destroy_result(CIntentParserResult* result);
 
-SNIPS_RESULT snips_nlu_engine_engine_get_last_error(char **error);
+SNIPS_RESULT snips_nlu_engine_get_last_error(char **error);
 
-SNIPS_RESULT snips_nlu_engine_engine_get_model_version(char **version);
+SNIPS_RESULT snips_nlu_engine_get_model_version(char **version);
 
 #ifdef __cplusplus
 }
