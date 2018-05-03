@@ -40,6 +40,7 @@ if [ "${MACOS_SWIFT_TESTS}" == "true" ]; then
         -workspace SnipsNlu.xcworkspace \
         -scheme SnipsNlu-macOS \
         TARGET_BUILD_TYPE=debug \
+        SNIPS_USE_LOCAL=1 \
         clean \
         test \
         | xcpretty
@@ -58,6 +59,7 @@ if [ "${IOS_SWIFT_TESTS}" == "true" ]; then
         -scheme SnipsNlu-iOS \
         -destination 'platform=iOS Simulator,name=iPhone 8,OS=latest' \
         TARGET_BUILD_TYPE=debug \
+        SNIPS_USE_LOCAL=1 \
         clean \
         test \
         | xcpretty
