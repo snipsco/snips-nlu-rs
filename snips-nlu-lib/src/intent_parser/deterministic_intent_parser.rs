@@ -8,14 +8,14 @@ use regex::{Regex, RegexBuilder};
 
 use configurations::DeterministicParserConfiguration;
 use errors::*;
-use intent_parser::IntentParser;
+use intent_parser::{internal_parsing_result, IntentParser, InternalParsingResult};
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
-use snips_nlu_ontology::{IntentClassifierResult, Language};
+use snips_nlu_ontology::Language;
 use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct DeterministicIntentParser {
@@ -56,81 +56,76 @@ fn compile_regexes_per_intent(
 }
 
 impl IntentParser for DeterministicIntentParser {
-    fn get_intent(
+    fn parse(
         &self,
         input: &str,
         intents: Option<&HashSet<String>>,
-    ) -> Result<Option<IntentClassifierResult>> {
-        let formatted_input = replace_builtin_entities(input, &*self.builtin_entity_parser).1;
-        Ok(self.regexes_per_intent
-            .iter()
-            .filter(|&(intent, _)| {
-                if let Some(intent_set) = intents {
-                    intent_set.contains(intent)
-                } else {
-                    true
-                }
-            })
-            .find(|&(_, regexes)| regexes.iter().any(|r| r.is_match(&formatted_input)))
-            .map(|(intent_name, _)| IntentClassifierResult {
-                intent_name: intent_name.to_string(),
-                probability: 1.0,
-            }))
-    }
-
-    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<InternalSlot>> {
-        let regexes = self.regexes_per_intent
-            .get(intent_name)
-            .ok_or_else(|| format_err!("intent {} not found", intent_name))?;
-
+    ) -> Result<Option<InternalParsingResult>> {
         let (ranges_mapping, formatted_input) =
             replace_builtin_entities(input, &*self.builtin_entity_parser);
 
-        let mut result = vec![];
-        for regex in regexes {
-            for caps in regex.captures_iter(&formatted_input) {
-                if caps.len() == 0 {
+        for (intent, regexes) in self.regexes_per_intent.iter() {
+            if !intents
+                .map(|intent_set| intent_set.contains(intent))
+                .unwrap_or(true)
+            {
+                continue;
+            }
+            for regex in regexes {
+                if !regex.is_match(&formatted_input) {
                     continue;
-                };
-                caps.iter()
-                    .zip(regex.capture_names())
-                    .skip(1)
-                    .filter_map(|(opt_match, opt_group_name)| {
-                        if let (Some(a_match), Some(group_name)) = (opt_match, opt_group_name) {
-                            Some((a_match, group_name))
-                        } else {
-                            None
-                        }
-                    })
-                    .map(|(a_match, group_name)| {
-                        let byte_range = a_match.start()..a_match.end();
-                        let matched_range = convert_to_char_range(&formatted_input, &byte_range);
-                        let (value, range) = if let Some(rng) = ranges_mapping.get(&matched_range) {
-                            (
-                                substring_with_char_range(input.to_string(), rng),
-                                rng.clone(),
-                            )
-                        } else {
-                            (a_match.as_str().into(), matched_range)
-                        };
-                        let slot_name = self.group_names_to_slot_names[group_name].to_string();
-                        let entity = self.slot_names_to_entities[&slot_name].to_string();
+                }
 
-                        InternalSlot {
-                            value,
-                            char_range: range,
-                            entity,
-                            slot_name,
-                        }
-                    })
-                    .foreach(|slot| {
-                        result.push(slot);
-                    });
-                break;
+                let mut slots = vec![];
+                for caps in regex.captures_iter(&formatted_input) {
+                    if caps.len() == 0 {
+                        continue;
+                    };
+
+                    caps.iter()
+                        .zip(regex.capture_names())
+                        .skip(1)
+                        .filter_map(|(opt_match, opt_group_name)| {
+                            if let (Some(a_match), Some(group_name)) = (opt_match, opt_group_name) {
+                                Some((a_match, group_name))
+                            } else {
+                                None
+                            }
+                        })
+                        .map(|(a_match, group_name)| {
+                            let byte_range = a_match.start()..a_match.end();
+                            let matched_range =
+                                convert_to_char_range(&formatted_input, &byte_range);
+                            let (value, range) =
+                                if let Some(rng) = ranges_mapping.get(&matched_range) {
+                                    (
+                                        substring_with_char_range(input.to_string(), rng),
+                                        rng.clone(),
+                                    )
+                                } else {
+                                    (a_match.as_str().into(), matched_range)
+                                };
+                            let slot_name = self.group_names_to_slot_names[group_name].to_string();
+                            let entity = self.slot_names_to_entities[&slot_name].to_string();
+
+                            InternalSlot {
+                                value,
+                                char_range: range,
+                                entity,
+                                slot_name,
+                            }
+                        })
+                        .foreach(|slot| {
+                            slots.push(slot);
+                        });
+                    break;
+                }
+                let deduplicated_slots = deduplicate_overlapping_slots(slots, self.language);
+                let result = internal_parsing_result(intent.to_string(), 1.0, deduplicated_slots);
+                return Ok(Some(result));
             }
         }
-        let deduplicated_slots = deduplicate_overlapping_slots(result, self.language);
-        Ok(deduplicated_slots)
+        Ok(None)
     }
 }
 
@@ -214,7 +209,6 @@ fn get_builtin_entity_name(entity_label: &str) -> String {
 mod tests {
     use super::*;
     use configurations::DeterministicParserConfiguration;
-    use intent_parser::IntentParser;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::{IntentClassifierResult, Language};
     use snips_nlu_ontology_parsers::BuiltinEntityParser;
@@ -264,13 +258,13 @@ mod tests {
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
-        let intent = parser.get_intent(text, None).unwrap().unwrap();
+        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
 
         // Then
-        let expected_intent = IntentClassifierResult {
+        let expected_intent = Some(IntentClassifierResult {
             intent_name: "dummy_intent_1".to_string(),
             probability: 1.0,
-        };
+        });
 
         assert_eq!(intent, expected_intent);
     }
@@ -282,7 +276,7 @@ mod tests {
         let text = "Send 10 dollars to John";
 
         // When
-        let intent = parser.get_intent(text, None).unwrap();
+        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
 
         // Then
         let expected_intent = Some(IntentClassifierResult {
@@ -300,10 +294,10 @@ mod tests {
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
-        let slots = parser.get_slots(text, "dummy_intent_1").unwrap();
+        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
 
         // Then
-        let expected_slots = vec![
+        let expected_slots = Some(vec![
             InternalSlot {
                 value: "dummy_a".to_string(),
                 char_range: 10..17,
@@ -316,7 +310,7 @@ mod tests {
                 entity: "dummy_entity_2".to_string(),
                 slot_name: "dummy_slot_name2".to_string(),
             },
-        ];
+        ]);
         assert_eq!(slots, expected_slots);
     }
 
@@ -327,17 +321,17 @@ mod tests {
         let text = "This is another über dummy_cc query!";
 
         // When
-        let slots = parser.get_slots(text, "dummy_intent_1").unwrap();
+        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
 
         // Then
-        let expected_slots = vec![
+        let expected_slots = Some(vec![
             InternalSlot {
                 value: "dummy_cc".to_string(),
                 char_range: 21..29,
                 entity: "dummy_entity_2".to_string(),
                 slot_name: "dummy_slot_name2".to_string(),
             },
-        ];
+        ]);
         assert_eq!(slots, expected_slots);
     }
 
@@ -348,17 +342,17 @@ mod tests {
         let text = "Send 10 dollars to John";
 
         // When
-        let slots = parser.get_slots(text, "dummy_intent_3").unwrap();
+        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
 
         // Then
-        let expected_slots = vec![
+        let expected_slots = Some(vec![
             InternalSlot {
                 value: "10 dollars".to_string(),
                 char_range: 5..15,
                 entity: "snips/amountOfMoney".to_string(),
                 slot_name: "dummy_slot_name4".to_string(),
             },
-        ];
+        ]);
         assert_eq!(slots, expected_slots);
     }
 
