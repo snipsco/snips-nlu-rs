@@ -64,31 +64,29 @@ impl IntentParser for DeterministicIntentParser {
             replace_builtin_entities(input, &*self.builtin_entity_parser);
         let language = NluUtilsLanguage::from_language(self.language);
         let cleaned_input = replace_tokenized_out_characters(input, language, ' ');
-        let cleaned_formatted_input = replace_tokenized_out_characters(&*formatted_input, language, ' ');
+        let cleaned_formatted_input =
+            replace_tokenized_out_characters(&*formatted_input, language, ' ');
 
         for (intent, regexes) in self.regexes_per_intent.iter() {
             if !intents
                 .map(|intent_set| intent_set.contains(intent))
                 .unwrap_or(true)
-                {
-                    continue;
-                }
+            {
+                continue;
+            }
             for regex in regexes {
                 let matching_result_formatted = self.get_matching_result(
                     input,
                     &*cleaned_formatted_input,
                     regex,
                     intent,
-                    Some(&ranges_mapping));
+                    Some(&ranges_mapping),
+                );
                 if matching_result_formatted.is_some() {
                     return Ok(matching_result_formatted);
                 }
-                let matching_result = self.get_matching_result(
-                    input,
-                    &*cleaned_input,
-                    regex,
-                    intent,
-                    None);
+                let matching_result =
+                    self.get_matching_result(input, &*cleaned_input, regex, intent, None);
                 if matching_result.is_some() {
                     return Ok(matching_result);
                 }
@@ -143,7 +141,12 @@ impl DeterministicIntentParser {
                             });
                     }
                     let value = substring_with_char_range(input.to_string(), &char_range);
-                    InternalSlot { value, char_range, entity, slot_name }
+                    InternalSlot {
+                        value,
+                        char_range,
+                        entity,
+                        slot_name,
+                    }
                 })
                 .collect();
             let deduplicated_slots = deduplicate_overlapping_slots(slots, self.language);
@@ -177,9 +180,9 @@ fn deduplicate_overlapping_slots(
 
             if token_count > existing_token_count
                 || (token_count == existing_token_count && char_count > existing_char_count)
-                {
-                    deduped[index] = slot;
-                }
+            {
+                deduped[index] = slot;
+            }
         } else {
             deduped.push(slot);
         }
