@@ -61,7 +61,7 @@ before_install: . ./.travis/before_install.sh
 
 install: ./.travis/install.sh
 
-script: travis_wait 30 bash ./.travis/test.sh
+script: travis_wait 40 bash ./.travis/test.sh
 
 git:
   depth: 10
