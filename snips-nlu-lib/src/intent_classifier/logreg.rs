@@ -37,7 +37,11 @@ impl MulticlassLogisticRegression {
         })
     }
 
-    pub fn run(&self, features: &ArrayView1<f32>) -> Result<Array1<f32>> {
+    pub fn run(
+        &self,
+        features: &ArrayView1<f32>,
+        filtered_out_indexes: Option<Vec<usize>>
+    ) -> Result<Array1<f32>> {
         let reshaped_features = features.into_shape((1, self.nb_features()))?;
         let reshaped_features = stack![Axis(1), array![[1.]], reshaped_features];
         let mut result = reshaped_features
@@ -47,8 +51,15 @@ impl MulticlassLogisticRegression {
         if self.is_binary() {
             return Ok(arr1(&[1.0 - result[0], result[0]]));
         }
-        let divider = result.scalar_sum();
-        result /= divider;
+        if let Some(indexes) = filtered_out_indexes {
+            if !indexes.is_empty() {
+                for index in indexes {
+                    result[index] = 0.0;
+                }
+                let divider = result.scalar_sum();
+                result /= divider;
+            }
+        }
         Ok(result)
     }
 }
@@ -68,19 +79,19 @@ mod tests {
         let intercept = array![0.98, 0.32, -0.76];
         let weights = array![
             [2.5, -0.6, 0.5],
-            [1.2, 2.2, -2.7],
+            [1.2, 1.2, -2.7],
             [1.5, 0.1, -3.2],
-            [-0.9, -2.4, 1.8]
+            [-0.9, 1.4, 1.8]
         ];
 
         let features = array![0.4, -2.3, 1.9, 1.3];
         let regression = MulticlassLogisticRegression::new(intercept, weights).unwrap();
 
         // When
-        let predictions = regression.run(&features.view()).unwrap();
+        let predictions = regression.run(&features.view(), None).unwrap();
 
         // Then
-        let expected_predictions = array![0.4493038, 0.0002318, 0.5504642];
+        let expected_predictions = array![0.7109495, 0.3384968, 0.8710191];
         assert_epsilon_eq_array1(&predictions, &expected_predictions, 1e-06);
     }
 
@@ -94,10 +105,34 @@ mod tests {
         let regression = MulticlassLogisticRegression::new(intercept, weights).unwrap();
 
         // When
-        let predictions = regression.run(&features.view()).unwrap();
+        let predictions = regression.run(&features.view(), None).unwrap();
 
         // Then
         let expected_predictions = array![0.2890504, 0.7109495];
+        assert_epsilon_eq_array1(&predictions, &expected_predictions, 1e-06);
+    }
+
+    #[test]
+    fn multiclass_logistic_regression_works_with_filtered_out_indexes() {
+        // Given
+        let intercept = array![0.98, 0.32, -0.76];
+        let weights = array![
+            [2.5, -0.6, 0.5],
+            [1.2, 1.2, -2.7],
+            [1.5, 0.1, -3.2],
+            [-0.9, 1.4, 1.8]
+        ];
+
+        let features = array![0.4, -2.3, 1.9, 1.3];
+
+        let filtered_out_indexes = Some(vec![2]);
+        let regression = MulticlassLogisticRegression::new(intercept, weights).unwrap();
+
+        // When
+        let predictions = regression.run(&features.view(), filtered_out_indexes).unwrap();
+
+        // Then
+        let expected_predictions = array![0.67745198, 0.32254802, 0.0];
         assert_epsilon_eq_array1(&predictions, &expected_predictions, 1e-06);
     }
 }
