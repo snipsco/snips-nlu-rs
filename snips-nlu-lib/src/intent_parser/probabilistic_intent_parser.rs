@@ -4,10 +4,8 @@ use std::iter::FromIterator;
 use configurations::ProbabilisticParserConfiguration;
 use errors::*;
 use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
-use intent_parser::IntentParser;
+use intent_parser::{IntentParser, InternalParsingResult};
 use slot_filler::{CRFSlotFiller, SlotFiller};
-use slot_utils::InternalSlot;
-use snips_nlu_ontology::IntentClassifierResult;
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,
@@ -38,18 +36,28 @@ impl ProbabilisticIntentParser {
 }
 
 impl IntentParser for ProbabilisticIntentParser {
-    fn get_intent(
+    fn parse(
         &self,
         input: &str,
         intents: Option<&HashSet<String>>,
-    ) -> Result<Option<IntentClassifierResult>> {
-        self.intent_classifier.get_intent(input, intents)
-    }
-
-    fn get_slots(&self, input: &str, intent_name: &str) -> Result<Vec<InternalSlot>> {
-        self.slot_fillers
-            .get(intent_name)
-            .ok_or_else(|| format_err!("intent {} not found in slot fillers", intent_name))?
-            .get_slots(input)
+    ) -> Result<Option<InternalParsingResult>> {
+        let opt_intent_result = self.intent_classifier.get_intent(input, intents)?;
+        if let Some(intent_result) = opt_intent_result {
+            let slots = self.slot_fillers
+                .get(&*intent_result.intent_name)
+                .ok_or_else(|| {
+                    format_err!(
+                        "intent {} not found in slot fillers",
+                        intent_result.intent_name
+                    )
+                })?
+                .get_slots(input)?;
+            Ok(Some(InternalParsingResult {
+                intent: intent_result,
+                slots,
+            }))
+        } else {
+            Ok(None)
+        }
     }
 }

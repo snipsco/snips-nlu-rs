@@ -67,9 +67,8 @@ impl SnipsNluEngine {
             .map(|intent_list| HashSet::from_iter(intent_list.iter().map(|name| name.to_string())));
 
         for parser in &self.parsers {
-            let classification_result = parser.get_intent(input, set_intents.as_ref())?;
-            if let Some(classification_result) = classification_result {
-                let internal_slots = parser.get_slots(input, &classification_result.intent_name)?;
+            let opt_internal_parsing_result = parser.parse(input, set_intents.as_ref())?;
+            if let Some(internal_parsing_result) = opt_internal_parsing_result {
                 let filter_entity_kinds = self.dataset_metadata
                     .slot_name_mappings
                     .values()
@@ -82,7 +81,7 @@ impl SnipsNluEngine {
 
                 let valid_slots = resolve_builtin_slots(
                     input,
-                    internal_slots,
+                    internal_parsing_result.slots,
                     &*self.builtin_entity_parser,
                     Some(&*filter_entity_kinds),
                 ).into_iter()
@@ -109,7 +108,7 @@ impl SnipsNluEngine {
 
                 return Ok(IntentParserResult {
                     input: input.to_string(),
-                    intent: Some(classification_result),
+                    intent: Some(internal_parsing_result.intent),
                     slots: Some(valid_slots),
                 });
             }

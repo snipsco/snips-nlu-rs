@@ -188,22 +188,17 @@ mod tests {
     #[test]
     fn length_works() {
         // Given
-        let inputs = vec![
-            "hello",
-            "こんにちは",
-            "hello こんにちは",
-            ""
-        ];
+        let inputs = vec!["hello", "こんにちは", "hello こんにちは", ""];
 
         // When
-        let results : Vec<Option<String>> = inputs.iter().map(|s| length(s)).collect();
+        let results: Vec<Option<String>> = inputs.iter().map(|s| length(s)).collect();
 
         // Then
         let expected_lengths = vec![
             Some("5".to_string()),
             Some("5".to_string()),
             Some("11".to_string()),
-            Some("0".to_string())
+            Some("0".to_string()),
         ];
 
         assert_eq!(expected_lengths, results);
