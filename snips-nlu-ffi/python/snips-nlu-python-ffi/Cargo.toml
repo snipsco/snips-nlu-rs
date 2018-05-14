@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-python-ffi"
-version = "0.54.0"
+version = "0.57.0-SNAPSHOT"
 authors = ["Adrien Ball <adrien.ball@snips.ai>"]
 
 [lib]
