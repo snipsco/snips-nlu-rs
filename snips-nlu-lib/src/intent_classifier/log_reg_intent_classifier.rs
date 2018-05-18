@@ -64,7 +64,8 @@ impl IntentClassifier for LogRegIntentClassifier {
 
         if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
             let features = featurizer.transform(input)?;
-            let probabilities = logreg.run(&features.view())?;
+            let filtered_out_indexes = get_filtered_out_intents_indexes(&self.intent_list, intents_filter);
+            let probabilities = logreg.run(&features.view(), filtered_out_indexes)?;
 
             let mut intents_proba: Vec<(&Option<String>, &f32)> = self.intent_list
                 .iter()
@@ -108,6 +109,29 @@ impl LogRegIntentClassifier {
             .map(|featurizer| featurizer.transform(input))
             .unwrap_or_else(|| Ok(Array::from_iter(vec![])))
     }
+}
+
+fn get_filtered_out_intents_indexes(
+    intents_list: &Vec<Option<String>>,
+    intents_filter: Option<&HashSet<String>>,
+) -> Option<Vec<usize>> {
+    intents_filter.map(|filter|
+        intents_list
+            .into_iter()
+            .enumerate()
+            .filter_map(|(i, opt_intent)|
+                if let Some(intent) = opt_intent.as_ref() {
+                    if !filter.contains(intent) {
+                        Some(i)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            )
+            .collect()
+    )
 }
 
 #[cfg(test)]
@@ -494,7 +518,7 @@ mod tests {
         let ref actual_result = classification_result.unwrap().unwrap();
         let expected_result = IntentClassifierResult {
             intent_name: "MakeTea".to_string(),
-            probability: 0.45877472,
+            probability: 0.60434574,
         };
 
         // Then
@@ -536,5 +560,24 @@ mod tests {
             result2.map(|res| res.intent_name)
         );
         assert_eq!(None, result3);
+    }
+
+    #[test]
+    fn should_get_filtered_out_intents_indexes() {
+        // Given
+        let intents_list = vec![
+            Some("intent1".to_string()),
+            Some("intent2".to_string()),
+            Some("intent3".to_string()),
+            None
+        ];
+        let intents_filter = hashset!["intent1".to_string(), "intent3".to_string()];
+
+        // When
+        let filtered_indexes = get_filtered_out_intents_indexes(&intents_list, Some(&intents_filter));
+
+        // Then
+        let expected_indexes = Some(vec![1]);
+        assert_eq!(expected_indexes, filtered_indexes);
     }
 }

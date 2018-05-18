@@ -3,17 +3,17 @@
 #[macro_use]
 extern crate failure;
 #[macro_use]
+extern crate ffi_utils;
+#[macro_use]
 extern crate lazy_static;
 extern crate libc;
 extern crate serde_json;
 extern crate snips_nlu_lib;
 extern crate snips_nlu_ontology_ffi_macros;
-#[macro_use]
-extern crate ffi_utils;
 
 use failure::ResultExt;
 
-use std::ffi::{CString};
+use std::ffi::CString;
 use std::io::Cursor;
 use std::slice;
 use std::sync::Mutex;
@@ -92,16 +92,23 @@ pub extern "C" fn snips_nlu_engine_destroy_client(client: *mut CSnipsNluEngine) 
 }
 
 #[no_mangle]
-pub extern "C" fn snips_nlu_engine_destroy_result(result: *mut CIntentParserResult) -> SNIPS_RESULT {
+pub extern "C" fn snips_nlu_engine_destroy_result(
+    result: *mut CIntentParserResult,
+) -> SNIPS_RESULT {
     wrap!(unsafe { CIntentParserResult::from_raw_pointer(result) })
 }
 
 #[no_mangle]
-pub extern "C" fn snips_nlu_engine_get_model_version(version: *mut *const libc::c_char) -> SNIPS_RESULT {
+pub extern "C" fn snips_nlu_engine_get_model_version(
+    version: *mut *const libc::c_char,
+) -> SNIPS_RESULT {
     wrap!(get_model_version(version))
 }
 
-fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const CSnipsNluEngine) -> Result<()> {
+fn create_from_dir(
+    root_dir: *const libc::c_char,
+    client: *mut *const CSnipsNluEngine,
+) -> Result<()> {
     let root_dir = create_rust_string_from!(root_dir);
 
     let assistant_config = FileBasedConfiguration::from_dir(root_dir, false)?;
@@ -113,7 +120,10 @@ fn create_from_dir(root_dir: *const libc::c_char, client: *mut *const CSnipsNluE
     Ok(())
 }
 
-fn create_from_file(file_path: *const libc::c_char, client: *mut *const CSnipsNluEngine) -> Result<()> {
+fn create_from_file(
+    file_path: *const libc::c_char,
+    client: *mut *const CSnipsNluEngine,
+) -> Result<()> {
     let file_path = create_rust_string_from!(file_path);
 
     let assistant_config = FileBasedConfiguration::from_path(file_path, false)?;

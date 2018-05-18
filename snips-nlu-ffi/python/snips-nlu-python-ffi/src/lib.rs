@@ -1,5 +1,5 @@
-extern crate libc;
 extern crate ffi_utils;
+extern crate libc;
 extern crate snips_nlu_ffi;
 
 use ffi_utils::SNIPS_RESULT;

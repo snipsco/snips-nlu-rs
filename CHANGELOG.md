@@ -1,6 +1,15 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.56.1] - 2018-05-18
+### Changed
+- Improve calibration of intent classification probabilities
+- Update the `IntentParser` API and keep only `parse` method, while removing `get_intent` and `get_slots`
+- DeterministicIntentParser: Replace tokenized out characters with whitespaces to improve matching
+
+### Fixed
+- DeterministicIntentParser: Fix issue with ranges of custom slots appearing after builtin slots
+
 ## [0.56.0] - 2018-05-03
 ### Changed
 - Change ffi signatures
@@ -36,6 +45,7 @@ All notable changes to this project will be documented in this file.
 - Rename python package to `snips_nlu_rust`
 
 
+[0.56.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.56.0...0.56.1
 [0.56.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.55.2...0.56.0
 [0.55.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.55.1...0.55.2
 [0.55.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.55.0...0.55.1
