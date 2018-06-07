@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 
+use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use configurations::{DatasetMetadata, Entity, NluEngineConfigurationConvertible};
 use errors::*;
 use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
@@ -14,12 +15,11 @@ use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use slot_utils::resolve_builtin_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
     parsers: Vec<Box<IntentParser>>,
-    builtin_entity_parser: Arc<BuiltinEntityParser>,
+    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
 }
 
 impl SnipsNluEngine {
@@ -42,7 +42,7 @@ impl SnipsNluEngine {
             })
             .collect::<Result<Vec<_>>>()?;
         let language = Language::from_str(&nlu_config.dataset_metadata.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParser::get(language);
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
 
         Ok(SnipsNluEngine {
             dataset_metadata: nlu_config.dataset_metadata,
@@ -201,11 +201,11 @@ fn extract_builtin_slot(
     input: String,
     entity_name: String,
     slot_name: String,
-    builtin_entity_parser: &BuiltinEntityParser,
+    builtin_entity_parser: &CachingBuiltinEntityParser,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(builtin_entity_parser
-        .extract_entities(&input, Some(&[builtin_entity_kind]))
+        .extract_entities(&input, Some(&[builtin_entity_kind]), false)
         .first()
         .map(|rustlin_entity| Slot {
             raw_value: substring_with_char_range(input, &rustlin_entity.range),

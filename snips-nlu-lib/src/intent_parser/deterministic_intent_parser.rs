@@ -5,6 +5,7 @@ use std::sync::Arc;
 
 use regex::{Regex, RegexBuilder};
 
+use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use configurations::DeterministicParserConfiguration;
 use errors::*;
 use intent_parser::{internal_parsing_result, IntentParser, InternalParsingResult};
@@ -15,20 +16,19 @@ use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
 use snips_nlu_ontology::Language;
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, String>,
     slot_names_to_entities: HashMap<String, String>,
-    builtin_entity_parser: Arc<BuiltinEntityParser>,
+    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
     language: Language,
 }
 
 impl DeterministicIntentParser {
     pub fn new(configuration: DeterministicParserConfiguration) -> Result<Self> {
         let language = Language::from_str(&configuration.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParser::get(language);
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
         Ok(DeterministicIntentParser {
             regexes_per_intent: compile_regexes_per_intent(configuration.patterns)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
@@ -193,9 +193,9 @@ fn deduplicate_overlapping_slots(
 
 fn replace_builtin_entities(
     text: &str,
-    parser: &BuiltinEntityParser,
+    parser: &CachingBuiltinEntityParser,
 ) -> (HashMap<Range<usize>, Range<usize>>, String) {
-    let builtin_entities = parser.extract_entities(text, None);
+    let builtin_entities = parser.extract_entities(text, None, true);
     if builtin_entities.is_empty() {
         return (HashMap::new(), text.to_string());
     }
@@ -278,7 +278,6 @@ mod tests {
     use configurations::DeterministicParserConfiguration;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::{IntentClassifierResult, Language};
-    use snips_nlu_ontology_parsers::BuiltinEntityParser;
     use std::collections::HashMap;
     use std::iter::FromIterator;
 
@@ -520,7 +519,7 @@ mod tests {
     fn should_replace_builtin_entities() {
         // Given
         let text = "Meeting this evening or tomorrow at 11am !";
-        let parser = BuiltinEntityParser::get(Language::EN);
+        let parser = BuiltinEntityParserFactory::get(Language::EN);
 
         // When
         let (range_mapping, formatted_text) = replace_builtin_entities(text, &*parser);

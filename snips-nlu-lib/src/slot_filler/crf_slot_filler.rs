@@ -7,6 +7,7 @@ use std::sync;
 use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
 
+use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use configurations::SlotFillerConfiguration;
 use errors::*;
 use language::FromLanguage;
@@ -19,7 +20,6 @@ use slot_filler::crf_utils::*;
 use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
 use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct CRFSlotFiller {
     language: Language,
@@ -27,7 +27,7 @@ pub struct CRFSlotFiller {
     tagger: sync::Mutex<CRFSuiteTagger>,
     feature_processor: ProbabilisticFeatureProcessor,
     slot_name_mapping: HashMap<String, String>,
-    builtin_entity_parser: sync::Arc<BuiltinEntityParser>,
+    builtin_entity_parser: sync::Arc<CachingBuiltinEntityParser>,
 }
 
 impl CRFSlotFiller {
@@ -39,7 +39,7 @@ impl CRFSlotFiller {
         let converted_data = ::base64::decode(&config.crf_model_data)?;
         let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
         let language = Language::from_str(&config.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParser::get(language);
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
 
         Ok(Self {
             language,
@@ -187,14 +187,14 @@ fn augment_slots(
     tags: &[String],
     slot_filler: &SlotFiller,
     intent_slots_mapping: &HashMap<String, String>,
-    builtin_entity_parser: &sync::Arc<BuiltinEntityParser>,
+    builtin_entity_parser: &sync::Arc<CachingBuiltinEntityParser>,
     missing_slots: &[(String, BuiltinEntityKind)],
 ) -> Result<Vec<InternalSlot>> {
     let builtin_entities = missing_slots
         .iter()
         .map(|&(_, kind)| kind)
         .unique()
-        .flat_map(|kind| builtin_entity_parser.extract_entities(text, Some(&[kind])))
+        .flat_map(|kind| builtin_entity_parser.extract_entities(text, Some(&[kind]), true))
         .collect();
     let filtered_entities = filter_overlapping_builtins(
         builtin_entities,
@@ -499,7 +499,7 @@ mod tests {
             "start_date".to_string() => "snips/datetime".to_string(),
             "end_date".to_string() => "snips/datetime".to_string(),
         };
-        let builtin_entity_parser = BuiltinEntityParser::get(Language::EN);
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(Language::EN);
         let missing_slots = vec![
             ("start_date".to_string(), BuiltinEntityKind::Time),
             ("end_date".to_string(), BuiltinEntityKind::Time),

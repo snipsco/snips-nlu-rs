@@ -6,6 +6,9 @@ extern crate dinghy_test;
 extern crate failure;
 extern crate itertools;
 #[macro_use]
+extern crate lazy_static;
+extern crate lru_cache;
+#[macro_use]
 extern crate ndarray;
 extern crate regex;
 extern crate serde;
@@ -23,6 +26,7 @@ extern crate zip;
 #[macro_use]
 extern crate maplit;
 
+mod builtin_entity_parsing;
 mod configurations;
 pub mod errors;
 mod intent_classifier;
