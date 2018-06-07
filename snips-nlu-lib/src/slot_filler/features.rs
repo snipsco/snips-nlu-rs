@@ -1,5 +1,6 @@
 use itertools::Itertools;
 
+use builtin_entity_parsing::CachingBuiltinEntityParser;
 use super::crf_utils::{get_scheme_prefix, TaggingScheme};
 use super::features_utils::{get_word_chunk, initial_string_from_tokens};
 use nlu_utils::range::ranges_overlap;
@@ -13,7 +14,6 @@ use resources::stemmer::StaticMapStemmer;
 use resources::stemmer::Stemmer;
 use resources::word_clusterer::WordClusterer;
 use snips_nlu_ontology::BuiltinEntityKind;
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub fn is_digit(string: &str) -> Option<String> {
     if string.chars().all(|c| c.is_digit(10)) {
@@ -137,7 +137,7 @@ pub fn get_word_cluster<C: WordClusterer>(
 pub fn get_builtin_entity_match(
     tokens: &[Token],
     token_index: usize,
-    parser: &BuiltinEntityParser,
+    parser: &CachingBuiltinEntityParser,
     builtin_entity_kind: BuiltinEntityKind,
     tagging_scheme: TaggingScheme,
 ) -> Option<String> {
@@ -146,7 +146,7 @@ pub fn get_builtin_entity_match(
     }
     let text = initial_string_from_tokens(tokens);
     parser
-        .extract_entities(&text, Some(&[builtin_entity_kind]))
+        .extract_entities(&text, Some(&[builtin_entity_kind]), true)
         .into_iter()
         .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
         .map(|e| {
@@ -455,13 +455,13 @@ mod tests {
         let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
         let token_index = 5; // 9pm
         let tagging_scheme = TaggingScheme::BILOU;
-        let parser = BuiltinEntityParser::get(Language::EN);
+        let parser = CachingBuiltinEntityParser::new(Language::EN, 100);
 
         // When
         let actual_annotation = get_builtin_entity_match(
             &tokens,
             token_index,
-            &*parser,
+            &parser,
             BuiltinEntityKind::Time,
             tagging_scheme,
         );

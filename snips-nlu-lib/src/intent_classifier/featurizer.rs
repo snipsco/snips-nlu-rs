@@ -6,6 +6,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 use ndarray::prelude::*;
 
+use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use configurations::FeaturizerConfiguration;
 use errors::*;
 use language::FromLanguage;
@@ -15,7 +16,6 @@ use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use resources::stemmer::{StaticMapStemmer, Stemmer};
 use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct Featurizer {
     best_features: Vec<usize>,
@@ -25,7 +25,7 @@ pub struct Featurizer {
     word_clusterer: Option<StaticMapWordClusterer>,
     stemmer: Option<StaticMapStemmer>,
     entity_utterances_to_feature_names: HashMap<String, Vec<String>>,
-    builtin_entity_parser: Arc<BuiltinEntityParser>,
+    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
     language: Language,
 }
 
@@ -35,7 +35,7 @@ impl Featurizer {
         let vocabulary = config.tfidf_vectorizer.vocab;
         let language = Language::from_str(&*config.language_code)?;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
-        let builtin_entity_parser = BuiltinEntityParser::get(language);
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
         let word_clusterer = config
             .config
             .word_clusters_name
@@ -100,7 +100,7 @@ impl Featurizer {
             &*normalized_stemmed_tokens,
             &self.entity_utterances_to_feature_names,
         );
-        let builtin_entities = self.builtin_entity_parser.extract_entities(query, None);
+        let builtin_entities = self.builtin_entity_parser.extract_entities(query, None, true);
         let entities_ranges = builtin_entities
             .iter()
             .sorted_by_key(|ent| ent.range.start)

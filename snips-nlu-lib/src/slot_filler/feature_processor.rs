@@ -2,6 +2,7 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::str::FromStr;
 
+use builtin_entity_parsing::BuiltinEntityParserFactory;
 use super::crf_utils::TaggingScheme;
 use super::features;
 use configurations::FeatureFactory;
@@ -11,7 +12,6 @@ use resources::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
 use resources::stemmer::StaticMapStemmer;
 use resources::word_clusterer::StaticMapWordClusterer;
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 pub struct ProbabilisticFeatureProcessor {
     functions: Vec<FeatureFunction>,
@@ -235,7 +235,7 @@ fn builtin_entity_match_feature_function(
         .map(|label| {
             let builtin_parser = Language::from_str(&language_code)
                 .ok()
-                .map(BuiltinEntityParser::get);
+                .map(BuiltinEntityParserFactory::get);
             let builtin_entity_kind = BuiltinEntityKind::from_identifier(&label).ok();
             Ok(FeatureFunction::new(
                 &format!("builtin_entity_match_{}", &label),
