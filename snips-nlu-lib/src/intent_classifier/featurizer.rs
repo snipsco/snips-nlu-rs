@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use std::ops::Range;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -11,7 +10,7 @@ use configurations::FeaturizerConfiguration;
 use errors::*;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
-use nlu_utils::string::{normalize, substring_with_char_range};
+use nlu_utils::string::normalize;
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use resources::stemmer::{StaticMapStemmer, Stemmer};
 use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
@@ -101,23 +100,13 @@ impl Featurizer {
             &self.entity_utterances_to_feature_names,
         );
         let builtin_entities = self.builtin_entity_parser.extract_entities(query, None, true);
-        let entities_ranges = builtin_entities
-            .iter()
-            .sorted_by_key(|ent| ent.range.start)
-            .iter()
-            .map(|ent| ent.range.clone())
-            .collect();
         let builtin_entities_features: Vec<String> = builtin_entities
             .iter()
             .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, language))
             .sorted();
-        let filtered_query = remove_ranges(query, entities_ranges);
-        let filtered_query_tokens = tokenize_light(&*filtered_query, language);
-        let filtered_normalized_stemmed_tokens =
-            normalize_stem(filtered_query_tokens, self.stemmer);
 
         vec![
-            filtered_normalized_stemmed_tokens,
+            normalized_stemmed_tokens,
             builtin_entities_features,
             entities_features,
             word_cluster_features,
@@ -165,23 +154,10 @@ fn normalize_stem<S: Stemmer>(tokens: Vec<String>, opt_stemmer: Option<S>) -> Ve
         .unwrap_or_else(|| tokens.iter().map(|t| normalize(t)).collect())
 }
 
-fn remove_ranges(text: &str, ranges: Vec<Range<usize>>) -> String {
-    let mut filtered_text = String::new();
-    let mut idx = 0;
-    for range in &ranges {
-        let substring = substring_with_char_range(text.to_string(), &(idx..range.start));
-        filtered_text.push_str(&*substring);
-        idx = range.end;
-    }
-    let suffix = substring_with_char_range(text.to_string(), &(idx..text.chars().count()));
-    filtered_text.push_str(&*suffix);
-    filtered_text
-}
-
 #[cfg(test)]
 mod tests {
     use super::{get_dataset_entities_features, get_word_cluster_features, normalize_stem,
-                remove_ranges, Featurizer};
+                Featurizer};
 
     use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
                          TfIdfVectorizerConfiguration};
@@ -326,18 +302,5 @@ mod tests {
             "featureentityword".to_string(),
         ];
         assert_eq!(entities_features, expected_entities_features)
-    }
-
-    #[test]
-    fn remove_range_works() {
-        // Given
-        let text = "hello world";
-        let ranges = vec![1..3, 6..9];
-
-        // When
-        let filtered_text = remove_ranges(text, ranges);
-
-        // Then
-        assert_eq!("hlo ld", filtered_text);
     }
 }
