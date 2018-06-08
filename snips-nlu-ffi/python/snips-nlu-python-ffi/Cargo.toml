@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-python-ffi"
-version = "0.57.0"
+version = "0.58.0-SNAPSHOT"
 authors = ["Adrien Ball <adrien.ball@snips.ai>"]
 
 [lib]
@@ -10,4 +10,4 @@ crate-type = ["cdylib"]
 [dependencies]
 libc = "0.2"
 ffi-utils = { git = "https://github.com/snipsco/snips-utils-rs", rev = "b1f4af3" }
-snips-nlu-ffi = { git = "https://github.com/snipsco/snips-nlu-rs", tag = "0.57.0" }
+snips-nlu-ffi = { git = "https://github.com/snipsco/snips-nlu-rs", branch = "develop" }
