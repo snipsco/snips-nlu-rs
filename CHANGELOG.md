@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.57.0] - 2018-06-08
+### Changed
+- Improve matching of synonyms
+- Improve caching strategy for builtin entity parsing
+- Improve intent classification
+- Bump model version to `0.15.0`
+- Bump `snips-nlu-ontology` to `0.57.0`
+
 ## [0.56.1] - 2018-05-18
 ### Changed
 - Improve calibration of intent classification probabilities
@@ -45,6 +53,7 @@ All notable changes to this project will be documented in this file.
 - Rename python package to `snips_nlu_rust`
 
 
+[0.57.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.56.1...0.57.0
 [0.56.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.56.0...0.56.1
 [0.56.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.55.2...0.56.0
 [0.55.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.55.1...0.55.2
