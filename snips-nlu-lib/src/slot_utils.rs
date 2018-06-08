@@ -1,7 +1,7 @@
 use std::ops::Range;
 
+use builtin_entity_parsing::CachingBuiltinEntityParser;
 use snips_nlu_ontology::{BuiltinEntityKind, Slot, SlotValue};
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InternalSlot {
@@ -34,10 +34,10 @@ pub fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slo
 pub fn resolve_builtin_slots(
     text: &str,
     slots: Vec<InternalSlot>,
-    parser: &BuiltinEntityParser,
+    parser: &CachingBuiltinEntityParser,
     filter_entity_kinds: Option<&[BuiltinEntityKind]>,
 ) -> Vec<Slot> {
-    let builtin_entities = parser.extract_entities(text, filter_entity_kinds);
+    let builtin_entities = parser.extract_entities(text, filter_entity_kinds, false);
     slots
         .into_iter()
         .filter_map(|slot| {
@@ -50,7 +50,7 @@ pub fn resolve_builtin_slots(
                     .map(|rustling_entity| Some(rustling_entity.entity.clone()))
                     .unwrap_or({
                         parser
-                            .extract_entities(&slot.value, Some(&[entity_kind]))
+                            .extract_entities(&slot.value, Some(&[entity_kind]), false)
                             .into_iter()
                             .find(|rustling_entity| rustling_entity.entity_kind == entity_kind)
                             .map(|rustling_entity| rustling_entity.entity)
@@ -86,12 +86,12 @@ mod tests {
                 slot_name: "ranking".to_string(),
             },
         ];
-        let parser = BuiltinEntityParser::get(Language::EN);
+        let parser = CachingBuiltinEntityParser::new(Language::EN, 1000);
 
         // When
         let filter_entity_kinds = &[BuiltinEntityKind::AmountOfMoney, BuiltinEntityKind::Ordinal];
         let actual_results =
-            resolve_builtin_slots(text, slots, &*parser, Some(filter_entity_kinds));
+            resolve_builtin_slots(text, slots, &parser, Some(filter_entity_kinds));
 
         // Then
         let expected_results = vec![
