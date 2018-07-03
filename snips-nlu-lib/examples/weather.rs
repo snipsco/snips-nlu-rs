@@ -3,13 +3,13 @@ extern crate snips_nlu_lib;
 
 use std::env;
 
-use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine};
+use snips_nlu_lib::{FileBasedModel, SnipsNluEngine};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let model_file = &args[1];
     let query = &args[2];
-    let configuration = match FileBasedConfiguration::from_path(model_file, false) {
+    let configuration = match FileBasedModel::from_path(model_file, false) {
         Ok(conf) => conf,
         Err(e) => panic!(format!("{}", e)),
     };

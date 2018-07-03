@@ -18,7 +18,7 @@ use std::io::Cursor;
 use std::slice;
 use std::sync::Mutex;
 
-use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine, ZipBasedConfiguration};
+use snips_nlu_lib::{FileBasedModel, SnipsNluEngine, ZipBasedModel};
 use snips_nlu_ontology_ffi_macros::CIntentParserResult;
 
 use ffi_utils::*;
@@ -111,7 +111,7 @@ fn create_from_dir(
 ) -> Result<()> {
     let root_dir = create_rust_string_from!(root_dir);
 
-    let assistant_config = FileBasedConfiguration::from_dir(root_dir, false)?;
+    let assistant_config = FileBasedModel::from_dir(root_dir, false)?;
     let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
@@ -126,7 +126,7 @@ fn create_from_file(
 ) -> Result<()> {
     let file_path = create_rust_string_from!(file_path);
 
-    let assistant_config = FileBasedConfiguration::from_path(file_path, false)?;
+    let assistant_config = FileBasedModel::from_path(file_path, false)?;
     let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
@@ -143,7 +143,7 @@ fn create_from_zip(
     let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
     let reader = Cursor::new(slice.to_owned());
 
-    let assistant_config = ZipBasedConfiguration::new(reader, false)?;
+    let assistant_config = ZipBasedModel::new(reader, false)?;
     let intent_parser = SnipsNluEngine::new(assistant_config)?;
 
     let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();

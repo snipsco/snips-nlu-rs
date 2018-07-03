@@ -1,17 +1,17 @@
 use std::collections::HashMap;
 
-pub trait NluEngineConfigurationConvertible {
-    fn nlu_engine_configuration(&self) -> &NluEngineConfiguration;
-    fn into_nlu_engine_configuration(self) -> NluEngineConfiguration;
+pub trait NluEngineModelConvertible {
+    fn nlu_engine_model(&self) -> &NluEngineModel;
+    fn into_nlu_engine_model(self) -> NluEngineModel;
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ModelVersionConfiguration {
+pub struct ModelVersion {
     pub model_version: String,
 }
 
 #[derive(Debug, Deserialize)]
-pub struct NluEngineConfiguration {
+pub struct NluEngineModel {
     pub dataset_metadata: DatasetMetadata,
     pub intent_parsers: Vec<::serde_json::Value>,
     pub model_version: String,
@@ -31,32 +31,32 @@ pub struct Entity {
     pub utterances: HashMap<String, String>,
 }
 
-impl NluEngineConfigurationConvertible for NluEngineConfiguration {
-    fn nlu_engine_configuration(&self) -> &NluEngineConfiguration {
+impl NluEngineModelConvertible for NluEngineModel {
+    fn nlu_engine_model(&self) -> &NluEngineModel {
         self
     }
 
-    fn into_nlu_engine_configuration(self) -> NluEngineConfiguration {
+    fn into_nlu_engine_model(self) -> NluEngineModel {
         self
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::NluEngineConfiguration;
+    use super::NluEngineModel;
     use MODEL_VERSION;
-    use configurations::{DeterministicParserConfiguration, ProbabilisticParserConfiguration};
+    use models::{DeterministicParserModel, ProbabilisticParserModel};
 
     use testutils::parse_json;
 
     #[test]
     fn deserialization_works() {
         // When
-        let retrieved: NluEngineConfiguration =
-            parse_json("tests/configurations/trained_assistant.json");
-        let deterministic_parser_config: Result<DeterministicParserConfiguration, _> =
+        let retrieved: NluEngineModel =
+            parse_json("tests/models/trained_assistant.json");
+        let deterministic_parser_config: Result<DeterministicParserModel, _> =
             ::serde_json::from_value(retrieved.intent_parsers[0].clone());
-        let proba_parser_config: Result<ProbabilisticParserConfiguration, _> =
+        let proba_parser_config: Result<ProbabilisticParserModel, _> =
             ::serde_json::from_value(retrieved.intent_parsers[1].clone());
 
         // Then

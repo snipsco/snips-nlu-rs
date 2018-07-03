@@ -8,7 +8,7 @@ use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use configurations::SlotFillerConfiguration;
+use models::SlotFillerModel;
 use errors::*;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
@@ -31,7 +31,7 @@ pub struct CRFSlotFiller {
 }
 
 impl CRFSlotFiller {
-    pub fn new(config: SlotFillerConfiguration) -> Result<CRFSlotFiller> {
+    pub fn new(config: SlotFillerModel) -> Result<CRFSlotFiller> {
         let tagging_scheme = TaggingScheme::from_u8(config.config.tagging_scheme)?;
         let slot_name_mapping = config.slot_name_mapping;
         let feature_processor =
@@ -247,7 +247,10 @@ fn augment_slots(
         slot_filler.get_tagging_scheme(),
         intent_slots_mapping,
     )?;
-    let filtered_builtin_entities = Itertools::flatten(grouped_entities.into_iter()).collect();
+    let filtered_builtin_entities = grouped_entities
+        .into_iter()
+        .flat_map(|entities| entities)
+        .collect();
     Ok(reconciliate_builtin_slots(
         text,
         slots,

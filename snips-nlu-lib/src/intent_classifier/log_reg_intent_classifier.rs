@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use itertools::Itertools;
 use ndarray::prelude::*;
 
-use configurations::IntentClassifierConfiguration;
+use models::IntentClassifierModel;
 use errors::*;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
@@ -16,7 +16,7 @@ pub struct LogRegIntentClassifier {
 }
 
 impl LogRegIntentClassifier {
-    pub fn new(config: IntentClassifierConfiguration) -> Result<Self> {
+    pub fn new(config: IntentClassifierModel) -> Result<Self> {
         let featurizer: Option<Featurizer> = if let Some(featurizer_config) = config.featurizer {
             Some(Featurizer::new(featurizer_config)?)
         } else {
@@ -138,8 +138,7 @@ fn get_filtered_out_intents_indexes(
 mod tests {
     use super::*;
 
-    use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
-                         TfIdfVectorizerConfiguration};
+    use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
         let language_code = "en".to_string();
@@ -380,7 +379,7 @@ mod tests {
             3.27726728501,
         ];
 
-        let tfidf_vectorizer = TfIdfVectorizerConfiguration { idf_diag, vocab };
+        let tfidf_vectorizer = TfIdfVectorizerModel { idf_diag, vocab };
 
         let intent_list: Vec<Option<String>> = vec![
             Some("MakeCoffee".to_string()),
@@ -388,12 +387,12 @@ mod tests {
             None,
         ];
 
-        let config = FeaturizerConfigConfiguration {
+        let config = FeaturizerConfiguration {
             sublinear_tf: false,
             word_clusters_name: None,
         };
 
-        let config = FeaturizerConfiguration {
+        let config = FeaturizerModel {
             tfidf_vectorizer,
             best_features,
             config,

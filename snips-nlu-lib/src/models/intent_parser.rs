@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use configurations::{IntentClassifierConfiguration, SlotFillerConfiguration};
+use models::{IntentClassifierModel, SlotFillerModel};
 
 #[derive(Debug, Deserialize)]
-pub struct DeterministicParserConfiguration {
+pub struct DeterministicParserModel {
     pub language_code: String,
     pub patterns: HashMap<String, Vec<String>>,
     pub group_names_to_slot_names: HashMap<String, String>,
@@ -11,7 +11,7 @@ pub struct DeterministicParserConfiguration {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ProbabilisticParserConfiguration {
-    pub intent_classifier: IntentClassifierConfiguration,
-    pub slot_fillers: HashMap<String, SlotFillerConfiguration>,
+pub struct ProbabilisticParserModel {
+    pub intent_classifier: IntentClassifierModel,
+    pub slot_fillers: HashMap<String, SlotFillerModel>,
 }

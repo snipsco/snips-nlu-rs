@@ -6,7 +6,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use configurations::{DatasetMetadata, Entity, NluEngineConfigurationConvertible};
+use models::{DatasetMetadata, Entity, NluEngineModelConvertible};
 use errors::*;
 use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 use language::FromLanguage;
@@ -23,8 +23,8 @@ pub struct SnipsNluEngine {
 }
 
 impl SnipsNluEngine {
-    pub fn new<T: NluEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
-        let nlu_config = configuration.into_nlu_engine_configuration();
+    pub fn new<T: NluEngineModelConvertible + 'static>(configuration: T) -> Result<Self> {
+        let nlu_config = configuration.into_nlu_engine_model();
         let parsers = nlu_config
             .intent_parsers
             .into_iter()
@@ -219,15 +219,15 @@ fn extract_builtin_slot(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use configurations::NluEngineConfiguration;
+    use models::NluEngineModel;
     use snips_nlu_ontology::{IntentClassifierResult, NumberValue};
     use testutils::parse_json;
 
     #[test]
     fn parse_works() {
         // Given
-        let configuration: NluEngineConfiguration =
-            parse_json("tests/configurations/trained_assistant.json");
+        let configuration: NluEngineModel =
+            parse_json("tests/models/trained_assistant.json");
         let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
 
         // When

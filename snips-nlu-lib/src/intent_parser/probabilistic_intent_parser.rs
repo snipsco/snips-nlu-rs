@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
-use configurations::ProbabilisticParserConfiguration;
+use models::ProbabilisticParserModel;
 use errors::*;
 use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 use intent_parser::{IntentParser, InternalParsingResult};
@@ -13,7 +13,7 @@ pub struct ProbabilisticIntentParser {
 }
 
 impl ProbabilisticIntentParser {
-    pub fn new(config: ProbabilisticParserConfiguration) -> Result<Self> {
+    pub fn new(config: ProbabilisticParserModel) -> Result<Self> {
         let slot_fillers_vec: Result<Vec<_>> = config
             .slot_fillers
             .into_iter()

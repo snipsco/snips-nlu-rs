@@ -5,7 +5,7 @@ use std::str::FromStr;
 use builtin_entity_parsing::BuiltinEntityParserFactory;
 use super::crf_utils::TaggingScheme;
 use super::features;
-use configurations::FeatureFactory;
+use models::FeatureFactory;
 use errors::*;
 use nlu_utils::token::Token;
 use resources::gazetteer::{HashSetGazetteer, StaticMapGazetteer};

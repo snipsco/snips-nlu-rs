@@ -6,7 +6,7 @@ use std::sync::Arc;
 use regex::{Regex, RegexBuilder};
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use configurations::DeterministicParserConfiguration;
+use models::DeterministicParserModel;
 use errors::*;
 use intent_parser::{internal_parsing_result, IntentParser, InternalParsingResult};
 use language::FromLanguage;
@@ -26,7 +26,7 @@ pub struct DeterministicIntentParser {
 }
 
 impl DeterministicIntentParser {
-    pub fn new(configuration: DeterministicParserConfiguration) -> Result<Self> {
+    pub fn new(configuration: DeterministicParserModel) -> Result<Self> {
         let language = Language::from_str(&configuration.language_code)?;
         let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
         Ok(DeterministicIntentParser {
@@ -275,14 +275,14 @@ fn get_range_shift(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use configurations::DeterministicParserConfiguration;
+    use models::DeterministicParserModel;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::{IntentClassifierResult, Language};
     use std::collections::HashMap;
     use std::iter::FromIterator;
 
-    fn test_configuration() -> DeterministicParserConfiguration {
-        DeterministicParserConfiguration {
+    fn test_configuration() -> DeterministicParserModel {
+        DeterministicParserModel {
             language_code: "en".to_string(),
             patterns: hashmap![
                 "dummy_intent_1".to_string() => vec![

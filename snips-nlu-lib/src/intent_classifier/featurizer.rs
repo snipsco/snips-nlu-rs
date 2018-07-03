@@ -6,7 +6,7 @@ use itertools::Itertools;
 use ndarray::prelude::*;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use configurations::FeaturizerConfiguration;
+use models::FeaturizerModel;
 use errors::*;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
@@ -29,7 +29,7 @@ pub struct Featurizer {
 }
 
 impl Featurizer {
-    pub fn new(config: FeaturizerConfiguration) -> Result<Self> {
+    pub fn new(config: FeaturizerModel) -> Result<Self> {
         let best_features = config.best_features;
         let vocabulary = config.tfidf_vectorizer.vocab;
         let language = Language::from_str(&*config.language_code)?;
@@ -110,7 +110,9 @@ impl Featurizer {
             builtin_entities_features,
             entities_features,
             word_cluster_features,
-        ].into_iter()).collect()
+        ].into_iter()
+            .flat_map(|features| features)
+            .collect()
     }
 }
 
@@ -157,8 +159,7 @@ mod tests {
     use super::{get_dataset_entities_features, get_word_cluster_features, normalize_stem,
                 Featurizer};
 
-    use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
-                         TfIdfVectorizerConfiguration};
+    use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
     use resources::stemmer::Stemmer;
@@ -225,12 +226,12 @@ mod tests {
             "hello".to_string() => vec!["featureentitygreeting".to_string(), "featureentityword".to_string()]
         ];
         let language_code = "en";
-        let tfidf_vectorizer = TfIdfVectorizerConfiguration { idf_diag, vocab };
+        let tfidf_vectorizer = TfIdfVectorizerModel { idf_diag, vocab };
 
-        let featurizer_config = FeaturizerConfiguration {
+        let featurizer_config = FeaturizerModel {
             language_code: language_code.to_string(),
             tfidf_vectorizer,
-            config: FeaturizerConfigConfiguration {
+            config: FeaturizerConfiguration {
                 sublinear_tf: false,
                 word_clusters_name: None,
             },

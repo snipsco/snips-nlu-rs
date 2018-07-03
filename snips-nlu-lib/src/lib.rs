@@ -27,7 +27,7 @@ extern crate zip;
 extern crate maplit;
 
 mod builtin_entity_parsing;
-mod configurations;
+mod models;
 pub mod errors;
 mod intent_classifier;
 mod intent_parser;
@@ -42,7 +42,7 @@ mod utils;
 
 pub const MODEL_VERSION: &str = "0.15.0";
 
-pub use configurations::*;
+pub use models::*;
 pub use errors::*;
 pub use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
