@@ -1,13 +1,16 @@
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
 use std::ops::Range;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use regex::{Regex, RegexBuilder};
+use serde_json;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use models::DeterministicParserModel;
 use errors::*;
+use models::{FromPath, DeterministicParserModel};
 use intent_parser::{internal_parsing_result, IntentParser, InternalParsingResult};
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
@@ -25,6 +28,15 @@ pub struct DeterministicIntentParser {
     language: Language,
 }
 
+impl FromPath for DeterministicIntentParser {
+    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let parser_model_path = path.as_ref().join("intent_parser.json");
+        let model_file = File::open(parser_model_path)?;
+        let model: DeterministicParserModel = serde_json::from_reader(model_file)?;
+        Self::new(model)
+    }
+}
+
 impl DeterministicIntentParser {
     pub fn new(configuration: DeterministicParserModel) -> Result<Self> {
         let language = Language::from_str(&configuration.language_code)?;
@@ -37,21 +49,6 @@ impl DeterministicIntentParser {
             language,
         })
     }
-}
-
-fn compile_regexes_per_intent(
-    patterns: HashMap<String, Vec<String>>,
-) -> Result<HashMap<String, Vec<Regex>>> {
-    patterns
-        .into_iter()
-        .map(|(intent, patterns)| {
-            let regexes: Result<_> = patterns
-                .into_iter()
-                .map(|p| Ok(RegexBuilder::new(&p).case_insensitive(true).build()?))
-                .collect();
-            Ok((intent, regexes?))
-        })
-        .collect()
 }
 
 impl IntentParser for DeterministicIntentParser {
@@ -156,6 +153,21 @@ impl DeterministicIntentParser {
 
         None
     }
+}
+
+fn compile_regexes_per_intent(
+    patterns: HashMap<String, Vec<String>>,
+) -> Result<HashMap<String, Vec<Regex>>> {
+    patterns
+        .into_iter()
+        .map(|(intent, patterns)| {
+            let regexes: Result<_> = patterns
+                .into_iter()
+                .map(|p| Ok(RegexBuilder::new(&p).case_insensitive(true).build()?))
+                .collect();
+            Ok((intent, regexes?))
+        })
+        .collect()
 }
 
 fn deduplicate_overlapping_slots(
@@ -275,6 +287,7 @@ fn get_range_shift(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use utils::file_path;
     use models::DeterministicParserModel;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::{IntentClassifierResult, Language};
@@ -317,6 +330,32 @@ mod tests {
                 "dummy_slot_name4".to_string() => "snips/amountOfMoney".to_string(),
             ],
         }
+    }
+
+    #[test]
+    fn from_path_works() {
+        // Given
+        let path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("deterministic_intent_parser");
+
+        // When
+        let intent_parser = DeterministicIntentParser::from_path(path).unwrap();
+        let parsing_result = intent_parser.parse("make me two cups of coffee", None).unwrap();
+
+        // Then
+        let expected_intent = Some("MakeCoffee");
+        let expected_slots= Some(vec![
+            InternalSlot {
+                value: "two".to_string(),
+                char_range: 8..11,
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string()
+            }
+        ]);
+        assert_eq!(expected_intent, parsing_result.as_ref().map(|res| &*res.intent.intent_name));
+        assert_eq!(expected_slots, parsing_result.map(|res| res.slots));
     }
 
     #[test]

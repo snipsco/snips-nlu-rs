@@ -1,18 +1,22 @@
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
 use std::iter::FromIterator;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use itertools::Itertools;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use models::{DatasetMetadata, Entity, NluEngineModelConvertible};
+use models::{DatasetMetadata, Entity, NluEngineModelConvertible, ProcessingUnitMetadata};
 use errors::*;
-use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
+use intent_parser::*;
 use language::FromLanguage;
+use models::NluEngineModel2;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize};
+use serde_json;
 use slot_utils::resolve_builtin_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 
@@ -20,6 +24,34 @@ pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
     parsers: Vec<Box<IntentParser>>,
     builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
+}
+
+impl SnipsNluEngine {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let parser_model_path = path.as_ref().join("intent_parser.json");
+        let model_file = File::open(parser_model_path)?;
+        let model: NluEngineModel2 = serde_json::from_reader(model_file)?;
+        let parsers = model
+            .intent_parsers
+            .iter()
+            .map(|parser_name| {
+                let parser_path = path.as_ref().join(parser_name);
+                let metadata_path = parser_path.join("metadata.json");
+                let metadata_file = File::open(metadata_path)?;
+                let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)?;
+                Ok(build_intent_parser(metadata, parser_path)? as _)
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        let language = Language::from_str(&model.dataset_metadata.language_code)?;
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
+
+        Ok(SnipsNluEngine {
+            dataset_metadata: model.dataset_metadata,
+            parsers,
+            builtin_entity_parser,
+        })
+    }
 }
 
 impl SnipsNluEngine {

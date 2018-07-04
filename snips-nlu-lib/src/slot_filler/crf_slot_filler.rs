@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
+use std::fs;
 use std::iter::FromIterator;
 use std::ops::Range;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync;
 
@@ -8,16 +10,17 @@ use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use models::SlotFillerModel;
 use errors::*;
 use language::FromLanguage;
+use models::{FromPath, SlotFillerModel, SlotFillerModel2};
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::substring_with_char_range;
 use nlu_utils::token::{tokenize, Token};
-use slot_filler::SlotFiller;
+use serde_json;
 use slot_filler::crf_utils::*;
 use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
+use slot_filler::SlotFiller;
 use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
 
@@ -28,6 +31,32 @@ pub struct CRFSlotFiller {
     feature_processor: ProbabilisticFeatureProcessor,
     slot_name_mapping: HashMap<String, String>,
     builtin_entity_parser: sync::Arc<CachingBuiltinEntityParser>,
+}
+
+impl FromPath for CRFSlotFiller {
+    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let slot_filler_model_path = path.as_ref().join("slot_filler.json");
+        let model_file = fs::File::open(slot_filler_model_path)?;
+        let model: SlotFillerModel2 = serde_json::from_reader(model_file)?;
+
+        let tagging_scheme = TaggingScheme::from_u8(model.config.tagging_scheme)?;
+        let slot_name_mapping = model.slot_name_mapping;
+        let feature_processor =
+            ProbabilisticFeatureProcessor::new(&model.config.feature_factory_configs)?;
+        let crf_path = path.as_ref().join(&model.crf_model_file);
+        let tagger = CRFSuiteTagger::create_from_file(crf_path)?;
+        let language = Language::from_str(&model.language_code)?;
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
+
+        Ok(Self {
+            language,
+            tagging_scheme,
+            tagger: sync::Mutex::new(tagger),
+            feature_processor,
+            slot_name_mapping,
+            builtin_entity_parser,
+        })
+    }
 }
 
 impl CRFSlotFiller {
@@ -354,6 +383,7 @@ mod tests {
     use super::*;
     use nlu_utils::language::Language as NluUtilsLanguage;
     use snips_nlu_ontology::{Grain, InstantTimeValue, Language, NumberValue, Precision, SlotValue};
+    use utils::file_path;
 
     #[derive(Debug, Fail)]
     pub enum TestError {
@@ -395,6 +425,37 @@ mod tests {
                 .map(|(i, _)| self.tags_probabilities[i])
                 .ok_or(TestError::UnknownTags(tags).into())
         }
+    }
+
+    impl FromPath for TestSlotFiller {
+        fn from_path<P: AsRef<Path>>(_path: P) -> Result<Self> {
+            unimplemented!()
+        }
+    }
+
+    #[test]
+    fn from_path_works() {
+        // Given
+        let path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("probabilistic_intent_parser")
+            .join("slot_filler_MakeCoffee");
+
+        // When
+        let slot_filler = CRFSlotFiller::from_path(path).unwrap();
+        let slots = slot_filler.get_slots("make me two cups of coffee").unwrap();
+
+        // Then
+        let expected_slots = vec![
+            InternalSlot {
+                value: "two".to_string(),
+                char_range: 8..11,
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string()
+            }
+        ];
+        assert_eq!(expected_slots, slots);
     }
 
     #[test]

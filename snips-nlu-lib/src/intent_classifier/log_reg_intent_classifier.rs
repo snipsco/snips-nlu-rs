@@ -1,9 +1,12 @@
 use std::collections::HashSet;
+use std::fs::File;
+use std::path::Path;
 
 use itertools::Itertools;
 use ndarray::prelude::*;
+use serde_json;
 
-use models::IntentClassifierModel;
+use models::{FromPath, IntentClassifierModel};
 use errors::*;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
@@ -15,15 +18,24 @@ pub struct LogRegIntentClassifier {
     logreg: Option<MulticlassLogisticRegression>,
 }
 
+impl FromPath for LogRegIntentClassifier {
+    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let classifier_model_path = path.as_ref().join("intent_classifier.json");
+        let model_file = File::open(classifier_model_path)?;
+        let model: IntentClassifierModel = serde_json::from_reader(model_file)?;
+        Self::new(model)
+    }
+}
+
 impl LogRegIntentClassifier {
-    pub fn new(config: IntentClassifierModel) -> Result<Self> {
-        let featurizer: Option<Featurizer> = if let Some(featurizer_config) = config.featurizer {
-            Some(Featurizer::new(featurizer_config)?)
+    pub fn new(model: IntentClassifierModel) -> Result<Self> {
+        let featurizer: Option<Featurizer> = if let Some(featurizer_model) = model.featurizer {
+            Some(Featurizer::new(featurizer_model)?)
         } else {
             None
         };
 
-        let logreg = if let (Some(intercept), Some(coeffs)) = (config.intercept, config.coeffs) {
+        let logreg = if let (Some(intercept), Some(coeffs)) = (model.intercept, model.coeffs) {
             let arr_intercept = Array::from_vec(intercept);
             let nb_classes = arr_intercept.dim();
             let nb_features = coeffs[0].len();
@@ -36,7 +48,7 @@ impl LogRegIntentClassifier {
         }?;
 
         Ok(Self {
-            intent_list: config.intent_list,
+            intent_list: model.intent_list,
             featurizer,
             logreg,
         })
@@ -137,6 +149,7 @@ fn get_filtered_out_intents_indexes(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use utils::file_path;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
 
@@ -505,6 +518,27 @@ mod tests {
             intent_list,
             logreg: Some(logreg),
         }
+    }
+
+    #[test]
+    fn from_path_works() {
+        // Given
+        let path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("probabilistic_intent_parser")
+            .join("intent_classifier");
+
+        // When
+        let intent_classifier = LogRegIntentClassifier::from_path(path).unwrap();
+        let intent_result = intent_classifier
+            .get_intent("Make me one cup of tea please", None)
+            .unwrap()
+            .map(|res| res.intent_name);
+
+        // Then
+        let expected_intent = Some("MakeTea".to_string());
+        assert_eq!(expected_intent, intent_result);
     }
 
     #[test]

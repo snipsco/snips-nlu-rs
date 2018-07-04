@@ -19,6 +19,14 @@ pub struct NluEngineModel {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct NluEngineModel2 {
+    pub dataset_metadata: DatasetMetadata,
+    pub intent_parsers: Vec<String>,
+    pub model_version: String,
+    pub training_package_version: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct DatasetMetadata {
     pub language_code: String,
     pub entities: HashMap<String, Entity>,
