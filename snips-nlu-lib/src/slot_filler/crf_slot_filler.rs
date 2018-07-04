@@ -12,7 +12,7 @@ use itertools::Itertools;
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use errors::*;
 use language::FromLanguage;
-use models::{FromPath, SlotFillerModel, SlotFillerModel2};
+use models::{FromPath, SlotFillerModel};
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::substring_with_char_range;
@@ -37,7 +37,7 @@ impl FromPath for CRFSlotFiller {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let slot_filler_model_path = path.as_ref().join("slot_filler.json");
         let model_file = fs::File::open(slot_filler_model_path)?;
-        let model: SlotFillerModel2 = serde_json::from_reader(model_file)?;
+        let model: SlotFillerModel = serde_json::from_reader(model_file)?;
 
         let tagging_scheme = TaggingScheme::from_u8(model.config.tagging_scheme)?;
         let slot_name_mapping = model.slot_name_mapping;
@@ -46,28 +46,6 @@ impl FromPath for CRFSlotFiller {
         let crf_path = path.as_ref().join(&model.crf_model_file);
         let tagger = CRFSuiteTagger::create_from_file(crf_path)?;
         let language = Language::from_str(&model.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
-
-        Ok(Self {
-            language,
-            tagging_scheme,
-            tagger: sync::Mutex::new(tagger),
-            feature_processor,
-            slot_name_mapping,
-            builtin_entity_parser,
-        })
-    }
-}
-
-impl CRFSlotFiller {
-    pub fn new(config: SlotFillerModel) -> Result<CRFSlotFiller> {
-        let tagging_scheme = TaggingScheme::from_u8(config.config.tagging_scheme)?;
-        let slot_name_mapping = config.slot_name_mapping;
-        let feature_processor =
-            ProbabilisticFeatureProcessor::new(&config.config.feature_factory_configs)?;
-        let converted_data = ::base64::decode(&config.crf_model_data)?;
-        let tagger = CRFSuiteTagger::create_from_memory(converted_data)?;
-        let language = Language::from_str(&config.language_code)?;
         let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
 
         Ok(Self {

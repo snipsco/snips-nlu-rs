@@ -4,11 +4,11 @@ use std::iter::FromIterator;
 use std::path::Path;
 
 use errors::*;
-use intent_classifier::{build_intent_classifier, IntentClassifier, LogRegIntentClassifier};
+use intent_classifier::{build_intent_classifier, IntentClassifier};
 use intent_parser::{IntentParser, InternalParsingResult};
-use models::{FromPath, ProbabilisticParserModel, ProbabilisticParserModel2};
+use models::{FromPath, ProbabilisticParserModel};
 use serde_json;
-use slot_filler::{build_slot_filler, CRFSlotFiller, SlotFiller};
+use slot_filler::{build_slot_filler, SlotFiller};
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,
@@ -19,7 +19,7 @@ impl FromPath for ProbabilisticIntentParser {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let parser_model_path = path.as_ref().join("intent_parser.json");
         let model_file = File::open(parser_model_path)?;
-        let model: ProbabilisticParserModel2 = serde_json::from_reader(model_file)?;
+        let model: ProbabilisticParserModel = serde_json::from_reader(model_file)?;
         let intent_classifier_path = path.as_ref().join("intent_classifier");
         let intent_classifier = build_intent_classifier(intent_classifier_path)?;
         let slot_fillers_vec: Result<Vec<_>> = model.slot_fillers.iter()
@@ -32,29 +32,6 @@ impl FromPath for ProbabilisticIntentParser {
             .collect();
         let slot_fillers = HashMap::from_iter(slot_fillers_vec?);
         Ok(Self { intent_classifier, slot_fillers })
-    }
-}
-
-impl ProbabilisticIntentParser {
-    pub fn new(config: ProbabilisticParserModel) -> Result<Self> {
-        let slot_fillers_vec: Result<Vec<_>> = config
-            .slot_fillers
-            .into_iter()
-            .map(|(intent_name, slot_filler_config)| {
-                Ok((
-                    intent_name,
-                    Box::new(CRFSlotFiller::new(slot_filler_config)?) as _,
-                ))
-            })
-            .collect();
-        let slot_fillers = HashMap::from_iter(slot_fillers_vec?);
-        let intent_classifier =
-            Box::new(LogRegIntentClassifier::new(config.intent_classifier)?) as _;
-
-        Ok(ProbabilisticIntentParser {
-            intent_classifier,
-            slot_fillers,
-        })
     }
 }
 

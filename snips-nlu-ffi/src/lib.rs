@@ -14,11 +14,9 @@ extern crate snips_nlu_ontology_ffi_macros;
 use failure::ResultExt;
 
 use std::ffi::CString;
-use std::io::Cursor;
-use std::slice;
 use std::sync::Mutex;
 
-use snips_nlu_lib::{FileBasedModel, SnipsNluEngine, ZipBasedModel};
+use snips_nlu_lib::{FromPath, SnipsNluEngine};
 use snips_nlu_ontology_ffi_macros::CIntentParserResult;
 
 use ffi_utils::*;
@@ -44,23 +42,6 @@ pub extern "C" fn snips_nlu_engine_create_from_dir(
     client: *mut *const CSnipsNluEngine,
 ) -> SNIPS_RESULT {
     wrap!(create_from_dir(root_dir, client))
-}
-
-#[no_mangle]
-pub extern "C" fn snips_nlu_engine_create_from_file(
-    file_path: *const libc::c_char,
-    client: *mut *const CSnipsNluEngine,
-) -> SNIPS_RESULT {
-    wrap!(create_from_file(file_path, client))
-}
-
-#[no_mangle]
-pub extern "C" fn snips_nlu_engine_create_from_zip(
-    zip: *const libc::c_uchar,
-    zip_size: libc::c_uint,
-    client: *mut *const CSnipsNluEngine,
-) -> SNIPS_RESULT {
-    wrap!(create_from_zip(zip, zip_size, client))
 }
 
 #[no_mangle]
@@ -111,40 +92,7 @@ fn create_from_dir(
 ) -> Result<()> {
     let root_dir = create_rust_string_from!(root_dir);
 
-    let assistant_config = FileBasedModel::from_dir(root_dir, false)?;
-    let intent_parser = SnipsNluEngine::new(assistant_config)?;
-
-    let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
-    unsafe { *client = raw_pointer };
-
-    Ok(())
-}
-
-fn create_from_file(
-    file_path: *const libc::c_char,
-    client: *mut *const CSnipsNluEngine,
-) -> Result<()> {
-    let file_path = create_rust_string_from!(file_path);
-
-    let assistant_config = FileBasedModel::from_path(file_path, false)?;
-    let intent_parser = SnipsNluEngine::new(assistant_config)?;
-
-    let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
-    unsafe { *client = raw_pointer };
-
-    Ok(())
-}
-
-fn create_from_zip(
-    zip: *const libc::c_uchar,
-    zip_size: libc::c_uint,
-    client: *mut *const CSnipsNluEngine,
-) -> Result<()> {
-    let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
-    let reader = Cursor::new(slice.to_owned());
-
-    let assistant_config = ZipBasedModel::new(reader, false)?;
-    let intent_parser = SnipsNluEngine::new(assistant_config)?;
+    let intent_parser = SnipsNluEngine::from_path(root_dir)?;
 
     let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
     unsafe { *client = raw_pointer };
