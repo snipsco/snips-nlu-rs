@@ -247,7 +247,7 @@ fn augment_slots(
         slot_filler.get_tagging_scheme(),
         intent_slots_mapping,
     )?;
-    let filtered_builtin_entities = grouped_entities.into_iter().flatten().collect();
+    let filtered_builtin_entities = Itertools::flatten(grouped_entities.into_iter()).collect();
     Ok(reconciliate_builtin_slots(
         text,
         slots,
