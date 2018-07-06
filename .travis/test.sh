@@ -5,8 +5,7 @@ source .travis/common.sh
 
 if [ "${RUST_TESTS}" == "true" ]; then
     echo "Running rust tests..."
-    # Uncomment when snips-nlu-resources-packed will be replaced by an other solution that take less memory
-    #cargo test --all || die "Rust tests failed"
+    cargo test --all || die "Rust tests failed"
     cargo run -p snips-nlu-lib \
         --example weather \
         snips-nlu-lib/examples/trained_assistant.json \

@@ -11,13 +11,15 @@ use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityPar
 use errors::*;
 use intent_parser::*;
 use language::FromLanguage;
-use models::{DatasetMetadata, Entity, FromPath, NluEngineModel, ProcessingUnitMetadata};
+use models::{DatasetMetadata, Entity, NluEngineModel, ProcessingUnitMetadata};
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize};
+use resources::loading::load_resources;
 use serde_json;
 use slot_utils::resolve_builtin_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
+use utils::FromPath;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -27,6 +29,8 @@ pub struct SnipsNluEngine {
 
 impl FromPath for SnipsNluEngine {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let resources_path = path.as_ref().join("resources");
+        load_resources(resources_path)?;
         let engine_model_path = path.as_ref().join("nlu_engine.json");
         let model_file = File::open(engine_model_path)?;
         let model: NluEngineModel = serde_json::from_reader(model_file)?;

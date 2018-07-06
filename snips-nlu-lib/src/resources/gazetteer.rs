@@ -1,64 +1,37 @@
-use std::collections::HashSet;
-use std::convert::From;
-#[cfg(test)]
-use std::io::prelude::Read;
+use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::io::{BufRead, BufReader};
 use std::iter::FromIterator;
+use std::path::Path;
+use std::sync::{Arc, Mutex};
 
 use errors::*;
-use resources_packed::gazetteer_hits;
-#[cfg(test)]
-use serde_json;
 use snips_nlu_ontology::Language;
 
 pub trait Gazetteer {
     fn contains(&self, value: &str) -> bool;
 }
 
-pub struct StaticMapGazetteer {
-    name: String,
-    language: Language,
-}
-
-impl StaticMapGazetteer {
-    pub fn new(gazetteer_name: &str, language: Language, use_stemming: bool) -> Result<Self> {
-        let stemming_suffix = if use_stemming { "_stem" } else { "" };
-        let full_gazetteer_name = format!("{}{}", gazetteer_name, stemming_suffix);
-        // Hack to check if gazetteer exists
-        gazetteer_hits(language, &full_gazetteer_name, "")?;
-        Ok(Self {
-            name: full_gazetteer_name,
-            language,
-        })
-    }
-}
-
-impl Gazetteer for StaticMapGazetteer {
-    fn contains(&self, value: &str) -> bool {
-        // checked during initialization
-        gazetteer_hits(self.language, &self.name, value).unwrap()
-    }
-}
-
 pub struct HashSetGazetteer {
     values: HashSet<String>,
 }
 
-#[cfg(test)]
 impl HashSetGazetteer {
-    pub fn new(r: &mut Read) -> Result<HashSetGazetteer> {
-        let vec: Vec<String> = serde_json::from_reader(r)
-            .map_err(|err| format!("could not parse json: {:?}", err))
-            .unwrap();
-        Ok(HashSetGazetteer {
-            values: HashSet::from_iter(vec),
-        })
+    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let file = File::open(path)?;
+        let reader = BufReader::new(&file);
+        let mut values = HashSet::<String>::new();
+        for line in reader.lines() {
+            let word = line?;
+            if word.len() > 0 {
+                values.insert(word);
+            }
+        }
+        Ok(Self { values })
     }
 }
 
-impl<I> From<I> for HashSetGazetteer
-where
-    I: Iterator<Item = String>,
-{
+impl<I> From<I> for HashSetGazetteer where I: Iterator<Item=String> {
     fn from(values_it: I) -> Self {
         Self {
             values: HashSet::from_iter(values_it),
@@ -72,17 +45,72 @@ impl Gazetteer for HashSetGazetteer {
     }
 }
 
+lazy_static! {
+    static ref GAZETTEERS: Mutex<HashMap<GazetteerConfiguration, Arc<HashSetGazetteer>>> =
+        Mutex::new(HashMap::new());
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct GazetteerConfiguration {
+    pub name: String,
+    pub language: Language,
+    pub use_stemming: bool,
+}
+
+pub fn load_gazetteer<P: AsRef<Path>>(
+    name: String,
+    language: Language,
+    use_stemming: bool,
+    path: P,
+) -> Result<()> {
+    let configuration = GazetteerConfiguration { name, language, use_stemming };
+
+    if GAZETTEERS.lock().unwrap().contains_key(&configuration) {
+        return Ok(());
+    }
+    let gazetteer = HashSetGazetteer::from_path(path)?;
+    GAZETTEERS
+        .lock()
+        .unwrap()
+        .entry(configuration)
+        .or_insert_with(|| Arc::new(gazetteer));
+    Ok(())
+}
+
+pub fn get_gazetteer(
+    name: String,
+    language: Language,
+    use_stemming: bool,
+) -> Result<Arc<HashSetGazetteer>> {
+    let configuration = GazetteerConfiguration { name, language, use_stemming };
+    GAZETTEERS
+        .lock()
+        .unwrap()
+        .get(&configuration)
+        .map(|gazetteer| gazetteer.clone())
+        .ok_or(format_err!("Cannot find gazetteer with configuration {:?}", configuration))
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Gazetteer, HashSetGazetteer};
+    use utils::file_path;
 
     #[test]
     fn hashset_gazetteer_works() {
-        let data = r#"["abc", "xyz"]"#;
-        let gazetteer = HashSetGazetteer::new(&mut data.as_bytes());
+        // Given
+        let path = file_path("tests")
+            .join("gazetteers")
+            .join("animals.txt");
+
+        // When
+        let gazetteer = HashSetGazetteer::from_path(path);
+
+        // Then
         assert!(gazetteer.is_ok());
         let gazetteer = gazetteer.unwrap();
-        assert!(gazetteer.contains("abc"));
-        assert!(!gazetteer.contains("def"));
+        assert!(gazetteer.contains("dog"));
+        assert!(gazetteer.contains("crocodile"));
+        assert!(!gazetteer.contains("bird"));
     }
 }

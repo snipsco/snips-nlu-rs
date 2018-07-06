@@ -9,9 +9,3 @@ pub use self::intent_parser::*;
 pub use self::nlu_engine::*;
 pub use self::slot_filler::*;
 pub use self::processing_unit_metadata::*;
-use std::path::Path;
-use errors::*;
-
-pub trait FromPath {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> where Self: Sized;
-}

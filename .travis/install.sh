@@ -8,9 +8,7 @@ echo '
 members=[
     "snips-nlu-ffi",
     "snips-nlu-ffi/python/snips-nlu-python-ffi",
-    "snips-nlu-lib",
-    "snips-nlu-resources",
-    "snips-nlu-resources-packed"
+    "snips-nlu-lib"
 ]' > Cargo.toml
 
 echo "Replacing snips-nlu-ffi url for local version"

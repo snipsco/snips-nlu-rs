@@ -12,7 +12,7 @@ use itertools::Itertools;
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use errors::*;
 use language::FromLanguage;
-use models::{FromPath, SlotFillerModel};
+use models::SlotFillerModel;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::substring_with_char_range;
@@ -23,6 +23,7 @@ use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
 use slot_filler::SlotFiller;
 use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
+use utils::FromPath;
 
 pub struct CRFSlotFiller {
     language: Language,
@@ -362,6 +363,7 @@ mod tests {
     use nlu_utils::language::Language as NluUtilsLanguage;
     use snips_nlu_ontology::{Grain, InstantTimeValue, Language, NumberValue, Precision, SlotValue};
     use utils::file_path;
+    use resources::loading::load_resources;
 
     #[derive(Debug, Fail)]
     pub enum TestError {
@@ -414,14 +416,19 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let path = file_path("tests")
+        let trained_engine_path = file_path("tests")
             .join("models")
-            .join("trained_engine")
+            .join("trained_engine");
+
+        let slot_filler_path = trained_engine_path
             .join("probabilistic_intent_parser")
             .join("slot_filler_MakeCoffee");
 
+        let resources_path = trained_engine_path.join("resources");
+        load_resources(resources_path).unwrap();
+
         // When
-        let slot_filler = CRFSlotFiller::from_path(path).unwrap();
+        let slot_filler = CRFSlotFiller::from_path(slot_filler_path).unwrap();
         let slots = slot_filler.get_slots("make me two cups of coffee").unwrap();
 
         // Then

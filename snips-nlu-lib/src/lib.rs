@@ -17,7 +17,6 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate snips_nlu_ontology;
 extern crate snips_nlu_ontology_parsers;
-extern crate snips_nlu_resources_packed as resources_packed;
 extern crate snips_nlu_utils as nlu_utils;
 extern crate yolo;
 extern crate zip;
@@ -49,4 +48,4 @@ pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIn
 pub use nlu_engine::SnipsNluEngine;
 pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
-pub use utils::file_path; // This is used by benches
+pub use utils::{file_path, FromPath}; // This is used by benches

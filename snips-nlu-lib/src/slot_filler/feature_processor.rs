@@ -8,10 +8,11 @@ use super::features;
 use models::FeatureFactory;
 use errors::*;
 use nlu_utils::token::Token;
-use resources::gazetteer::{HashSetGazetteer, StaticMapGazetteer};
-use resources::stemmer::StaticMapStemmer;
-use resources::word_clusterer::StaticMapWordClusterer;
+use resources::gazetteer::{get_gazetteer, HashSetGazetteer};
+use resources::stemmer::get_stemmer;
+use resources::word_clusterer::get_word_clusterer;
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
+use std::sync::Arc;
 
 pub struct ProbabilisticFeatureProcessor {
     functions: Vec<FeatureFunction>,
@@ -61,8 +62,8 @@ struct FeatureFunction {
 
 impl FeatureFunction {
     fn new<T>(key: &str, offsets: Vec<i32>, function: T) -> FeatureFunction
-    where
-        T: Fn(&[Token], usize) -> Option<String> + Send + Sync + 'static,
+        where
+            T: Fn(&[Token], usize) -> Option<String> + Send + Sync + 'static,
     {
         let offsets = offsets
             .into_iter()
@@ -86,7 +87,7 @@ impl FeatureFunction {
 
 fn get_feature_function(f: &FeatureFactory) -> Result<Vec<FeatureFunction>> {
     let offsets = f.offsets.clone();
-    match &*f.factory_name {
+    match f.factory_name.as_ref() {
         "is_digit" => Ok(vec![is_digit_feature_function(offsets)?]),
         "length" => Ok(vec![length_feature_function(offsets)?]),
         "is_first" => Ok(vec![is_first_feature_function(offsets)?]),
@@ -134,12 +135,19 @@ fn ngram_feature_function(
     let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
     let common_words_gazetteer_name = parse_as_opt_string(args, "common_words_gazetteer_name")?;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
-    let common_words_gazetteer = if let Some(name) = common_words_gazetteer_name {
-        Some(StaticMapGazetteer::new(&name, language, use_stemming)?)
+    let common_words_gazetteer: Option<Arc<_>> = if let Some(gazetteer) = common_words_gazetteer_name
+        .map(|name| get_gazetteer(name, language, use_stemming)) {
+        Some(gazetteer?)
     } else {
         None
     };
-    let stemmer = get_stemmer(language, use_stemming);
+    let stemmer_opt: Option<Arc<_>> = if use_stemming {
+        let stemmer = get_stemmer(language)
+            .ok_or(format_err!("No stemmer found for language {:?}", language))?;
+        Some(stemmer)
+    } else {
+        None
+    };
     Ok(FeatureFunction::new(
         &format!("ngram_{}", n),
         offsets,
@@ -148,8 +156,8 @@ fn ngram_feature_function(
                 tokens,
                 token_index,
                 n,
-                stemmer.as_ref(),
-                common_words_gazetteer.as_ref(),
+                stemmer_opt.as_ref().map(|s| s.as_ref()),
+                common_words_gazetteer.as_ref().map(|s| s.as_ref()),
             )
         },
     ))
@@ -200,10 +208,17 @@ fn entity_match_feature_function(
     let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
-    let stemmer = get_stemmer(language, use_stemming);
+    let opt_stemmer: Option<Arc<_>> = if use_stemming {
+        let stemmer = get_stemmer(language)
+            .ok_or(format_err!("No stemmer found for language {:?}", language))?;
+        Some(stemmer)
+    } else {
+        None
+    };
     collections
         .into_iter()
         .map(|(entity_name, values)| {
+            let opt_stemmer_cloned = opt_stemmer.clone();
             let entity_gazetteer = HashSetGazetteer::from(values.into_iter());
             Ok(FeatureFunction::new(
                 &format!("entity_match_{}", entity_name),
@@ -213,7 +228,7 @@ fn entity_match_feature_function(
                         tokens,
                         token_index,
                         &entity_gazetteer,
-                        stemmer.as_ref(),
+                        opt_stemmer_cloned.as_ref().map(|s| s.as_ref()),
                         tagging_scheme,
                     )
                 },
@@ -242,16 +257,16 @@ fn builtin_entity_match_feature_function(
                 offsets.to_vec(),
                 move |tokens, token_index| {
                     if let (Some(parser), Some(builtin_entity_kind)) =
-                        (builtin_parser.as_ref(), builtin_entity_kind)
-                    {
-                        features::get_builtin_entity_match(
-                            tokens,
-                            token_index,
-                            &**parser,
-                            builtin_entity_kind,
-                            tagging_scheme,
-                        )
-                    } else {
+                    (builtin_parser.as_ref(), builtin_entity_kind)
+                        {
+                            features::get_builtin_entity_match(
+                                tokens,
+                                token_index,
+                                &**parser,
+                                builtin_entity_kind,
+                                tagging_scheme,
+                            )
+                        } else {
                         None
                     }
                 },
@@ -266,11 +281,11 @@ fn word_cluster_feature_function(
 ) -> Result<FeatureFunction> {
     let cluster_name = parse_as_string(args, "cluster_name")?;
     let language = Language::from_str(&parse_as_string(args, "language_code")?)?;
-    let word_clusterer = StaticMapWordClusterer::new(language, cluster_name.clone())?;
+    let word_clusterer = get_word_clusterer(cluster_name.clone(), language)?;
     Ok(FeatureFunction::new(
         &format!("word_cluster_{}", cluster_name),
         offsets,
-        move |tokens, token_index| features::get_word_cluster(tokens, token_index, &word_clusterer),
+        move |tokens, token_index| features::get_word_cluster(tokens, token_index, word_clusterer.as_ref()),
     ))
 }
 
@@ -345,14 +360,6 @@ fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> 
         .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_u64()
         .ok_or_else(|| format_err!("'{}' isn't a u64", arg_name))?)
-}
-
-fn get_stemmer(language: Language, use_stemming: bool) -> Option<StaticMapStemmer> {
-    if use_stemming {
-        StaticMapStemmer::new(language).ok()
-    } else {
-        None
-    }
 }
 
 #[cfg(test)]

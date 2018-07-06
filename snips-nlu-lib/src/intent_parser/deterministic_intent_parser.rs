@@ -10,7 +10,7 @@ use serde_json;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use errors::*;
-use models::{FromPath, DeterministicParserModel};
+use models::DeterministicParserModel;
 use intent_parser::{internal_parsing_result, IntentParser, InternalParsingResult};
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
@@ -19,6 +19,7 @@ use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
 use snips_nlu_ontology::Language;
+use utils::FromPath;
 
 pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<String, Vec<Regex>>,

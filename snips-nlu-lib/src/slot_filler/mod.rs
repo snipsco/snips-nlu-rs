@@ -12,9 +12,10 @@ use serde_json;
 
 pub use self::crf_slot_filler::*;
 use self::crf_utils::TaggingScheme;
-use models::{FromPath, ProcessingUnitMetadata};
+use models::ProcessingUnitMetadata;
 use nlu_utils::token::Token;
 use slot_utils::InternalSlot;
+use utils::FromPath;
 
 pub trait SlotFiller: FromPath + Send + Sync {
     fn get_tagging_scheme(&self) -> TaggingScheme;

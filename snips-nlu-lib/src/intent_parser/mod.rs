@@ -7,10 +7,11 @@ use std::path::Path;
 use errors::*;
 use snips_nlu_ontology::IntentClassifierResult;
 
-use models::{FromPath, ProcessingUnitMetadata};
+use models::ProcessingUnitMetadata;
 pub use self::deterministic_intent_parser::DeterministicIntentParser;
 pub use self::probabilistic_intent_parser::ProbabilisticIntentParser;
 pub use slot_utils::InternalSlot;
+use utils::FromPath;
 
 pub struct InternalParsingResult {
     pub intent: IntentClassifierResult,

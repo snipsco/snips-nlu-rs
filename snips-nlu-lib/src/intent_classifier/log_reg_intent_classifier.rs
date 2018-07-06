@@ -6,11 +6,12 @@ use itertools::Itertools;
 use ndarray::prelude::*;
 use serde_json;
 
-use models::{FromPath, IntentClassifierModel};
+use models::IntentClassifierModel;
 use errors::*;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
 use snips_nlu_ontology::IntentClassifierResult;
+use utils::FromPath;
 
 pub struct LogRegIntentClassifier {
     intent_list: Vec<Option<String>>,

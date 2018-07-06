@@ -6,9 +6,10 @@ use std::path::Path;
 use errors::*;
 use intent_classifier::{build_intent_classifier, IntentClassifier};
 use intent_parser::{IntentParser, InternalParsingResult};
-use models::{FromPath, ProbabilisticParserModel};
+use models::ProbabilisticParserModel;
 use serde_json;
 use slot_filler::{build_slot_filler, SlotFiller};
+use utils::FromPath;
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,
@@ -67,17 +68,23 @@ mod tests {
     use super::*;
     use utils::file_path;
     use slot_utils::InternalSlot;
+    use resources::loading::load_resources;
 
     #[test]
     fn from_path_works() {
         // Given
-        let path = file_path("tests")
+        let trained_engine_path = file_path("tests")
             .join("models")
-            .join("trained_engine")
+            .join("trained_engine");
+
+        let parser_path = trained_engine_path
             .join("probabilistic_intent_parser");
 
+        let resources_path = trained_engine_path.join("resources");
+        load_resources(resources_path).unwrap();
+
         // When
-        let intent_parser = ProbabilisticIntentParser::from_path(path).unwrap();
+        let intent_parser = ProbabilisticIntentParser::from_path(parser_path).unwrap();
         let parsing_result = intent_parser.parse("make me two cups of coffee", None).unwrap();
 
         // Then

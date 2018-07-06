@@ -1,3 +1,11 @@
+use std::path::Path;
+
+use errors::*;
+
+pub trait FromPath {
+    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> where Self: Sized;
+}
+
 pub fn file_path(filename: &str) -> ::std::path::PathBuf {
     ::dinghy_test::try_test_file_path("data")
         .unwrap_or("../data".into())

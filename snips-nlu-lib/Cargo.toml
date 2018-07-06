@@ -9,7 +9,6 @@ repository = "https://github.com/snipsco/snips-nlu-rs"
 description = "Rust implementation of Snips NLU"
 
 [dependencies]
-snips-nlu-resources-packed = { path = "../snips-nlu-resources-packed" }
 crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "30b2ea6" }
 snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.57.1" }
 snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.57.1" }
