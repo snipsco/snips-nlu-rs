@@ -11,8 +11,8 @@ description = "Rust implementation of Snips NLU"
 [dependencies]
 snips-nlu-resources-packed = { path = "../snips-nlu-resources-packed" }
 crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "b18d95c" }
-snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.57.0" }
-snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.57.0" }
+snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.57.1" }
+snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.57.1" }
 snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.6.1" }
 dinghy-test = "0.3"
 failure = "0.1"
