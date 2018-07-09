@@ -169,7 +169,9 @@ mod tests {
     use nlu_utils::token::tokenize_light;
     use resources::stemmer::Stemmer;
     use resources::word_clusterer::WordClusterer;
+    use resources::loading::load_resources;
     use testutils::assert_epsilon_eq_array1;
+    use utils::file_path;
 
     struct TestWordClusterer {}
 
@@ -199,6 +201,11 @@ mod tests {
     #[test]
     fn transform_works() {
         // Given
+        let resources_path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("resources");
+        load_resources(resources_path).unwrap();
         let best_features = vec![0, 1, 2, 3, 6, 7, 8, 9];
         let vocab = hashmap![
             "awful".to_string() => 0,

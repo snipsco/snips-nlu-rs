@@ -153,6 +153,7 @@ mod tests {
     use utils::file_path;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
+    use resources::loading::load_resources;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
         let language_code = "en".to_string();
@@ -545,6 +546,11 @@ mod tests {
     #[test]
     fn get_intent_works() {
         // Given
+        let resources_path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("resources");
+        load_resources(resources_path).unwrap();
         let classifier = get_sample_log_reg_classifier();
 
         // When
