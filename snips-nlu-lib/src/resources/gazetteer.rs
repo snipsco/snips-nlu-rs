@@ -54,16 +54,14 @@ lazy_static! {
 pub struct GazetteerConfiguration {
     pub name: String,
     pub language: Language,
-    pub use_stemming: bool,
 }
 
 pub fn load_gazetteer<P: AsRef<Path>>(
     name: String,
     language: Language,
-    use_stemming: bool,
     path: P,
 ) -> Result<()> {
-    let configuration = GazetteerConfiguration { name, language, use_stemming };
+    let configuration = GazetteerConfiguration { name, language };
 
     if GAZETTEERS.lock().unwrap().contains_key(&configuration) {
         return Ok(());
@@ -80,9 +78,8 @@ pub fn load_gazetteer<P: AsRef<Path>>(
 pub fn get_gazetteer(
     name: String,
     language: Language,
-    use_stemming: bool,
 ) -> Result<Arc<HashSetGazetteer>> {
-    let configuration = GazetteerConfiguration { name, language, use_stemming };
+    let configuration = GazetteerConfiguration { name, language };
     GAZETTEERS
         .lock()
         .unwrap()

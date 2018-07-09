@@ -136,7 +136,7 @@ fn ngram_feature_function(
     let common_words_gazetteer_name = parse_as_opt_string(args, "common_words_gazetteer_name")?;
     let use_stemming = parse_as_bool(args, "use_stemming")?;
     let common_words_gazetteer: Option<Arc<_>> = if let Some(gazetteer) = common_words_gazetteer_name
-        .map(|name| get_gazetteer(name, language, use_stemming)) {
+        .map(|name| get_gazetteer(name, language)) {
         Some(gazetteer?)
     } else {
         None

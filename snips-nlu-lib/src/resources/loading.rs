@@ -41,13 +41,7 @@ pub fn load_language_resources<P: AsRef<Path>>(
             let gazetteer_path = gazetteers_directory
                 .join(gazetteer_name.clone())
                 .with_extension("txt");
-            let use_stemming = gazetteer_name.ends_with("_stem");
-            let name = if use_stemming {
-                gazetteer_name[0..(gazetteer_name.len() - 5)].to_string()
-            } else {
-                gazetteer_name
-            };
-            load_gazetteer(name, language, use_stemming, gazetteer_path)?;
+            load_gazetteer(gazetteer_name, language, gazetteer_path)?;
         }
     }
 
