@@ -1,6 +1,13 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.57.1] - 2018-07-09
+### Changed
+- Bump `snips-nlu-ontology` to `0.57.1`
+
+### Fixed
+- Crash when parsing implicit years before 1970
+
 ## [0.57.0] - 2018-06-08
 ### Changed
 - Improve matching of synonyms
@@ -53,6 +60,7 @@ All notable changes to this project will be documented in this file.
 - Rename python package to `snips_nlu_rust`
 
 
+[0.57.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.57.0...0.57.1
 [0.57.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.56.1...0.57.0
 [0.56.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.56.0...0.56.1
 [0.56.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.55.2...0.56.0
