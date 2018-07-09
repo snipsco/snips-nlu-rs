@@ -38,14 +38,14 @@ fn load_nlu_engine() -> SnipsNluEngine {
         let assistant = ZipBasedConfiguration::new(file, bypass_model_version_check).yolo();
         SnipsNluEngine::new(assistant).yolo()
     } else if let Ok(assistant_directory) = env::var(ASSISTANT_DIR_ENV) {
-        let assistant = FileBasedConfiguration::new(
+        let assistant = FileBasedConfiguration::from_path(
             file_path(&assistant_directory),
             bypass_model_version_check,
         ).yolo();
         SnipsNluEngine::new(assistant).yolo()
     } else {
         let assistant =
-            FileBasedConfiguration::new(file_path("untracked"), bypass_model_version_check).yolo();
+            FileBasedConfiguration::from_path(file_path("untracked"), bypass_model_version_check).yolo();
         SnipsNluEngine::new(assistant).yolo()
     }
 }
