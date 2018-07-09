@@ -110,7 +110,7 @@ impl Featurizer {
             .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, language))
             .sorted();
 
-        Itertools::flatten(vec![
+        vec![
             normalized_stemmed_tokens,
             builtin_entities_features,
             entities_features,
