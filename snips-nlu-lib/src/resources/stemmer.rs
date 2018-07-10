@@ -19,10 +19,11 @@ impl HashMapStemmer {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let mut values = HashMap::<String, String>::new();
         let f = File::open(path)?;
-        let mut csv_reader = csv::Reader::from_reader(f)
+        let mut csv_reader = csv::ReaderBuilder::new()
             .delimiter(b',')
             .flexible(true)
-            .has_headers(false);
+            .has_headers(false)
+            .from_reader(f);
 
         for record in csv_reader.records() {
             let elements = record?;
