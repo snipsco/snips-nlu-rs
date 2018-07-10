@@ -9,9 +9,10 @@ use itertools::Itertools;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use errors::*;
+use failure::ResultExt;
 use intent_parser::*;
 use language::FromLanguage;
-use models::{DatasetMetadata, Entity, NluEngineModel, ProcessingUnitMetadata};
+use models::{DatasetMetadata, Entity, NluEngineModel, ModelVersion, ProcessingUnitMetadata};
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize};
@@ -29,10 +30,15 @@ pub struct SnipsNluEngine {
 
 impl FromPath for SnipsNluEngine {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let engine_model_path = path.as_ref().join("nlu_engine.json");
+        Self::check_model_version(&engine_model_path)
+            .with_context(|_|
+                SnipsNluError::ModelLoad(engine_model_path.to_str().unwrap().to_string()))?;
+
         let resources_path = path.as_ref().join("resources");
         load_resources(resources_path)?;
-        let engine_model_path = path.as_ref().join("nlu_engine.json");
-        let model_file = File::open(engine_model_path)?;
+
+        let model_file = File::open(&engine_model_path)?;
         let model: NluEngineModel = serde_json::from_reader(model_file)?;
 
         let parsers = model
@@ -56,6 +62,22 @@ impl FromPath for SnipsNluEngine {
             builtin_entity_parser,
         })
     }
+}
+
+impl SnipsNluEngine {
+    fn check_model_version<P: AsRef<Path>>(path: P) -> Result<()> {
+        let model_file = File::open(&path)?;
+
+        let model_version: ModelVersion = ::serde_json::from_reader(model_file)?;
+        if model_version.model_version != ::MODEL_VERSION {
+            bail!(SnipsNluError::WrongModelVersion(
+                model_version.model_version,
+                ::MODEL_VERSION
+            ));
+        }
+        Ok(())
+    }
+
 }
 
 impl SnipsNluEngine {

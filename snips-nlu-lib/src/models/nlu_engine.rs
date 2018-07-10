@@ -1,10 +1,5 @@
 use std::collections::HashMap;
 
-pub trait NluEngineModelConvertible {
-    fn nlu_engine_model(&self) -> &NluEngineModel;
-    fn into_nlu_engine_model(self) -> NluEngineModel;
-}
-
 #[derive(Debug, Deserialize)]
 pub struct ModelVersion {
     pub model_version: String,
@@ -29,14 +24,4 @@ pub struct DatasetMetadata {
 pub struct Entity {
     pub automatically_extensible: bool,
     pub utterances: HashMap<String, String>,
-}
-
-impl NluEngineModelConvertible for NluEngineModel {
-    fn nlu_engine_model(&self) -> &NluEngineModel {
-        self
-    }
-
-    fn into_nlu_engine_model(self) -> NluEngineModel {
-        self
-    }
 }
