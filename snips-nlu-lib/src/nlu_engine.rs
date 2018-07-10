@@ -20,7 +20,6 @@ use resources::loading::load_resources;
 use serde_json;
 use slot_utils::resolve_builtin_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
-use utils::FromPath;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -28,8 +27,8 @@ pub struct SnipsNluEngine {
     builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
 }
 
-impl FromPath for SnipsNluEngine {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+impl SnipsNluEngine {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let engine_model_path = path.as_ref().join("nlu_engine.json");
         Self::check_model_version(&engine_model_path)
             .with_context(|_|
@@ -62,9 +61,7 @@ impl FromPath for SnipsNluEngine {
             builtin_entity_parser,
         })
     }
-}
 
-impl SnipsNluEngine {
     fn check_model_version<P: AsRef<Path>>(path: P) -> Result<()> {
         let model_file = File::open(&path)?;
 
@@ -77,7 +74,6 @@ impl SnipsNluEngine {
         }
         Ok(())
     }
-
 }
 
 impl SnipsNluEngine {

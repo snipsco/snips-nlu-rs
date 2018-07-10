@@ -16,7 +16,7 @@ use failure::ResultExt;
 use std::ffi::CString;
 use std::sync::Mutex;
 
-use snips_nlu_lib::{FromPath, SnipsNluEngine};
+use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology_ffi_macros::CIntentParserResult;
 
 use ffi_utils::*;
