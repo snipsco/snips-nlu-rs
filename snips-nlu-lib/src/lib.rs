@@ -18,7 +18,6 @@ extern crate serde_json;
 extern crate snips_nlu_ontology;
 extern crate snips_nlu_ontology_parsers;
 extern crate snips_nlu_utils as nlu_utils;
-extern crate yolo;
 extern crate zip;
 
 #[cfg(test)]

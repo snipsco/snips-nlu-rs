@@ -25,7 +25,6 @@ serde_json = "1.0"
 ndarray = "0.11"
 regex = "1.0"
 csv = "1.0"
-yolo = "*"
 zip = { version = "0.3", features=["deflate"] }
 
 [dev-dependencies]
