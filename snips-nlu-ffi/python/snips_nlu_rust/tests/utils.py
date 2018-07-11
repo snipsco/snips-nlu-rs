@@ -1,16 +1,7 @@
 from __future__ import unicode_literals
 
-import io
-import os
+from pathlib import Path
 
-TEST_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              "..", "..", "..", "..", "data", "tests")
-
-SAMPLE_ASSISTANT_DIR = os.path.join(TEST_DATA_PATH, "configurations")
-SAMPLE_ASSISTANT_FILE = os.path.join(TEST_DATA_PATH, "configurations",
-                                     "trained_assistant.json")
-SAMPLE_ASSISTANT_ZIP_PATH = os.path.join(TEST_DATA_PATH, "zip_files",
-                                         "sample_config.zip")
-
-with io.open(SAMPLE_ASSISTANT_ZIP_PATH, mode='rb') as f:
-    SAMPLE_ASSISTANT_ZIP = bytearray(f.read())
+ROOT_PATH = Path(__file__).parent.parent.parent.parent.parent
+TEST_DATA_PATH = ROOT_PATH / "data" / "tests"
+SAMPLE_ENGINE_DIR = TEST_DATA_PATH / "models" / "trained_engine"
