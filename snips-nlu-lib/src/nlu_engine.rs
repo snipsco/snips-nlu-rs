@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
-use std::fs::File;
+use std::fs;
+use std::io;
 use std::iter::FromIterator;
 use std::path::Path;
 use std::str::FromStr;
@@ -20,6 +21,8 @@ use resources::loading::load_resources;
 use serde_json;
 use slot_utils::resolve_builtin_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
+use tempfile;
+use zip::ZipArchive;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -37,7 +40,7 @@ impl SnipsNluEngine {
         let resources_path = path.as_ref().join("resources");
         load_resources(resources_path)?;
 
-        let model_file = File::open(&engine_model_path)?;
+        let model_file = fs::File::open(&engine_model_path)?;
         let model: NluEngineModel = serde_json::from_reader(model_file)?;
 
         let parsers = model
@@ -46,7 +49,7 @@ impl SnipsNluEngine {
             .map(|parser_name| {
                 let parser_path = path.as_ref().join(parser_name);
                 let metadata_path = parser_path.join("metadata.json");
-                let metadata_file = File::open(metadata_path)?;
+                let metadata_file = fs::File::open(metadata_path)?;
                 let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)?;
                 Ok(build_intent_parser(metadata, parser_path)? as _)
             })
@@ -63,7 +66,7 @@ impl SnipsNluEngine {
     }
 
     fn check_model_version<P: AsRef<Path>>(path: P) -> Result<()> {
-        let model_file = File::open(&path)?;
+        let model_file = fs::File::open(&path)?;
 
         let model_version: ModelVersion = ::serde_json::from_reader(model_file)?;
         if model_version.model_version != ::MODEL_VERSION {
@@ -73,6 +76,44 @@ impl SnipsNluEngine {
             ));
         }
         Ok(())
+    }
+}
+
+impl SnipsNluEngine {
+    pub fn from_zip<R: io::Read + io::Seek>(reader: R) -> Result<Self> {
+        let mut archive = ZipArchive::new(reader)
+            .context("Could not load ZipBasedConfiguration")?;
+        let temp_dir = tempfile::Builder::new()
+            .prefix("temp_dir_nlu_")
+            .tempdir()?;
+        let temp_dir_path = temp_dir.path();
+
+        let engine_dir_path = archive
+            .by_index(0)?
+            .sanitized_name();
+
+        let engine_dir_name = engine_dir_path
+            .to_str()
+            .ok_or_else(|| format_err!("Engine directory name is empty"))?;
+
+        for file_index in 0..archive.len() {
+            let mut file = archive.by_index(file_index)?;
+            let outpath = temp_dir_path.join(file.sanitized_name());
+
+            if (&*file.name()).ends_with('/') || (&*file.name()).ends_with('\\') {
+                fs::create_dir_all(&outpath)?;
+            } else {
+                if let Some(p) = outpath.parent() {
+                    if !p.exists() {
+                        fs::create_dir_all(&p)?;
+                    }
+                }
+                let mut outfile = fs::File::create(&outpath).unwrap();
+                io::copy(&mut file, &mut outfile)?;
+            }
+        }
+
+        Ok(SnipsNluEngine::from_path(temp_dir_path.join(engine_dir_name))?)
     }
 }
 
@@ -256,7 +297,44 @@ mod tests {
             .join("trained_engine");
 
         // When / Then
-        assert!(SnipsNluEngine::from_path(path).is_ok());
+        let nlu_engine = SnipsNluEngine::from_path(path);
+        assert!(nlu_engine.is_ok());
+    }
+
+    #[test]
+    fn from_zip_works() {
+        // Given
+        let path = file_path("tests")
+            .join("models")
+            .join("trained_engine.zip");
+
+        let file = fs::File::open(path).unwrap();
+
+        // When
+        let nlu_engine = SnipsNluEngine::from_zip(file);
+
+        // Then
+        assert!(nlu_engine.is_ok());
+
+        let result = nlu_engine
+            .unwrap()
+            .parse("Make me two cups of coffee please", None)
+            .unwrap();
+
+        let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
+        let expected_slots = Some(vec![
+            Slot {
+                raw_value: "two".to_string(),
+                value: expected_entity_value,
+                range: Some(8..11),
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string(),
+            },
+        ]);
+        let expected_intent = Some("MakeCoffee".to_string());
+
+        assert_eq!(expected_intent, result.intent.map(|intent| intent.intent_name));
+        assert_eq!(expected_slots, result.slots);
     }
 
     #[test]

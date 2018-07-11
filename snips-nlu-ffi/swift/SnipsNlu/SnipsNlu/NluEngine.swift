@@ -256,6 +256,12 @@ public class NluEngine {
         guard snips_nlu_engine_create_from_dir(nluEngineDirectoryURL.path, &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
     }
 
+    public init(nluEngineZipData: Data) throws {
+        try nluEngineZipData.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) in
+            guard snips_nlu_engine_create_from_zip(bytes, UInt32(nluEngineZipData.count), &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
+        }
+    }
+
     deinit {
         if client != nil {
             snips_nlu_engine_destroy_client(client)

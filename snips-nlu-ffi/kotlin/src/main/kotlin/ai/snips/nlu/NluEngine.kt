@@ -40,6 +40,13 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                      }.value
                  })
 
+    constructor(data: ByteArray) :
+            this({
+                PointerByReference().apply {
+                    parseError(LIB.snips_nlu_engine_create_from_zip(data, data.size, this))
+                }.value
+            })
+
     val client: Pointer = clientBuilder()
 
     override fun close() {
@@ -74,6 +81,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
         fun snips_nlu_engine_get_model_version(version: PointerByReference): Int
         fun snips_nlu_engine_create_from_dir(root_dir: Pointer, pointer: PointerByReference): Int
+        fun snips_nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
         fun snips_nlu_engine_run_parse(client: Pointer, input: Pointer, result: PointerByReference): Int
         fun snips_nlu_engine_run_parse_into_json(client: Pointer, input: Pointer, result: PointerByReference): Int
         fun snips_nlu_engine_get_last_error(error: PointerByReference): Int

@@ -26,8 +26,21 @@ class NluEngineTest {
     }
 
     @Test
+    fun createFromZipWorks() {
+        NluEngine(File("../../data/tests/models/trained_engine.zip").readBytes()).use {
+            it.parse("make me two cups of hot tea").apply {
+                assertThat(input).isEqualTo("make me two cups of hot tea")
+                assertThat(intent).isNotNull()
+                assertThat(intent!!.intentName).isEqualTo("MakeTea")
+                assertThat(slots).hasSize(2)
+                assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
+            }
+        }
+    }
+
+    @Test
     fun parseIntoJsonWorks() {
-        NluEngine(File("../../data/tests/configurations")).use {
+        NluEngine(File("../../data/tests/models/trained_engine")).use {
             it.parseIntoJson("make me two cups of hot tea").apply {
                 assertThat(this).isNotNull()
                 assertThat(this).contains("make me two cups of hot tea")
@@ -40,7 +53,7 @@ class NluEngineTest {
 
     @Test
     fun funkyCharsArePreserved() {
-        NluEngine(File("../../data/tests/configurations")).use {
+        NluEngine(File("../../data/tests/models/trained_engine")).use {
             it.parse("&€£ôœþかたな刀☺ ̿ ̿ ̿'̿'\\̵͇̿̿\\з=(•_•)=ε/̵͇̿̿/'̿'̿ ̿").apply {
                 assertThat(input).isEqualTo("&€£ôœþかたな刀☺ ̿ ̿ ̿'̿'\\̵͇̿̿\\з=(•_•)=ε/̵͇̿̿/'̿'̿ ̿")
             }

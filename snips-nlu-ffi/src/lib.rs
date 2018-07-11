@@ -14,6 +14,8 @@ extern crate snips_nlu_ontology_ffi_macros;
 use failure::ResultExt;
 
 use std::ffi::CString;
+use std::io::Cursor;
+use std::slice;
 use std::sync::Mutex;
 
 use snips_nlu_lib::SnipsNluEngine;
@@ -42,6 +44,15 @@ pub extern "C" fn snips_nlu_engine_create_from_dir(
     client: *mut *const CSnipsNluEngine,
 ) -> SNIPS_RESULT {
     wrap!(create_from_dir(root_dir, client))
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_create_from_zip(
+    zip: *const libc::c_uchar,
+    zip_size: libc::c_uint,
+    client: *mut *const CSnipsNluEngine,
+) -> SNIPS_RESULT {
+    wrap!(create_from_zip(zip, zip_size, client))
 }
 
 #[no_mangle]
@@ -95,6 +106,20 @@ fn create_from_dir(
     let intent_parser = SnipsNluEngine::from_path(root_dir)?;
 
     let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
+    unsafe { *client = raw_pointer };
+
+    Ok(())
+}
+
+fn create_from_zip(
+    zip: *const libc::c_uchar,
+    zip_size: libc::c_uint,
+    client: *mut *const CSnipsNluEngine,
+) -> Result<()> {
+    let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
+    let reader = Cursor::new(slice.to_owned());
+    let nlu_engine = SnipsNluEngine::from_zip(reader)?;
+    let raw_pointer = CSnipsNluEngine(Mutex::new(nlu_engine)).into_raw_pointer();
     unsafe { *client = raw_pointer };
 
     Ok(())

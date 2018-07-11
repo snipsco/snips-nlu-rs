@@ -32,7 +32,7 @@ configurations {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     compile 'net.java.dev.jna:jna:4.5.0'
-    compile "ai.snips:snips-nlu-ontology:0.57.1"
+    compile "ai.snips:snips-nlu-ontology:0.53.1"
     testCompile 'junit:junit:4.12'
     testCompile 'com.google.truth:truth:0.36'
 }
