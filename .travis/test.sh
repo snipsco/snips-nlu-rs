@@ -6,11 +6,6 @@ source .travis/common.sh
 if [ "${RUST_TESTS}" == "true" ]; then
     echo "Running rust tests..."
     cargo test --all || die "Rust tests failed"
-    cargo run -p snips-nlu-lib \
-        --example weather \
-        snips-nlu-lib/examples/trained_assistant.json \
-        "What will be the weather in London tomorrow at 8am?" \
-        || die "Rust example failed"
 fi
 
 if [ "${PYTHON_TESTS}" == "true" ]; then

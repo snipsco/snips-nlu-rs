@@ -61,19 +61,24 @@ This repository only contains the inference part, in order to produce trained mo
 the `Snips NLU python library <https://github.com/snipsco/snips-nlu>`_.
 
 
-API Usage
----------
+Interactive CLI and API Usage
+-----------------------------
 
-Check out the `rust example <snips-nlu-lib/examples>`_ to see how to use Snips.
-Here is how you can run the example:
+The `rust interactive cli <snips-nlu-cli>`_ is a good example of to how to use ``snips-nlu-rs``.
+
+Here is how you can run the interactive parsing cli:
 
 .. code-block:: bash
 
-   git clone https://github.com/snipsco/snips-nlu-rs
-   cd snips-nlu-rs
-   git submodule update --init --recursive
-   cd snips-nlu-lib
-   cargo run --example weather examples/trained_assistant.json "What will be the weather in London tomorrow at 8am?"
+   $ git clone https://github.com/snipsco/snips-nlu-rs
+   $ cd snips-nlu-rs/snips-nlu-cli
+   $ cargo run ../data/tests/models/trained_engine
+
+Here we used a sample trained engine, which consists in two intents: ``MakeCoffee`` and ``MakeTea``.
+Thus, it will be able to parse queries like ``"Make me two cups of coffee please"`` or ``"I'd like a hot tea"``.
+
+As mentioned in the previous section, you can train your own nlu engine with the
+`Snips NLU python library <https://github.com/snipsco/snips-nlu>`_.
 
 
 License
