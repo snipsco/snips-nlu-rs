@@ -10,28 +10,10 @@ import XCTest
 @testable import SnipsNlu
 
 class NluEngineTests: XCTestCase {
-
-    func testCreationFromZipfile() {
-        let fileURL = Bundle(for: type(of: self)).url(forResource: "sample_config", withExtension: "zip")!
-        let data = try! Data(contentsOf: fileURL)
-
-        let nluEngine = try? NluEngine(assistantZipFile: data)
-
-        XCTAssertNotNil(nluEngine)
-    }
-
-    func testCreationFromFilepath() {
-        let directoryURL = Bundle(for: type(of: self)).url(forResource: "configurations", withExtension: nil)!
-
-        let nluEngine = try? NluEngine(assistantDirectoryURL: directoryURL)
-
-        XCTAssertNotNil(nluEngine)
-    }
-
     func testCreationFromDirectory() {
         let directoryURL = Bundle(for: type(of: self)).url(forResource: "configurations", withExtension: nil)!
 
-        let nluEngine = try? NluEngine(assistantDirectoryURL: directoryURL)
+        let nluEngine = try? NluEngine(nluEngineDirectoryURL: directoryURL)
 
         XCTAssertNotNil(nluEngine)
     }

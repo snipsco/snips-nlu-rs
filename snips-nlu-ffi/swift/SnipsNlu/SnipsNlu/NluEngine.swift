@@ -252,18 +252,8 @@ public struct Slot {
 public class NluEngine {
     private var client: OpaquePointer? = nil
 
-    public init(assistantFileURL: URL) throws {
-        guard snips_nlu_engine_create_from_file(assistantFileURL.path, &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
-    }
-
-    public init(assistantDirectoryURL: URL) throws {
-        guard snips_nlu_engine_create_from_dir(assistantDirectoryURL.path, &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
-    }
-
-    public init(assistantZipFile: Data) throws {
-        try assistantZipFile.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) in
-            guard snips_nlu_engine_create_from_zip(bytes, UInt32(assistantZipFile.count), &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
-        }
+    public init(nluEngineDirectoryURL: URL) throws {
+        guard snips_nlu_engine_create_from_dir(nluEngineDirectoryURL.path, &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
     }
 
     deinit {
