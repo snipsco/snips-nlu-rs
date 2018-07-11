@@ -1,0 +1,18 @@
+{
+    "name": "snips_nlu_en",
+    "language": "en",
+    "version": "0.2.0",
+    "description": "Language resources for English",
+    "snips-nlu-version": ">=0.1.0,<1.0.0",
+    "author": "Adrien Ball, Cl\u00e9ment Doumouro",
+    "email": "adrien.ball@snips.ai, clement.doumouro@snips.ai",
+    "url": "https://snips-nlu.readthedocs.io",
+    "license": "Apache License, Version 2.0",
+    "gazetteers": [
+        "top_10000_words_stemmed"
+    ],
+    "word_clusters": [],
+    "stems": "stems",
+    "noise": "noise",
+    "stop_words": "stop_words"
+}
