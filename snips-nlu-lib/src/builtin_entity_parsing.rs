@@ -90,7 +90,7 @@ impl BuiltinEntityParserFactory {
             .clone()
     }
 
-    pub fn clean() {
+    pub fn clear() {
         CACHED_PARSERS
             .lock()
             .unwrap()

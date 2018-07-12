@@ -27,7 +27,7 @@ type Result<T> = std::result::Result<T, failure::Error>;
 
 pub struct CSnipsNluEngine(std::sync::Mutex<SnipsNluEngine>);
 
-macro_rules! get_intent_parser {
+macro_rules! get_nlu_engine {
     ($opaque:ident) => {{
         unsafe { <CSnipsNluEngine as ffi_utils::RawBorrow<CSnipsNluEngine>>::raw_borrow($opaque) }?
             .0
@@ -103,9 +103,9 @@ fn create_from_dir(
 ) -> Result<()> {
     let root_dir = create_rust_string_from!(root_dir);
 
-    let intent_parser = SnipsNluEngine::from_path(root_dir)?;
+    let nlu_engine = SnipsNluEngine::from_path(root_dir)?;
 
-    let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
+    let raw_pointer = CSnipsNluEngine(Mutex::new(nlu_engine)).into_raw_pointer();
     unsafe { *client = raw_pointer };
 
     Ok(())
@@ -131,9 +131,9 @@ fn run_parse(
     result: *mut *const CIntentParserResult,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
-    let intent_parser = get_intent_parser!(client);
+    let nlu_engine = get_nlu_engine!(client);
 
-    let results = intent_parser.parse(&input, None)?;
+    let results = nlu_engine.parse(&input, None)?;
     let raw_pointer = CIntentParserResult::from(results).into_raw_pointer();
 
     unsafe { *result = raw_pointer };
@@ -147,9 +147,9 @@ fn run_parse_into_json(
     result_json: *mut *const libc::c_char,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
-    let intent_parser = get_intent_parser!(client);
+    let nlu_engine = get_nlu_engine!(client);
 
-    let results = intent_parser.parse(&input, None)?;
+    let results = nlu_engine.parse(&input, None)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
