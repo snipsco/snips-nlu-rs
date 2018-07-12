@@ -2,9 +2,9 @@ use std::path::Path;
 use std::str::FromStr;
 
 use errors::*;
-use resources::gazetteer::load_gazetteer;
-use resources::stemmer::load_stemmer;
-use resources::word_clusterer::load_word_clusterer;
+use resources::gazetteer::{clear_gazetteers, load_gazetteer};
+use resources::stemmer::{clear_stemmers, load_stemmer};
+use resources::word_clusterer::{clear_word_clusterers, load_word_clusterer};
 use snips_nlu_ontology::Language;
 use serde_json;
 use std::fs::File;
@@ -64,4 +64,10 @@ pub fn load_language_resources<P: AsRef<Path>>(
     }
 
     Ok(())
+}
+
+pub fn clear_resources() {
+    clear_gazetteers();
+    clear_stemmers();
+    clear_word_clusterers();
 }

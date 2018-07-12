@@ -73,3 +73,10 @@ pub fn get_stemmer(language: Language) -> Option<Arc<HashMapStemmer>> {
         .get(&language)
         .map(|stemmer| stemmer.clone())
 }
+
+pub fn clear_stemmers() {
+    STEMMERS
+        .lock()
+        .unwrap()
+        .clear();
+}

@@ -73,20 +73,27 @@ struct CacheKey {
     kinds: Vec<BuiltinEntityKind>,
 }
 
+lazy_static! {
+    static ref CACHED_PARSERS: Mutex<HashMap<Language, Arc<CachingBuiltinEntityParser>>> =
+        Mutex::new(HashMap::new());
+}
+
 pub struct BuiltinEntityParserFactory;
 
 impl BuiltinEntityParserFactory {
     pub fn get(lang: Language) -> Arc<CachingBuiltinEntityParser> {
-        lazy_static! {
-            static ref CACHED_PARSERS: Mutex<HashMap<Language, Arc<CachingBuiltinEntityParser>>> =
-                Mutex::new(HashMap::new());
-        }
-
         CACHED_PARSERS
             .lock()
             .unwrap()
             .entry(lang)
             .or_insert_with(|| Arc::new(CachingBuiltinEntityParser::new(lang, 1000)))
             .clone()
+    }
+
+    pub fn clean() {
+        CACHED_PARSERS
+            .lock()
+            .unwrap()
+            .clear();
     }
 }

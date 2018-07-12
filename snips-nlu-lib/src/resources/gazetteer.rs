@@ -88,6 +88,13 @@ pub fn get_gazetteer(
         .ok_or(format_err!("Cannot find gazetteer with configuration {:?}", configuration))
 }
 
+pub fn clear_gazetteers() {
+    GAZETTEERS
+        .lock()
+        .unwrap()
+        .clear();
+}
+
 #[cfg(test)]
 mod tests {
     use super::{Gazetteer, HashSetGazetteer};

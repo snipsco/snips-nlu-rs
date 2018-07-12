@@ -78,3 +78,10 @@ pub fn get_word_clusterer(
         .map(|word_clusterer| word_clusterer.clone())
         .ok_or(format_err!("Cannot find word clusterer with configuration {:?}", configuration))
 }
+
+pub fn clear_word_clusterers() {
+    WORD_CLUSTERERS
+        .lock()
+        .unwrap()
+        .clear();
+}

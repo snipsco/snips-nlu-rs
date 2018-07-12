@@ -5,8 +5,7 @@ extern crate snips_nlu_lib;
 use std::env;
 
 use bencher::Bencher;
-use snips_nlu_lib::file_path;
-use snips_nlu_lib::SnipsNluEngine;
+use snips_nlu_lib::*;
 
 const ENGINE_DIR_ENV: &str = "SNIPS_NLU_BENCH_ENGINE_DIR";
 const SENTENCE_ENV: &str = "SNIPS_NLU_BENCH_SENTENCE";
@@ -23,6 +22,7 @@ fn load_nlu_engine() -> SnipsNluEngine {
 
 fn nlu_loading(b: &mut Bencher) {
     b.iter(|| {
+        clear_resources();
         let _ = load_nlu_engine();
     });
 }
@@ -34,6 +34,7 @@ fn nlu_parsing(b: &mut Bencher) {
         .unwrap();
 
     b.iter(|| {
+        BuiltinEntityParserFactory::clean();
         let _ = nlu_engine.parse(&sentence, None);
     });
 }

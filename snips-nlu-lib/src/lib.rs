@@ -43,9 +43,11 @@ pub const MODEL_VERSION: &str = "0.16.0";
 
 pub use models::*;
 pub use errors::*;
+pub use builtin_entity_parsing::BuiltinEntityParserFactory; // This is used by benches
 pub use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 pub use nlu_engine::SnipsNluEngine;
+pub use resources::loading::clear_resources; // This is used by benches
 pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use utils::file_path; // This is used by benches
