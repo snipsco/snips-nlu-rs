@@ -1,11 +1,14 @@
 from __future__ import unicode_literals
 
-from pathlib import Path
+import io
+import os
 
-ROOT_PATH = Path(__file__).parent.parent.parent.parent.parent
-TEST_DATA_PATH = ROOT_PATH / "data" / "tests"
-SAMPLE_ENGINE_DIR = TEST_DATA_PATH / "models" / "trained_engine"
-SAMPLE_ENGINE_ZIP_PATH = TEST_DATA_PATH / "models" / "trained_engine.zip"
+TEST_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                              "..", "..", "..", "..", "data", "tests")
 
-with SAMPLE_ENGINE_ZIP_PATH.open(mode='rb') as f:
+SAMPLE_ENGINE_DIR = os.path.join(TEST_DATA_PATH, "models", "trained_engine")
+SAMPLE_ENGINE_ZIP_PATH = os.path.join(TEST_DATA_PATH, "models",
+                                      "trained_engine.zip")
+
+with io.open(SAMPLE_ENGINE_ZIP_PATH, mode='rb') as f:
     SAMPLE_ENGINE_ZIP_BYTES = bytearray(f.read())
