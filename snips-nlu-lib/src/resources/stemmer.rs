@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 use std::fs::File;
+use std::io::Read;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use csv;
 use errors::*;
+use failure::ResultExt;
 use snips_nlu_ontology::Language;
 
 pub trait Stemmer: Send + Sync {
@@ -16,14 +18,13 @@ pub struct HashMapStemmer {
 }
 
 impl HashMapStemmer {
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn from_reader<R: Read>(reader: R) -> Result<Self> {
         let mut values = HashMap::<String, String>::new();
-        let f = File::open(path)?;
         let mut csv_reader = csv::ReaderBuilder::new()
             .delimiter(b',')
             .flexible(true)
             .has_headers(false)
-            .from_reader(f);
+            .from_reader(reader);
 
         for record in csv_reader.records() {
             let elements = record?;
@@ -57,7 +58,10 @@ pub fn load_stemmer<P: AsRef<Path>>(
     if STEMMERS.lock().unwrap().contains_key(&language) {
         return Ok(());
     }
-    let stemmer = HashMapStemmer::from_path(stems_path)?;
+    let stems_reader = File::open(stems_path.as_ref())
+        .with_context(|_|
+            format!("Cannot open stems file '{:?}'", stems_path.as_ref()))?;
+    let stemmer = HashMapStemmer::from_reader(stems_reader)?;
     STEMMERS
         .lock()
         .unwrap()
@@ -79,4 +83,27 @@ pub fn clear_stemmers() {
         .lock()
         .unwrap()
         .clear();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn hashmap_stemmer_works() {
+        // Given
+        let stems: &[u8] = r#"
+investigate,investigated,investigation
+do,done,don't,doing,did,does"#.as_ref();
+
+        // When
+        let stemmer = HashMapStemmer::from_reader(stems);
+
+        // Then
+        assert!(stemmer.is_ok());
+        let stemmer = stemmer.unwrap();
+        assert_eq!(stemmer.stem("don't"), "do".to_string());
+        assert_eq!(stemmer.stem("does"), "do".to_string());
+        assert_eq!(stemmer.stem("unknown"), "unknown".to_string());
+    }
 }

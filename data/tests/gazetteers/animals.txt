@@ -1,4 +1,0 @@
-dog
-cat
-bear
-crocodile

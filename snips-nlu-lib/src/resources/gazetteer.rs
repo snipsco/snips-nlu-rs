@@ -1,11 +1,12 @@
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
 use errors::*;
+use failure::ResultExt;
 use snips_nlu_ontology::Language;
 
 pub trait Gazetteer {
@@ -17,9 +18,8 @@ pub struct HashSetGazetteer {
 }
 
 impl HashSetGazetteer {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let file = File::open(path)?;
-        let reader = BufReader::new(&file);
+    fn from_reader<R: Read>(reader: R) -> Result<Self> {
+        let reader = BufReader::new(reader);
         let mut values = HashSet::<String>::new();
         for line in reader.lines() {
             let word = line?;
@@ -66,7 +66,9 @@ pub fn load_gazetteer<P: AsRef<Path>>(
     if GAZETTEERS.lock().unwrap().contains_key(&configuration) {
         return Ok(());
     }
-    let gazetteer = HashSetGazetteer::from_path(path)?;
+    let file = File::open(&path)
+        .with_context(|_| format!("Cannot open gazetteer file '{:?}'", path.as_ref()))?;
+    let gazetteer = HashSetGazetteer::from_reader(file)?;
     GAZETTEERS
         .lock()
         .unwrap()
@@ -98,17 +100,18 @@ pub fn clear_gazetteers() {
 #[cfg(test)]
 mod tests {
     use super::{Gazetteer, HashSetGazetteer};
-    use utils::file_path;
 
     #[test]
     fn hashset_gazetteer_works() {
         // Given
-        let path = file_path("tests")
-            .join("gazetteers")
-            .join("animals.txt");
+        let gazetteer: &[u8] = r#"
+dog
+cat
+bear
+crocodile"#.as_ref();
 
         // When
-        let gazetteer = HashSetGazetteer::from_path(path);
+        let gazetteer = HashSetGazetteer::from_reader(gazetteer);
 
         // Then
         assert!(gazetteer.is_ok());
