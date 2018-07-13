@@ -11,6 +11,7 @@ use itertools::Itertools;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use errors::*;
+use failure::ResultExt;
 use language::FromLanguage;
 use models::SlotFillerModel;
 use nlu_utils::language::Language as NluUtilsLanguage;
@@ -37,15 +38,19 @@ pub struct CRFSlotFiller {
 impl FromPath for CRFSlotFiller {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let slot_filler_model_path = path.as_ref().join("slot_filler.json");
-        let model_file = fs::File::open(slot_filler_model_path)?;
-        let model: SlotFillerModel = serde_json::from_reader(model_file)?;
+        let model_file = fs::File::open(&slot_filler_model_path)
+            .with_context(|_| format!("Cannot open CRFSlotFiller file '{:?}'",
+                                      &slot_filler_model_path))?;
+        let model: SlotFillerModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Cannot deserialize CRFSlotFiller json data")?;
 
         let tagging_scheme = TaggingScheme::from_u8(model.config.tagging_scheme)?;
         let slot_name_mapping = model.slot_name_mapping;
         let feature_processor =
             ProbabilisticFeatureProcessor::new(&model.config.feature_factory_configs)?;
         let crf_path = path.as_ref().join(&model.crf_model_file);
-        let tagger = CRFSuiteTagger::create_from_file(crf_path)?;
+        let tagger = CRFSuiteTagger::create_from_file(&crf_path)
+            .with_context(|_| format!("Cannot create CRFSuiteTagger from file '{:?}'", &crf_path))?;
         let language = Language::from_str(&model.language_code)?;
         let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
 

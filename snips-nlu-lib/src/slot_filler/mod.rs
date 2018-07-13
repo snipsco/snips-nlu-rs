@@ -8,6 +8,7 @@ use std::fs::File;
 use std::path::Path;
 
 use errors::*;
+use failure::ResultExt;
 use serde_json;
 
 pub use self::crf_slot_filler::*;
@@ -25,8 +26,11 @@ pub trait SlotFiller: FromPath + Send + Sync {
 
 pub fn build_slot_filler<P: AsRef<Path>>(path: P) -> Result<Box<SlotFiller>> {
     let metadata_path = path.as_ref().join("metadata.json");
-    let metadata_file = File::open(metadata_path)?;
-    let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)?;
+    let metadata_file = File::open(&metadata_path)
+        .with_context(|_| format!("Cannot open slot filler metadata file '{:?}'",
+                                  &metadata_path))?;
+    let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)
+        .with_context(|_| "Cannot deserialize slot filler json data")?;
     match metadata {
         ProcessingUnitMetadata::CrfSlotFiller => Ok(Box::new(CRFSlotFiller::from_path(path)?) as _),
         _ => Err(format_err!("{:?} is not a slot filler", metadata))

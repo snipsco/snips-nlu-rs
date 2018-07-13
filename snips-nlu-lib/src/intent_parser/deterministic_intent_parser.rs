@@ -10,6 +10,7 @@ use serde_json;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use errors::*;
+use failure::ResultExt;
 use models::DeterministicParserModel;
 use intent_parser::{internal_parsing_result, IntentParser, InternalParsingResult};
 use language::FromLanguage;
@@ -32,8 +33,12 @@ pub struct DeterministicIntentParser {
 impl FromPath for DeterministicIntentParser {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let parser_model_path = path.as_ref().join("intent_parser.json");
-        let model_file = File::open(parser_model_path)?;
-        let model: DeterministicParserModel = serde_json::from_reader(model_file)?;
+        let model_file = File::open(&parser_model_path)
+            .with_context(|_|
+                format!("Cannot open DeterministicIntentParser file '{:?}'",
+                        &parser_model_path))?;
+        let model: DeterministicParserModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Cannot deserialize DeterministicIntentParser json data")?;
         Self::new(model)
     }
 }

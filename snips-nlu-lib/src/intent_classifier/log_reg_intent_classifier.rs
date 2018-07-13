@@ -8,6 +8,7 @@ use serde_json;
 
 use models::IntentClassifierModel;
 use errors::*;
+use failure::ResultExt;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
 use snips_nlu_ontology::IntentClassifierResult;
@@ -22,8 +23,11 @@ pub struct LogRegIntentClassifier {
 impl FromPath for LogRegIntentClassifier {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let classifier_model_path = path.as_ref().join("intent_classifier.json");
-        let model_file = File::open(classifier_model_path)?;
-        let model: IntentClassifierModel = serde_json::from_reader(model_file)?;
+        let model_file = File::open(&classifier_model_path)
+            .with_context(|_|
+                format!("Cannot open LogRegIntentClassifier file '{:?}'", &classifier_model_path))?;
+        let model: IntentClassifierModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Cannot deserialize LogRegIntentClassifier json data")?;
         Self::new(model)
     }
 }

@@ -2,6 +2,7 @@ use std::path::Path;
 use std::str::FromStr;
 
 use errors::*;
+use failure::ResultExt;
 use resources::gazetteer::{clear_gazetteers, load_gazetteer};
 use resources::stemmer::{clear_stemmers, load_stemmer};
 use resources::word_clusterer::{clear_word_clusterers, load_word_clusterer};
@@ -32,8 +33,10 @@ pub fn load_language_resources<P: AsRef<Path>>(
     language_resources_dir: P,
 ) -> Result<()> {
     let metadata_file_path = language_resources_dir.as_ref().join("metadata.json");
-    let metadata_file = File::open(metadata_file_path)?;
-    let metadata: ResourcesMetadata = serde_json::from_reader(metadata_file)?;
+    let metadata_file = File::open(&metadata_file_path)?;
+    let metadata: ResourcesMetadata = serde_json::from_reader(metadata_file)
+        .with_context(|_|
+            format!("Cannot deserialize resources metadata file '{:?}'", metadata_file_path))?;
     let language = Language::from_str(&metadata.language)?;
     if let Some(gazetteer_names) = metadata.gazetteers {
         let gazetteers_directory = language_resources_dir.as_ref().join("gazetteers");

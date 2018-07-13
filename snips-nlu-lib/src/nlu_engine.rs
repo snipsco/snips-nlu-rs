@@ -40,8 +40,10 @@ impl SnipsNluEngine {
         let resources_path = path.as_ref().join("resources");
         load_resources(resources_path)?;
 
-        let model_file = fs::File::open(&engine_model_path)?;
-        let model: NluEngineModel = serde_json::from_reader(model_file)?;
+        let model_file = fs::File::open(&engine_model_path)
+            .with_context(|_| format!("Could not open nlu engine file {:?}", &engine_model_path))?;
+        let model: NluEngineModel = serde_json::from_reader(model_file)
+            .with_context(|_| format!("Could not deserialize nlu engine json file"))?;
 
         let parsers = model
             .intent_parsers
@@ -49,8 +51,12 @@ impl SnipsNluEngine {
             .map(|parser_name| {
                 let parser_path = path.as_ref().join(parser_name);
                 let metadata_path = parser_path.join("metadata.json");
-                let metadata_file = fs::File::open(metadata_path)?;
-                let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)?;
+                let metadata_file = fs::File::open(metadata_path)
+                    .with_context(|_|
+                        format!("Could not open metadata file of parser '{}'", parser_name))?;
+                let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)
+                    .with_context(|_|
+                        format!("Could not deserialize json metadata of parser '{}'", parser_name))?;
                 Ok(build_intent_parser(metadata, parser_path)? as _)
             })
             .collect::<Result<Vec<_>>>()?;
@@ -82,7 +88,7 @@ impl SnipsNluEngine {
 impl SnipsNluEngine {
     pub fn from_zip<R: io::Read + io::Seek>(reader: R) -> Result<Self> {
         let mut archive = ZipArchive::new(reader)
-            .context("Could not load ZipBasedConfiguration")?;
+            .with_context(|_| "Could not read nlu engine zip data")?;
         let temp_dir = tempfile::Builder::new()
             .prefix("temp_dir_nlu_")
             .tempdir()?;

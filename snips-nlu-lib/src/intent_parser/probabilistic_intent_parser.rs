@@ -4,6 +4,7 @@ use std::iter::FromIterator;
 use std::path::Path;
 
 use errors::*;
+use failure::ResultExt;
 use intent_classifier::{build_intent_classifier, IntentClassifier};
 use intent_parser::{IntentParser, InternalParsingResult};
 use models::ProbabilisticParserModel;
@@ -19,8 +20,12 @@ pub struct ProbabilisticIntentParser {
 impl FromPath for ProbabilisticIntentParser {
     fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
         let parser_model_path = path.as_ref().join("intent_parser.json");
-        let model_file = File::open(parser_model_path)?;
-        let model: ProbabilisticParserModel = serde_json::from_reader(model_file)?;
+        let model_file = File::open(&parser_model_path)
+            .with_context(|_|
+                format!("Cannot open ProbabilisticIntentParser file '{:?}'",
+                        &parser_model_path))?;
+        let model: ProbabilisticParserModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Cannot deserialize ProbabilisticIntentParser json data")?;
         let intent_classifier_path = path.as_ref().join("intent_classifier");
         let intent_classifier = build_intent_classifier(intent_classifier_path)?;
         let slot_fillers_vec: Result<Vec<_>> = model.slot_fillers.iter()
