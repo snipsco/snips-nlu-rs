@@ -17,9 +17,8 @@ extern crate serde_derive;
 extern crate serde_json;
 extern crate snips_nlu_ontology;
 extern crate snips_nlu_ontology_parsers;
-extern crate snips_nlu_resources_packed as resources_packed;
 extern crate snips_nlu_utils as nlu_utils;
-extern crate yolo;
+extern crate tempfile;
 extern crate zip;
 
 #[cfg(test)]
@@ -27,7 +26,7 @@ extern crate zip;
 extern crate maplit;
 
 mod builtin_entity_parsing;
-mod configurations;
+mod models;
 pub mod errors;
 mod intent_classifier;
 mod intent_parser;
@@ -40,13 +39,15 @@ mod slot_utils;
 mod testutils;
 mod utils;
 
-pub const MODEL_VERSION: &str = "0.15.0";
+pub const MODEL_VERSION: &str = "0.16.0";
 
-pub use configurations::*;
+pub use models::*;
 pub use errors::*;
+pub use builtin_entity_parsing::BuiltinEntityParserFactory; // This is used by benches
 pub use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 pub use nlu_engine::SnipsNluEngine;
+pub use resources::loading::clear_resources; // This is used by benches
 pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use utils::file_path; // This is used by benches

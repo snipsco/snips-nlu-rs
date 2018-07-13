@@ -2,7 +2,6 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
 use itertools::Itertools;
-use yolo::Yolo;
 
 use errors::*;
 use nlu_utils::string::suffix_from_char_index;
@@ -282,7 +281,7 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
                 UNIT_PREFIX
             } else if index == indexes[0] {
                 BEGINNING_PREFIX
-            } else if index == *indexes.last().yolo() {
+            } else if index == *indexes.last().unwrap() {
                 LAST_PREFIX
             } else {
                 INSIDE_PREFIX

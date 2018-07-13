@@ -1,0 +1,9 @@
+[package]
+name = "snips-nlu-cli"
+version = "0.58.0-SNAPSHOT"
+authors = ["Adrien Ball <adrien.ball@snips.ai>"]
+
+[dependencies]
+snips-nlu-lib = { path = "../snips-nlu-lib" }
+clap = "2.32.0"
+serde_json = "1.0.22"

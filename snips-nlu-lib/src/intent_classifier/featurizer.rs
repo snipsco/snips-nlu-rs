@@ -6,14 +6,14 @@ use itertools::Itertools;
 use ndarray::prelude::*;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use configurations::FeaturizerConfiguration;
+use models::FeaturizerModel;
 use errors::*;
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::normalize;
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
-use resources::stemmer::{StaticMapStemmer, Stemmer};
-use resources::word_clusterer::{StaticMapWordClusterer, WordClusterer};
+use resources::stemmer::{get_stemmer, HashMapStemmer, Stemmer};
+use resources::word_clusterer::{get_word_clusterer, HashMapWordClusterer, WordClusterer};
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
 
 pub struct Featurizer {
@@ -21,26 +21,30 @@ pub struct Featurizer {
     vocabulary: HashMap<String, usize>,
     idf_diag: Vec<f32>,
     sublinear: bool,
-    word_clusterer: Option<StaticMapWordClusterer>,
-    stemmer: Option<StaticMapStemmer>,
+    word_clusterer: Option<Arc<HashMapWordClusterer>>,
+    stemmer: Option<Arc<HashMapStemmer>>,
     entity_utterances_to_feature_names: HashMap<String, Vec<String>>,
     builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
     language: Language,
 }
 
 impl Featurizer {
-    pub fn new(config: FeaturizerConfiguration) -> Result<Self> {
+    pub fn new(config: FeaturizerModel) -> Result<Self> {
         let best_features = config.best_features;
         let vocabulary = config.tfidf_vectorizer.vocab;
-        let language = Language::from_str(&*config.language_code)?;
+        let language = Language::from_str(config.language_code.as_ref())?;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
         let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
-        let word_clusterer = config
+        let opt_word_clusterer = if let Some(word_clusterer) = config
             .config
             .word_clusters_name
-            .map(|clusters_name| StaticMapWordClusterer::new(language, clusters_name).ok())
-            .unwrap_or(None);
-        let stemmer = StaticMapStemmer::new(language).ok();
+            .map(|clusters_name| get_word_clusterer(clusters_name, language)) {
+            Some(word_clusterer?)
+        } else {
+            None
+        };
+
+        let stemmer = get_stemmer(language);
         let entity_utterances_to_feature_names = config.entity_utterances_to_feature_names;
 
         Ok(Self {
@@ -48,7 +52,7 @@ impl Featurizer {
             vocabulary,
             idf_diag,
             sublinear: config.config.sublinear_tf,
-            word_clusterer,
+            word_clusterer: opt_word_clusterer,
             stemmer,
             entity_utterances_to_feature_names,
             builtin_entity_parser,
@@ -92,11 +96,12 @@ impl Featurizer {
         let tokens = tokenize_light(query, language);
         let word_cluster_features = self.word_clusterer
             .as_ref()
-            .map(|clusterer| get_word_cluster_features(&tokens, clusterer))
+            .map(|clusterer| get_word_cluster_features(&tokens, clusterer.as_ref()))
             .unwrap_or_else(|| vec![]);
-        let normalized_stemmed_tokens = normalize_stem(tokens, self.stemmer);
+        let opt_stemmer = self.stemmer.as_ref().map(|s| s.as_ref());
+        let normalized_stemmed_tokens = normalize_stem(&tokens, opt_stemmer);
         let entities_features = get_dataset_entities_features(
-            &*normalized_stemmed_tokens,
+            normalized_stemmed_tokens.as_ref(),
             &self.entity_utterances_to_feature_names,
         );
         let builtin_entities = self.builtin_entity_parser.extract_entities(query, None, true);
@@ -105,12 +110,14 @@ impl Featurizer {
             .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, language))
             .sorted();
 
-        Itertools::flatten(vec![
+        vec![
             normalized_stemmed_tokens,
             builtin_entities_features,
             entities_features,
             word_cluster_features,
-        ].into_iter()).collect()
+        ].into_iter()
+            .flat_map(|features| features)
+            .collect()
     }
 }
 
@@ -126,8 +133,8 @@ fn get_word_cluster_features<C: WordClusterer>(
     query_tokens: &[String],
     word_clusterer: &C,
 ) -> Vec<String> {
-    let tokens_ref = query_tokens.iter().map(|t| &**t).collect_vec();
-    compute_all_ngrams(&tokens_ref[..], tokens_ref.len())
+    let tokens_ref = query_tokens.into_iter().map(|t| t.as_ref()).collect_vec();
+    compute_all_ngrams(tokens_ref.as_ref(), tokens_ref.len())
         .into_iter()
         .filter_map(|ngram| word_clusterer.get_cluster(&ngram.0.to_lowercase()))
         .sorted()
@@ -137,8 +144,8 @@ fn get_dataset_entities_features(
     normalized_stemmed_tokens: &[String],
     entity_utterances_to_feature_names: &HashMap<String, Vec<String>>,
 ) -> Vec<String> {
-    let tokens_ref = normalized_stemmed_tokens.iter().map(|t| &**t).collect_vec();
-    compute_all_ngrams(&*tokens_ref, tokens_ref.len())
+    let tokens_ref = normalized_stemmed_tokens.into_iter().map(|t| t.as_ref()).collect_vec();
+    compute_all_ngrams(tokens_ref.as_ref(), tokens_ref.len())
         .into_iter()
         .filter_map(|ngrams| entity_utterances_to_feature_names.get(&ngrams.0))
         .flat_map(|features| features)
@@ -146,7 +153,7 @@ fn get_dataset_entities_features(
         .sorted()
 }
 
-fn normalize_stem<S: Stemmer>(tokens: Vec<String>, opt_stemmer: Option<S>) -> Vec<String> {
+fn normalize_stem<S: Stemmer>(tokens: &[String], opt_stemmer: Option<&S>) -> Vec<String> {
     opt_stemmer
         .map(|stemmer| tokens.iter().map(|t| stemmer.stem(&normalize(t))).collect())
         .unwrap_or_else(|| tokens.iter().map(|t| normalize(t)).collect())
@@ -157,13 +164,14 @@ mod tests {
     use super::{get_dataset_entities_features, get_word_cluster_features, normalize_stem,
                 Featurizer};
 
-    use configurations::{FeaturizerConfigConfiguration, FeaturizerConfiguration,
-                         TfIdfVectorizerConfiguration};
+    use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
     use resources::stemmer::Stemmer;
     use resources::word_clusterer::WordClusterer;
+    use resources::loading::load_resources;
     use testutils::assert_epsilon_eq_array1;
+    use utils::file_path;
 
     struct TestWordClusterer {}
 
@@ -193,6 +201,11 @@ mod tests {
     #[test]
     fn transform_works() {
         // Given
+        let resources_path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("resources");
+        load_resources(resources_path).unwrap();
         let best_features = vec![0, 1, 2, 3, 6, 7, 8, 9];
         let vocab = hashmap![
             "awful".to_string() => 0,
@@ -225,12 +238,12 @@ mod tests {
             "hello".to_string() => vec!["featureentitygreeting".to_string(), "featureentityword".to_string()]
         ];
         let language_code = "en";
-        let tfidf_vectorizer = TfIdfVectorizerConfiguration { idf_diag, vocab };
+        let tfidf_vectorizer = TfIdfVectorizerModel { idf_diag, vocab };
 
-        let featurizer_config = FeaturizerConfiguration {
+        let featurizer_config = FeaturizerModel {
             language_code: language_code.to_string(),
             tfidf_vectorizer,
-            config: FeaturizerConfigConfiguration {
+            config: FeaturizerConfiguration {
                 sublinear_tf: false,
                 word_clusters_name: None,
             },
@@ -284,7 +297,7 @@ mod tests {
             "hell this".to_string() => vec!["featureentityWord".to_string(), "featureentityGreeting".to_string()]
         ];
         let stemmer = TestStemmer {};
-        let normalized_stemmed_tokens = normalize_stem(query_tokens, Some(stemmer));
+        let normalized_stemmed_tokens = normalize_stem(&query_tokens, Some(&stemmer));
 
         // When
         let entities_features = get_dataset_entities_features(

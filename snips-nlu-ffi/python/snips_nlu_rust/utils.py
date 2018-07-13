@@ -1,11 +1,10 @@
-import os
 from contextlib import contextmanager
 from ctypes import cdll
-from glob import glob
+from pathlib import Path
 
-dylib_dir = os.path.join(os.path.dirname(__file__), "dylib")
-dylib_path = glob(os.path.join(dylib_dir, "libsnips_nlu*"))[0]
-lib = cdll.LoadLibrary(dylib_path)
+dylib_dir = Path(__file__).parent / "dylib"
+dylib_path = list(dylib_dir.glob("libsnips_nlu*"))[0]
+lib = cdll.LoadLibrary(str(dylib_path))
 
 
 @contextmanager

@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7A92822320F65F8000DC3623 /* trained_engine in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822220F65F8000DC3623 /* trained_engine */; };
+		7A92822420F65F8000DC3623 /* trained_engine in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822220F65F8000DC3623 /* trained_engine */; };
+		7A92822620F65F9200DC3623 /* trained_engine.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822520F65F9100DC3623 /* trained_engine.zip */; };
+		7A92822720F65F9200DC3623 /* trained_engine.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822520F65F9100DC3623 /* trained_engine.zip */; };
 		F76280F81EFD0AB000A6D248 /* NluEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76280F71EFD0AB000A6D248 /* NluEngine.swift */; };
 		F76280F91EFD0AB000A6D248 /* NluEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76280F71EFD0AB000A6D248 /* NluEngine.swift */; };
 		F76504C81EFD086C007FF022 /* SnipsNlu.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F76504BE1EFD086C007FF022 /* SnipsNlu.framework */; };
@@ -14,10 +18,6 @@
 		F76504E81EFD08A8007FF022 /* SnipsNlu.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F76504DF1EFD08A8007FF022 /* SnipsNlu.framework */; };
 		F76505011EFD0A49007FF022 /* NluEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */; };
 		F76505021EFD0A49007FF022 /* NluEngineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */; };
-		F79B6F5F2016452F00394C57 /* sample_config.zip in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F5E2016452F00394C57 /* sample_config.zip */; };
-		F79B6F602016452F00394C57 /* sample_config.zip in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F5E2016452F00394C57 /* sample_config.zip */; };
-		F79B6F652016456200394C57 /* configurations in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F642016456200394C57 /* configurations */; };
-		F79B6F662016456200394C57 /* configurations in Resources */ = {isa = PBXBuildFile; fileRef = F79B6F642016456200394C57 /* configurations */; };
 		F7FC427F2058178F0047F56A /* libbz2.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7FC427E2058178F0047F56A /* libbz2.tbd */; };
 		F7FC4282205819C40047F56A /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7FC42802058198B0047F56A /* libresolv.tbd */; };
 		F7FC428420581A270047F56A /* libresolv.tbd in Frameworks */ = {isa = PBXBuildFile; fileRef = F7FC428320581A270047F56A /* libresolv.tbd */; };
@@ -41,6 +41,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		7A92822220F65F8000DC3623 /* trained_engine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = trained_engine; path = ../../../../data/tests/models/trained_engine; sourceTree = "<group>"; };
+		7A92822520F65F9100DC3623 /* trained_engine.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = trained_engine.zip; path = ../../../../data/tests/models/trained_engine.zip; sourceTree = "<group>"; };
 		F76280F71EFD0AB000A6D248 /* NluEngine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngine.swift; sourceTree = "<group>"; };
 		F76504BE1EFD086C007FF022 /* SnipsNlu.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SnipsNlu.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504C11EFD086C007FF022 /* SnipsNlu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SnipsNlu.h; sourceTree = "<group>"; };
@@ -50,8 +52,6 @@
 		F76504DF1EFD08A8007FF022 /* SnipsNlu.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SnipsNlu.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504E71EFD08A8007FF022 /* SnipsNlu-macOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SnipsNlu-macOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngineTests.swift; sourceTree = "<group>"; };
-		F79B6F5E2016452F00394C57 /* sample_config.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = sample_config.zip; path = ../../../../data/tests/zip_files/sample_config.zip; sourceTree = "<group>"; };
-		F79B6F642016456200394C57 /* configurations */ = {isa = PBXFileReference; lastKnownFileType = folder; name = configurations; path = ../../../../data/tests/configurations; sourceTree = "<group>"; };
 		F7A829062099E58A007554FE /* Dependencies */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Dependencies; sourceTree = "<group>"; };
 		F7ED4D631F829D1700703763 /* build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = build.sh; path = Dependencies/build.sh; sourceTree = "<group>"; };
 		F7FC427E2058178F0047F56A /* libbz2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libbz2.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.2.sdk/usr/lib/libbz2.tbd; sourceTree = DEVELOPER_DIR; };
@@ -142,8 +142,8 @@
 		F79B6F5D201644A200394C57 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				F79B6F642016456200394C57 /* configurations */,
-				F79B6F5E2016452F00394C57 /* sample_config.zip */,
+				7A92822520F65F9100DC3623 /* trained_engine.zip */,
+				7A92822220F65F8000DC3623 /* trained_engine */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -317,8 +317,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F79B6F652016456200394C57 /* configurations in Resources */,
-				F79B6F5F2016452F00394C57 /* sample_config.zip in Resources */,
+				7A92822320F65F8000DC3623 /* trained_engine in Resources */,
+				7A92822620F65F9200DC3623 /* trained_engine.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -333,8 +333,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F79B6F662016456200394C57 /* configurations in Resources */,
-				F79B6F602016452F00394C57 /* sample_config.zip in Resources */,
+				7A92822420F65F8000DC3623 /* trained_engine in Resources */,
+				7A92822720F65F9200DC3623 /* trained_engine.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

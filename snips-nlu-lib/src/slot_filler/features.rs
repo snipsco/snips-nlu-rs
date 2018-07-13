@@ -7,10 +7,6 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{get_shape, normalize};
 use nlu_utils::token::{compute_all_ngrams, Token};
 use resources::gazetteer::Gazetteer;
-#[cfg(test)]
-use resources::gazetteer::HashSetGazetteer;
-#[cfg(test)]
-use resources::stemmer::StaticMapStemmer;
 use resources::stemmer::Stemmer;
 use resources::word_clusterer::WordClusterer;
 use snips_nlu_ontology::BuiltinEntityKind;
@@ -85,15 +81,16 @@ pub fn ngram<S: Stemmer, G: Gazetteer>(
                 .iter()
                 .map(|token| {
                     let normalized_value = normalize(&token.value);
-                    let stemmed_value =
-                        stemmer.map_or(normalized_value.to_string(), |s| s.stem(&normalized_value));
-                    common_words_gazetteer.map_or(stemmed_value.clone(), |g| {
-                        if g.contains(&stemmed_value) {
-                            stemmed_value.clone()
-                        } else {
-                            "rare_word".to_string()
-                        }
-                    })
+                    let stemmed_value = stemmer
+                        .map_or(normalized_value.to_string(),
+                                |s| s.stem(&normalized_value));
+                    common_words_gazetteer
+                        .map_or(stemmed_value.clone(),
+                                |g| if g.contains(&stemmed_value) {
+                                    stemmed_value.clone()
+                                } else {
+                                    "rare_word".to_string()
+                                })
                 })
                 .join(" "),
         )
@@ -171,6 +168,8 @@ mod tests {
     use nlu_utils::language::Language as NluUtilsLanguage;
     use nlu_utils::token::tokenize;
     use snips_nlu_ontology::Language;
+    use resources::stemmer::HashMapStemmer;
+    use resources::gazetteer::HashSetGazetteer;
 
     #[test]
     fn is_digit_works() {
@@ -287,7 +286,7 @@ mod tests {
         assert_ngrams_eq(
             expected_ngrams,
             &tokens,
-            None as Option<&StaticMapStemmer>,
+            None as Option<&HashMapStemmer>,
             None as Option<&HashSetGazetteer>,
         );
     }
@@ -326,7 +325,7 @@ mod tests {
         assert_ngrams_eq(
             expected_ngrams,
             &tokens,
-            None as Option<&StaticMapStemmer>,
+            None as Option<&HashMapStemmer>,
             Some(&common_words_gazetteer),
         );
     }
@@ -399,7 +398,7 @@ mod tests {
             &tokens,
             token_index,
             &gazetteer,
-            None as Option<&StaticMapStemmer>,
+            None as Option<&HashMapStemmer>,
             tagging_scheme,
         );
 
