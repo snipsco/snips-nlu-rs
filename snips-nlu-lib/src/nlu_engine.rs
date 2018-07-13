@@ -43,7 +43,7 @@ impl SnipsNluEngine {
         let model_file = fs::File::open(&engine_model_path)
             .with_context(|_| format!("Could not open nlu engine file {:?}", &engine_model_path))?;
         let model: NluEngineModel = serde_json::from_reader(model_file)
-            .with_context(|_| format!("Could not deserialize nlu engine json file"))?;
+            .with_context(|_| "Could not deserialize nlu engine json file")?;
 
         let parsers = model
             .intent_parsers

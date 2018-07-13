@@ -8,7 +8,7 @@ pub trait FromPath {
 
 pub fn file_path(filename: &str) -> ::std::path::PathBuf {
     ::dinghy_test::try_test_file_path("data")
-        .unwrap_or("../data".into())
+        .unwrap_or_else(|| "../data".into())
         .join(filename)
 }
 

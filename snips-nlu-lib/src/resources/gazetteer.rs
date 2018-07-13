@@ -23,7 +23,7 @@ impl HashSetGazetteer {
         let mut values = HashSet::<String>::new();
         for line in reader.lines() {
             let word = line?;
-            if word.len() > 0 {
+            if !word.is_empty() {
                 values.insert(word);
             }
         }
@@ -86,8 +86,9 @@ pub fn get_gazetteer(
         .lock()
         .unwrap()
         .get(&configuration)
-        .map(|gazetteer| gazetteer.clone())
-        .ok_or(format_err!("Cannot find gazetteer with configuration {:?}", configuration))
+        .cloned()
+        .ok_or_else(||
+            format_err!("Cannot find gazetteer with configuration {:?}", configuration))
 }
 
 pub fn clear_gazetteers() {

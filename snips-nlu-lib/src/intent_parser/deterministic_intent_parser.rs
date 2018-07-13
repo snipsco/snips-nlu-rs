@@ -135,7 +135,7 @@ impl DeterministicIntentParser {
                     if let Some(ranges_mapping) = builtin_entities_ranges_mapping {
                         char_range = ranges_mapping
                             .get(&char_range)
-                            .map(|rng| rng.clone())
+                            .cloned()
                             .unwrap_or_else(|| {
                                 let shift = get_range_shift(&char_range, ranges_mapping);
                                 let range_start = (char_range.start as i32 + shift) as usize;
@@ -280,11 +280,10 @@ fn get_range_shift(
     let mut previous_replaced_range_end: usize = 0;
     let match_start = matched_range.start;
     for (replaced_range, orig_range) in ranges_mapping.iter() {
-        if replaced_range.end <= match_start {
-            if replaced_range.end > previous_replaced_range_end {
+        if replaced_range.end <= match_start &&
+            replaced_range.end > previous_replaced_range_end {
                 previous_replaced_range_end = replaced_range.end;
                 shift = orig_range.end as i32 - replaced_range.end as i32;
-            }
         }
     }
     shift

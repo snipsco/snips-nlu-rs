@@ -302,9 +302,9 @@ fn reconciliate_builtin_slots(
                             entity: slot.entity.clone(),
                             slot_name: slot.slot_name.clone(),
                         })
-                        .unwrap_or(slot.clone())
+                        .unwrap_or_else(|| slot.clone())
                 })
-                .unwrap_or(slot.clone())
+                .unwrap_or_else(|| slot.clone())
         })
         .collect()
 }

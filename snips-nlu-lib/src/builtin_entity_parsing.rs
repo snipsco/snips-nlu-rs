@@ -57,7 +57,7 @@ impl EntityCache {
         key: &CacheKey,
         producer: F,
     ) -> Vec<BuiltinEntity> {
-        let cached_value = self.0.get_mut(key).map(|a| a.clone());
+        let cached_value = self.0.get_mut(key).cloned();
         if let Some(value) = cached_value {
             return value;
         }

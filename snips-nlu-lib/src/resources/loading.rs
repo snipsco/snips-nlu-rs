@@ -40,7 +40,7 @@ pub fn load_language_resources<P: AsRef<Path>>(
     let language = Language::from_str(&metadata.language)?;
     if let Some(gazetteer_names) = metadata.gazetteers {
         let gazetteers_directory = language_resources_dir.as_ref().join("gazetteers");
-        for gazetteer_name in gazetteer_names.into_iter() {
+        for gazetteer_name in gazetteer_names {
             let gazetteer_path = gazetteers_directory
                 .join(gazetteer_name.clone())
                 .with_extension("txt");
@@ -50,7 +50,7 @@ pub fn load_language_resources<P: AsRef<Path>>(
 
     if let Some(word_clusters) = metadata.word_clusters {
         let word_clusters_directory = language_resources_dir.as_ref().join("word_clusters");
-        for clusters_name in word_clusters.into_iter() {
+        for clusters_name in word_clusters {
             let clusters_path = word_clusters_directory
                 .join(clusters_name.clone())
                 .with_extension("txt");;

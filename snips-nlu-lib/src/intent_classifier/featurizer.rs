@@ -99,7 +99,7 @@ impl Featurizer {
             .map(|clusterer| get_word_cluster_features(&tokens, clusterer.as_ref()))
             .unwrap_or_else(|| vec![]);
         let opt_stemmer = self.stemmer.as_ref().map(|s| s.as_ref());
-        let normalized_stemmed_tokens = normalize_stem(tokens, opt_stemmer);
+        let normalized_stemmed_tokens = normalize_stem(&tokens, opt_stemmer);
         let entities_features = get_dataset_entities_features(
             normalized_stemmed_tokens.as_ref(),
             &self.entity_utterances_to_feature_names,
@@ -153,7 +153,7 @@ fn get_dataset_entities_features(
         .sorted()
 }
 
-fn normalize_stem<S: Stemmer>(tokens: Vec<String>, opt_stemmer: Option<&S>) -> Vec<String> {
+fn normalize_stem<S: Stemmer>(tokens: &[String], opt_stemmer: Option<&S>) -> Vec<String> {
     opt_stemmer
         .map(|stemmer| tokens.iter().map(|t| stemmer.stem(&normalize(t))).collect())
         .unwrap_or_else(|| tokens.iter().map(|t| normalize(t)).collect())
@@ -297,7 +297,7 @@ mod tests {
             "hell this".to_string() => vec!["featureentityWord".to_string(), "featureentityGreeting".to_string()]
         ];
         let stemmer = TestStemmer {};
-        let normalized_stemmed_tokens = normalize_stem(query_tokens, Some(&stemmer));
+        let normalized_stemmed_tokens = normalize_stem(&query_tokens, Some(&stemmer));
 
         // When
         let entities_features = get_dataset_entities_features(

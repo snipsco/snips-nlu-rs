@@ -143,7 +143,7 @@ fn ngram_feature_function(
     };
     let stemmer_opt: Option<Arc<_>> = if use_stemming {
         let stemmer = get_stemmer(language)
-            .ok_or(format_err!("No stemmer found for language {:?}", language))?;
+            .ok_or_else(|| format_err!("No stemmer found for language {:?}", language))?;
         Some(stemmer)
     } else {
         None
@@ -210,7 +210,7 @@ fn entity_match_feature_function(
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
     let opt_stemmer: Option<Arc<_>> = if use_stemming {
         let stemmer = get_stemmer(language)
-            .ok_or(format_err!("No stemmer found for language {:?}", language))?;
+            .ok_or_else(|| format_err!("No stemmer found for language {:?}", language))?;
         Some(stemmer)
     } else {
         None

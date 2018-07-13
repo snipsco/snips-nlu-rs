@@ -82,8 +82,9 @@ pub fn get_word_clusterer(
         .lock()
         .unwrap()
         .get(&configuration)
-        .map(|word_clusterer| word_clusterer.clone())
-        .ok_or(format_err!("Cannot find word clusterer with configuration {:?}", configuration))
+        .cloned()
+        .ok_or_else(||
+            format_err!("Cannot find word clusterer with configuration {:?}", configuration))
 }
 
 pub fn clear_word_clusterers() {
