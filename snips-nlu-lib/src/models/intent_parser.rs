@@ -5,7 +5,7 @@ pub struct DeterministicParserModel {
     pub language_code: String,
     pub patterns: HashMap<String, Vec<String>>,
     pub group_names_to_slot_names: HashMap<String, String>,
-    pub slot_names_to_entities: HashMap<String, String>,
+    pub slot_names_to_entities: HashMap<String, HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize)]
