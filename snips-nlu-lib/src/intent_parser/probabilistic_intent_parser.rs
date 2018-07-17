@@ -10,11 +10,11 @@ use intent_parser::{IntentParser, InternalParsingResult};
 use models::ProbabilisticParserModel;
 use serde_json;
 use slot_filler::{build_slot_filler, SlotFiller};
-use utils::FromPath;
+use utils::{FromPath, IntentName};
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,
-    slot_fillers: HashMap<String, Box<SlotFiller>>,
+    slot_fillers: HashMap<IntentName, Box<SlotFiller>>,
 }
 
 impl FromPath for ProbabilisticIntentParser {
@@ -45,7 +45,7 @@ impl IntentParser for ProbabilisticIntentParser {
     fn parse(
         &self,
         input: &str,
-        intents: Option<&HashSet<String>>,
+        intents: Option<&HashSet<IntentName>>,
     ) -> Result<Option<InternalParsingResult>> {
         let opt_intent_result = self.intent_classifier.get_intent(input, intents)?;
         if let Some(intent_result) = opt_intent_result {

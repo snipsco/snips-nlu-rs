@@ -22,6 +22,7 @@ use serde_json;
 use slot_utils::resolve_builtin_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use tempfile;
+use utils::{EntityName, IntentName, SlotName};
 use zip::ZipArchive;
 
 pub struct SnipsNluEngine {
@@ -127,7 +128,7 @@ impl SnipsNluEngine {
     pub fn parse(
         &self,
         input: &str,
-        intents_filter: Option<&[String]>,
+        intents_filter: Option<&[IntentName]>,
     ) -> Result<IntentParserResult> {
         if self.parsers.is_empty() {
             return Ok(IntentParserResult {
@@ -136,7 +137,7 @@ impl SnipsNluEngine {
                 slots: None,
             });
         }
-        let set_intents: Option<HashSet<String>> = intents_filter
+        let set_intents: Option<HashSet<IntentName>> = intents_filter
             .map(|intent_list| HashSet::from_iter(intent_list.iter().map(|name| name.to_string())));
 
         for parser in &self.parsers {
@@ -145,7 +146,7 @@ impl SnipsNluEngine {
                 let filter_entity_kinds = self.dataset_metadata
                     .slot_name_mappings
                     .values()
-                    .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<String, String>| {
+                    .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<SlotName, EntityName>| {
                         intent_mapping.values().collect()
                     })
                     .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
@@ -231,8 +232,8 @@ impl SnipsNluEngine {
 
 fn extract_custom_slot(
     input: String,
-    entity_name: String,
-    slot_name: String,
+    entity_name: EntityName,
+    slot_name: SlotName,
     custom_entity: &Entity,
     language: Language,
 ) -> Option<Slot> {
@@ -272,8 +273,8 @@ fn extract_custom_slot(
 
 fn extract_builtin_slot(
     input: String,
-    entity_name: String,
-    slot_name: String,
+    entity_name: EntityName,
+    slot_name: SlotName,
     builtin_entity_parser: &CachingBuiltinEntityParser,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;

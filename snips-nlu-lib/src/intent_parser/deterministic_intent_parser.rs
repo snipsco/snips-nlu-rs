@@ -20,12 +20,12 @@ use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
 use snips_nlu_ontology::Language;
-use utils::FromPath;
+use utils::{EntityName, FromPath, IntentName, SlotName};
 
 pub struct DeterministicIntentParser {
-    regexes_per_intent: HashMap<String, Vec<Regex>>,
-    group_names_to_slot_names: HashMap<String, String>,
-    slot_names_to_entities: HashMap<String, String>,
+    regexes_per_intent: HashMap<IntentName, Vec<Regex>>,
+    group_names_to_slot_names: HashMap<String, SlotName>,
+    slot_names_to_entities: HashMap<IntentName, HashMap<SlotName, EntityName>>,
     builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
     language: Language,
 }
@@ -61,7 +61,7 @@ impl IntentParser for DeterministicIntentParser {
     fn parse(
         &self,
         input: &str,
-        intents: Option<&HashSet<String>>,
+        intents: Option<&HashSet<IntentName>>,
     ) -> Result<Option<InternalParsingResult>> {
         let (ranges_mapping, formatted_input) =
             replace_builtin_entities(input, &*self.builtin_entity_parser);
@@ -129,7 +129,7 @@ impl DeterministicIntentParser {
                 })
                 .map(|(a_match, group_name)| {
                     let slot_name = self.group_names_to_slot_names[group_name].to_string();
-                    let entity = self.slot_names_to_entities[&slot_name].to_string();
+                    let entity = self.slot_names_to_entities[intent][&slot_name].to_string();
                     let byte_range = a_match.start()..a_match.end();
                     let mut char_range = convert_to_char_range(&formatted_input, &byte_range);
                     if let Some(ranges_mapping) = builtin_entities_ranges_mapping {
@@ -162,8 +162,8 @@ impl DeterministicIntentParser {
 }
 
 fn compile_regexes_per_intent(
-    patterns: HashMap<String, Vec<String>>,
-) -> Result<HashMap<String, Vec<Regex>>> {
+    patterns: HashMap<IntentName, Vec<String>>,
+) -> Result<HashMap<IntentName, Vec<Regex>>> {
     patterns
         .into_iter()
         .map(|(intent, patterns)| {
@@ -329,10 +329,18 @@ mod tests {
                 "group_7".to_string() => "dummy_slot_name2".to_string(),
             ],
             slot_names_to_entities: hashmap![
-                "dummy_slot_name".to_string() => "dummy_entity_1".to_string(),
-                "dummy_slot_name3".to_string() => "dummy_entity_2".to_string(),
-                "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
-                "dummy_slot_name4".to_string() => "snips/amountOfMoney".to_string(),
+                "dummy_intent_1".to_string() => hashmap![
+                    "dummy_slot_name".to_string() => "dummy_entity_1".to_string(),
+                    "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
+                    "dummy_slot_name3".to_string() => "dummy_entity_2".to_string(),
+                ],
+                "dummy_intent_2".to_string() => hashmap![
+                    "dummy_slot_name".to_string() => "dummy_entity_1".to_string(),
+                ],
+                "dummy_intent_3".to_string() => hashmap![
+                    "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
+                    "dummy_slot_name4".to_string() => "snips/amountOfMoney".to_string(),
+                ],
             ],
         }
     }

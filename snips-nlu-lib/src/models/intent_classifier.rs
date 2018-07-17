@@ -1,11 +1,13 @@
 use std::collections::HashMap;
 
+use utils::IntentName;
+
 #[derive(Debug, Deserialize)]
 pub struct IntentClassifierModel {
     pub featurizer: Option<FeaturizerModel>,
     pub intercept: Option<Vec<f32>>,
     pub coeffs: Option<Vec<Vec<f32>>>,
-    pub intent_list: Vec<Option<String>>,
+    pub intent_list: Vec<Option<IntentName>>,
 }
 
 #[derive(Debug, Deserialize)]

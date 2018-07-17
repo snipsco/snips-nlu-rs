@@ -2,13 +2,14 @@ use std::ops::Range;
 
 use builtin_entity_parsing::CachingBuiltinEntityParser;
 use snips_nlu_ontology::{BuiltinEntityKind, Slot, SlotValue};
+use utils::{EntityName, SlotName};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InternalSlot {
     pub value: String,
     pub char_range: Range<usize>,
-    pub entity: String,
-    pub slot_name: String,
+    pub entity: EntityName,
+    pub slot_name: SlotName,
 }
 
 pub fn convert_to_custom_slot(slot: InternalSlot) -> Slot {
