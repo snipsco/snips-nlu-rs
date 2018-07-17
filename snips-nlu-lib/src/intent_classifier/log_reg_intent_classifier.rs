@@ -12,10 +12,10 @@ use failure::ResultExt;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
 use snips_nlu_ontology::IntentClassifierResult;
-use utils::FromPath;
+use utils::{FromPath, IntentName};
 
 pub struct LogRegIntentClassifier {
-    intent_list: Vec<Option<String>>,
+    intent_list: Vec<Option<IntentName>>,
     featurizer: Option<Featurizer>,
     logreg: Option<MulticlassLogisticRegression>,
 }
@@ -64,7 +64,7 @@ impl IntentClassifier for LogRegIntentClassifier {
     fn get_intent(
         &self,
         input: &str,
-        intents_filter: Option<&HashSet<String>>,
+        intents_filter: Option<&HashSet<IntentName>>,
     ) -> Result<Option<IntentClassifierResult>> {
         if input.is_empty() || self.intent_list.is_empty() {
             return Ok(None);
@@ -84,7 +84,7 @@ impl IntentClassifier for LogRegIntentClassifier {
             let filtered_out_indexes = get_filtered_out_intents_indexes(&self.intent_list, intents_filter);
             let probabilities = logreg.run(&features.view(), filtered_out_indexes)?;
 
-            let mut intents_proba: Vec<(&Option<String>, &f32)> = self.intent_list
+            let mut intents_proba: Vec<(&Option<IntentName>, &f32)> = self.intent_list
                 .iter()
                 .zip(probabilities.into_iter())
                 .collect_vec();
@@ -129,8 +129,8 @@ impl LogRegIntentClassifier {
 }
 
 fn get_filtered_out_intents_indexes(
-    intents_list: &Vec<Option<String>>,
-    intents_filter: Option<&HashSet<String>>,
+    intents_list: &Vec<Option<IntentName>>,
+    intents_filter: Option<&HashSet<IntentName>>,
 ) -> Option<Vec<usize>> {
     intents_filter.map(|filter|
         intents_list

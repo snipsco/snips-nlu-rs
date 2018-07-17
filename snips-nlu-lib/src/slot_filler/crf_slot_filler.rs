@@ -26,12 +26,14 @@ use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
 use utils::FromPath;
 
+use utils::{EntityName, SlotName};
+
 pub struct CRFSlotFiller {
     language: Language,
     tagging_scheme: TaggingScheme,
     tagger: sync::Mutex<CRFSuiteTagger>,
     feature_processor: ProbabilisticFeatureProcessor,
-    slot_name_mapping: HashMap<String, String>,
+    slot_name_mapping: HashMap<SlotName, EntityName>,
     builtin_entity_parser: sync::Arc<CachingBuiltinEntityParser>,
 }
 
@@ -199,7 +201,7 @@ fn augment_slots(
     tokens: &[Token],
     tags: &[String],
     slot_filler: &SlotFiller,
-    intent_slots_mapping: &HashMap<String, String>,
+    intent_slots_mapping: &HashMap<SlotName, EntityName>,
     builtin_entity_parser: &sync::Arc<CachingBuiltinEntityParser>,
     missing_slots: &[(String, BuiltinEntityKind)],
 ) -> Result<Vec<InternalSlot>> {

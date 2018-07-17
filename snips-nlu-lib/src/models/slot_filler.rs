@@ -1,10 +1,12 @@
 use std::collections::HashMap;
 
+use utils::{EntityName, IntentName, SlotName};
+
 #[derive(Debug, Deserialize)]
 pub struct SlotFillerModel {
     pub language_code: String,
-    pub intent: String,
-    pub slot_name_mapping: HashMap<String, String>,
+    pub intent: IntentName,
+    pub slot_name_mapping: HashMap<SlotName, EntityName>,
     pub crf_model_file: String,
     pub config: SlotFillerConfiguration,
 }

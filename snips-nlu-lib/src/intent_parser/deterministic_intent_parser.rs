@@ -20,12 +20,12 @@ use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
 use snips_nlu_ontology::Language;
-use utils::FromPath;
+use utils::{EntityName, FromPath, IntentName, SlotName};
 
 pub struct DeterministicIntentParser {
-    regexes_per_intent: HashMap<String, Vec<Regex>>,
-    group_names_to_slot_names: HashMap<String, String>,
-    slot_names_to_entities: HashMap<String, HashMap<String, String>>,
+    regexes_per_intent: HashMap<IntentName, Vec<Regex>>,
+    group_names_to_slot_names: HashMap<String, SlotName>,
+    slot_names_to_entities: HashMap<IntentName, HashMap<SlotName, EntityName>>,
     builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
     language: Language,
 }
@@ -61,7 +61,7 @@ impl IntentParser for DeterministicIntentParser {
     fn parse(
         &self,
         input: &str,
-        intents: Option<&HashSet<String>>,
+        intents: Option<&HashSet<IntentName>>,
     ) -> Result<Option<InternalParsingResult>> {
         let (ranges_mapping, formatted_input) =
             replace_builtin_entities(input, &*self.builtin_entity_parser);
@@ -162,8 +162,8 @@ impl DeterministicIntentParser {
 }
 
 fn compile_regexes_per_intent(
-    patterns: HashMap<String, Vec<String>>,
-) -> Result<HashMap<String, Vec<Regex>>> {
+    patterns: HashMap<IntentName, Vec<String>>,
+) -> Result<HashMap<IntentName, Vec<Regex>>> {
     patterns
         .into_iter()
         .map(|(intent, patterns)| {
