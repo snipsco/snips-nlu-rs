@@ -1,13 +1,17 @@
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
 use std::ops::Range;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use regex::{Regex, RegexBuilder};
+use serde_json;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use configurations::DeterministicParserConfiguration;
 use errors::*;
+use failure::ResultExt;
+use models::DeterministicParserModel;
 use intent_parser::{internal_parsing_result, IntentParser, InternalParsingResult};
 use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
@@ -16,17 +20,31 @@ use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
 use snips_nlu_ontology::Language;
+use utils::{EntityName, FromPath, IntentName, SlotName};
 
 pub struct DeterministicIntentParser {
-    regexes_per_intent: HashMap<String, Vec<Regex>>,
-    group_names_to_slot_names: HashMap<String, String>,
-    slot_names_to_entities: HashMap<String, String>,
+    regexes_per_intent: HashMap<IntentName, Vec<Regex>>,
+    group_names_to_slot_names: HashMap<String, SlotName>,
+    slot_names_to_entities: HashMap<IntentName, HashMap<SlotName, EntityName>>,
     builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
     language: Language,
 }
 
+impl FromPath for DeterministicIntentParser {
+    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let parser_model_path = path.as_ref().join("intent_parser.json");
+        let model_file = File::open(&parser_model_path)
+            .with_context(|_|
+                format!("Cannot open DeterministicIntentParser file '{:?}'",
+                        &parser_model_path))?;
+        let model: DeterministicParserModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Cannot deserialize DeterministicIntentParser json data")?;
+        Self::new(model)
+    }
+}
+
 impl DeterministicIntentParser {
-    pub fn new(configuration: DeterministicParserConfiguration) -> Result<Self> {
+    pub fn new(configuration: DeterministicParserModel) -> Result<Self> {
         let language = Language::from_str(&configuration.language_code)?;
         let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
         Ok(DeterministicIntentParser {
@@ -39,26 +57,11 @@ impl DeterministicIntentParser {
     }
 }
 
-fn compile_regexes_per_intent(
-    patterns: HashMap<String, Vec<String>>,
-) -> Result<HashMap<String, Vec<Regex>>> {
-    patterns
-        .into_iter()
-        .map(|(intent, patterns)| {
-            let regexes: Result<_> = patterns
-                .into_iter()
-                .map(|p| Ok(RegexBuilder::new(&p).case_insensitive(true).build()?))
-                .collect();
-            Ok((intent, regexes?))
-        })
-        .collect()
-}
-
 impl IntentParser for DeterministicIntentParser {
     fn parse(
         &self,
         input: &str,
-        intents: Option<&HashSet<String>>,
+        intents: Option<&HashSet<IntentName>>,
     ) -> Result<Option<InternalParsingResult>> {
         let (ranges_mapping, formatted_input) =
             replace_builtin_entities(input, &*self.builtin_entity_parser);
@@ -126,13 +129,13 @@ impl DeterministicIntentParser {
                 })
                 .map(|(a_match, group_name)| {
                     let slot_name = self.group_names_to_slot_names[group_name].to_string();
-                    let entity = self.slot_names_to_entities[&slot_name].to_string();
+                    let entity = self.slot_names_to_entities[intent][&slot_name].to_string();
                     let byte_range = a_match.start()..a_match.end();
                     let mut char_range = convert_to_char_range(&formatted_input, &byte_range);
                     if let Some(ranges_mapping) = builtin_entities_ranges_mapping {
                         char_range = ranges_mapping
                             .get(&char_range)
-                            .map(|rng| rng.clone())
+                            .cloned()
                             .unwrap_or_else(|| {
                                 let shift = get_range_shift(&char_range, ranges_mapping);
                                 let range_start = (char_range.start as i32 + shift) as usize;
@@ -156,6 +159,21 @@ impl DeterministicIntentParser {
 
         None
     }
+}
+
+fn compile_regexes_per_intent(
+    patterns: HashMap<IntentName, Vec<String>>,
+) -> Result<HashMap<IntentName, Vec<Regex>>> {
+    patterns
+        .into_iter()
+        .map(|(intent, patterns)| {
+            let regexes: Result<_> = patterns
+                .into_iter()
+                .map(|p| Ok(RegexBuilder::new(&p).case_insensitive(true).build()?))
+                .collect();
+            Ok((intent, regexes?))
+        })
+        .collect()
 }
 
 fn deduplicate_overlapping_slots(
@@ -262,11 +280,10 @@ fn get_range_shift(
     let mut previous_replaced_range_end: usize = 0;
     let match_start = matched_range.start;
     for (replaced_range, orig_range) in ranges_mapping.iter() {
-        if replaced_range.end <= match_start {
-            if replaced_range.end > previous_replaced_range_end {
+        if replaced_range.end <= match_start &&
+            replaced_range.end > previous_replaced_range_end {
                 previous_replaced_range_end = replaced_range.end;
                 shift = orig_range.end as i32 - replaced_range.end as i32;
-            }
         }
     }
     shift
@@ -275,14 +292,15 @@ fn get_range_shift(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use configurations::DeterministicParserConfiguration;
+    use utils::file_path;
+    use models::DeterministicParserModel;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::{IntentClassifierResult, Language};
     use std::collections::HashMap;
     use std::iter::FromIterator;
 
-    fn test_configuration() -> DeterministicParserConfiguration {
-        DeterministicParserConfiguration {
+    fn test_configuration() -> DeterministicParserModel {
+        DeterministicParserModel {
             language_code: "en".to_string(),
             patterns: hashmap![
                 "dummy_intent_1".to_string() => vec![
@@ -311,12 +329,46 @@ mod tests {
                 "group_7".to_string() => "dummy_slot_name2".to_string(),
             ],
             slot_names_to_entities: hashmap![
-                "dummy_slot_name".to_string() => "dummy_entity_1".to_string(),
-                "dummy_slot_name3".to_string() => "dummy_entity_2".to_string(),
-                "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
-                "dummy_slot_name4".to_string() => "snips/amountOfMoney".to_string(),
+                "dummy_intent_1".to_string() => hashmap![
+                    "dummy_slot_name".to_string() => "dummy_entity_1".to_string(),
+                    "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
+                    "dummy_slot_name3".to_string() => "dummy_entity_2".to_string(),
+                ],
+                "dummy_intent_2".to_string() => hashmap![
+                    "dummy_slot_name".to_string() => "dummy_entity_1".to_string(),
+                ],
+                "dummy_intent_3".to_string() => hashmap![
+                    "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
+                    "dummy_slot_name4".to_string() => "snips/amountOfMoney".to_string(),
+                ],
             ],
         }
+    }
+
+    #[test]
+    fn from_path_works() {
+        // Given
+        let path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("deterministic_intent_parser");
+
+        // When
+        let intent_parser = DeterministicIntentParser::from_path(path).unwrap();
+        let parsing_result = intent_parser.parse("make me two cups of coffee", None).unwrap();
+
+        // Then
+        let expected_intent = Some("MakeCoffee");
+        let expected_slots= Some(vec![
+            InternalSlot {
+                value: "two".to_string(),
+                char_range: 8..11,
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string()
+            }
+        ]);
+        assert_eq!(expected_intent, parsing_result.as_ref().map(|res| &*res.intent.intent_name));
+        assert_eq!(expected_slots, parsing_result.map(|res| res.slots));
     }
 
     #[test]

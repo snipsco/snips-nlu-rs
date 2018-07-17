@@ -2,13 +2,12 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
 use itertools::Itertools;
-use yolo::Yolo;
 
 use errors::*;
 use nlu_utils::string::suffix_from_char_index;
 use nlu_utils::token::Token;
 use slot_utils::InternalSlot;
-use utils::product;
+use utils::{EntityName, product, SlotName};
 use snips_nlu_ontology::BuiltinEntity;
 
 const BEGINNING_PREFIX: &str = "B-";
@@ -282,7 +281,7 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
                 UNIT_PREFIX
             } else if index == indexes[0] {
                 BEGINNING_PREFIX
-            } else if index == *indexes.last().yolo() {
+            } else if index == *indexes.last().unwrap() {
                 LAST_PREFIX
             } else {
                 INSIDE_PREFIX
@@ -293,7 +292,7 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
 
 pub fn generate_slots_permutations(
     grouped_entities: &[Vec<BuiltinEntity>],
-    slot_name_mapping: &HashMap<String, String>,
+    slot_name_mapping: &HashMap<SlotName, EntityName>,
 ) -> Vec<Vec<String>> {
     let possible_slots: Vec<Vec<String>> = grouped_entities
         .into_iter()

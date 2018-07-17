@@ -1,20 +1,29 @@
 use std::collections::{HashMap, HashSet};
+use std::fs;
+use std::io;
 use std::iter::FromIterator;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
 use itertools::Itertools;
 
 use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
-use configurations::{DatasetMetadata, Entity, NluEngineConfigurationConvertible};
 use errors::*;
-use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
+use failure::ResultExt;
+use intent_parser::*;
 use language::FromLanguage;
+use models::{DatasetMetadata, Entity, NluEngineModel, ModelVersion, ProcessingUnitMetadata};
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize};
+use resources::loading::load_resources;
+use serde_json;
 use slot_utils::resolve_builtin_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
+use tempfile;
+use utils::{EntityName, IntentName, SlotName};
+use zip::ZipArchive;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -23,38 +32,103 @@ pub struct SnipsNluEngine {
 }
 
 impl SnipsNluEngine {
-    pub fn new<T: NluEngineConfigurationConvertible + 'static>(configuration: T) -> Result<Self> {
-        let nlu_config = configuration.into_nlu_engine_configuration();
-        let parsers = nlu_config
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+        let engine_model_path = path.as_ref().join("nlu_engine.json");
+        Self::check_model_version(&engine_model_path)
+            .with_context(|_|
+                SnipsNluError::ModelLoad(engine_model_path.to_str().unwrap().to_string()))?;
+
+        let resources_path = path.as_ref().join("resources");
+        load_resources(resources_path)?;
+
+        let model_file = fs::File::open(&engine_model_path)
+            .with_context(|_| format!("Could not open nlu engine file {:?}", &engine_model_path))?;
+        let model: NluEngineModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Could not deserialize nlu engine json file")?;
+
+        let parsers = model
             .intent_parsers
-            .into_iter()
-            .map(|value| match value["unit_name"].as_str() {
-                Some("deterministic_intent_parser") => {
-                    let config = ::serde_json::from_value(value)?;
-                    Ok(Box::new(DeterministicIntentParser::new(config)?) as _)
-                }
-                Some("probabilistic_intent_parser") => {
-                    let config = ::serde_json::from_value(value)?;
-                    Ok(Box::new(ProbabilisticIntentParser::new(config)?) as _)
-                }
-                Some(_) => bail!("Unknown intent parser unit name"),
-                None => bail!("Intent parser unit name is not properly defined"),
+            .iter()
+            .map(|parser_name| {
+                let parser_path = path.as_ref().join(parser_name);
+                let metadata_path = parser_path.join("metadata.json");
+                let metadata_file = fs::File::open(metadata_path)
+                    .with_context(|_|
+                        format!("Could not open metadata file of parser '{}'", parser_name))?;
+                let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)
+                    .with_context(|_|
+                        format!("Could not deserialize json metadata of parser '{}'", parser_name))?;
+                Ok(build_intent_parser(metadata, parser_path)? as _)
             })
             .collect::<Result<Vec<_>>>()?;
-        let language = Language::from_str(&nlu_config.dataset_metadata.language_code)?;
+
+        let language = Language::from_str(&model.dataset_metadata.language_code)?;
         let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
 
         Ok(SnipsNluEngine {
-            dataset_metadata: nlu_config.dataset_metadata,
+            dataset_metadata: model.dataset_metadata,
             parsers,
             builtin_entity_parser,
         })
     }
 
+    fn check_model_version<P: AsRef<Path>>(path: P) -> Result<()> {
+        let model_file = fs::File::open(&path)?;
+
+        let model_version: ModelVersion = ::serde_json::from_reader(model_file)?;
+        if model_version.model_version != ::MODEL_VERSION {
+            bail!(SnipsNluError::WrongModelVersion(
+                model_version.model_version,
+                ::MODEL_VERSION
+            ));
+        }
+        Ok(())
+    }
+}
+
+impl SnipsNluEngine {
+    pub fn from_zip<R: io::Read + io::Seek>(reader: R) -> Result<Self> {
+        let mut archive = ZipArchive::new(reader)
+            .with_context(|_| "Could not read nlu engine zip data")?;
+        let temp_dir = tempfile::Builder::new()
+            .prefix("temp_dir_nlu_")
+            .tempdir()?;
+        let temp_dir_path = temp_dir.path();
+
+        let engine_dir_path = archive
+            .by_index(0)?
+            .sanitized_name();
+
+        let engine_dir_name = engine_dir_path
+            .to_str()
+            .ok_or_else(|| format_err!("Engine directory name is empty"))?;
+
+        for file_index in 0..archive.len() {
+            let mut file = archive.by_index(file_index)?;
+            let outpath = temp_dir_path.join(file.sanitized_name());
+
+            if (&*file.name()).ends_with('/') || (&*file.name()).ends_with('\\') {
+                fs::create_dir_all(&outpath)?;
+            } else {
+                if let Some(p) = outpath.parent() {
+                    if !p.exists() {
+                        fs::create_dir_all(&p)?;
+                    }
+                }
+                let mut outfile = fs::File::create(&outpath).unwrap();
+                io::copy(&mut file, &mut outfile)?;
+            }
+        }
+
+        Ok(SnipsNluEngine::from_path(temp_dir_path.join(engine_dir_name))?)
+    }
+}
+
+impl SnipsNluEngine {
     pub fn parse(
         &self,
         input: &str,
-        intents_filter: Option<&[String]>,
+        intents_filter: Option<&[IntentName]>,
     ) -> Result<IntentParserResult> {
         if self.parsers.is_empty() {
             return Ok(IntentParserResult {
@@ -63,7 +137,7 @@ impl SnipsNluEngine {
                 slots: None,
             });
         }
-        let set_intents: Option<HashSet<String>> = intents_filter
+        let set_intents: Option<HashSet<IntentName>> = intents_filter
             .map(|intent_list| HashSet::from_iter(intent_list.iter().map(|name| name.to_string())));
 
         for parser in &self.parsers {
@@ -72,7 +146,7 @@ impl SnipsNluEngine {
                 let filter_entity_kinds = self.dataset_metadata
                     .slot_name_mappings
                     .values()
-                    .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<String, String>| {
+                    .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<SlotName, EntityName>| {
                         intent_mapping.values().collect()
                     })
                     .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
@@ -158,8 +232,8 @@ impl SnipsNluEngine {
 
 fn extract_custom_slot(
     input: String,
-    entity_name: String,
-    slot_name: String,
+    entity_name: EntityName,
+    slot_name: SlotName,
     custom_entity: &Entity,
     language: Language,
 ) -> Option<Slot> {
@@ -199,8 +273,8 @@ fn extract_custom_slot(
 
 fn extract_builtin_slot(
     input: String,
-    entity_name: String,
-    slot_name: String,
+    entity_name: EntityName,
+    slot_name: SlotName,
     builtin_entity_parser: &CachingBuiltinEntityParser,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
@@ -219,16 +293,64 @@ fn extract_builtin_slot(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use configurations::NluEngineConfiguration;
-    use snips_nlu_ontology::{IntentClassifierResult, NumberValue};
-    use testutils::parse_json;
+    use snips_nlu_ontology::NumberValue;
+    use utils::file_path;
+
+    #[test]
+    fn from_path_works() {
+        // Given
+        let path = file_path("tests")
+            .join("models")
+            .join("trained_engine");
+
+        // When / Then
+        let nlu_engine = SnipsNluEngine::from_path(path);
+        assert!(nlu_engine.is_ok());
+    }
+
+    #[test]
+    fn from_zip_works() {
+        // Given
+        let path = file_path("tests")
+            .join("models")
+            .join("trained_engine.zip");
+
+        let file = fs::File::open(path).unwrap();
+
+        // When
+        let nlu_engine = SnipsNluEngine::from_zip(file);
+
+        // Then
+        assert!(nlu_engine.is_ok());
+
+        let result = nlu_engine
+            .unwrap()
+            .parse("Make me two cups of coffee please", None)
+            .unwrap();
+
+        let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
+        let expected_slots = Some(vec![
+            Slot {
+                raw_value: "two".to_string(),
+                value: expected_entity_value,
+                range: Some(8..11),
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string(),
+            },
+        ]);
+        let expected_intent = Some("MakeCoffee".to_string());
+
+        assert_eq!(expected_intent, result.intent.map(|intent| intent.intent_name));
+        assert_eq!(expected_slots, result.slots);
+    }
 
     #[test]
     fn parse_works() {
         // Given
-        let configuration: NluEngineConfiguration =
-            parse_json("tests/configurations/trained_assistant.json");
-        let nlu_engine = SnipsNluEngine::new(configuration).unwrap();
+        let path = file_path("tests")
+            .join("models")
+            .join("trained_engine");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
         let result = nlu_engine
@@ -237,24 +359,19 @@ mod tests {
 
         // Then
         let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
-        let expected_result = IntentParserResult {
-            input: "Make me two cups of coffee please".to_string(),
-            intent: Some(IntentClassifierResult {
-                intent_name: "MakeCoffee".to_string(),
-                probability: 0.7834521,
-            }),
-            slots: Some(vec![
-                Slot {
-                    raw_value: "two".to_string(),
-                    value: expected_entity_value,
-                    range: Some(8..11),
-                    entity: "snips/number".to_string(),
-                    slot_name: "number_of_cups".to_string(),
-                },
-            ]),
-        };
+        let expected_slots = Some(vec![
+            Slot {
+                raw_value: "two".to_string(),
+                value: expected_entity_value,
+                range: Some(8..11),
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string(),
+            },
+        ]);
+        let expected_intent = Some("MakeCoffee".to_string());
 
-        assert_eq!(expected_result, result)
+        assert_eq!(expected_intent, result.intent.map(|intent| intent.intent_name));
+        assert_eq!(expected_slots, result.slots);
     }
 
     #[test]

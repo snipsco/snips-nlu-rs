@@ -11,7 +11,7 @@ buildscript {
 
 apply plugin: 'kotlin'
 
-version = "0.57.2"
+version = "0.58.0"
 group = "ai.snips"
 
 repositories {

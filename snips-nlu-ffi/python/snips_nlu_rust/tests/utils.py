@@ -6,11 +6,9 @@ import os
 TEST_DATA_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                               "..", "..", "..", "..", "data", "tests")
 
-SAMPLE_ASSISTANT_DIR = os.path.join(TEST_DATA_PATH, "configurations")
-SAMPLE_ASSISTANT_FILE = os.path.join(TEST_DATA_PATH, "configurations",
-                                     "trained_assistant.json")
-SAMPLE_ASSISTANT_ZIP_PATH = os.path.join(TEST_DATA_PATH, "zip_files",
-                                         "sample_config.zip")
+SAMPLE_ENGINE_DIR = os.path.join(TEST_DATA_PATH, "models", "trained_engine")
+SAMPLE_ENGINE_ZIP_PATH = os.path.join(TEST_DATA_PATH, "models",
+                                      "trained_engine.zip")
 
-with io.open(SAMPLE_ASSISTANT_ZIP_PATH, mode='rb') as f:
-    SAMPLE_ASSISTANT_ZIP = bytearray(f.read())
+with io.open(SAMPLE_ENGINE_ZIP_PATH, mode='rb') as f:
+    SAMPLE_ENGINE_ZIP_BYTES = bytearray(f.read())

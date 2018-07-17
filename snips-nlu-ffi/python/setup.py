@@ -42,7 +42,8 @@ setup(name=PACKAGE_NAME,
           "Programming Language :: Python :: 3.6",
       ],
       install_requires=[
-          "future==0.16.0"
+          "future==0.16.0",
+          "pathlib==1.0.1"
       ],
       packages=packages,
       include_package_data=True,

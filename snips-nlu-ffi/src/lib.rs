@@ -18,7 +18,7 @@ use std::io::Cursor;
 use std::slice;
 use std::sync::Mutex;
 
-use snips_nlu_lib::{FileBasedConfiguration, SnipsNluEngine, ZipBasedConfiguration};
+use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology_ffi_macros::CIntentParserResult;
 
 use ffi_utils::*;
@@ -27,7 +27,7 @@ type Result<T> = std::result::Result<T, failure::Error>;
 
 pub struct CSnipsNluEngine(std::sync::Mutex<SnipsNluEngine>);
 
-macro_rules! get_intent_parser {
+macro_rules! get_nlu_engine {
     ($opaque:ident) => {{
         unsafe { <CSnipsNluEngine as ffi_utils::RawBorrow<CSnipsNluEngine>>::raw_borrow($opaque) }?
             .0
@@ -44,14 +44,6 @@ pub extern "C" fn snips_nlu_engine_create_from_dir(
     client: *mut *const CSnipsNluEngine,
 ) -> SNIPS_RESULT {
     wrap!(create_from_dir(root_dir, client))
-}
-
-#[no_mangle]
-pub extern "C" fn snips_nlu_engine_create_from_file(
-    file_path: *const libc::c_char,
-    client: *mut *const CSnipsNluEngine,
-) -> SNIPS_RESULT {
-    wrap!(create_from_file(file_path, client))
 }
 
 #[no_mangle]
@@ -111,25 +103,9 @@ fn create_from_dir(
 ) -> Result<()> {
     let root_dir = create_rust_string_from!(root_dir);
 
-    let assistant_config = FileBasedConfiguration::from_dir(root_dir, false)?;
-    let intent_parser = SnipsNluEngine::new(assistant_config)?;
+    let nlu_engine = SnipsNluEngine::from_path(root_dir)?;
 
-    let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
-    unsafe { *client = raw_pointer };
-
-    Ok(())
-}
-
-fn create_from_file(
-    file_path: *const libc::c_char,
-    client: *mut *const CSnipsNluEngine,
-) -> Result<()> {
-    let file_path = create_rust_string_from!(file_path);
-
-    let assistant_config = FileBasedConfiguration::from_path(file_path, false)?;
-    let intent_parser = SnipsNluEngine::new(assistant_config)?;
-
-    let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
+    let raw_pointer = CSnipsNluEngine(Mutex::new(nlu_engine)).into_raw_pointer();
     unsafe { *client = raw_pointer };
 
     Ok(())
@@ -142,11 +118,8 @@ fn create_from_zip(
 ) -> Result<()> {
     let slice = unsafe { slice::from_raw_parts(zip, zip_size as usize) };
     let reader = Cursor::new(slice.to_owned());
-
-    let assistant_config = ZipBasedConfiguration::new(reader, false)?;
-    let intent_parser = SnipsNluEngine::new(assistant_config)?;
-
-    let raw_pointer = CSnipsNluEngine(Mutex::new(intent_parser)).into_raw_pointer();
+    let nlu_engine = SnipsNluEngine::from_zip(reader)?;
+    let raw_pointer = CSnipsNluEngine(Mutex::new(nlu_engine)).into_raw_pointer();
     unsafe { *client = raw_pointer };
 
     Ok(())
@@ -158,9 +131,9 @@ fn run_parse(
     result: *mut *const CIntentParserResult,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
-    let intent_parser = get_intent_parser!(client);
+    let nlu_engine = get_nlu_engine!(client);
 
-    let results = intent_parser.parse(&input, None)?;
+    let results = nlu_engine.parse(&input, None)?;
     let raw_pointer = CIntentParserResult::from(results).into_raw_pointer();
 
     unsafe { *result = raw_pointer };
@@ -174,9 +147,9 @@ fn run_parse_into_json(
     result_json: *mut *const libc::c_char,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
-    let intent_parser = get_intent_parser!(client);
+    let nlu_engine = get_nlu_engine!(client);
 
-    let results = intent_parser.parse(&input, None)?;
+    let results = nlu_engine.parse(&input, None)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
