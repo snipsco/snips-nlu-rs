@@ -1,6 +1,21 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.58.0] - 2018-07-17`
+### Added
+- Interactive parsing CLI
+
+### Changed
+- The `SnipsNluEngine` object is now loaded from a directory instead of a single json file 
+(see https://github.com/snipsco/snips-nlu/releases/tag/0.16.0).
+- Language resources are now loaded *dynamically* from the trained engine directory instead of 
+being statically hardcoded, reducing the binary size by 31Mb.
+
+### Removed
+- `snips-nlu-resources` and `snips-nlu-resources-packed` crates no longer exists.
+- `FileBasedConfiguration`, `ZipBasedConfiguration` and `NluEngineConfigurationConvertible
+- Rust examples (replaced by interactive CLI).
+
 ## [0.57.2] - 2018-07-12
 ### Fixed
 - Conflict with bindgen dependency
@@ -64,6 +79,7 @@ All notable changes to this project will be documented in this file.
 - Rename python package to `snips_nlu_rust`
 
 
+[0.58.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.57.2...0.58.0
 [0.57.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.57.1...0.57.2
 [0.57.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.57.0...0.57.1
 [0.57.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.56.1...0.57.0
