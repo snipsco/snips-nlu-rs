@@ -6,4 +6,12 @@ pub enum SnipsNluError {
     WrongModelVersion(String, &'static str),
 }
 
+#[derive(Debug, Fail)]
+pub enum BuiltinEntityParserError {
+    #[fail(display = "Unable to load builtin entity parser")]
+    LoadingError,
+    #[fail(display = "No builtin entity parser loaded for language '{}'", _0)]
+    ParserNotLoaded(String),
+}
+
 pub type Result<T> = ::std::result::Result<T, ::failure::Error>;

@@ -454,7 +454,7 @@ mod tests {
         let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
         let token_index = 5; // 9pm
         let tagging_scheme = TaggingScheme::BILOU;
-        let parser = CachingBuiltinEntityParser::new(Language::EN, 100);
+        let parser = CachingBuiltinEntityParser::from_language(Language::EN, 100).unwrap();
 
         // When
         let actual_annotation = get_builtin_entity_match(

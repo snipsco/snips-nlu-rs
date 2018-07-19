@@ -1,23 +1,40 @@
-use std::collections::HashMap;
+use std::collections::hash_map::HashMap;
 use std::sync::{Arc, Mutex};
 
 use lru_cache::LruCache;
 
+use errors::*;
+use failure::ResultExt;
 use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntity, Language};
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
-
+use snips_nlu_ontology_parsers::{BuiltinEntityParser, BuiltinEntityParserConfiguration};
 
 pub struct CachingBuiltinEntityParser {
     parser: BuiltinEntityParser,
     cache: Mutex<EntityCache>,
 }
 
+// TODO: fix this
+unsafe impl Send for CachingBuiltinEntityParser {}
+
 impl CachingBuiltinEntityParser {
-    pub fn new(lang: Language, cache_capacity: usize) -> Self {
-        CachingBuiltinEntityParser {
-            parser: BuiltinEntityParser::new(lang),
+    pub fn new(
+        configuration: BuiltinEntityParserConfiguration,
+        cache_capacity: usize,
+    ) -> Result<Self> {
+        let parser = BuiltinEntityParser::new(configuration)
+            .with_context(|_| BuiltinEntityParserError::LoadingError)?;
+        Ok(Self {
+            parser,
             cache: Mutex::new(EntityCache::new(cache_capacity)),
-        }
+        })
+    }
+
+    pub fn from_language(language: Language, cache_capacity: usize) -> Result<Self> {
+        let configuration = BuiltinEntityParserConfiguration {
+            language,
+            gazetteer_entity_configurations: vec![]
+        };
+        CachingBuiltinEntityParser::new(configuration, cache_capacity)
     }
 
     pub fn extract_entities(
@@ -81,13 +98,32 @@ lazy_static! {
 pub struct BuiltinEntityParserFactory;
 
 impl BuiltinEntityParserFactory {
-    pub fn get(lang: Language) -> Arc<CachingBuiltinEntityParser> {
+    pub fn get(lang: Language) -> Result<Arc<CachingBuiltinEntityParser>> {
         CACHED_PARSERS
             .lock()
             .unwrap()
-            .entry(lang)
-            .or_insert_with(|| Arc::new(CachingBuiltinEntityParser::new(lang, 1000)))
-            .clone()
+            .get(&lang)
+            .cloned()
+            .ok_or_else(|| BuiltinEntityParserError::ParserNotLoaded(lang.to_string()).into())
+    }
+
+    pub fn add_parser_from_config(
+        configuration: BuiltinEntityParserConfiguration
+    ) -> Result<()> {
+        let language = configuration.language;
+        let parser = Arc::new(CachingBuiltinEntityParser::new(configuration, 1000)?);
+        CACHED_PARSERS
+            .lock()
+            .unwrap()
+            .insert(language, parser);
+        Ok(())
+    }
+
+    pub fn add_parser_from_language(language: Language) -> Result<()> {
+        let configuration = BuiltinEntityParserConfiguration {
+            language, gazetteer_entity_configurations: vec![]
+        };
+        Self::add_parser_from_config(configuration)
     }
 
     pub fn clear() {

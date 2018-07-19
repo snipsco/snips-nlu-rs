@@ -63,7 +63,7 @@ impl SnipsNluEngine {
             .collect::<Result<Vec<_>>>()?;
 
         let language = Language::from_str(&model.dataset_metadata.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language)?;
 
         Ok(SnipsNluEngine {
             dataset_metadata: model.dataset_metadata,
@@ -268,9 +268,9 @@ fn extract_builtin_slot(
     Ok(builtin_entity_parser
         .extract_entities(&input, Some(&[builtin_entity_kind]), false)
         .first()
-        .map(|rustlin_entity| Slot {
-            raw_value: substring_with_char_range(input, &rustlin_entity.range),
-            value: rustlin_entity.entity.clone(),
+        .map(|builtin_entity| Slot {
+            raw_value: substring_with_char_range(input, &builtin_entity.range),
+            value: builtin_entity.entity.clone(),
             range: None,
             entity: entity_name,
             slot_name,

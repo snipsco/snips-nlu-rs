@@ -118,7 +118,7 @@ mod tests {
                 slot_name: "userType".to_string(),
             }
         ];
-        let parser = CachingBuiltinEntityParser::new(Language::EN, 1000);
+        let parser = CachingBuiltinEntityParser::from_language(Language::EN, 1000).unwrap();
         let entity = Entity {
             automatically_extensible: true,
             utterances: [("subscriber".to_string(), "member".to_string())].iter().cloned().collect(),

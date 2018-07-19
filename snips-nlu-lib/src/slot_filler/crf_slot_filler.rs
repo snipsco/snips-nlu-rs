@@ -60,7 +60,7 @@ impl FromPath for CRFSlotFiller {
             None
         };
         let language = Language::from_str(&model.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language)?;
 
         Ok(Self {
             language,
@@ -220,7 +220,7 @@ fn augment_slots(
     tags: &[String],
     slot_filler: &SlotFiller,
     intent_slots_mapping: &HashMap<SlotName, EntityName>,
-    builtin_entity_parser: &sync::Arc<CachingBuiltinEntityParser>,
+    builtin_entity_parser: &CachingBuiltinEntityParser,
     missing_slots: &[(String, BuiltinEntityKind)],
 ) -> Result<Vec<InternalSlot>> {
     let builtin_entities = missing_slots
@@ -573,7 +573,8 @@ mod tests {
             "start_date".to_string() => "snips/datetime".to_string(),
             "end_date".to_string() => "snips/datetime".to_string(),
         };
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(Language::EN);
+        let builtin_entity_parser = CachingBuiltinEntityParser::from_language(Language::EN, 1000)
+            .unwrap();
         let missing_slots = vec![
             ("start_date".to_string(), BuiltinEntityKind::Time),
             ("end_date".to_string(), BuiltinEntityKind::Time),
