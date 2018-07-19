@@ -248,9 +248,11 @@ fn builtin_entity_match_feature_function(
     builtin_entity_labels
         .into_iter()
         .map(|label| {
-            let builtin_parser = Language::from_str(&language_code)
-                .ok()
-                .map(BuiltinEntityParserFactory::get);
+            let builtin_parser = if let Some(language) = Language::from_str(&language_code).ok() {
+                Some(BuiltinEntityParserFactory::get(language)?)
+            } else {
+                None
+            };
             let builtin_entity_kind = BuiltinEntityKind::from_identifier(&label).ok();
             Ok(FeatureFunction::new(
                 &format!("builtin_entity_match_{}", &label),

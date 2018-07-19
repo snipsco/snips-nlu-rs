@@ -30,7 +30,7 @@ pub fn initial_string_from_tokens(tokens: &[Token]) -> String {
     for token in tokens {
         if token.char_range.start > current_index {
             let nb_spaces = token.char_range.start - current_index;
-            let spaces = String::from_iter(vec![' '; nb_spaces].into_iter());
+            let spaces = String::from_iter(vec![' '; nb_spaces]);
             chunks.push(spaces);
         }
         chunks.push(token.value.clone());

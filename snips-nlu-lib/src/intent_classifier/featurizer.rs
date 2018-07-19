@@ -34,7 +34,7 @@ impl Featurizer {
         let vocabulary = config.tfidf_vectorizer.vocab;
         let language = Language::from_str(config.language_code.as_ref())?;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
+        let builtin_entity_parser = BuiltinEntityParserFactory::get(language)?;
         let opt_word_clusterer = if let Some(word_clusterer) = config
             .config
             .word_clusters_name

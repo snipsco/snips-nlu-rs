@@ -87,7 +87,7 @@ mod tests {
                 slot_name: "ranking".to_string(),
             },
         ];
-        let parser = CachingBuiltinEntityParser::new(Language::EN, 1000);
+        let parser = CachingBuiltinEntityParser::from_language(Language::EN, 1000).unwrap();
 
         // When
         let filter_entity_kinds = &[BuiltinEntityKind::AmountOfMoney, BuiltinEntityKind::Ordinal];

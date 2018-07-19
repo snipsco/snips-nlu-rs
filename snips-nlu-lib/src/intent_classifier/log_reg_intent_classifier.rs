@@ -529,6 +529,12 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
+        let resources_path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("resources");
+        load_resources(resources_path).unwrap();
+
         let path = file_path("tests")
             .join("models")
             .join("trained_engine")
@@ -573,6 +579,12 @@ mod tests {
     #[test]
     fn should_filter_intents() {
         // Given
+        let resources_path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("resources");
+        load_resources(resources_path).unwrap();
+
         let classifier = get_sample_log_reg_classifier();
 
         // When
