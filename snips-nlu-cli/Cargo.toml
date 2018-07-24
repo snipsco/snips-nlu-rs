@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-cli"
-version = "0.58.0"
+version = "0.58.1"
 authors = ["Adrien Ball <adrien.ball@snips.ai>"]
 
 [dependencies]
