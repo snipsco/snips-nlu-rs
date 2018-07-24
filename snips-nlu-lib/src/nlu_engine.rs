@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io;
 use std::iter::FromIterator;
-use std::path::Path;
+use std::path::{Component, Path};
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -95,14 +95,6 @@ impl SnipsNluEngine {
             .tempdir()?;
         let temp_dir_path = temp_dir.path();
 
-        let engine_dir_path = archive
-            .by_index(0)?
-            .sanitized_name();
-
-        let engine_dir_name = engine_dir_path
-            .to_str()
-            .ok_or_else(|| format_err!("Engine directory name is empty"))?;
-
         for file_index in 0..archive.len() {
             let mut file = archive.by_index(file_index)?;
             let outpath = temp_dir_path.join(file.sanitized_name());
@@ -119,6 +111,20 @@ impl SnipsNluEngine {
                 io::copy(&mut file, &mut outfile)?;
             }
         }
+
+        let first_archive_file = archive
+            .by_index(0)?
+            .sanitized_name();
+
+        let engine_dir_path = first_archive_file
+            .components()
+            .find(|component| if let Component::Normal(_) = component { true } else { false })
+            .ok_or_else(|| format_err!("Trained engine archive is incorrect"))?
+            .as_os_str();
+
+        let engine_dir_name = engine_dir_path
+            .to_str()
+            .ok_or_else(|| format_err!("Engine directory name is empty"))?;
 
         Ok(SnipsNluEngine::from_path(temp_dir_path.join(engine_dir_name))?)
     }
