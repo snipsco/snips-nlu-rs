@@ -105,4 +105,5 @@ pub fn clear_resources() {
     clear_gazetteers();
     clear_stemmers();
     clear_word_clusterers();
+    BuiltinEntityParserFactory::clear();
 }
