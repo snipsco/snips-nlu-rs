@@ -27,7 +27,7 @@ extern crate zip;
 extern crate maplit;
 
 mod builtin_entity_parsing;
-mod models;
+pub mod models;
 pub mod errors;
 mod intent_classifier;
 mod intent_parser;
