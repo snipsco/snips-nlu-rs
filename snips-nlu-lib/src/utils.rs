@@ -40,6 +40,29 @@ pub fn product<'a, T>(v: &'a [&'a [T]]) -> Vec<Vec<&'a T>> {
     })
 }
 
+pub fn deduplicate_overlapping_items<I, O, R>(
+    items: Vec<I>,
+    overlap: O,
+    resolve: R
+) -> Vec<I>
+    where I: Clone, O: Fn(&I, &I) -> bool, R: Fn(I, I) -> I
+{
+    let mut deduped: Vec<I> = Vec::with_capacity(items.len());
+    for item in items {
+        let conflicting_item_index = deduped
+            .iter()
+            .position(|existing_item| overlap(&item, &existing_item));
+
+        if let Some(index) = conflicting_item_index {
+            let resolved_item = resolve(deduped[index].clone(), item);
+            deduped[index] = resolved_item;
+        } else {
+            deduped.push(item);
+        }
+    }
+    deduped
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,5 +97,36 @@ mod tests {
         for p in prod {
             assert!(expected_output.contains(&p));
         }
+    }
+
+    #[test]
+    fn test_deduplicate_items_works() {
+        // Given
+        let items = vec![
+            "hello".to_string(),
+            "blue bird".to_string(),
+            "blue".to_string(),
+            "hello world".to_string(),
+            "blue bird".to_string()
+        ];
+
+        fn overlap(lhs_str: &String, rhs_str: &String) -> bool {
+            lhs_str.starts_with(rhs_str) || rhs_str.starts_with(lhs_str)
+        }
+
+        fn resolve(lhs_str: String, rhs_str: String) -> String {
+            if lhs_str.len() > rhs_str.len() {
+                lhs_str
+            } else {
+                rhs_str
+            }
+        }
+
+        // When
+        let dedup_items = deduplicate_overlapping_items(items, overlap, resolve);
+
+        // Then
+        let expected_items = vec!["hello world".to_string(), "blue bird".to_string()];
+        assert_eq!(expected_items, dedup_items);
     }
 }

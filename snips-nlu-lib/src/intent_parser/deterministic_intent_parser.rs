@@ -20,7 +20,7 @@ use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix
 use nlu_utils::token::{tokenize, tokenize_light};
 use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, Language};
-use utils::{EntityName, FromPath, IntentName, SlotName};
+use utils::{deduplicate_overlapping_items, EntityName, FromPath, IntentName, SlotName};
 
 pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<IntentName, Vec<Regex>>,
@@ -214,29 +214,6 @@ fn deduplicate_overlapping_entities(entities: Vec<BuiltinEntity>) -> Vec<Builtin
         }
     };
     deduplicate_overlapping_items(entities, entities_overlap, resolve_conflicting_entities)
-}
-
-fn deduplicate_overlapping_items<I, O, R>(
-    items: Vec<I>,
-    overlap: O,
-    resolve: R
-) -> Vec<I>
-    where I: Clone, O: Fn(&I, &I) -> bool, R: Fn(I, I) -> I
-{
-    let mut deduped: Vec<I> = Vec::with_capacity(items.len());
-    for item in items {
-        let conflicting_item_index = deduped
-            .iter()
-            .position(|existing_item| overlap(&item, &existing_item));
-
-        if let Some(index) = conflicting_item_index {
-            let resolved_item = resolve(deduped[index].clone(), item);
-            deduped[index] = resolved_item;
-        } else {
-            deduped.push(item);
-        }
-    }
-    deduped
 }
 
 fn replace_builtin_entities(
