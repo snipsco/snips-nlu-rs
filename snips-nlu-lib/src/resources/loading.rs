@@ -1,16 +1,20 @@
+use std::collections::HashMap;
+use std::fs::File;
 use std::path::Path;
 use std::str::FromStr;
+use std::sync::Arc;
+
+use serde_json;
+use snips_nlu_ontology::{GazetteerEntityKind, IntoBuiltinEntityKind, Language};
+use snips_nlu_ontology_parsers::{BuiltinEntityParserConfiguration, GazetteerEntityConfiguration};
 
 use builtin_entity_parsing::CachingBuiltinEntityParser;
 use errors::*;
 use failure::ResultExt;
-use resources::gazetteer::{clear_gazetteers, load_gazetteer};
-use resources::stemmer::{clear_stemmers, load_stemmer};
-use resources::word_clusterer::{clear_word_clusterers, load_word_clusterer};
-use snips_nlu_ontology::{GazetteerEntityKind, Language};
-use snips_nlu_ontology_parsers::{BuiltinEntityParserConfiguration, GazetteerEntityConfiguration};
-use serde_json;
-use std::fs::File;
+use resources::SharedResources;
+use resources::gazetteer::HashSetGazetteer;
+use resources::word_clusterer::HashMapWordClusterer;
+use resources::stemmer::HashMapStemmer;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ResourcesMetadata {
@@ -23,53 +27,29 @@ pub struct ResourcesMetadata {
 
 pub fn load_language_resources<P: AsRef<Path>>(
     resources_dir: P,
-) -> Result<()> {
+) -> Result<Arc<SharedResources>> {
     let metadata_file_path = resources_dir.as_ref().join("metadata.json");
     let metadata_file = File::open(&metadata_file_path)?;
     let metadata: ResourcesMetadata = serde_json::from_reader(metadata_file)
         .with_context(|_|
             format!("Cannot deserialize resources metadata file '{:?}'", metadata_file_path))?;
-    let language = Language::from_str(&metadata.language)?;
-    if let Some(gazetteer_names) = metadata.gazetteers {
-        let gazetteers_directory = resources_dir.as_ref().join("gazetteers");
-        for gazetteer_name in gazetteer_names {
-            let gazetteer_path = gazetteers_directory
-                .join(gazetteer_name.clone())
-                .with_extension("txt");
-            load_gazetteer(gazetteer_name, language, gazetteer_path)?;
-        }
-    }
+    let stemmer = load_stemmer(&resources_dir, &metadata)?;
+    let gazetteers = load_gazetteers(&resources_dir, &metadata)?;
+    let word_clusterers = load_word_clusterers(&resources_dir, &metadata)?;
+    let builtin_entity_parser = load_builtin_entity_parser(resources_dir, metadata)?;
 
-    if let Some(word_clusters) = metadata.word_clusters {
-        let word_clusters_directory = resources_dir.as_ref().join("word_clusters");
-        for clusters_name in word_clusters {
-            let clusters_path = word_clusters_directory
-                .join(clusters_name.clone())
-                .with_extension("txt");
-            ;
-            load_word_clusterer(clusters_name, language, clusters_path)?;
-        }
-    }
-
-    if let Some(stems) = metadata.stems {
-        let stemming_directory = resources_dir.as_ref().join("stemming");
-        let stems_path = stemming_directory
-            .join(stems)
-            .with_extension("txt");
-        load_stemmer(language, stems_path)?;
-    }
-
-    Ok(())
+    Ok(Arc::new(SharedResources {
+        builtin_entity_parser,
+        gazetteers,
+        stemmer,
+        word_clusterers,
+    }))
 }
 
-pub fn get_builtin_entity_parser<P: AsRef<Path>>(
-    resources_dir: P
-) -> Result<CachingBuiltinEntityParser> {
-    let metadata_file_path = resources_dir.as_ref().join("metadata.json");
-    let metadata_file = File::open(&metadata_file_path)?;
-    let metadata: ResourcesMetadata = serde_json::from_reader(metadata_file)
-        .with_context(|_|
-            format!("Cannot deserialize resources metadata file '{:?}'", metadata_file_path))?;
+fn load_builtin_entity_parser<P: AsRef<Path>>(
+    resources_dir: P,
+    metadata: ResourcesMetadata
+) -> Result<Arc<CachingBuiltinEntityParser>> {
     let language = Language::from_str(&metadata.language)?;
     let parser_config = if let Some(gazetteer_entities) = metadata.gazetteer_entities {
         let gazetteer_entities_path = resources_dir
@@ -96,14 +76,66 @@ pub fn get_builtin_entity_parser<P: AsRef<Path>>(
     } else {
         BuiltinEntityParserConfiguration {
             language,
-            gazetteer_entity_configurations: vec![]
+            gazetteer_entity_configurations: vec![],
         }
     };
-    CachingBuiltinEntityParser::new(parser_config, 1000)
+    Ok(Arc::new(CachingBuiltinEntityParser::new(parser_config, 1000)?))
 }
 
-pub fn clear_resources() {
-    clear_gazetteers();
-    clear_stemmers();
-    clear_word_clusterers();
+fn load_stemmer<P: AsRef<Path>>(
+    resources_dir: &P,
+    metadata: &ResourcesMetadata,
+) -> Result<Option<Arc<HashMapStemmer>>> {
+    if let Some(stems) = metadata.stems.as_ref() {
+        let stemming_directory = resources_dir.as_ref().join("stemming");
+        let stems_path = stemming_directory
+            .join(stems)
+            .with_extension("txt");
+        let stems_reader = File::open(&stems_path)
+            .with_context(|_| format!("Cannot open stems file '{:?}'", stems_path))?;
+        Ok(Some(Arc::new(HashMapStemmer::from_reader(stems_reader)?)))
+    } else {
+        Ok(None)
+    }
+}
+
+fn load_gazetteers<P: AsRef<Path>>(
+    resources_dir: &P,
+    metadata: &ResourcesMetadata,
+) -> Result<HashMap<String, Arc<HashSetGazetteer>>> {
+    let mut gazetteers: HashMap<String, Arc<HashSetGazetteer>> = HashMap::new();
+    if let Some(gazetteer_names) = metadata.gazetteers.as_ref() {
+        let gazetteers_directory = resources_dir.as_ref().join("gazetteers");
+        for gazetteer_name in gazetteer_names {
+            let gazetteer_path = gazetteers_directory
+                .join(gazetteer_name.clone())
+                .with_extension("txt");
+            let file = File::open(&gazetteer_path)
+                .with_context(|_| format!("Cannot open gazetteer file '{:?}'", gazetteer_path))?;
+            gazetteers.insert(gazetteer_name.to_string(), Arc::new(HashSetGazetteer::from_reader(file)?));
+        }
+    }
+    Ok(gazetteers)
+}
+
+
+fn load_word_clusterers<P: AsRef<Path>>(
+    resources_dir: &P,
+    metadata: &ResourcesMetadata,
+) -> Result<HashMap<String, Arc<HashMapWordClusterer>>> {
+    let mut word_clusterers: HashMap<String, Arc<HashMapWordClusterer>> = HashMap::new();
+    if let Some(word_clusters) = metadata.word_clusters.as_ref() {
+        let word_clusters_directory = resources_dir.as_ref().join("word_clusters");
+        for clusters_name in word_clusters {
+            let clusters_path = word_clusters_directory
+                .join(clusters_name.clone())
+                .with_extension("txt");
+            ;
+            let word_clusters_reader = File::open(&clusters_path)
+                .with_context(|_| format!("Cannot open word clusters file '{:?}'", clusters_path))?;
+            let word_clusterer = HashMapWordClusterer::from_reader(word_clusters_reader)?;
+            word_clusterers.insert(clusters_name.to_string(), Arc::new(word_clusterer));
+        }
+    }
+    Ok(word_clusterers)
 }

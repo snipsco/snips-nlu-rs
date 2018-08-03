@@ -18,14 +18,13 @@ use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use resources::loading::load_language_resources;
+use resources::SharedResources;
 use serde_json;
 use slot_utils::resolve_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use tempfile;
 use utils::{EntityName, IntentName, SlotName};
 use zip::ZipArchive;
-use resources::loading::get_builtin_entity_parser;
-use resources::SharedResources;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -48,9 +47,7 @@ impl SnipsNluEngine {
 
         let language = Language::from_str(&model.dataset_metadata.language_code)?;
         let resources_path = path.as_ref().join("resources").join(language.to_string());
-        load_language_resources(&resources_path)?;
-        let builtin_entity_parser = get_builtin_entity_parser(resources_path)?;
-        let shared_resources = Arc::new(SharedResources { builtin_entity_parser });
+        let shared_resources = load_language_resources(&resources_path)?;
 
         let parsers = model
             .intent_parsers

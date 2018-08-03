@@ -6,8 +6,6 @@ extern crate dinghy_test;
 #[macro_use]
 extern crate failure;
 extern crate itertools;
-#[macro_use]
-extern crate lazy_static;
 extern crate lru_cache;
 #[macro_use]
 extern crate ndarray;
@@ -47,7 +45,6 @@ pub use errors::*;
 pub use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 pub use nlu_engine::SnipsNluEngine;
-pub use resources::loading::clear_resources; // This is used by benches
 pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 

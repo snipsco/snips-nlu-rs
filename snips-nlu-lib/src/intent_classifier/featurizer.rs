@@ -12,8 +12,8 @@ use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::normalize;
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use resources::SharedResources;
-use resources::stemmer::{get_stemmer, HashMapStemmer, Stemmer};
-use resources::word_clusterer::{get_word_clusterer, HashMapWordClusterer, WordClusterer};
+use resources::stemmer::{HashMapStemmer, Stemmer};
+use resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
 
 pub struct Featurizer {
@@ -37,16 +37,20 @@ impl Featurizer {
         let vocabulary = config.tfidf_vectorizer.vocab;
         let language = Language::from_str(config.language_code.as_ref())?;
         let idf_diag = config.tfidf_vectorizer.idf_diag;
-        let opt_word_clusterer = if let Some(word_clusterer) = config
+        let opt_word_clusterer = if let Some(clusters_name) = config
             .config
-            .word_clusters_name
-            .map(|clusters_name| get_word_clusterer(clusters_name, language)) {
-            Some(word_clusterer?)
+            .word_clusters_name {
+            Some(
+                shared_resources.word_clusterers
+                    .get(&clusters_name)
+                    .map(|clusterer| clusterer.clone())
+                    .ok_or_else(||
+                        format_err!("Cannot find word clusters '{}' in shared resources",
+                        clusters_name))?)
         } else {
             None
         };
-
-        let stemmer = get_stemmer(language);
+        let stemmer = shared_resources.stemmer.clone();
         let entity_utterances_to_feature_names = config.entity_utterances_to_feature_names;
 
         Ok(Self {

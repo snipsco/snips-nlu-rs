@@ -16,7 +16,6 @@ snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0
 failure = "0.1"
 base64 = "0.9"
 itertools = { version = "0.7", default-features = false }
-lazy_static = "1.0"
 lru-cache = "0.1"
 serde = "1.0"
 serde_derive = "1.0"
