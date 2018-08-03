@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::str::FromStr;
 
-use builtin_entity_parsing::BuiltinEntityParserFactory;
+use builtin_entity_parsing::CachingBuiltinEntityParser;
 use errors::*;
 use failure::ResultExt;
 use resources::gazetteer::{clear_gazetteers, load_gazetteer};
@@ -21,28 +21,17 @@ pub struct ResourcesMetadata {
     gazetteer_entities: Option<Vec<String>>,
 }
 
-pub fn load_resources<P: AsRef<Path>>(resources_dir: P) -> Result<()> {
-    for dir_entry in resources_dir.as_ref().read_dir()? {
-        let language_resources_path = dir_entry?.path();
-        let metadata_file_path = language_resources_path.join("metadata.json");
-        if metadata_file_path.exists() {
-            load_language_resources(language_resources_path)?;
-        }
-    }
-    Ok(())
-}
-
 pub fn load_language_resources<P: AsRef<Path>>(
-    language_resources_dir: P,
+    resources_dir: P,
 ) -> Result<()> {
-    let metadata_file_path = language_resources_dir.as_ref().join("metadata.json");
+    let metadata_file_path = resources_dir.as_ref().join("metadata.json");
     let metadata_file = File::open(&metadata_file_path)?;
     let metadata: ResourcesMetadata = serde_json::from_reader(metadata_file)
         .with_context(|_|
             format!("Cannot deserialize resources metadata file '{:?}'", metadata_file_path))?;
     let language = Language::from_str(&metadata.language)?;
     if let Some(gazetteer_names) = metadata.gazetteers {
-        let gazetteers_directory = language_resources_dir.as_ref().join("gazetteers");
+        let gazetteers_directory = resources_dir.as_ref().join("gazetteers");
         for gazetteer_name in gazetteer_names {
             let gazetteer_path = gazetteers_directory
                 .join(gazetteer_name.clone())
@@ -52,7 +41,7 @@ pub fn load_language_resources<P: AsRef<Path>>(
     }
 
     if let Some(word_clusters) = metadata.word_clusters {
-        let word_clusters_directory = language_resources_dir.as_ref().join("word_clusters");
+        let word_clusters_directory = resources_dir.as_ref().join("word_clusters");
         for clusters_name in word_clusters {
             let clusters_path = word_clusters_directory
                 .join(clusters_name.clone())
@@ -63,15 +52,27 @@ pub fn load_language_resources<P: AsRef<Path>>(
     }
 
     if let Some(stems) = metadata.stems {
-        let stemming_directory = language_resources_dir.as_ref().join("stemming");
+        let stemming_directory = resources_dir.as_ref().join("stemming");
         let stems_path = stemming_directory
             .join(stems)
             .with_extension("txt");
         load_stemmer(language, stems_path)?;
     }
 
-    if let Some(gazetteer_entities) = metadata.gazetteer_entities {
-        let gazetteer_entities_path = language_resources_dir
+    Ok(())
+}
+
+pub fn get_builtin_entity_parser<P: AsRef<Path>>(
+    resources_dir: P
+) -> Result<CachingBuiltinEntityParser> {
+    let metadata_file_path = resources_dir.as_ref().join("metadata.json");
+    let metadata_file = File::open(&metadata_file_path)?;
+    let metadata: ResourcesMetadata = serde_json::from_reader(metadata_file)
+        .with_context(|_|
+            format!("Cannot deserialize resources metadata file '{:?}'", metadata_file_path))?;
+    let language = Language::from_str(&metadata.language)?;
+    let parser_config = if let Some(gazetteer_entities) = metadata.gazetteer_entities {
+        let gazetteer_entities_path = resources_dir
             .as_ref()
             .join("gazetteer_entities");
         let entities = gazetteer_entities.iter()
@@ -81,7 +82,6 @@ pub fn load_language_resources<P: AsRef<Path>>(
             .map(|entity| {
                 let path = gazetteer_entities_path
                     .join(entity.to_string().to_lowercase());
-                // TODO: remove the parser threshold hardcoded value
                 GazetteerEntityConfiguration {
                     builtin_entity_name: entity.identifier().to_string(),
                     resource_path: path,
@@ -89,21 +89,21 @@ pub fn load_language_resources<P: AsRef<Path>>(
                 }
             })
             .collect();
-        let parser_configuration = BuiltinEntityParserConfiguration {
+        BuiltinEntityParserConfiguration {
             language,
             gazetteer_entity_configurations,
-        };
-        BuiltinEntityParserFactory::add_parser_from_config(parser_configuration)?;
+        }
     } else {
-        BuiltinEntityParserFactory::add_parser_from_language(language)?;
-    }
-
-    Ok(())
+        BuiltinEntityParserConfiguration {
+            language,
+            gazetteer_entity_configurations: vec![]
+        }
+    };
+    CachingBuiltinEntityParser::new(parser_config, 1000)
 }
 
 pub fn clear_resources() {
     clear_gazetteers();
     clear_stemmers();
     clear_word_clusterers();
-    BuiltinEntityParserFactory::clear();
 }

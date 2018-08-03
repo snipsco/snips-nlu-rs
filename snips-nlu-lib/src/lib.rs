@@ -44,7 +44,6 @@ pub const MODEL_VERSION: &str = "0.16.0";
 
 pub use models::*;
 pub use errors::*;
-pub use builtin_entity_parsing::BuiltinEntityParserFactory; // This is used by benches
 pub use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 pub use nlu_engine::SnipsNluEngine;

@@ -8,7 +8,6 @@ use std::sync::Arc;
 use regex::{Regex, RegexBuilder};
 use serde_json;
 
-use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use errors::*;
 use failure::ResultExt;
 use models::DeterministicParserModel;
@@ -18,20 +17,21 @@ use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
+use resources::SharedResources;
 use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, Language};
-use utils::{deduplicate_overlapping_items, EntityName, FromPath, IntentName, SlotName};
+use utils::{deduplicate_overlapping_items, EntityName, IntentName, SlotName};
 
 pub struct DeterministicIntentParser {
+    language: Language,
     regexes_per_intent: HashMap<IntentName, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, SlotName>,
     slot_names_to_entities: HashMap<IntentName, HashMap<SlotName, EntityName>>,
-    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
-    language: Language,
+    shared_resources: Arc<SharedResources>,
 }
 
-impl FromPath for DeterministicIntentParser {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+impl DeterministicIntentParser {
+    pub fn from_path<P: AsRef<Path>>(path: P, shared_resources: Arc<SharedResources>) -> Result<Self> {
         let parser_model_path = path.as_ref().join("intent_parser.json");
         let model_file = File::open(&parser_model_path)
             .with_context(|_|
@@ -39,20 +39,22 @@ impl FromPath for DeterministicIntentParser {
                         &parser_model_path))?;
         let model: DeterministicParserModel = serde_json::from_reader(model_file)
             .with_context(|_| "Cannot deserialize DeterministicIntentParser json data")?;
-        Self::new(model)
+        Self::new(model, shared_resources)
     }
 }
 
 impl DeterministicIntentParser {
-    pub fn new(configuration: DeterministicParserModel) -> Result<Self> {
+    pub fn new(
+        configuration: DeterministicParserModel,
+        shared_resources: Arc<SharedResources>
+    ) -> Result<Self> {
         let language = Language::from_str(&configuration.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(language)?;
         Ok(DeterministicIntentParser {
+            language,
             regexes_per_intent: compile_regexes_per_intent(configuration.patterns)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
             slot_names_to_entities: configuration.slot_names_to_entities,
-            builtin_entity_parser,
-            language,
+            shared_resources,
         })
     }
 }
@@ -63,7 +65,9 @@ impl IntentParser for DeterministicIntentParser {
         input: &str,
         intents: Option<&HashSet<IntentName>>,
     ) -> Result<Option<InternalParsingResult>> {
-        let builtin_entities = self.builtin_entity_parser.extract_entities(input, None, true);
+        let builtin_entities = self.shared_resources
+            .builtin_entity_parser
+            .extract_entities(input, None, true);
         let (ranges_mapping, formatted_input) = replace_builtin_entities(input, builtin_entities);
         let language = NluUtilsLanguage::from_language(self.language);
         let cleaned_input = replace_tokenized_out_characters(input, language, ' ');
@@ -307,8 +311,9 @@ mod tests {
     use snips_nlu_ontology::{IntentClassifierResult, Language};
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use resources::loading::load_resources;
+    use resources::loading::load_language_resources;
     use snips_nlu_ontology::{BuiltinEntityKind, SlotValue, NumberValue, OrdinalValue, StringValue};
+    use testutils::english_shared_resources;
 
     fn test_configuration() -> DeterministicParserModel {
         DeterministicParserModel {
@@ -367,11 +372,12 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
 
         // When
-        let intent_parser = DeterministicIntentParser::from_path(path).unwrap();
+        let intent_parser = DeterministicIntentParser::from_path(path, english_shared_resources()).unwrap();
         let parsing_result = intent_parser.parse("make me two cups of coffee", None).unwrap();
 
         // Then
@@ -394,9 +400,11 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
+        let parser = DeterministicIntentParser::new(
+            test_configuration(), english_shared_resources()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -417,9 +425,11 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
+        let parser = DeterministicIntentParser::new(
+            test_configuration(), english_shared_resources()).unwrap();
         let text = "Send 10 dollars to John";
 
         // When
@@ -440,9 +450,11 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
+        let parser = DeterministicIntentParser::new(
+            test_configuration(), english_shared_resources()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -472,9 +484,11 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
+        let parser = DeterministicIntentParser::new(
+            test_configuration(), english_shared_resources()).unwrap();
         let text = "This is another über dummy_cc query!";
 
         // When
@@ -498,9 +512,11 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
+        let parser = DeterministicIntentParser::new(
+            test_configuration(), english_shared_resources()).unwrap();
         let text = "Send 10 dollars to John at dummy c";
 
         // When
@@ -530,9 +546,11 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
+        let parser = DeterministicIntentParser::new(
+            test_configuration(), english_shared_resources()).unwrap();
         let text = "this is another dummy’c";
 
         // When

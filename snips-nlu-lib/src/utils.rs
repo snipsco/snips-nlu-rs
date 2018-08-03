@@ -1,14 +1,6 @@
-use std::path::Path;
-
-use errors::*;
-
 pub type IntentName = String;
 pub type SlotName = String;
 pub type EntityName = String;
-
-pub trait FromPath {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> where Self: Sized;
-}
 
 #[cfg(test)]
 pub fn file_path(filename: &str) -> ::std::path::PathBuf {

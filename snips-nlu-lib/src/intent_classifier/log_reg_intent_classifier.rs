@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
+use std::sync::Arc;
 
 use itertools::Itertools;
 use ndarray::prelude::*;
@@ -11,8 +12,9 @@ use errors::*;
 use failure::ResultExt;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
+use resources::SharedResources;
 use snips_nlu_ontology::IntentClassifierResult;
-use utils::{FromPath, IntentName};
+use utils::IntentName;
 
 pub struct LogRegIntentClassifier {
     intent_list: Vec<Option<IntentName>>,
@@ -20,22 +22,28 @@ pub struct LogRegIntentClassifier {
     logreg: Option<MulticlassLogisticRegression>,
 }
 
-impl FromPath for LogRegIntentClassifier {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+impl LogRegIntentClassifier {
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        shared_resources: Arc<SharedResources>
+    ) -> Result<Self> {
         let classifier_model_path = path.as_ref().join("intent_classifier.json");
         let model_file = File::open(&classifier_model_path)
             .with_context(|_|
                 format!("Cannot open LogRegIntentClassifier file '{:?}'", &classifier_model_path))?;
         let model: IntentClassifierModel = serde_json::from_reader(model_file)
             .with_context(|_| "Cannot deserialize LogRegIntentClassifier json data")?;
-        Self::new(model)
+        Self::new(model, shared_resources)
     }
 }
 
 impl LogRegIntentClassifier {
-    pub fn new(model: IntentClassifierModel) -> Result<Self> {
+    pub fn new(
+        model: IntentClassifierModel,
+        shared_resources: Arc<SharedResources>
+    ) -> Result<Self> {
         let featurizer: Option<Featurizer> = if let Some(featurizer_model) = model.featurizer {
-            Some(Featurizer::new(featurizer_model)?)
+            Some(Featurizer::new(featurizer_model, shared_resources)?)
         } else {
             None
         };
@@ -157,7 +165,8 @@ mod tests {
     use utils::file_path;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
-    use resources::loading::load_resources;
+    use resources::loading::load_language_resources;
+    use testutils::english_shared_resources;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
         let language_code = "en".to_string();
@@ -419,7 +428,7 @@ mod tests {
             entity_utterances_to_feature_names,
         };
 
-        let featurizer = Featurizer::new(config).unwrap();
+        let featurizer = Featurizer::new(config, english_shared_resources()).unwrap();
 
         let intercept = array![
             -0.6769558144299883,
@@ -532,8 +541,9 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
 
         let path = file_path("tests")
             .join("models")
@@ -542,7 +552,7 @@ mod tests {
             .join("intent_classifier");
 
         // When
-        let intent_classifier = LogRegIntentClassifier::from_path(path).unwrap();
+        let intent_classifier = LogRegIntentClassifier::from_path(path, english_shared_resources()).unwrap();
         let intent_result = intent_classifier
             .get_intent("Make me one cup of tea please", None)
             .unwrap()
@@ -559,8 +569,9 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
         let classifier = get_sample_log_reg_classifier();
 
         // When
@@ -582,8 +593,9 @@ mod tests {
         let resources_path = file_path("tests")
             .join("models")
             .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
+            .join("resources")
+            .join("en");
+        load_language_resources(resources_path).unwrap();
 
         let classifier = get_sample_log_reg_classifier();
 

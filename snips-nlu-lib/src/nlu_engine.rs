@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 
-use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
+use builtin_entity_parsing::CachingBuiltinEntityParser;
 use errors::*;
 use failure::ResultExt;
 use intent_parser::*;
@@ -17,18 +17,20 @@ use models::{DatasetMetadata, Entity, NluEngineModel, ModelVersion, ProcessingUn
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize};
-use resources::loading::load_resources;
+use resources::loading::load_language_resources;
 use serde_json;
 use slot_utils::resolve_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use tempfile;
 use utils::{EntityName, IntentName, SlotName};
 use zip::ZipArchive;
+use resources::loading::get_builtin_entity_parser;
+use resources::SharedResources;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
-    parsers: Vec<Box<IntentParser>>,
-    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
+    intent_parsers: Vec<Box<IntentParser>>,
+    shared_resources: Arc<SharedResources>,
 }
 
 impl SnipsNluEngine {
@@ -38,13 +40,17 @@ impl SnipsNluEngine {
             .with_context(|_|
                 SnipsNluError::ModelLoad(engine_model_path.to_str().unwrap().to_string()))?;
 
-        let resources_path = path.as_ref().join("resources");
-        load_resources(resources_path)?;
 
         let model_file = fs::File::open(&engine_model_path)
             .with_context(|_| format!("Could not open nlu engine file {:?}", &engine_model_path))?;
         let model: NluEngineModel = serde_json::from_reader(model_file)
             .with_context(|_| "Could not deserialize nlu engine json file")?;
+
+        let language = Language::from_str(&model.dataset_metadata.language_code)?;
+        let resources_path = path.as_ref().join("resources").join(language.to_string());
+        load_language_resources(&resources_path)?;
+        let builtin_entity_parser = get_builtin_entity_parser(resources_path)?;
+        let shared_resources = Arc::new(SharedResources { builtin_entity_parser });
 
         let parsers = model
             .intent_parsers
@@ -58,17 +64,15 @@ impl SnipsNluEngine {
                 let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)
                     .with_context(|_|
                         format!("Could not deserialize json metadata of parser '{}'", parser_name))?;
-                Ok(build_intent_parser(metadata, parser_path)? as _)
+                Ok(build_intent_parser(metadata, parser_path, shared_resources.clone())? as _)
             })
             .collect::<Result<Vec<_>>>()?;
 
-        let language = Language::from_str(&model.dataset_metadata.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(language)?;
 
         Ok(SnipsNluEngine {
             dataset_metadata: model.dataset_metadata,
-            parsers,
-            builtin_entity_parser,
+            intent_parsers: parsers,
+            shared_resources,
         })
     }
 
@@ -136,7 +140,7 @@ impl SnipsNluEngine {
         input: &str,
         intents_filter: Option<&[IntentName]>,
     ) -> Result<IntentParserResult> {
-        if self.parsers.is_empty() {
+        if self.intent_parsers.is_empty() {
             return Ok(IntentParserResult {
                 input: input.to_string(),
                 intent: None,
@@ -146,7 +150,7 @@ impl SnipsNluEngine {
         let set_intents: Option<HashSet<IntentName>> = intents_filter
             .map(|intent_list| HashSet::from_iter(intent_list.iter().map(|name| name.to_string())));
 
-        for parser in &self.parsers {
+        for parser in &self.intent_parsers {
             let opt_internal_parsing_result = parser.parse(input, set_intents.as_ref())?;
             if let Some(internal_parsing_result) = opt_internal_parsing_result {
                 let filter_entity_kinds = self.dataset_metadata
@@ -163,7 +167,7 @@ impl SnipsNluEngine {
                     input,
                     internal_parsing_result.slots,
                     &self.dataset_metadata,
-                    &*self.builtin_entity_parser,
+                    &self.shared_resources.builtin_entity_parser,
                     Some(&*filter_entity_kinds),
                 );
 
@@ -210,7 +214,7 @@ impl SnipsNluEngine {
                 input,
                 entity_name.to_string(),
                 slot_name.to_string(),
-                &self.builtin_entity_parser,
+                &self.shared_resources.builtin_entity_parser,
             )?
         };
         Ok(slot)

@@ -2,13 +2,13 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use builtin_entity_parsing::BuiltinEntityParserFactory;
 use super::crf_utils::TaggingScheme;
 use super::features;
 use models::FeatureFactory;
 use errors::*;
 use nlu_utils::token::Token;
 use resources::gazetteer::{get_gazetteer, HashSetGazetteer};
+use resources::SharedResources;
 use resources::stemmer::get_stemmer;
 use resources::word_clusterer::get_word_clusterer;
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
@@ -20,10 +20,13 @@ pub struct ProbabilisticFeatureProcessor {
 
 impl ProbabilisticFeatureProcessor {
     // TODO add a `GazetteerProvider` to this signature
-    pub fn new(features: &[FeatureFactory]) -> Result<ProbabilisticFeatureProcessor> {
+    pub fn new(
+        features: &[FeatureFactory],
+        shared_resources: Arc<SharedResources>
+    ) -> Result<ProbabilisticFeatureProcessor> {
         let functions = features
             .iter()
-            .map(|f| get_feature_function(f))
+            .map(|f| get_feature_function(f, shared_resources.clone()))
             .collect::<Result<Vec<Vec<_>>>>()?
             .into_iter()
             .flat_map(|fs| fs)
@@ -85,7 +88,10 @@ impl FeatureFunction {
     }
 }
 
-fn get_feature_function(f: &FeatureFactory) -> Result<Vec<FeatureFunction>> {
+fn get_feature_function(
+    f: &FeatureFactory,
+    shared_resources: Arc<SharedResources>
+) -> Result<Vec<FeatureFunction>> {
     let offsets = f.offsets.clone();
     match f.factory_name.as_ref() {
         "is_digit" => Ok(vec![is_digit_feature_function(offsets)?]),
@@ -97,7 +103,7 @@ fn get_feature_function(f: &FeatureFactory) -> Result<Vec<FeatureFunction>> {
         "prefix" => Ok(vec![prefix_feature_function(&f.args, offsets)?]),
         "suffix" => Ok(vec![suffix_feature_function(&f.args, offsets)?]),
         "entity_match" => entity_match_feature_function(&f.args, &offsets),
-        "builtin_entity_match" => builtin_entity_match_feature_function(&f.args, &offsets),
+        "builtin_entity_match" => builtin_entity_match_feature_function(&f.args, &offsets, shared_resources),
         "word_cluster" => Ok(vec![word_cluster_feature_function(&f.args, offsets)?]),
         _ => bail!("Feature {} not implemented", f.factory_name),
     }
@@ -240,38 +246,26 @@ fn entity_match_feature_function(
 fn builtin_entity_match_feature_function(
     args: &HashMap<String, ::serde_json::Value>,
     offsets: &[i32],
+    shared_resources: Arc<SharedResources>
 ) -> Result<Vec<FeatureFunction>> {
     let builtin_entity_labels = parse_as_vec_string(args, "entity_labels")?;
-    let language_code = parse_as_string(args, "language_code")?;
     let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
     let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
     builtin_entity_labels
         .into_iter()
         .map(|label| {
-            let builtin_parser = if let Some(language) = Language::from_str(&language_code).ok() {
-                Some(BuiltinEntityParserFactory::get(language)?)
-            } else {
-                None
-            };
-            let builtin_entity_kind = BuiltinEntityKind::from_identifier(&label).ok();
+            let builtin_entity_kind = BuiltinEntityKind::from_identifier(&label)?;
+            let shared_resources_cloned = shared_resources.clone();
             Ok(FeatureFunction::new(
                 &format!("builtin_entity_match_{}", &label),
                 offsets.to_vec(),
-                move |tokens, token_index| {
-                    if let (Some(parser), Some(builtin_entity_kind)) =
-                    (builtin_parser.as_ref(), builtin_entity_kind)
-                        {
-                            features::get_builtin_entity_match(
-                                tokens,
-                                token_index,
-                                &**parser,
-                                builtin_entity_kind,
-                                tagging_scheme,
-                            )
-                        } else {
-                        None
-                    }
-                },
+                move |tokens, token_index|
+                    features::get_builtin_entity_match(
+                        tokens,
+                        token_index,
+                        &shared_resources_cloned.builtin_entity_parser,
+                        builtin_entity_kind,
+                        tagging_scheme)
             ))
         })
         .collect()
