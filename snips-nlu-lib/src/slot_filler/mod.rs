@@ -1,3 +1,5 @@
+#[macro_use]
+mod macros;
 pub mod crf_slot_filler;
 mod crf_utils;
 mod feature_processor;

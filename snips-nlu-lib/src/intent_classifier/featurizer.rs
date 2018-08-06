@@ -175,36 +175,11 @@ mod tests {
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
-    use resources::stemmer::Stemmer;
-    use resources::word_clusterer::WordClusterer;
     use resources::loading::load_language_resources;
-    use testutils::{assert_epsilon_eq_array1, english_shared_resources};
+    use resources::stemmer::HashMapStemmer;
+    use resources::word_clusterer::HashMapWordClusterer;
+    use testutils::assert_epsilon_eq_array1;
     use utils::file_path;
-
-    struct TestWordClusterer {}
-
-    impl WordClusterer for TestWordClusterer {
-        fn get_cluster(&self, word: &str) -> Option<String> {
-            match word {
-                "love" => Some("cluster_love".to_string()),
-                "house" => Some("cluster_house".to_string()),
-                _ => None,
-            }
-        }
-    }
-
-    struct TestStemmer {}
-
-    impl Stemmer for TestStemmer {
-        fn stem(&self, value: &str) -> String {
-            match value {
-                "bird" => "bir".to_string(),
-                "hello" => "hell".to_string(),
-                "is" => "be".to_string(),
-                _ => value.to_string(),
-            }
-        }
-    }
 
     #[test]
     fn transform_works() {
@@ -214,7 +189,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        let resources = load_language_resources(resources_path).unwrap();
         let best_features = vec![0, 1, 2, 3, 6, 7, 8, 9];
         let vocab = hashmap![
             "awful".to_string() => 0,
@@ -260,9 +235,7 @@ mod tests {
             entity_utterances_to_feature_names,
         };
 
-        let featurizer = Featurizer::new(
-            featurizer_config, english_shared_resources(),
-        ).unwrap();
+        let featurizer = Featurizer::new(featurizer_config, resources).unwrap();
 
         // When
         let input = "Hëllo this bïrd is a beautiful Bïrd";
@@ -287,14 +260,21 @@ mod tests {
         // Given
         let language = Language::EN;
         let query_tokens = tokenize_light("I, love House, muSic", language);
-        let word_clusterer = TestWordClusterer {};
+        let word_clusterer = HashMapWordClusterer::from(
+            vec![
+                ("love".to_string(), "cluster_love".to_string()),
+                ("house".to_string(), "cluster_house".to_string())
+            ].into_iter()
+        );
 
         // When
         let augmented_query = get_word_cluster_features(&query_tokens, &word_clusterer);
 
         // Then
-        let expected_augmented_query =
-            vec!["cluster_house".to_string(), "cluster_love".to_string()];
+        let expected_augmented_query = vec![
+            "cluster_house".to_string(),
+            "cluster_love".to_string()
+        ];
         assert_eq!(augmented_query, expected_augmented_query)
     }
 
@@ -307,7 +287,13 @@ mod tests {
             "bir".to_string() => vec!["featureentityAnimal".to_string()],
             "hell this".to_string() => vec!["featureentityWord".to_string(), "featureentityGreeting".to_string()]
         ];
-        let stemmer = TestStemmer {};
+        let stemmer = HashMapStemmer::from(
+            vec![
+                ("bird".to_string(), "bir".to_string()),
+                ("hello".to_string(), "hell".to_string()),
+                ("is".to_string(), "be".to_string())
+            ].into_iter()
+        );
         let normalized_stemmed_tokens = normalize_stem(&query_tokens, Some(&stemmer));
 
         // When

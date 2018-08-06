@@ -14,29 +14,17 @@ use resources::gazetteer::{Gazetteer, HashSetGazetteer};
 use resources::SharedResources;
 use resources::stemmer::{HashMapStemmer, Stemmer};
 use resources::word_clusterer::WordClusterer;
-use slot_filler::feature_processor::Feature;
+use slot_filler::feature_processor::{Feature, FeatureKindRepr};
 use snips_nlu_ontology::BuiltinEntityKind;
 
-
-pub struct IsDigitFeature {
-    offsets: Vec<i32>
-}
+pub struct IsDigitFeature {}
 
 impl Feature for IsDigitFeature {
-    fn base_name(&self) -> &'static str {
-        "is_digit"
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
-    }
-
     fn build_features(
-        offsets: &[i32],
         _args: &HashMap<String, ::serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
-        Ok(vec![Box::new(Self { offsets: offsets.to_vec() })])
+        Ok(vec![Box::new(Self {})])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
@@ -48,25 +36,14 @@ impl Feature for IsDigitFeature {
     }
 }
 
-pub struct LengthFeature {
-    offsets: Vec<i32>
-}
+pub struct LengthFeature {}
 
 impl Feature for LengthFeature {
-    fn base_name(&self) -> &'static str {
-        "length"
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
-    }
-
     fn build_features(
-        offsets: &[i32],
         _args: &HashMap<String, ::serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
-        Ok(vec![Box::new(Self { offsets: offsets.to_vec() })])
+        Ok(vec![Box::new(Self {})])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
@@ -74,25 +51,14 @@ impl Feature for LengthFeature {
     }
 }
 
-pub struct IsFirstFeature {
-    offsets: Vec<i32>
-}
+pub struct IsFirstFeature {}
 
 impl Feature for IsFirstFeature {
-    fn base_name(&self) -> &'static str {
-        "is_first"
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
-    }
-
     fn build_features(
-        offsets: &[i32],
         _args: &HashMap<String, ::serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
-        Ok(vec![Box::new(Self { offsets: offsets.to_vec() })])
+        Ok(vec![Box::new(Self {})])
     }
 
     fn compute(&self, _tokens: &[Token], token_index: usize) -> Option<String> {
@@ -104,25 +70,14 @@ impl Feature for IsFirstFeature {
     }
 }
 
-pub struct IsLastFeature {
-    offsets: Vec<i32>
-}
+pub struct IsLastFeature {}
 
 impl Feature for IsLastFeature {
-    fn base_name(&self) -> &'static str {
-        "is_last"
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
-    }
-
     fn build_features(
-        offsets: &[i32],
         _args: &HashMap<String, ::serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
-        Ok(vec![Box::new(Self { offsets: offsets.to_vec() })])
+        Ok(vec![Box::new(Self {})])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
@@ -136,26 +91,16 @@ impl Feature for IsLastFeature {
 
 pub struct NgramFeature {
     ngram_size: usize,
-    offsets: Vec<i32>,
     opt_common_words_gazetteer: Option<Arc<HashSetGazetteer>>,
     opt_stemmer: Option<Arc<HashMapStemmer>>,
 }
 
 impl Feature for NgramFeature {
-    fn base_name(&self) -> &'static str {
-        "ngram"
-    }
-
     fn name(&self) -> String {
-        format!("{}_{}", self.base_name(), self.ngram_size)
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
+        format!("{}_{}", self.feature_kind().identifier(), self.ngram_size)
     }
 
     fn build_features(
-        offsets: &[i32],
         args: &HashMap<String, ::serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
@@ -180,7 +125,6 @@ impl Feature for NgramFeature {
         Ok(vec![Box::new(
             Self {
                 ngram_size: n,
-                offsets: offsets.to_vec(),
                 opt_common_words_gazetteer,
                 opt_stemmer,
             }
@@ -216,30 +160,20 @@ impl Feature for NgramFeature {
 }
 
 pub struct ShapeNgramFeature {
-    offsets: Vec<i32>,
     ngram_size: usize,
 }
 
 impl Feature for ShapeNgramFeature {
-    fn base_name(&self) -> &'static str {
-        "shape_ngram"
-    }
-
     fn name(&self) -> String {
-        format!("{}_{}", self.base_name(), self.ngram_size)
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
+        format!("{}_{}", self.feature_kind().identifier(), self.ngram_size)
     }
 
     fn build_features(
-        offsets: &[i32],
         args: &HashMap<String, ::serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let ngram_size = parse_as_u64(args, "n")? as usize;
-        Ok(vec![Box::new(Self { offsets: offsets.to_vec(), ngram_size })])
+        Ok(vec![Box::new(Self { ngram_size })])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
@@ -259,30 +193,20 @@ impl Feature for ShapeNgramFeature {
 }
 
 pub struct PrefixFeature {
-    offsets: Vec<i32>,
     prefix_size: usize,
 }
 
 impl Feature for PrefixFeature {
-    fn base_name(&self) -> &'static str {
-        "prefix"
-    }
-
     fn name(&self) -> String {
-        format!("{}_{}", self.base_name(), self.prefix_size)
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
+        format!("{}_{}", self.feature_kind().identifier(), self.prefix_size)
     }
 
     fn build_features(
-        offsets: &[i32],
         args: &HashMap<String, ::serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let prefix_size = parse_as_u64(args, "prefix_size")? as usize;
-        Ok(vec![Box::new(Self { offsets: offsets.to_vec(), prefix_size })])
+        Ok(vec![Box::new(Self { prefix_size })])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
@@ -292,30 +216,20 @@ impl Feature for PrefixFeature {
 }
 
 pub struct SuffixFeature {
-    offsets: Vec<i32>,
     suffix_size: usize,
 }
 
 impl Feature for SuffixFeature {
-    fn base_name(&self) -> &'static str {
-        "suffix"
-    }
-
     fn name(&self) -> String {
-        format!("{}_{}", self.base_name(), self.suffix_size)
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
+        format!("{}_{}", self.feature_kind().identifier(), self.suffix_size)
     }
 
     fn build_features(
-        offsets: &[i32],
         args: &HashMap<String, ::serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let suffix_size = parse_as_u64(args, "suffix_size")? as usize;
-        Ok(vec![Box::new(Self { offsets: offsets.to_vec(), suffix_size })])
+        Ok(vec![Box::new(Self { suffix_size })])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
@@ -326,7 +240,6 @@ impl Feature for SuffixFeature {
 }
 
 pub struct EntityMatchFeature {
-    offsets: Vec<i32>,
     entity_name: String,
     entity_values: HashSetGazetteer,
     tagging_scheme: TaggingScheme,
@@ -334,20 +247,11 @@ pub struct EntityMatchFeature {
 }
 
 impl Feature for EntityMatchFeature {
-    fn base_name(&self) -> &'static str {
-        "entity_match"
-    }
-
     fn name(&self) -> String {
-        format!("{}_{}", self.base_name(), &self.entity_name)
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
+        format!("{}_{}", self.feature_kind().identifier(), &self.entity_name)
     }
 
     fn build_features(
-        offsets: &[i32],
         args: &HashMap<String, ::serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
@@ -369,7 +273,6 @@ impl Feature for EntityMatchFeature {
             .map(|(entity_name, values)| {
                 let entity_values = HashSetGazetteer::from(values.into_iter());
                 Box::new(Self {
-                    offsets: offsets.to_vec(),
                     entity_name,
                     entity_values,
                     tagging_scheme,
@@ -403,23 +306,14 @@ pub struct BuiltinEntityMatchFeature {
     tagging_scheme: TaggingScheme,
     builtin_entity_kind: BuiltinEntityKind,
     builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
-    offsets: Vec<i32>,
 }
 
 impl Feature for BuiltinEntityMatchFeature {
-    fn base_name(&self) -> &'static str {
-        "builtin_entity_match"
-    }
     fn name(&self) -> String {
-        format!("{}_{}", self.base_name(), self.builtin_entity_kind.identifier())
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
+        format!("{}_{}", self.feature_kind().identifier(), self.builtin_entity_kind.identifier())
     }
 
     fn build_features(
-        offsets: &[i32],
         args: &HashMap<String, ::serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
@@ -435,7 +329,6 @@ impl Feature for BuiltinEntityMatchFeature {
                     tagging_scheme,
                     builtin_entity_kind,
                     builtin_entity_parser: shared_resources.builtin_entity_parser.clone(),
-                    offsets: offsets.to_vec(),
                 }) as Box<_>)
             })
             .collect()
@@ -457,26 +350,16 @@ impl Feature for BuiltinEntityMatchFeature {
 }
 
 pub struct WordClusterFeature {
-    offsets: Vec<i32>,
     cluster_name: String,
     word_clusterer: Arc<WordClusterer>,
 }
 
 impl Feature for WordClusterFeature {
-    fn base_name(&self) -> &'static str {
-        "word_cluster"
-    }
-
     fn name(&self) -> String {
-        format!("{}_{}", self.base_name(), self.cluster_name)
-    }
-
-    fn offsets(&self) -> &[i32] {
-        self.offsets.as_ref()
+        format!("{}_{}", self.feature_kind().identifier(), self.cluster_name)
     }
 
     fn build_features(
-        offsets: &[i32],
         args: &HashMap<String, ::serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
@@ -487,9 +370,8 @@ impl Feature for WordClusterFeature {
             .ok_or_else(|| format_err!(
                 "Cannot find word clusters '{}' in shared resources", cluster_name))?;
         Ok(vec![Box::new(Self {
-            offsets: offsets.to_vec(),
             cluster_name,
-            word_clusterer
+            word_clusterer,
         })])
     }
 
@@ -581,222 +463,178 @@ fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::convert::From;
 
     use nlu_utils::language::Language as NluUtilsLanguage;
     use nlu_utils::token::tokenize;
     use snips_nlu_ontology::Language;
     use resources::stemmer::HashMapStemmer;
     use resources::gazetteer::HashSetGazetteer;
+    use resources::word_clusterer::HashMapWordClusterer;
 
     #[test]
-    fn is_digit_works() {
+    fn is_digit_feature_works() {
         // Given
-        let inputs = vec!["e3", "abc", "42", "5r"];
+        let tokens = tokenize("e3 abc 42 5r", NluUtilsLanguage::EN);
+        let feature = IsDigitFeature {};
 
         // When
-        let results: Vec<Option<String>> = (0..4).map(|index| is_digit(inputs[index])).collect();
+        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
         let expected_results = vec![None, None, Some("1".to_string()), None];
-        assert_eq!(results, expected_results)
+        assert_eq!(expected_results, results)
     }
 
     #[test]
-    fn length_works() {
+    fn length_feature_works() {
         // Given
-        let inputs = vec!["hello", "こんにちは", "hello こんにちは", ""];
+        let tokens = tokenize("hello world helloworld", NluUtilsLanguage::EN);
+        let feature = LengthFeature {};
 
         // When
-        let results: Vec<Option<String>> = inputs.iter().map(|s| length(s)).collect();
+        let results: Vec<Option<String>> = (0..3).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        let expected_lengths = vec![
+        let expected_results = vec![
             Some("5".to_string()),
             Some("5".to_string()),
-            Some("11".to_string()),
-            Some("0".to_string()),
+            Some("10".to_string()),
         ];
 
-        assert_eq!(expected_lengths, results);
+        assert_eq!(expected_results, results);
     }
 
     #[test]
-    fn prefix_works() {
+    fn prefix_feature_works() {
         // Given
-        let string = "hello_world";
+        let tokens = tokenize("hello_world foo_bar", NluUtilsLanguage::EN);
+        let feature = PrefixFeature { prefix_size: 6 };
 
         // When
-        let actual_result = prefix(string, 6);
+        let actual_result: Vec<Option<String>> = (0..2).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        let expected_result = Some("hello_".to_string());
-        assert_eq!(actual_result, expected_result)
+        let expected_result = vec![Some("hello_".to_string()), Some("foo_ba".to_string())];
+        assert_eq!(expected_result, actual_result);
     }
 
     #[test]
-    fn suffix_works() {
+    fn suffix_feature_works() {
         // Given
-        let string = "hello_world";
+        let tokens = tokenize("hello_world foo_bar", NluUtilsLanguage::EN);
+        let feature = SuffixFeature { suffix_size: 6 };
 
         // When
-        let actual_result = suffix(string, 6);
+        let actual_result: Vec<Option<String>> = (0..2).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        let expected_result = Some("_world".to_string());
-        assert_eq!(actual_result, expected_result)
+        let expected_result = vec![Some("_world".to_string()), Some("oo_bar".to_string())];
+        assert_eq!(expected_result, actual_result);
     }
 
     #[test]
-    fn shape_works() {
+    fn shape_feature_works() {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("Hello BEAUTIFUL world !!!", language);
+        let feature = ShapeNgramFeature { ngram_size: 2 };
 
         // When
-        let actual_result = vec![shape(&tokens, 0, 2), shape(&tokens, 1, 3)];
+        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        let expected_result = vec![Some("Xxx XXX".to_string()), Some("XXX xxx xX".to_string())];
-        assert_eq!(actual_result, expected_result)
-    }
-
-    fn assert_ngrams_eq<S: Stemmer, G: Gazetteer>(
-        expected_ngrams: Vec<Vec<Option<String>>>,
-        tokens: &[Token],
-        stemmer: Option<&S>,
-        gazetteer: Option<&G>,
-    ) {
-        for (n, expected_ngrams) in expected_ngrams.iter().enumerate() {
-            for (i, expected_ngram) in expected_ngrams.iter().enumerate() {
-                let actual_ngrams = ngram(tokens, i, n + 1, stemmer, gazetteer);
-                assert_eq!(*expected_ngram, actual_ngrams)
-            }
-        }
+        let expected_result = vec![
+            Some("Xxx XXX".to_string()),
+            Some("XXX xxx".to_string()),
+            Some("xxx xX".to_string()),
+            None
+        ];
+        assert_eq!(expected_result, results);
     }
 
     #[test]
-    fn ngram_works() {
+    fn ngram_feature_works() {
+        // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
+        let feature = NgramFeature {
+            ngram_size: 2,
+            opt_common_words_gazetteer: None,
+            opt_stemmer: None,
+        };
 
-        let expected_ngrams = vec![
-            vec![
-                Some("i".to_string()),
-                Some("love".to_string()),
-                Some("house".to_string()),
-                Some("music".to_string()),
-            ],
-            vec![
-                Some("i love".to_string()),
-                Some("love house".to_string()),
-                Some("house music".to_string()),
-                None,
-            ],
-            vec![
-                Some("i love house".to_string()),
-                Some("love house music".to_string()),
-                None,
-                None,
-            ],
+        // When
+        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
+
+        // Then
+        let expected_results = vec![
+            Some("i love".to_string()),
+            Some("love house".to_string()),
+            Some("house music".to_string()),
+            None
         ];
 
-        assert_ngrams_eq(
-            expected_ngrams,
-            &tokens,
-            None as Option<&HashMapStemmer>,
-            None as Option<&HashSetGazetteer>,
-        );
+        assert_eq!(expected_results, results);
     }
 
     #[test]
-    fn ngram_works_with_common_words_gazetteer() {
+    fn ngram_feature_works_with_common_words_gazetteer() {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
         let common_words_gazetteer = HashSetGazetteer::from(
             vec!["i".to_string(), "love".to_string(), "music".to_string()].into_iter(),
         );
+        let feature = NgramFeature {
+            ngram_size: 2,
+            opt_common_words_gazetteer: Some(Arc::new(common_words_gazetteer)),
+            opt_stemmer: None,
+        };
+
+        // When
+        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        let expected_ngrams = vec![
-            vec![
-                Some("i".to_string()),
-                Some("love".to_string()),
-                Some("rare_word".to_string()),
-                Some("music".to_string()),
-            ],
-            vec![
-                Some("i love".to_string()),
-                Some("love rare_word".to_string()),
-                Some("rare_word music".to_string()),
-                None,
-            ],
-            vec![
-                Some("i love rare_word".to_string()),
-                Some("love rare_word music".to_string()),
-                None,
-                None,
-            ],
+        let expected_results = vec![
+            Some("i love".to_string()),
+            Some("love rare_word".to_string()),
+            Some("rare_word music".to_string()),
+            None
         ];
-
-        assert_ngrams_eq(
-            expected_ngrams,
-            &tokens,
-            None as Option<&HashMapStemmer>,
-            Some(&common_words_gazetteer),
-        );
+        assert_eq!(expected_results, results);
     }
 
     #[test]
-    fn ngram_works_with_stemmer() {
+    fn ngram_feature_works_with_stemmer() {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
-        struct TestStemmer;
-        impl Stemmer for TestStemmer {
-            fn stem(&self, value: &str) -> String {
-                if value == "house" {
-                    "hous".to_string()
-                } else {
-                    value.to_string()
-                }
-            }
-        }
+        let stemmer = HashMapStemmer::from(
+            vec![("house".to_string(), "hous".to_string())].into_iter()
+        );
+        let feature = NgramFeature {
+            ngram_size: 2,
+            opt_common_words_gazetteer: None,
+            opt_stemmer: Some(Arc::new(stemmer)),
+        };
 
-        let stemmer = TestStemmer {};
+        // When
+        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        let expected_ngrams = vec![
-            vec![
-                Some("i".to_string()),
-                Some("love".to_string()),
-                Some("hous".to_string()),
-                Some("music".to_string()),
-            ],
-            vec![
-                Some("i love".to_string()),
-                Some("love hous".to_string()),
-                Some("hous music".to_string()),
-                None,
-            ],
-            vec![
-                Some("i love hous".to_string()),
-                Some("love hous music".to_string()),
-                None,
-                None,
-            ],
+        let expected_results = vec![
+            Some("i love".to_string()),
+            Some("love hous".to_string()),
+            Some("hous music".to_string()),
+            None,
         ];
 
-        assert_ngrams_eq(
-            expected_ngrams,
-            &tokens,
-            Some(&stemmer),
-            None as Option<&HashSetGazetteer>,
-        );
+        assert_eq!(expected_results, results);
     }
 
     #[test]
-    fn get_gazetteer_match_works() {
+    fn entity_match_feature_works() {
         // Given
         let language = NluUtilsLanguage::EN;
         let gazetteer = HashSetGazetteer::from(
@@ -808,37 +646,35 @@ mod tests {
         );
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love this beautiful blue Bird !", language);
-        let token_index = 5;
+        let feature = EntityMatchFeature {
+            entity_name: "bird_type".to_string(),
+            entity_values: gazetteer,
+            tagging_scheme,
+            opt_stemmer: None,
+        };
 
         // When
-        let actual_result = get_gazetteer_match(
-            &tokens,
-            token_index,
-            &gazetteer,
-            None as Option<&HashMapStemmer>,
-            tagging_scheme,
-        );
+        let results: Vec<Option<String>> = (0..6).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        assert_eq!(Some("L-".to_string()), actual_result)
+        let expected_results = vec![
+            None,
+            None,
+            None,
+            Some("B-".to_string()),
+            Some("I-".to_string()),
+            Some("L-".to_string()),
+        ];
+        assert_eq!(expected_results, results);
     }
 
     #[test]
-    fn get_gazetteer_match_works_with_stemming() {
+    fn entity_match_feature_works_with_stemming() {
         // Given
-        struct TestStemmer;
-        impl Stemmer for TestStemmer {
-            fn stem(&self, value: &str) -> String {
-                if value == "birds" {
-                    "bird".to_string()
-                } else {
-                    value.to_string()
-                }
-            }
-        }
-
         let language = NluUtilsLanguage::EN;
-        let stemmer = TestStemmer {};
+        let stemmer = HashMapStemmer::from(
+            vec![("birds".to_string(), "bird".to_string())].into_iter()
+        );
         let gazetteer = HashSetGazetteer::from(
             vec![
                 "bird".to_string(),
@@ -849,66 +685,79 @@ mod tests {
 
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love Blue Birds !", language);
-        let token_index = 3;
+        let feature = EntityMatchFeature {
+            entity_name: "bird_type".to_string(),
+            entity_values: gazetteer,
+            tagging_scheme,
+            opt_stemmer: Some(Arc::new(stemmer)),
+        };
 
         // When
-        let actual_result = get_gazetteer_match(
-            &tokens,
-            token_index,
-            &gazetteer,
-            Some(&stemmer),
-            tagging_scheme,
-        );
+        let results: Vec<Option<String>> = (0..5).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        assert_eq!(Some("L-".to_string()), actual_result)
+        let expected_results = vec![
+            None,
+            None,
+            Some("B-".to_string()),
+            Some("L-".to_string()),
+            None
+        ];
+        assert_eq!(expected_results, results);
     }
 
     #[test]
-    fn get_builtin_entity_match_works() {
+    fn builtin_entity_match_feature_works() {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
-        let token_index = 5; // 9pm
         let tagging_scheme = TaggingScheme::BILOU;
         let parser = CachingBuiltinEntityParser::from_language(Language::EN, 100).unwrap();
+        let feature = BuiltinEntityMatchFeature {
+            tagging_scheme,
+            builtin_entity_kind: BuiltinEntityKind::Time,
+            builtin_entity_parser: Arc::new(parser),
+        };
 
         // When
-        let actual_annotation = get_builtin_entity_match(
-            &tokens,
-            token_index,
-            &parser,
-            BuiltinEntityKind::Time,
-            tagging_scheme,
-        );
+        let results: Vec<Option<String>> = (0..7).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        assert_eq!(Some("L-".to_string()), actual_annotation)
+        let expected_results = vec![
+            None,
+            None,
+            None,
+            Some("B-".to_string()),
+            Some("I-".to_string()),
+            Some("L-".to_string()),
+            None
+        ];
+        assert_eq!(expected_results, results);
     }
 
     #[test]
-    fn get_word_cluster_works() {
+    fn word_cluster_feature_works() {
         // Given
-        struct TestWordClusterer;
-        impl WordClusterer for TestWordClusterer {
-            fn get_cluster(&self, word: &str) -> Option<String> {
-                if word == "bird" {
-                    Some("010101".to_string())
-                } else {
-                    None
-                }
-            }
-        }
-
         let language = NluUtilsLanguage::EN;
-        let word_clusterer = TestWordClusterer {};
+        let word_clusterer = HashMapWordClusterer::from(
+            vec![("bird".to_string(), "010101".to_string())].into_iter()
+        );
         let tokens = tokenize("I love this bird", language);
-        let token_index = 3;
+        let feature = WordClusterFeature {
+            cluster_name: "test_clusters".to_string(),
+            word_clusterer: Arc::new(word_clusterer),
+        };
 
         // When
-        let actual_result = get_word_cluster(&tokens, token_index, &word_clusterer);
+        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
 
         // Then
-        assert_eq!(Some("010101".to_string()), actual_result);
+        let expected_results = vec![
+            None,
+            None,
+            None,
+            Some("010101".to_string())
+        ];
+        assert_eq!(expected_results, results);
     }
 }

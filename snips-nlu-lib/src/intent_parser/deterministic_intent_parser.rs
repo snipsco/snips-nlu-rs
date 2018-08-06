@@ -313,7 +313,7 @@ mod tests {
     use std::iter::FromIterator;
     use resources::loading::load_language_resources;
     use snips_nlu_ontology::{BuiltinEntityKind, SlotValue, NumberValue, OrdinalValue, StringValue};
-    use testutils::english_shared_resources;
+    use testutils::english_empty_resources;
 
     fn test_configuration() -> DeterministicParserModel {
         DeterministicParserModel {
@@ -377,7 +377,7 @@ mod tests {
         load_language_resources(resources_path).unwrap();
 
         // When
-        let intent_parser = DeterministicIntentParser::from_path(path, english_shared_resources()).unwrap();
+        let intent_parser = DeterministicIntentParser::from_path(path, english_empty_resources()).unwrap();
         let parsing_result = intent_parser.parse("make me two cups of coffee", None).unwrap();
 
         // Then
@@ -404,7 +404,7 @@ mod tests {
             .join("en");
         load_language_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
-            test_configuration(), english_shared_resources()).unwrap();
+            test_configuration(), english_empty_resources()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -429,7 +429,7 @@ mod tests {
             .join("en");
         load_language_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
-            test_configuration(), english_shared_resources()).unwrap();
+            test_configuration(), english_empty_resources()).unwrap();
         let text = "Send 10 dollars to John";
 
         // When
@@ -454,7 +454,7 @@ mod tests {
             .join("en");
         load_language_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
-            test_configuration(), english_shared_resources()).unwrap();
+            test_configuration(), english_empty_resources()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -488,7 +488,7 @@ mod tests {
             .join("en");
         load_language_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
-            test_configuration(), english_shared_resources()).unwrap();
+            test_configuration(), english_empty_resources()).unwrap();
         let text = "This is another über dummy_cc query!";
 
         // When
@@ -516,7 +516,7 @@ mod tests {
             .join("en");
         load_language_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
-            test_configuration(), english_shared_resources()).unwrap();
+            test_configuration(), english_empty_resources()).unwrap();
         let text = "Send 10 dollars to John at dummy c";
 
         // When
@@ -550,7 +550,7 @@ mod tests {
             .join("en");
         load_language_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
-            test_configuration(), english_shared_resources()).unwrap();
+            test_configuration(), english_empty_resources()).unwrap();
         let text = "this is another dummy’c";
 
         // When

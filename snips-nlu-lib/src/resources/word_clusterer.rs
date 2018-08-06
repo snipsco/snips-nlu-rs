@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::Read;
+use std::iter::FromIterator;
 
 use csv;
 use errors::*;
@@ -27,6 +28,14 @@ impl HashMapWordClusterer {
         }
 
         Ok(Self { values })
+    }
+}
+
+impl<I> From<I> for HashMapWordClusterer where I: Iterator<Item=(String, String)> {
+    fn from(values_it: I) -> Self {
+        Self {
+            values: HashMap::from_iter(values_it),
+        }
     }
 }
 

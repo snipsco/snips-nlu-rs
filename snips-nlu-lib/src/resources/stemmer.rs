@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::io::Read;
+use std::iter::FromIterator;
 
 use csv;
 use errors::*;
@@ -30,6 +31,14 @@ impl HashMapStemmer {
             }
         }
         Ok(Self { values })
+    }
+}
+
+impl<I> From<I> for HashMapStemmer where I: Iterator<Item=(String, String)> {
+    fn from(values_it: I) -> Self {
+        Self {
+            values: HashMap::from_iter(values_it),
+        }
     }
 }
 

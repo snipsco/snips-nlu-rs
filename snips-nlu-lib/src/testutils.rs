@@ -3,6 +3,7 @@ use ndarray::prelude::*;
 use resources::SharedResources;
 use snips_nlu_ontology::Language;
 use builtin_entity_parsing::CachingBuiltinEntityParser;
+use std::collections::HashMap;
 
 pub fn assert_epsilon_eq_array1(a: &Array1<f32>, b: &Array1<f32>, epsilon: f32) {
     assert_eq!(a.dim(), b.dim());
@@ -16,7 +17,12 @@ pub fn epsilon_eq(a: f32, b: f32, epsilon: f32) -> bool {
     diff < epsilon && diff > -epsilon
 }
 
-pub fn english_shared_resources() -> Arc<SharedResources> {
+pub fn english_empty_resources() -> Arc<SharedResources> {
     let builtin_entity_parser = CachingBuiltinEntityParser::from_language(Language::EN, 1000).unwrap();
-    Arc::new(SharedResources { builtin_entity_parser })
+    Arc::new(SharedResources {
+        builtin_entity_parser: Arc::new(builtin_entity_parser),
+        gazetteers: HashMap::new(),
+        stemmer: None,
+        word_clusterers: HashMap::new()
+    })
 }

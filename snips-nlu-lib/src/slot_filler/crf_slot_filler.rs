@@ -390,7 +390,6 @@ mod tests {
     use snips_nlu_ontology::{Grain, InstantTimeValue, Language, NumberValue, Precision, SlotValue};
     use utils::file_path;
     use resources::loading::load_language_resources;
-    use testutils::english_shared_resources;
 
     #[derive(Debug, Fail)]
     pub enum TestError {
@@ -446,11 +445,10 @@ mod tests {
             .join("slot_filler_MakeCoffee");
 
         let resources_path = trained_engine_path.join("resources").join("en");
-        load_language_resources(resources_path).unwrap();
+        let resources = load_language_resources(resources_path).unwrap();
 
         // When
-        let slot_filler = CRFSlotFiller::from_path(
-            slot_filler_path, english_shared_resources()).unwrap();
+        let slot_filler = CRFSlotFiller::from_path(slot_filler_path, resources).unwrap();
         let slots = slot_filler.get_slots("make me two cups of coffee").unwrap();
 
         // Then

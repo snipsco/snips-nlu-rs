@@ -166,9 +166,14 @@ mod tests {
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
     use resources::loading::load_language_resources;
-    use testutils::english_shared_resources;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
+        let resources_path = file_path("tests")
+            .join("models")
+            .join("trained_engine")
+            .join("resources")
+            .join("en");
+        let resources = load_language_resources(resources_path).unwrap();
         let language_code = "en".to_string();
         let best_features = vec![
             1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92,
@@ -428,7 +433,7 @@ mod tests {
             entity_utterances_to_feature_names,
         };
 
-        let featurizer = Featurizer::new(config, english_shared_resources()).unwrap();
+        let featurizer = Featurizer::new(config, resources).unwrap();
 
         let intercept = array![
             -0.6769558144299883,
@@ -543,7 +548,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        let resources = load_language_resources(resources_path).unwrap();
 
         let path = file_path("tests")
             .join("models")
@@ -552,7 +557,7 @@ mod tests {
             .join("intent_classifier");
 
         // When
-        let intent_classifier = LogRegIntentClassifier::from_path(path, english_shared_resources()).unwrap();
+        let intent_classifier = LogRegIntentClassifier::from_path(path, resources).unwrap();
         let intent_result = intent_classifier
             .get_intent("Make me one cup of tea please", None)
             .unwrap()
@@ -566,12 +571,6 @@ mod tests {
     #[test]
     fn get_intent_works() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_language_resources(resources_path).unwrap();
         let classifier = get_sample_log_reg_classifier();
 
         // When
