@@ -14,9 +14,6 @@ pub struct CachingBuiltinEntityParser {
     cache: Mutex<EntityCache>,
 }
 
-// TODO: fix this
-unsafe impl Send for CachingBuiltinEntityParser {}
-
 impl CachingBuiltinEntityParser {
     pub fn new(
         configuration: BuiltinEntityParserConfiguration,
