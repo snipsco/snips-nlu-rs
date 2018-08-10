@@ -5,11 +5,13 @@ matrix:
     - rust: nightly
   include:
     - os: osx
+      osx_image: xcode9.3
       language: generic
       env:
         - TOXENV=py27
         - PYTHON_TESTS=true
     - os: osx
+      osx_image: xcode9.3
       language: generic
       env:
         - TOXENV=py36
