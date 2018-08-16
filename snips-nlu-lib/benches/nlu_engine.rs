@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate bencher;
 extern crate snips_nlu_lib;
+extern crate dinghy_test;
 
 use std::env;
 
@@ -9,6 +10,12 @@ use snips_nlu_lib::*;
 
 const ENGINE_DIR_ENV: &str = "SNIPS_NLU_BENCH_ENGINE_DIR";
 const SENTENCE_ENV: &str = "SNIPS_NLU_BENCH_SENTENCE";
+
+fn file_path(filename: &str) -> ::std::path::PathBuf {
+    dinghy_test::try_test_file_path("data")
+        .unwrap_or_else(|| "../data".into())
+        .join(filename)
+}
 
 fn load_nlu_engine() -> SnipsNluEngine {
     let engine_path = if let Ok(engine_directory) = env::var(ENGINE_DIR_ENV) {
