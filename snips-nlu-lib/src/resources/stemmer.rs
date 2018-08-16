@@ -22,6 +22,7 @@ impl HashMapStemmer {
         let mut values = HashMap::<String, String>::new();
         let mut csv_reader = csv::ReaderBuilder::new()
             .delimiter(b',')
+            .quoting(false)
             .flexible(true)
             .has_headers(false)
             .from_reader(reader);
@@ -93,7 +94,7 @@ mod tests {
     fn hashmap_stemmer_works() {
         // Given
         let stems: &[u8] = r#"
-investigate,investigated,investigation
+investigate,investigated,investigation,"investigate
 do,done,don't,doing,did,does"#.as_ref();
 
         // When
@@ -104,6 +105,7 @@ do,done,don't,doing,did,does"#.as_ref();
         let stemmer = stemmer.unwrap();
         assert_eq!(stemmer.stem("don't"), "do".to_string());
         assert_eq!(stemmer.stem("does"), "do".to_string());
+        assert_eq!(stemmer.stem("\"investigate"), "investigate".to_string());
         assert_eq!(stemmer.stem("unknown"), "unknown".to_string());
     }
 }

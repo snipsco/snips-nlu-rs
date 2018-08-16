@@ -21,6 +21,7 @@ impl HashMapWordClusterer {
     fn from_reader<R: Read>(reader: R) -> Result<Self> {
         let mut csv_reader = csv::ReaderBuilder::new()
             .delimiter(b'\t')
+            .quoting(false)
             .has_headers(false)
             .from_reader(reader);
         let mut values = HashMap::<String, String>::new();
@@ -103,7 +104,9 @@ mod tests {
         // Given
         let clusters: &[u8] = r#"
 hello	1111111111111
-world	1111110111111"#.as_ref();
+world	1111110111111
+"yolo	1111100111111
+"#.as_ref();
 
         // When
         let clusterer = HashMapWordClusterer::from_reader(clusters);
@@ -113,6 +116,7 @@ world	1111110111111"#.as_ref();
         let clusterer = clusterer.unwrap();
         assert_eq!(clusterer.get_cluster("hello"), Some("1111111111111".to_string()));
         assert_eq!(clusterer.get_cluster("world"), Some("1111110111111".to_string()));
+        assert_eq!(clusterer.get_cluster("\"yolo"), Some("1111100111111".to_string()));
         assert_eq!(clusterer.get_cluster("unknown"), None);
     }
 }
