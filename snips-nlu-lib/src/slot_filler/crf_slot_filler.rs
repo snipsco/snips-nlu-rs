@@ -31,7 +31,7 @@ use utils::{EntityName, SlotName};
 pub struct CRFSlotFiller {
     language: Language,
     tagging_scheme: TaggingScheme,
-    tagger: sync::Mutex<CRFSuiteTagger>,
+    tagger: Option<sync::Mutex<CRFSuiteTagger>>,
     feature_processor: ProbabilisticFeatureProcessor,
     slot_name_mapping: HashMap<SlotName, EntityName>,
     builtin_entity_parser: sync::Arc<CachingBuiltinEntityParser>,
@@ -50,16 +50,22 @@ impl FromPath for CRFSlotFiller {
         let slot_name_mapping = model.slot_name_mapping;
         let feature_processor =
             ProbabilisticFeatureProcessor::new(&model.config.feature_factory_configs)?;
-        let crf_path = path.as_ref().join(&model.crf_model_file);
-        let tagger = CRFSuiteTagger::create_from_file(&crf_path)
-            .with_context(|_| format!("Cannot create CRFSuiteTagger from file '{:?}'", &crf_path))?;
+        let tagger = if let Some(crf_model_file) = model.crf_model_file.as_ref() {
+            let crf_path = path.as_ref().join(crf_model_file);
+            let tagger = CRFSuiteTagger::create_from_file(&crf_path)
+                .with_context(|_| format!("Cannot create CRFSuiteTagger from file '{:?}'",
+                                          &crf_path))?;
+            Some(sync::Mutex::new(tagger))
+        } else {
+            None
+        };
         let language = Language::from_str(&model.language_code)?;
         let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
 
         Ok(Self {
             language,
             tagging_scheme,
-            tagger: sync::Mutex::new(tagger),
+            tagger,
             feature_processor,
             slot_name_mapping,
             builtin_entity_parser,
@@ -73,87 +79,99 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_slots(&self, text: &str) -> Result<Vec<InternalSlot>> {
-        let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
-        if tokens.is_empty() {
-            return Ok(vec![]);
+        if let Some(ref tagger) = self.tagger {
+            let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
+            if tokens.is_empty() {
+                return Ok(vec![]);
+            }
+            let features = self.feature_processor.compute_features(&&*tokens);
+            let tags = tagger
+                .lock()
+                .map_err(|e| format_err!("Poisonous mutex: {}", e))?
+                .tag(&features)?
+                .into_iter()
+                .map(|tag| decode_tag(&*tag))
+                .collect::<Result<Vec<String>>>()?;
+
+            let builtin_slot_names_iter = self.slot_name_mapping.iter().filter_map(
+                |(slot_name, entity)| {
+                    BuiltinEntityKind::from_identifier(entity)
+                        .ok()
+                        .map(|_| slot_name.to_string())
+                },
+            );
+            let slots = tags_to_slots(
+                text,
+                &tokens,
+                &tags,
+                self.tagging_scheme,
+                &self.slot_name_mapping,
+            )?;
+
+            let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
+
+            if builtin_slot_names.is_empty() {
+                return Ok(slots);
+            }
+
+            let updated_tags = replace_builtin_tags(tags, &builtin_slot_names);
+
+            let builtin_slots = self.slot_name_mapping
+                .iter()
+                .filter_map(|(slot_name, entity)| {
+                    BuiltinEntityKind::from_identifier(entity)
+                        .ok()
+                        .map(|kind| (slot_name.clone(), kind))
+                })
+                .collect_vec();
+
+            let augmented_slots = augment_slots(
+                text,
+                &tokens,
+                &updated_tags,
+                self,
+                &self.slot_name_mapping,
+                &self.builtin_entity_parser,
+                &builtin_slots,
+            )?;
+            Ok(augmented_slots)
+        } else {
+            Ok(vec![])
         }
-        let features = self.feature_processor.compute_features(&&*tokens);
-        let tags = self.tagger
-            .lock()
-            .map_err(|e| format_err!("Poisonous mutex: {}", e))?
-            .tag(&features)?
-            .into_iter()
-            .map(|tag| decode_tag(&*tag))
-            .collect::<Result<Vec<String>>>()?;
-
-        let builtin_slot_names_iter = self.slot_name_mapping.iter().filter_map(
-            |(slot_name, entity)| {
-                BuiltinEntityKind::from_identifier(entity)
-                    .ok()
-                    .map(|_| slot_name.to_string())
-            },
-        );
-        let slots = tags_to_slots(
-            text,
-            &tokens,
-            &tags,
-            self.tagging_scheme,
-            &self.slot_name_mapping,
-        )?;
-
-        let builtin_slot_names = HashSet::from_iter(builtin_slot_names_iter);
-
-        if builtin_slot_names.is_empty() {
-            return Ok(slots);
-        }
-
-        let updated_tags = replace_builtin_tags(tags, &builtin_slot_names);
-
-        let builtin_slots = self.slot_name_mapping
-            .iter()
-            .filter_map(|(slot_name, entity)| {
-                BuiltinEntityKind::from_identifier(entity)
-                    .ok()
-                    .map(|kind| (slot_name.clone(), kind))
-            })
-            .collect_vec();
-
-        let augmented_slots = augment_slots(
-            text,
-            &tokens,
-            &updated_tags,
-            self,
-            &self.slot_name_mapping,
-            &self.builtin_entity_parser,
-            &builtin_slots,
-        )?;
-        Ok(augmented_slots)
     }
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
-        let features = self.feature_processor.compute_features(&tokens);
-        let tagger = self.tagger
-            .lock()
-            .map_err(|e| format_err!("poisonous mutex: {}", e))?;
-        let tagger_labels = tagger
-            .labels()?
-            .into_iter()
-            .map(|label| decode_tag(&*label))
-            .collect::<Result<Vec<String>>>()?;
-        let tagger_labels_slice = tagger_labels.iter().map(|l| &**l).collect_vec();
-        // Substitute tags that were not seen during training
-        let cleaned_tags = tags.into_iter()
-            .map(|t| {
-                if tagger_labels.contains(&t) {
-                    t
-                } else {
-                    get_substitution_label(&*tagger_labels_slice)
-                }
-            })
-            .map(|t| encode_tag(&*t))
-            .collect_vec();
-        tagger.set(&features)?;
-        Ok(tagger.probability(cleaned_tags)?)
+        if let Some(ref tagger) = self.tagger {
+            let features = self.feature_processor.compute_features(&tokens);
+            let tagger = tagger
+                .lock()
+                .map_err(|e| format_err!("poisonous mutex: {}", e))?;
+            let tagger_labels = tagger
+                .labels()?
+                .into_iter()
+                .map(|label| decode_tag(&*label))
+                .collect::<Result<Vec<String>>>()?;
+            let tagger_labels_slice = tagger_labels.iter().map(|l| &**l).collect_vec();
+            // Substitute tags that were not seen during training
+            let cleaned_tags = tags.iter()
+                .map(|t| {
+                    if tagger_labels.contains(t) {
+                        t
+                    } else {
+                        get_substitution_label(&*tagger_labels_slice)
+                    }
+                })
+                .map(|t| encode_tag(t))
+                .collect_vec();
+            tagger.set(&features)?;
+            Ok(tagger.probability(cleaned_tags)?)
+        } else {
+            // No tagger defined corresponds to an intent without slots
+            Ok(tags.into_iter()
+                .find(|tag| tag != OUTSIDE)
+                .map(|_| 0.0)
+                .unwrap_or(1.0))
+        }
     }
 }
 
