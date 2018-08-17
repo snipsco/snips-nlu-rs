@@ -92,8 +92,10 @@ fn load_stemmer<P: AsRef<Path>>(
             .join(stems)
             .with_extension("txt");
         let stems_reader = File::open(&stems_path)
-            .with_context(|_| format!("Cannot open stems file '{:?}'", stems_path))?;
-        Ok(Some(Arc::new(HashMapStemmer::from_reader(stems_reader)?)))
+            .with_context(|_| format!("Cannot open stems file {:?}", stems_path))?;
+        let stemmer = HashMapStemmer::from_reader(stems_reader)?
+            .with_context(|_| format!("Cannot read stems file {:?}", stems_path))?;
+        Ok(Some(Arc::new(stemmer)))
     } else {
         Ok(None)
     }
@@ -111,8 +113,10 @@ fn load_gazetteers<P: AsRef<Path>>(
                 .join(gazetteer_name.clone())
                 .with_extension("txt");
             let file = File::open(&gazetteer_path)
-                .with_context(|_| format!("Cannot open gazetteer file '{:?}'", gazetteer_path))?;
-            gazetteers.insert(gazetteer_name.to_string(), Arc::new(HashSetGazetteer::from_reader(file)?));
+                .with_context(|_| format!("Cannot open gazetteer file {:?}", gazetteer_path))?;
+            let gazetteer = HashSetGazetteer::from_reader(file)?
+                .with_context(|_| format!("Cannot read gazetteer file {:?}", gazetteer_path));
+            gazetteers.insert(gazetteer_name.to_string(), Arc::new(gazetteer));
         }
     }
     Ok(gazetteers)
@@ -132,8 +136,9 @@ fn load_word_clusterers<P: AsRef<Path>>(
                 .with_extension("txt");
             ;
             let word_clusters_reader = File::open(&clusters_path)
-                .with_context(|_| format!("Cannot open word clusters file '{:?}'", clusters_path))?;
-            let word_clusterer = HashMapWordClusterer::from_reader(word_clusters_reader)?;
+                .with_context(|_| format!("Cannot open word clusters file {:?}", clusters_path))?;
+            let word_clusterer = HashMapWordClusterer::from_reader(word_clusters_reader)
+                .with_context(|_| format!("Cannot read word clusters file {:?}", clusters_path))?;
             word_clusterers.insert(clusters_name.to_string(), Arc::new(word_clusterer));
         }
     }
