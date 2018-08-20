@@ -65,7 +65,6 @@ fn load_builtin_entity_parser<P: AsRef<Path>>(
                 GazetteerEntityConfiguration {
                     builtin_entity_name: entity.identifier().to_string(),
                     resource_path: path,
-                    parser_threshold: 0.6,
                 }
             })
             .collect();
@@ -93,7 +92,7 @@ fn load_stemmer<P: AsRef<Path>>(
             .with_extension("txt");
         let stems_reader = File::open(&stems_path)
             .with_context(|_| format!("Cannot open stems file {:?}", stems_path))?;
-        let stemmer = HashMapStemmer::from_reader(stems_reader)?
+        let stemmer = HashMapStemmer::from_reader(stems_reader)
             .with_context(|_| format!("Cannot read stems file {:?}", stems_path))?;
         Ok(Some(Arc::new(stemmer)))
     } else {
@@ -114,8 +113,8 @@ fn load_gazetteers<P: AsRef<Path>>(
                 .with_extension("txt");
             let file = File::open(&gazetteer_path)
                 .with_context(|_| format!("Cannot open gazetteer file {:?}", gazetteer_path))?;
-            let gazetteer = HashSetGazetteer::from_reader(file)?
-                .with_context(|_| format!("Cannot read gazetteer file {:?}", gazetteer_path));
+            let gazetteer = HashSetGazetteer::from_reader(file)
+                .with_context(|_| format!("Cannot read gazetteer file {:?}", gazetteer_path))?;
             gazetteers.insert(gazetteer_name.to_string(), Arc::new(gazetteer));
         }
     }
