@@ -1,6 +1,7 @@
 extern crate base64;
 extern crate crfsuite;
 extern crate csv;
+#[cfg(test)]
 extern crate dinghy_test;
 #[macro_use]
 extern crate failure;
@@ -50,4 +51,4 @@ pub use nlu_engine::SnipsNluEngine;
 pub use resources::loading::clear_resources; // This is used by benches
 pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
-pub use utils::file_path; // This is used by benches
+

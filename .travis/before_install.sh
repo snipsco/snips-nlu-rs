@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -ev
 
 # Install Rust
 if [ -z ${TRAVIS_RUST_VERSION+w} ]; then
@@ -29,7 +30,7 @@ if [ $TRAVIS_OS_NAME == "osx" ]; then
     python --version
   fi
 
-  if [ $IOS_SWIFT_TESTS == true ]; then
+  if [ "${IOS_SWIFT_TESTS}" == "true" ]; then
     PATH="$HOME/.cargo/bin:$PATH"
     rustup target install x86_64-apple-ios
   fi
