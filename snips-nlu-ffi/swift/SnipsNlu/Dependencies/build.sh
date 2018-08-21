@@ -4,7 +4,7 @@
 
 set -e
 
-VERSION="0.58.2"
+VERSION="0.59.0-SNAPSHOT"
 SYSTEM=$(echo $1 | tr '[:upper:]' '[:lower:]')
 LIBRARY_NAME=libsnips_nlu_ffi
 LIBRARY_NAME_A=${LIBRARY_NAME}.a
