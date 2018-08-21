@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.58.2] - 2018-08-21
+### Changed
+- Bump `snips-nlu-ontology` to `0.57.3`
+
 ## [0.58.1] - 2018-07-24
 ### Fixed
 - Error when loading a `SnipsNluEngine` from zip data
@@ -83,6 +87,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Rename python package to `snips_nlu_rust`
 
 
+[0.58.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.58.1...0.58.2
 [0.58.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.58.0...0.58.1
 [0.58.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.57.2...0.58.0
 [0.57.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.57.1...0.57.2
