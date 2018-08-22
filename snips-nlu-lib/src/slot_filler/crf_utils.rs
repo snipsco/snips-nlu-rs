@@ -14,7 +14,7 @@ const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
 const LAST_PREFIX: &str = "L-";
 const UNIT_PREFIX: &str = "U-";
-const OUTSIDE: &str = "O";
+pub const OUTSIDE: &str = "O";
 
 #[derive(Copy, Clone, Debug)]
 pub enum TaggingScheme {
@@ -34,11 +34,11 @@ impl TaggingScheme {
     }
 }
 
-pub fn get_substitution_label(labels: &[&str]) -> String {
+pub fn get_substitution_label<'a>(labels: &[&'a str]) -> &'a str {
     if labels.contains(&OUTSIDE) {
-        OUTSIDE.to_string()
+        OUTSIDE
     } else {
-        labels[0].to_string()
+        labels[0]
     }
 }
 

@@ -7,7 +7,7 @@ pub struct SlotFillerModel {
     pub language_code: String,
     pub intent: IntentName,
     pub slot_name_mapping: HashMap<SlotName, EntityName>,
-    pub crf_model_file: String,
+    pub crf_model_file: Option<String>,
     pub config: SlotFillerConfiguration,
 }
 
