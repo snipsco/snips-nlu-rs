@@ -19,7 +19,7 @@ use nlu_utils::string::{normalize, substring_with_char_range};
 use nlu_utils::token::{compute_all_ngrams, tokenize};
 use resources::loading::load_resources;
 use serde_json;
-use slot_utils::resolve_builtin_slots;
+use slot_utils::resolve_slots;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use tempfile;
 use utils::{EntityName, IntentName, SlotName};
@@ -159,37 +159,18 @@ impl SnipsNluEngine {
                     .unique()
                     .collect::<Vec<_>>();
 
-                let valid_slots = resolve_builtin_slots(
+                let resolved_slots = resolve_slots(
                     input,
                     internal_parsing_result.slots,
+                    &self.dataset_metadata,
                     &*self.builtin_entity_parser,
                     Some(&*filter_entity_kinds),
-                ).into_iter()
-                    .filter_map(|slot| {
-                        if let Some(entity) = self.dataset_metadata.entities.get(&slot.entity) {
-                            entity
-                                .utterances
-                                .get(&normalize(&slot.raw_value))
-                                .map(|reference_value| {
-                                    Some(slot.clone().with_slot_value(SlotValue::Custom(
-                                        reference_value.to_string().into(),
-                                    )))
-                                })
-                                .unwrap_or(if entity.automatically_extensible {
-                                    Some(slot)
-                                } else {
-                                    None
-                                })
-                        } else {
-                            Some(slot)
-                        }
-                    })
-                    .collect();
+                );
 
                 return Ok(IntentParserResult {
                     input: input.to_string(),
                     intent: Some(internal_parsing_result.intent),
-                    slots: Some(valid_slots),
+                    slots: Some(resolved_slots),
                 });
             }
         }
