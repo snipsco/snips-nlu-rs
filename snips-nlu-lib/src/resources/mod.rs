@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 pub struct SharedResources {
     pub builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
+    pub custom_entity_parser: Option<Arc<CustomIntentParser>>,
     pub gazetteers: HashMap<String, Arc<HashSetGazetteer>>,
     pub stemmer: Option<Arc<HashMapStemmer>>,
     pub word_clusterers: HashMap<String, Arc<HashMapWordClusterer>>

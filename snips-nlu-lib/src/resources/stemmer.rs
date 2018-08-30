@@ -4,6 +4,7 @@ use std::iter::FromIterator;
 
 use csv;
 use errors::*;
+use nlu_utils::string::normalize;
 
 pub trait Stemmer: Send + Sync {
     fn stem(&self, value: &str) -> String;
@@ -45,7 +46,7 @@ impl<I> From<I> for HashMapStemmer where I: Iterator<Item=(String, String)> {
 impl Stemmer for HashMapStemmer {
     fn stem(&self, value: &str) -> String {
         self.values
-            .get(value)
+            .get(&*normalize(value))
             .map(|v| v.to_string())
             .unwrap_or_else(|| value.to_string())
     }

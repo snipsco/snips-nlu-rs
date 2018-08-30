@@ -106,10 +106,15 @@ impl Featurizer {
             .unwrap_or_else(|| vec![]);
         let opt_stemmer = self.stemmer.as_ref().map(|s| s.as_ref());
         let normalized_stemmed_tokens = normalize_stem(&tokens, opt_stemmer);
-        let entities_features = get_dataset_entities_features(
-            normalized_stemmed_tokens.as_ref(),
-            &self.entity_utterances_to_feature_names,
-        );
+        let custom_entities_features: Vec<String> = if let Some(custom_entity_parser) = self.shared_resources.custom_entity_parser {
+            custom_entity_parser
+                .extract_entities(normalized_stemmed_tokens.join(" "), None, true)
+                .into_iter()
+                .map(|ent| get_custom_entity_feature_name(&*ent.entity_name, language))
+        } else {
+            vec![]
+        };
+
         let builtin_entities = self.shared_resources
             .builtin_entity_parser
             .extract_entities(query, None, true);
@@ -121,7 +126,7 @@ impl Featurizer {
         vec![
             normalized_stemmed_tokens,
             builtin_entities_features,
-            entities_features,
+            custom_entities_features,
             word_cluster_features,
         ].into_iter()
             .flat_map(|features| features)
@@ -135,6 +140,14 @@ fn get_builtin_entity_feature_name(
 ) -> String {
     let e = tokenize_light(entity_kind.identifier(), language).join("");
     format!("builtinentityfeature{}", e)
+}
+
+fn get_custom_entity_feature_name(
+    entity_name: &str,
+    language: NluUtilsLanguage,
+) -> String {
+    let e = tokenize_light(entity_name, language).join("");
+    format!("entityfeature{}", e)
 }
 
 fn get_word_cluster_features<C: WordClusterer>(
@@ -175,7 +188,7 @@ mod tests {
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
-    use resources::loading::load_language_resources;
+    use resources::loading::load_shared_resources;
     use resources::stemmer::HashMapStemmer;
     use resources::word_clusterer::HashMapWordClusterer;
     use testutils::assert_epsilon_eq_array1;
@@ -189,7 +202,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        let resources = load_language_resources(resources_path).unwrap();
+        let resources = load_shared_resources(resources_path).unwrap();
         let best_features = vec![0, 1, 2, 3, 6, 7, 8, 9];
         let vocab = hashmap![
             "awful".to_string() => 0,

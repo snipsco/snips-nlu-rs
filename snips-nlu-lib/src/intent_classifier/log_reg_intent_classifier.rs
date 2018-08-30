@@ -165,7 +165,7 @@ mod tests {
     use utils::file_path;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
-    use resources::loading::load_language_resources;
+    use resources::loading::load_shared_resources;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
         let resources_path = file_path("tests")
@@ -173,7 +173,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        let resources = load_language_resources(resources_path).unwrap();
+        let resources = load_shared_resources(resources_path).unwrap();
         let language_code = "en".to_string();
         let best_features = vec![
             1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92,
@@ -548,7 +548,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        let resources = load_language_resources(resources_path).unwrap();
+        let resources = load_shared_resources(resources_path).unwrap();
 
         let path = file_path("tests")
             .join("models")
@@ -594,7 +594,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        load_shared_resources(resources_path).unwrap();
 
         let classifier = get_sample_log_reg_classifier();
 

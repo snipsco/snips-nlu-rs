@@ -80,7 +80,7 @@ mod tests {
     use super::*;
     use utils::file_path;
     use slot_utils::InternalSlot;
-    use resources::loading::load_language_resources;
+    use resources::loading::load_shared_resources;
 
     #[test]
     fn from_path_works() {
@@ -93,7 +93,7 @@ mod tests {
             .join("probabilistic_intent_parser");
 
         let resources_path = trained_engine_path.join("resources").join("en");
-        let resources = load_language_resources(resources_path).unwrap();
+        let resources = load_shared_resources(resources_path).unwrap();
 
         // When
         let intent_parser = ProbabilisticIntentParser::from_path(parser_path, resources).unwrap();

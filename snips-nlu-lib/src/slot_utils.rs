@@ -19,7 +19,7 @@ fn convert_to_custom_slot(
     opt_resolved_value: Option<String>,
 ) -> Slot {
     let value = opt_resolved_value
-        .map(|resolved_value| SlotValue::Custom(resolved_value.into()))
+            .map(|resolved_value| SlotValue::Custom(resolved_value.into()))
         .unwrap_or_else(|| SlotValue::Custom(slot.value.clone().into()));
     Slot {
         raw_value: slot.value,
@@ -38,53 +38,6 @@ fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slot {
         entity: slot.entity,
         slot_name: slot.slot_name,
     }
-}
-
-pub fn resolve_slots(
-    text: &str,
-    slots: Vec<InternalSlot>,
-    dataset_metadata: &DatasetMetadata,
-    parser: &CachingBuiltinEntityParser,
-    filter_entity_kinds: Option<&[BuiltinEntityKind]>,
-) -> Vec<Slot> {
-    let builtin_entities = parser.extract_entities(text, filter_entity_kinds, false);
-    slots
-        .into_iter()
-        .filter_map(|slot| {
-            if let Ok(entity_kind) = BuiltinEntityKind::from_identifier(&slot.entity) {
-                builtin_entities
-                    .iter()
-                    .find(|entity| {
-                        entity.entity_kind == entity_kind && entity.range == slot.char_range
-                    })
-                    .map(|rustling_entity| Some(rustling_entity.entity.clone()))
-                    .unwrap_or({
-                        parser
-                            .extract_entities(&slot.value, Some(&[entity_kind]), false)
-                            .into_iter()
-                            .find(|rustling_entity| rustling_entity.entity_kind == entity_kind)
-                            .map(|rustling_entity| rustling_entity.entity)
-                    })
-                    .map(|matching_entity| convert_to_builtin_slot(slot, matching_entity))
-            } else {
-                dataset_metadata.entities.get(&slot.entity)
-                    .map(|entity|
-                        entity
-                            .utterances
-                            .get(&slot.value)
-                            .or(entity.utterances.get(&normalize(&slot.value)))
-                            .map(|reference_value|
-                                convert_to_custom_slot(slot.clone(), Some(reference_value.clone())))
-                            .or_else(|| if entity.automatically_extensible {
-                                Some(convert_to_custom_slot(slot, None))
-                            } else {
-                                None
-                            })
-                    )
-                    .unwrap()
-            }
-        })
-        .collect()
 }
 
 #[cfg(test)]

@@ -311,7 +311,7 @@ mod tests {
     use snips_nlu_ontology::{IntentClassifierResult, Language};
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use resources::loading::load_language_resources;
+    use resources::loading::load_shared_resources;
     use snips_nlu_ontology::{BuiltinEntityKind, SlotValue, NumberValue, OrdinalValue, StringValue};
     use testutils::english_empty_resources;
 
@@ -374,7 +374,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        load_shared_resources(resources_path).unwrap();
 
         // When
         let intent_parser = DeterministicIntentParser::from_path(path, english_empty_resources()).unwrap();
@@ -402,7 +402,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        load_shared_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
             test_configuration(), english_empty_resources()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
@@ -427,7 +427,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        load_shared_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
             test_configuration(), english_empty_resources()).unwrap();
         let text = "Send 10 dollars to John";
@@ -452,7 +452,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        load_shared_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
             test_configuration(), english_empty_resources()).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
@@ -486,7 +486,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        load_shared_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
             test_configuration(), english_empty_resources()).unwrap();
         let text = "This is another über dummy_cc query!";
@@ -514,7 +514,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        load_shared_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
             test_configuration(), english_empty_resources()).unwrap();
         let text = "Send 10 dollars to John at dummy c";
@@ -548,7 +548,7 @@ mod tests {
             .join("trained_engine")
             .join("resources")
             .join("en");
-        load_language_resources(resources_path).unwrap();
+        load_shared_resources(resources_path).unwrap();
         let parser = DeterministicIntentParser::new(
             test_configuration(), english_empty_resources()).unwrap();
         let text = "this is another dummy’c";

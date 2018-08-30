@@ -25,8 +25,9 @@ pub struct ResourcesMetadata {
     gazetteer_entities: Option<Vec<String>>,
 }
 
-pub fn load_language_resources<P: AsRef<Path>>(
+pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>>(
     resources_dir: P,
+    custom_entity_parser_path: Option<Q>,
 ) -> Result<Arc<SharedResources>> {
     let metadata_file_path = resources_dir.as_ref().join("metadata.json");
     let metadata_file = File::open(&metadata_file_path)?;
@@ -37,9 +38,11 @@ pub fn load_language_resources<P: AsRef<Path>>(
     let gazetteers = load_gazetteers(&resources_dir, &metadata)?;
     let word_clusterers = load_word_clusterers(&resources_dir, &metadata)?;
     let builtin_entity_parser = load_builtin_entity_parser(resources_dir, metadata)?;
+    let custom_entity_parser = custom_entity_parser_path.map(|parser_path| GazetteerEntityParser::from_path(parser_path)?);
 
     Ok(Arc::new(SharedResources {
         builtin_entity_parser,
+        custom_entity_parser,
         gazetteers,
         stemmer,
         word_clusterers,

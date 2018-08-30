@@ -1,12 +1,6 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
-use itertools::Itertools;
-
 use builtin_entity_parsing::CachingBuiltinEntityParser;
-use super::crf_utils::{get_scheme_prefix, TaggingScheme};
 use errors::*;
-use super::features_utils::{get_word_chunk, initial_string_from_tokens};
+use itertools::Itertools;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{get_shape, normalize};
 use nlu_utils::token::{compute_all_ngrams, Token};
@@ -16,6 +10,10 @@ use resources::stemmer::{HashMapStemmer, Stemmer};
 use resources::word_clusterer::WordClusterer;
 use slot_filler::feature_processor::{Feature, FeatureKindRepr};
 use snips_nlu_ontology::BuiltinEntityKind;
+use std::collections::HashMap;
+use std::sync::Arc;
+use super::crf_utils::{get_scheme_prefix, TaggingScheme};
+use super::features_utils::{get_word_chunk, initial_string_from_tokens};
 
 pub struct IsDigitFeature {}
 
@@ -239,14 +237,14 @@ impl Feature for SuffixFeature {
     }
 }
 
-pub struct EntityMatchFeature {
-    entity_name: String,
-    entity_values: HashSetGazetteer,
+pub struct CustomEntityMatchFeature {
+    entity_scope: Vec<String>,
     tagging_scheme: TaggingScheme,
     opt_stemmer: Option<Arc<HashMapStemmer>>,
+    opt_custom_entity_parser: Option<Arc<GazetteerEntityParser>>,
 }
 
-impl Feature for EntityMatchFeature {
+impl Feature for CustomEntityMatchFeature {
     fn name(&self) -> String {
         format!("{}_{}", self.feature_kind().identifier(), &self.entity_name)
     }
@@ -271,34 +269,36 @@ impl Feature for EntityMatchFeature {
         Ok(collections
             .into_iter()
             .map(|(entity_name, values)| {
-                let entity_values = HashSetGazetteer::from(values.into_iter());
+                let entity_scope = vec![entity_name];
                 Box::new(Self {
-                    entity_name,
-                    entity_values,
+                    entity_scope,
                     tagging_scheme,
                     opt_stemmer: opt_stemmer.clone(),
+                    opt_custom_entity_parser: shared_resources.custom_entity_parser.map(|parser| parser.clone()),
                 }) as Box<_>
             })
             .collect())
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
-        let normalized_tokens = normalize_tokens(
-            tokens,
-            self.opt_stemmer.as_ref().map(|stemmer| stemmer.as_ref()));
-        let normalized_tokens_ref = normalized_tokens.iter().map(|t| &**t).collect_vec();
-        let mut filtered_ngrams =
-            compute_all_ngrams(&*normalized_tokens_ref, normalized_tokens_ref.len())
+        self.opt_custom_entity_parser.map(|custom_entity_parser| {
+            let normalized_tokens = transform_tokens(
+                tokens,
+                self.opt_stemmer.as_ref().map(|stemmer| stemmer.as_ref()));
+            let normalized_tokens_ref = normalized_tokens.iter().map(|t| &**t).collect_vec();
+            let normalized_text = initial_string_from_tokens(&normalized_tokens[..]);
+
+            custom_entity_parser
+                .extract_entities(normalized_text, scope = self.entity_scope, use_cache = true)
                 .into_iter()
-                .filter(|ngram_indexes| ngram_indexes.1.iter().any(|index| *index == token_index))
-                .collect_vec();
-
-        filtered_ngrams.sort_by_key(|ngrams| -(ngrams.1.len() as i64));
-
-        filtered_ngrams
-            .iter()
-            .find(|ngrams| self.entity_values.contains(&ngrams.0))
-            .map(|ngrams| get_scheme_prefix(token_index, &ngrams.1, self.tagging_scheme).to_string())
+                .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
+                .map(|e| {
+                    let entity_token_indexes = (0..tokens.len())
+                        .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.range))
+                        .collect_vec();
+                    get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme).to_string()
+                })
+        })
     }
 }
 
@@ -380,10 +380,18 @@ impl Feature for WordClusterFeature {
     }
 }
 
-fn normalize_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<String> {
+fn transform_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<Token> {
     tokens
         .iter()
-        .map(|t| stemmer.map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value))))
+        .map(|t| {
+            let normalized_value = stemmer.map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value)));
+            Token {
+                value: normalized_value,
+                range: t.range.start..t.range.start + normalized_value.len(),
+                char_range: t.char_range.start..t.char_range.start + normalized_value.chars().count(),
+                _normalized: None,
+            }
+        })
         .collect_vec()
 }
 
@@ -462,15 +470,14 @@ fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::convert::From;
-
     use nlu_utils::language::Language as NluUtilsLanguage;
     use nlu_utils::token::tokenize;
-    use snips_nlu_ontology::Language;
-    use resources::stemmer::HashMapStemmer;
     use resources::gazetteer::HashSetGazetteer;
+    use resources::stemmer::HashMapStemmer;
     use resources::word_clusterer::HashMapWordClusterer;
+    use snips_nlu_ontology::Language;
+    use std::convert::From;
+    use super::*;
 
     #[test]
     fn is_digit_feature_works() {
@@ -646,7 +653,7 @@ mod tests {
         );
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love this beautiful blue Bird !", language);
-        let feature = EntityMatchFeature {
+        let feature = CustomEntityMatchFeature {
             entity_name: "bird_type".to_string(),
             entity_values: gazetteer,
             tagging_scheme,
@@ -685,7 +692,7 @@ mod tests {
 
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love Blue Birds !", language);
-        let feature = EntityMatchFeature {
+        let feature = CustomEntityMatchFeature {
             entity_name: "bird_type".to_string(),
             entity_values: gazetteer,
             tagging_scheme,
