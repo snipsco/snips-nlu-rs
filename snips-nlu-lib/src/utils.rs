@@ -32,27 +32,22 @@ pub fn product<'a, T>(v: &'a [&'a [T]]) -> Vec<Vec<&'a T>> {
     })
 }
 
-pub fn deduplicate_overlapping_items<I, O, R>(
+pub fn deduplicate_overlapping_items<I, O, S, K>(
     items: Vec<I>,
     overlap: O,
-    resolve: R
+    sort_key_fn: S
 ) -> Vec<I>
-    where I: Clone, O: Fn(&I, &I) -> bool, R: Fn(I, I) -> I
+    where I: Clone, O: Fn(&I, &I) -> bool, S: FnMut(&I) -> K, K: Ord
 {
-    let mut deduped: Vec<I> = Vec::with_capacity(items.len());
-    for item in items {
-        let conflicting_item_index = deduped
-            .iter()
-            .position(|existing_item| overlap(&item, &existing_item));
-
-        if let Some(index) = conflicting_item_index {
-            let resolved_item = resolve(deduped[index].clone(), item);
-            deduped[index] = resolved_item;
-        } else {
-            deduped.push(item);
+    let mut sorted_items = items.clone();
+    sorted_items.sort_by_key(sort_key_fn);
+    let mut deduplicated_items: Vec<I> = Vec::with_capacity(items.len());
+    for item in sorted_items {
+        if !deduplicated_items.iter().any(|dedup_item| overlap(dedup_item, &item)) {
+            deduplicated_items.push(item);
         }
     }
-    deduped
+    deduplicated_items
 }
 
 #[cfg(test)]
@@ -60,6 +55,8 @@ mod tests {
     use super::*;
     use itertools::repeat_n;
     use std::collections::HashSet;
+    use std::ops::Range;
+    use nlu_utils::range::ranges_overlap;
 
     #[test]
     fn product_works() {
@@ -95,30 +92,22 @@ mod tests {
     fn test_deduplicate_items_works() {
         // Given
         let items = vec![
-            "hello".to_string(),
-            "blue bird".to_string(),
-            "blue".to_string(),
-            "hello world".to_string(),
-            "blue bird".to_string()
+            0..3,
+            4..8,
+            0..8,
+            9..13
         ];
 
-        fn overlap(lhs_str: &String, rhs_str: &String) -> bool {
-            lhs_str.starts_with(rhs_str) || rhs_str.starts_with(lhs_str)
-        }
-
-        fn resolve(lhs_str: String, rhs_str: String) -> String {
-            if lhs_str.len() > rhs_str.len() {
-                lhs_str
-            } else {
-                rhs_str
-            }
+        fn sort_key(rng: &Range<usize>) -> i32 {
+            -(rng.clone().count() as i32)
         }
 
         // When
-        let dedup_items = deduplicate_overlapping_items(items, overlap, resolve);
+        let mut dedup_items = deduplicate_overlapping_items(items, ranges_overlap, sort_key);
+        dedup_items.sort_by_key(|item| item.start);
 
         // Then
-        let expected_items = vec!["hello world".to_string(), "blue bird".to_string()];
+        let expected_items = vec![0..8, 9..13];
         assert_eq!(expected_items, dedup_items);
     }
 }

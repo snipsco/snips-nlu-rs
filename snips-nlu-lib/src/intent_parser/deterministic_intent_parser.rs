@@ -188,20 +188,13 @@ fn deduplicate_overlapping_slots(
     let slots_overlap = |lhs_slot: &InternalSlot, rhs_slot: &InternalSlot| {
         ranges_overlap(&lhs_slot.char_range, &rhs_slot.char_range)
     };
-    let resolve_conflicting_slots = |lhs_slot: InternalSlot, rhs_slot: InternalSlot| {
-        let lhs_tokens_count = tokenize(&lhs_slot.value, language).len();
-        let lhs_chars_count = lhs_slot.value.chars().count();
-        let rhs_tokens_count = tokenize(&rhs_slot.value, language).len();
-        let rhs_chars_count = rhs_slot.value.chars().count();
-        if lhs_tokens_count > rhs_tokens_count ||
-            lhs_tokens_count == rhs_tokens_count && lhs_chars_count > rhs_chars_count {
-            lhs_slot
-        } else {
-            rhs_slot
-        }
+    let slot_sort_key = |slot: &InternalSlot| {
+        let tokens_count = tokenize(&slot.value, language).len();
+        let chars_count = slot.value.chars().count();
+        -((tokens_count + chars_count) as i32)
     };
     let mut deduped = deduplicate_overlapping_items(
-        slots, slots_overlap, resolve_conflicting_slots);
+        slots, slots_overlap, slot_sort_key);
     deduped.sort_by_key(|slot| slot.char_range.start);
     deduped
 }
@@ -210,14 +203,10 @@ fn deduplicate_overlapping_entities(entities: Vec<BuiltinEntity>) -> Vec<Builtin
     let entities_overlap = |lhs_entity: &BuiltinEntity, rhs_entity: &BuiltinEntity| {
         ranges_overlap(&lhs_entity.range, &rhs_entity.range)
     };
-    let resolve_conflicting_entities = |lhs_entity: BuiltinEntity, rhs_entity: BuiltinEntity| {
-        if lhs_entity.range.clone().count() > rhs_entity.range.clone().count() {
-            lhs_entity
-        } else {
-            rhs_entity
-        }
-    };
-    deduplicate_overlapping_items(entities, entities_overlap, resolve_conflicting_entities)
+    let entity_sort_key = |entity: &BuiltinEntity| -(entity.range.clone().count() as i32);
+    let mut deduped = deduplicate_overlapping_items(entities, entities_overlap, entity_sort_key);
+    deduped.sort_by_key(|entity| entity.range.start);
+    deduped
 }
 
 fn replace_builtin_entities(
@@ -574,34 +563,28 @@ mod tests {
         let language = Language::EN;
         let slots = vec![
             InternalSlot {
-                value: "non_overlapping1".to_string(),
-                char_range: 3..7,
-                entity: "e".to_string(),
+                value: "kid".to_string(),
+                char_range: 0..3,
+                entity: "e1".to_string(),
                 slot_name: "s1".to_string(),
             },
             InternalSlot {
-                value: "aaaaaaa".to_string(),
-                char_range: 9..16,
+                value: "loco".to_string(),
+                char_range: 4..8,
                 entity: "e1".to_string(),
                 slot_name: "s2".to_string(),
             },
             InternalSlot {
-                value: "bbbbbbbb".to_string(),
-                char_range: 10..18,
+                value: "kid loco".to_string(),
+                char_range: 0..8,
                 entity: "e1".to_string(),
                 slot_name: "s3".to_string(),
             },
             InternalSlot {
-                value: "b cccc".to_string(),
-                char_range: 17..23,
-                entity: "e1".to_string(),
+                value: "song".to_string(),
+                char_range: 9..13,
+                entity: "e2".to_string(),
                 slot_name: "s4".to_string(),
-            },
-            InternalSlot {
-                value: "non_overlapping2".to_string(),
-                char_range: 50..60,
-                entity: "e".to_string(),
-                slot_name: "s5".to_string(),
             },
         ];
 
@@ -611,22 +594,16 @@ mod tests {
         // Then
         let expected_slots = vec![
             InternalSlot {
-                value: "non_overlapping1".to_string(),
-                char_range: 3..7,
-                entity: "e".to_string(),
-                slot_name: "s1".to_string(),
-            },
-            InternalSlot {
-                value: "b cccc".to_string(),
-                char_range: 17..23,
+                value: "kid loco".to_string(),
+                char_range: 0..8,
                 entity: "e1".to_string(),
-                slot_name: "s4".to_string(),
+                slot_name: "s3".to_string(),
             },
             InternalSlot {
-                value: "non_overlapping2".to_string(),
-                char_range: 50..60,
-                entity: "e".to_string(),
-                slot_name: "s5".to_string(),
+                value: "song".to_string(),
+                char_range: 9..13,
+                entity: "e2".to_string(),
+                slot_name: "s4".to_string(),
             },
         ];
         assert_eq!(deduplicated_slots, expected_slots);
