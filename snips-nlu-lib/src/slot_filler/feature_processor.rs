@@ -31,23 +31,22 @@ impl ProbabilisticFeatureProcessor {
 
 impl ProbabilisticFeatureProcessor {
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    pub fn compute_features(&self, input: &&[Token]) -> Vec<Vec<(String, String)>> {
-        self.features_offsetters
-            .iter()
-            .fold(vec![vec![]; input.len()], |mut acc, offsetter| {
-                (0..input.len()).foreach(|i| {
-                    if let Some(value) = offsetter.feature.compute(input, i) {
-                        offsetter.offsets_with_name().iter().foreach(|&(offset, ref key)| {
-                            if i as i32 - offset >= 0 && i as i32 - offset < input.len() as i32 {
-                                acc[(i as i32 - offset) as usize].push(
-                                    (key.clone(), value.clone())
-                                );
-                            }
-                        });
-                    }
-                });
-                acc
-            })
+    pub fn compute_features(&self, input: &&[Token]) -> Result<Vec<Vec<(String, String)>>> {
+        let mut features = vec![vec![]; input.len()];
+        for offsetter in self.features_offsetters.iter() {
+            for i in 0..input.len() {
+                if let Some(value) = offsetter.feature.compute(input, i)? {
+                    offsetter.offsets_with_name().iter().foreach(|&(offset, ref key)| {
+                        if i as i32 - offset >= 0 && i as i32 - offset < input.len() as i32 {
+                            features[(i as i32 - offset) as usize].push(
+                                (key.clone(), value.clone())
+                            );
+                        }
+                    });
+                }
+            }
+        }
+        Ok(features)
     }
 }
 
@@ -84,7 +83,7 @@ pub trait Feature: FeatureKindRepr + Send + Sync {
         args: &HashMap<String, ::serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> where Self: Sized;
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String>;
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>>;
 }
 
 get_features!([
@@ -96,7 +95,7 @@ get_features!([
     (ShapeNgramFeature, shape_ngram),
     (PrefixFeature, prefix),
     (SuffixFeature, suffix),
-    (EntityMatchFeature, entity_match),
+    (CustomEntityMatchFeature, entity_match),
     (BuiltinEntityMatchFeature, builtin_entity_match),
     (WordClusterFeature, word_cluster)
 ]);
@@ -127,7 +126,7 @@ mod tests {
         let tokens = tokenize("I prefer 7 over 777", language);
 
         // When
-        let computed_features = fp.compute_features(&tokens.as_slice());
+        let computed_features = fp.compute_features(&tokens.as_slice()).unwrap();
 
         let expected_features = vec![
             vec![("length".to_string(), "1".to_string())],
@@ -160,7 +159,7 @@ mod tests {
         let tokens = tokenize("I prefer 7 over 777", language);
 
         // When
-        let computed_features = fp.compute_features(&tokens.as_slice());
+        let computed_features = fp.compute_features(&tokens.as_slice()).unwrap();
 
         // Then
         let expected_features = vec![

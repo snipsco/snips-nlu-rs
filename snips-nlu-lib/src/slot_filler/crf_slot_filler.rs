@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
 
-use builtin_entity_parsing::CachingBuiltinEntityParser;
+use entity_parser::CachingBuiltinEntityParser;
 use errors::*;
 use failure::ResultExt;
 use language::FromLanguage;
@@ -31,7 +31,7 @@ pub struct CRFSlotFiller {
     language: Language,
     tagging_scheme: TaggingScheme,
     tagger: Option<Mutex<CRFSuiteTagger>>,
-    feature_processor: ProbabilisticFeatureProcessor,
+    feature_processor: Option<ProbabilisticFeatureProcessor>,
     slot_name_mapping: HashMap<SlotName, EntityName>,
     shared_resources: Arc<SharedResources>,
 }
@@ -50,16 +50,16 @@ impl CRFSlotFiller {
 
         let tagging_scheme = TaggingScheme::from_u8(model.config.tagging_scheme)?;
         let slot_name_mapping = model.slot_name_mapping;
-        let feature_processor = ProbabilisticFeatureProcessor::new(
-            &model.config.feature_factory_configs, shared_resources.clone())?;
-        let tagger = if let Some(crf_model_file) = model.crf_model_file.as_ref() {
+        let (tagger, feature_processor) = if let Some(crf_model_file) = model.crf_model_file.as_ref() {
             let crf_path = path.as_ref().join(crf_model_file);
             let tagger = CRFSuiteTagger::create_from_file(&crf_path)
                 .with_context(|_| format!("Cannot create CRFSuiteTagger from file '{:?}'",
                                           &crf_path))?;
-            Some(Mutex::new(tagger))
+            let feature_processor = ProbabilisticFeatureProcessor::new(
+                &model.config.feature_factory_configs, shared_resources.clone())?;
+            (Some(Mutex::new(tagger)), Some(feature_processor))
         } else {
-            None
+            (None, None)
         };
         let language = Language::from_str(&model.language_code)?;
 
@@ -80,12 +80,12 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_slots(&self, text: &str) -> Result<Vec<InternalSlot>> {
-        if let Some(ref tagger) = self.tagger {
+        if let (Some(ref tagger), Some(ref feature_processor)) = (self.tagger.as_ref(), self.feature_processor.as_ref()) {
             let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
             if tokens.is_empty() {
                 return Ok(vec![]);
             }
-            let features = self.feature_processor.compute_features(&&*tokens);
+            let features = feature_processor.compute_features(&&*tokens)?;
             let tags = tagger
                 .lock()
                 .map_err(|e| format_err!("Poisonous mutex: {}", e))?
@@ -142,8 +142,8 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
-        if let Some(ref tagger) = self.tagger {
-            let features = self.feature_processor.compute_features(&tokens);
+        if let (Some(ref tagger), Some(ref feature_processor)) = (self.tagger.as_ref(), self.feature_processor.as_ref()) {
+            let features = feature_processor.compute_features(&tokens)?;
             let tagger = tagger
                 .lock()
                 .map_err(|e| format_err!("poisonous mutex: {}", e))?;
@@ -177,12 +177,16 @@ impl SlotFiller for CRFSlotFiller {
 }
 
 impl CRFSlotFiller {
-    pub fn compute_features(&self, text: &str) -> Vec<Vec<(String, String)>> {
+    pub fn compute_features(&self, text: &str) -> Result<Vec<Vec<(String, String)>>> {
         let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
         if tokens.is_empty() {
-            return vec![];
+            return Ok(vec![]);
         };
-        self.feature_processor.compute_features(&&*tokens)
+        Ok(if let Some(feature_processor) = self.feature_processor.as_ref() {
+            feature_processor.compute_features(&&*tokens)?
+        } else {
+            tokens.iter().map(|_| vec![]).collect()
+        })
     }
 }
 

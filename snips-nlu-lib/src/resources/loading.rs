@@ -1,14 +1,11 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
-use std::str::FromStr;
 use std::sync::Arc;
 
 use serde_json;
-use snips_nlu_ontology::{GazetteerEntityKind, IntoBuiltinEntityKind, Language};
-use snips_nlu_ontology_parsers::{BuiltinEntityParserConfiguration, GazetteerEntityConfiguration};
 
-use builtin_entity_parsing::CachingBuiltinEntityParser;
+use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
 use errors::*;
 use failure::ResultExt;
 use resources::SharedResources;
@@ -22,12 +19,12 @@ pub struct ResourcesMetadata {
     gazetteers: Option<Vec<String>>,
     word_clusters: Option<Vec<String>>,
     stems: Option<String>,
-    gazetteer_entities: Option<Vec<String>>,
 }
 
-pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>>(
+pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
     resources_dir: P,
-    custom_entity_parser_path: Option<Q>,
+    builtin_entity_parser_path: Q,
+    custom_entity_parser_path: R,
 ) -> Result<Arc<SharedResources>> {
     let metadata_file_path = resources_dir.as_ref().join("metadata.json");
     let metadata_file = File::open(&metadata_file_path)?;
@@ -37,51 +34,16 @@ pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>>(
     let stemmer = load_stemmer(&resources_dir, &metadata)?;
     let gazetteers = load_gazetteers(&resources_dir, &metadata)?;
     let word_clusterers = load_word_clusterers(&resources_dir, &metadata)?;
-    let builtin_entity_parser = load_builtin_entity_parser(resources_dir, metadata)?;
-    let custom_entity_parser = custom_entity_parser_path.map(|parser_path| GazetteerEntityParser::from_path(parser_path)?);
+    let builtin_entity_parser = CachingBuiltinEntityParser::from_path(builtin_entity_parser_path, 1000)?;
+    let custom_entity_parser = CachingCustomEntityParser::from_path(custom_entity_parser_path, 1000)?;
 
     Ok(Arc::new(SharedResources {
-        builtin_entity_parser,
-        custom_entity_parser,
+        builtin_entity_parser: Arc::new(builtin_entity_parser),
+        custom_entity_parser: Arc::new(custom_entity_parser),
         gazetteers,
         stemmer,
         word_clusterers,
     }))
-}
-
-fn load_builtin_entity_parser<P: AsRef<Path>>(
-    resources_dir: P,
-    metadata: ResourcesMetadata
-) -> Result<Arc<CachingBuiltinEntityParser>> {
-    let language = Language::from_str(&metadata.language)?;
-    let parser_config = if let Some(gazetteer_entities) = metadata.gazetteer_entities {
-        let gazetteer_entities_path = resources_dir
-            .as_ref()
-            .join("gazetteer_entities");
-        let entities = gazetteer_entities.iter()
-            .map(|label| Ok(GazetteerEntityKind::from_identifier(label)?))
-            .collect::<Result<Vec<_>>>()?;
-        let gazetteer_entity_configurations = entities.iter()
-            .map(|entity| {
-                let path = gazetteer_entities_path
-                    .join(entity.to_string().to_lowercase());
-                GazetteerEntityConfiguration {
-                    builtin_entity_name: entity.identifier().to_string(),
-                    resource_path: path,
-                }
-            })
-            .collect();
-        BuiltinEntityParserConfiguration {
-            language,
-            gazetteer_entity_configurations,
-        }
-    } else {
-        BuiltinEntityParserConfiguration {
-            language,
-            gazetteer_entity_configurations: vec![],
-        }
-    };
-    Ok(Arc::new(CachingBuiltinEntityParser::new(parser_config, 1000)?))
 }
 
 fn load_stemmer<P: AsRef<Path>>(

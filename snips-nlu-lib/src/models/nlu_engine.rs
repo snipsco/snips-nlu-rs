@@ -12,7 +12,8 @@ pub struct NluEngineModel {
     pub intent_parsers: Vec<String>,
     pub model_version: String,
     pub training_package_version: String,
-    pub custom_entity_parser: Option<String>,
+    pub builtin_entity_parser: String,
+    pub custom_entity_parser: String,
 }
 
 #[derive(Debug, Deserialize)]

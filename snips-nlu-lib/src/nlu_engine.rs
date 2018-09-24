@@ -1,25 +1,23 @@
-use builtin_entity_parsing::CachingBuiltinEntityParser;
-use errors::*;
-use failure::ResultExt;
-use intent_parser::*;
-use itertools::Itertools;
-use language::FromLanguage;
-use models::{DatasetMetadata, Entity, ModelVersion, NluEngineModel, ProcessingUnitMetadata};
-use nlu_utils::language::Language as NluUtilsLanguage;
-use nlu_utils::string::{normalize, substring_with_char_range};
-use nlu_utils::token::{compute_all_ngrams, tokenize};
-use resources::loading::load_shared_resources;
-use resources::SharedResources;
-use serde_json;
-use slot_utils::resolve_slots;
-use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::iter::FromIterator;
 use std::path::{Component, Path};
 use std::str::FromStr;
 use std::sync::Arc;
+
+use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
+use errors::*;
+use failure::ResultExt;
+use intent_parser::*;
+use itertools::Itertools;
+use models::{DatasetMetadata, Entity, ModelVersion, NluEngineModel, ProcessingUnitMetadata};
+use nlu_utils::string::substring_with_char_range;
+use resources::loading::load_shared_resources;
+use resources::SharedResources;
+use slot_utils::*;
+use serde_json;
+use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use tempfile;
 use utils::{EntityName, IntentName, SlotName};
 use zip::ZipArchive;
@@ -45,7 +43,9 @@ impl SnipsNluEngine {
 
         let language = Language::from_str(&model.dataset_metadata.language_code)?;
         let resources_path = path.as_ref().join("resources").join(language.to_string());
-        let shared_resources = load_shared_resources(&resources_path, model.custom_entity_parser)?;
+        let builtin_parser_path = path.as_ref().join(&model.builtin_entity_parser);
+        let custom_parser_path = path.as_ref().join(&model.custom_entity_parser);
+        let shared_resources = load_shared_resources(&resources_path, builtin_parser_path, custom_parser_path)?;
 
         let parsers = model
             .intent_parsers
@@ -148,33 +148,32 @@ impl SnipsNluEngine {
         for parser in &self.intent_parsers {
             let opt_internal_parsing_result = parser.parse(input, set_intents.as_ref())?;
             if let Some(internal_parsing_result) = opt_internal_parsing_result {
-                let builtin_entity_scope = Some(
-                    self.dataset_metadata
-                        .slot_name_mappings
-                        .values()
-                        .flat_map::<Vec<_>, _>(|intent_mapping: &HashMap<SlotName, EntityName>| {
-                            intent_mapping.values().collect()
-                        })
-                        .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
-                        .unique()
-                        .collect::<Vec<_>>()
-                );
+                let intent = internal_parsing_result.intent;
+                let builtin_entity_scope = self.dataset_metadata
+                    .slot_name_mappings
+                    .get(&intent.intent_name)
+                    .ok_or_else(|| format_err!("Cannot find intent '{}' in dataset metadata", &intent.intent_name))?
+                    .values()
+                    .flat_map(|entity_name| BuiltinEntityKind::from_identifier(entity_name).ok())
+                    .unique()
+                    .collect::<Vec<_>>();
 
                 let custom_entity_scope: Vec<String> = self.dataset_metadata
                     .entities
                     .keys()
+                    .map(|entity| entity.to_string())
                     .collect();
 
                 let resolved_slots = self.resolve_slots(
                     input,
                     internal_parsing_result.slots,
-                    Some(&builtin_entity_scope[..]),
-                    Some(&custom_entity_scope[..]),
-                );
+                    Some(&*builtin_entity_scope),
+                    Some(&*custom_entity_scope),
+                ).with_context(|_| format!("Cannot resolve slots"))?;
 
                 return Ok(IntentParserResult {
                     input: input.to_string(),
-                    intent: Some(internal_parsing_result.intent),
+                    intent: Some(intent),
                     slots: Some(resolved_slots),
                 });
             }
@@ -191,54 +190,32 @@ impl SnipsNluEngine {
         text: &str,
         slots: Vec<InternalSlot>,
         builtin_entity_filter: Option<&[BuiltinEntityKind]>,
-        custom_entity_filter: Option<&[String]>,
-    ) -> Vec<Slot> {
-        let builtin_entities = builtin_entity_filter.extract_entities(text, filter_entity_kinds, false);
-        let custom_entities = custom_entity_filter.extract_entities(text, filter_entity_kinds, true);
+        custom_entity_filter: Option<&[EntityName]>,
+    ) -> Result<Vec<Slot>> {
+        let builtin_entities = self.shared_resources.builtin_entity_parser
+            .extract_entities(text, builtin_entity_filter, false);
+        let custom_entities = self.shared_resources.custom_entity_parser
+            .extract_entities(text, custom_entity_filter, true)?;
 
-        slots
-            .into_iter()
-            .filter_map(|slot| {
-                if let Ok(entity_kind) = BuiltinEntityKind::from_identifier(&slot.entity) {
-                    builtin_entities
-                        .iter()
-                        .find(|entity| {
-                            entity.entity_kind == entity_kind && entity.range == slot.char_range
-                        })
-                        .map(|builtin_entity| Some(builtin_entity.entity.clone()))
-                        .unwrap_or({
-                            self.shared_resources.builtin_entity_parser
-                                .extract_entities(&slot.value, Some(&[entity_kind]), false)
-                                .into_iter()
-                                .find(|builtin_entity| builtin_entity.entity_kind == entity_kind)
-                                .map(|builtin_entity| builtin_entity.entity)
-                        })
-                        .map(|matching_entity| convert_to_builtin_slot(slot, matching_entity))
-                } else {
-                    custom_entities
-                        .iter()
-                        .find(|custom_entity| {
-                            custom_entity.entity_kind == entity_kind && custom_entity.range == slot.char_range
-                        })
-                        .map(|custom_entity| Some(custom_entity.entity.clone()))
-                        .unwrap_or({
-                            self.shared_resources.custom_entity_parser
-                                .extract_entities(&slot.value, Some(&[slot.entity]), false)
-                                .into_iter()
-                                .find(|custom_entity| custom_entity.entity_kind == entity_kind)
-                                .map(|custom_entity| custom_entity.entity)
-                        })
-                        .or_else({
-                            if self.dataset_metadata.entities.get(&slot.entity)?.automatically_extensible {
-                                Some(slot.value)
-                            } else {
-                                None
-                            }
-                        })
-                        .map(|matching_entity| convert_to_custom_slot(slot, matching_entity))
-                }
-            })
-            .collect()
+        let mut resolved_slots = Vec::with_capacity(slots.len());
+        for slot in slots.into_iter() {
+            let opt_resolved_slot = if let Some(entity) = self.dataset_metadata.entities.get(&slot.entity) {
+                resolve_custom_slot(
+                    slot,
+                    &entity,
+                    &custom_entities,
+                    self.shared_resources.custom_entity_parser.clone())?
+            } else {
+                resolve_builtin_slot(
+                    slot,
+                    &builtin_entities,
+                    self.shared_resources.builtin_entity_parser.clone())?
+            };
+            if let Some(resolved_slot) = opt_resolved_slot {
+                resolved_slots.push(resolved_slot);
+            }
+        }
+        Ok(resolved_slots)
     }
 }
 
@@ -257,21 +234,18 @@ impl SnipsNluEngine {
             .ok_or_else(|| format_err!("Unknown slot: {}", &slot_name))?;
 
         let slot = if let Some(custom_entity) = self.dataset_metadata.entities.get(entity_name) {
-            let language = Language::from_str(&self.dataset_metadata.language_code)?;
             extract_custom_slot(
                 input,
                 entity_name.to_string(),
                 slot_name.to_string(),
                 custom_entity,
-                language,
-            )
+                self.shared_resources.custom_entity_parser.clone())?
         } else {
             extract_builtin_slot(
                 input,
                 entity_name.to_string(),
                 slot_name.to_string(),
-                &self.shared_resources.builtin_entity_parser,
-            )?
+                self.shared_resources.builtin_entity_parser.clone())?
         };
         Ok(slot)
     }
@@ -282,47 +256,36 @@ fn extract_custom_slot(
     entity_name: EntityName,
     slot_name: SlotName,
     custom_entity: &Entity,
-    language: Language,
-) -> Option<Slot> {
-    let tokens = tokenize(&input, NluUtilsLanguage::from_language(language));
-    let token_values_ref = tokens.iter().map(|v| &*v.value).collect_vec();
-    let mut ngrams = compute_all_ngrams(&*token_values_ref, tokens.len());
-    ngrams.sort_by_key(|&(_, ref indexes)| -(indexes.len() as i16));
-
-    ngrams
-        .into_iter()
-        .find(|&(ref ngram, _)| custom_entity.utterances.contains_key(&normalize(ngram)))
-        .map(|(ngram, _)| {
-            Some(Slot {
-                raw_value: ngram.clone(),
-                value: SlotValue::Custom(
-                    custom_entity.utterances[&normalize(&ngram)]
-                        .to_string()
-                        .into(),
-                ),
-                range: None,
-                entity: entity_name.clone(),
-                slot_name: slot_name.clone(),
-            })
+    custom_entity_parser: Arc<CachingCustomEntityParser>,
+) -> Result<Option<Slot>> {
+    let mut custom_entities = custom_entity_parser.extract_entities(&input, Some(&[entity_name.clone()]), true)?;
+    Ok(if let Some(matched_entity) = custom_entities.pop() {
+        Some(Slot {
+            raw_value: matched_entity.value,
+            value: SlotValue::Custom(matched_entity.resolved_value.into()),
+            range: Some(matched_entity.range),
+            entity: entity_name.clone(),
+            slot_name: slot_name.clone(),
         })
-        .unwrap_or(if custom_entity.automatically_extensible {
-            Some(Slot {
-                raw_value: input.clone(),
-                value: SlotValue::Custom(input.into()),
-                range: None,
-                entity: entity_name,
-                slot_name,
-            })
-        } else {
-            None
+    } else if custom_entity.automatically_extensible {
+        let range = Some(0..input.chars().count());
+        Some(Slot {
+            raw_value: input.clone(),
+            value: SlotValue::Custom(input.into()),
+            range,
+            entity: entity_name,
+            slot_name,
         })
+    } else {
+        None
+    })
 }
 
 fn extract_builtin_slot(
     input: String,
     entity_name: EntityName,
     slot_name: SlotName,
-    builtin_entity_parser: &CachingBuiltinEntityParser,
+    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(builtin_entity_parser
@@ -430,11 +393,6 @@ mod tests {
         let slot_name = "slot".to_string();
         let custom_entity = Entity {
             automatically_extensible: true,
-            utterances: hashmap! {
-                "a".to_string() => "value1".to_string(),
-                "a b".to_string() => "value1".to_string(),
-                "b c d".to_string() => "value2".to_string(),
-            },
         };
 
         // When
@@ -461,7 +419,6 @@ mod tests {
         let slot_name = "slot".to_string();
         let custom_entity = Entity {
             automatically_extensible: true,
-            utterances: hashmap! {},
         };
 
         // When
@@ -488,7 +445,6 @@ mod tests {
         let slot_name = "slot".to_string();
         let custom_entity = Entity {
             automatically_extensible: false,
-            utterances: hashmap! {},
         };
 
         // When

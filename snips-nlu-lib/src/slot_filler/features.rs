@@ -1,17 +1,18 @@
-use builtin_entity_parsing::CachingBuiltinEntityParser;
+use std::collections::HashMap;
+use std::sync::Arc;
+
+use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
 use errors::*;
 use itertools::Itertools;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{get_shape, normalize};
-use nlu_utils::token::{compute_all_ngrams, Token};
+use nlu_utils::token::Token;
 use resources::gazetteer::{Gazetteer, HashSetGazetteer};
 use resources::SharedResources;
 use resources::stemmer::{HashMapStemmer, Stemmer};
 use resources::word_clusterer::WordClusterer;
 use slot_filler::feature_processor::{Feature, FeatureKindRepr};
 use snips_nlu_ontology::BuiltinEntityKind;
-use std::collections::HashMap;
-use std::sync::Arc;
 use super::crf_utils::{get_scheme_prefix, TaggingScheme};
 use super::features_utils::{get_word_chunk, initial_string_from_tokens};
 
@@ -25,12 +26,12 @@ impl Feature for IsDigitFeature {
         Ok(vec![Box::new(Self {})])
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
-        if tokens[token_index].value.chars().all(|c| c.is_digit(10)) {
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
+        Ok(if tokens[token_index].value.chars().all(|c| c.is_digit(10)) {
             Some("1".to_string())
         } else {
             None
-        }
+        })
     }
 }
 
@@ -44,8 +45,8 @@ impl Feature for LengthFeature {
         Ok(vec![Box::new(Self {})])
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
-        Some(format!("{:?}", &tokens[token_index].value.chars().count()))
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
+        Ok(Some(format!("{:?}", &tokens[token_index].value.chars().count())))
     }
 }
 
@@ -59,12 +60,12 @@ impl Feature for IsFirstFeature {
         Ok(vec![Box::new(Self {})])
     }
 
-    fn compute(&self, _tokens: &[Token], token_index: usize) -> Option<String> {
-        if token_index == 0 {
+    fn compute(&self, _tokens: &[Token], token_index: usize) -> Result<Option<String>> {
+        Ok(if token_index == 0 {
             Some("1".to_string())
         } else {
             None
-        }
+        })
     }
 }
 
@@ -78,12 +79,12 @@ impl Feature for IsLastFeature {
         Ok(vec![Box::new(Self {})])
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
-        if token_index == tokens.len() - 1 {
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
+        Ok(if token_index == tokens.len() - 1 {
             Some("1".to_string())
         } else {
             None
-        }
+        })
     }
 }
 
@@ -129,10 +130,10 @@ impl Feature for NgramFeature {
         )])
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
         // TODO we should precompute the lowercase value somewhere, perhaps use NormalizedToken ?
         if token_index + self.ngram_size > tokens.len() {
-            return None;
+            return Ok(None);
         }
         let result = tokens[token_index..token_index + self.ngram_size]
             .iter()
@@ -153,7 +154,7 @@ impl Feature for NgramFeature {
             })
             .join(" ");
 
-        Some(result)
+        Ok(Some(result))
     }
 }
 
@@ -174,10 +175,10 @@ impl Feature for ShapeNgramFeature {
         Ok(vec![Box::new(Self { ngram_size })])
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
         let max_len = tokens.len();
         let end = token_index + self.ngram_size;
-        if token_index < end && end <= max_len {
+        Ok(if token_index < end && end <= max_len {
             Some(
                 tokens[token_index..end]
                     .iter()
@@ -186,7 +187,7 @@ impl Feature for ShapeNgramFeature {
             )
         } else {
             None
-        }
+        })
     }
 }
 
@@ -207,9 +208,9 @@ impl Feature for PrefixFeature {
         Ok(vec![Box::new(Self { prefix_size })])
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
         let normalized = normalize(&tokens[token_index].value);
-        get_word_chunk(&normalized, self.prefix_size, 0, false)
+        Ok(get_word_chunk(&normalized, self.prefix_size, 0, false))
     }
 }
 
@@ -230,18 +231,18 @@ impl Feature for SuffixFeature {
         Ok(vec![Box::new(Self { suffix_size })])
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
         let normalized = normalize(&tokens[token_index].value);
         let chunk_start = normalized.chars().count();
-        get_word_chunk(&normalized, self.suffix_size, chunk_start, true)
+        Ok(get_word_chunk(&normalized, self.suffix_size, chunk_start, true))
     }
 }
 
 pub struct CustomEntityMatchFeature {
-    entity_scope: Vec<String>,
+    entity_name: String,
     tagging_scheme: TaggingScheme,
     opt_stemmer: Option<Arc<HashMapStemmer>>,
-    opt_custom_entity_parser: Option<Arc<GazetteerEntityParser>>,
+    custom_entity_parser: Arc<CachingCustomEntityParser>,
 }
 
 impl Feature for CustomEntityMatchFeature {
@@ -253,7 +254,7 @@ impl Feature for CustomEntityMatchFeature {
         args: &HashMap<String, ::serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
-        let collections = parse_as_vec_of_vec(args, "collections")?;
+        let entities = parse_as_vec_string(args, "entities")?;
         let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
         let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
         let use_stemming = parse_as_bool(args, "use_stemming")?;
@@ -266,39 +267,35 @@ impl Feature for CustomEntityMatchFeature {
         } else {
             None
         };
-        Ok(collections
+        Ok(entities
             .into_iter()
-            .map(|(entity_name, values)| {
-                let entity_scope = vec![entity_name];
+            .map(|entity_name| {
                 Box::new(Self {
-                    entity_scope,
+                    entity_name,
                     tagging_scheme,
                     opt_stemmer: opt_stemmer.clone(),
-                    opt_custom_entity_parser: shared_resources.custom_entity_parser.map(|parser| parser.clone()),
+                    custom_entity_parser: shared_resources.custom_entity_parser.clone(),
                 }) as Box<_>
             })
             .collect())
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
-        self.opt_custom_entity_parser.map(|custom_entity_parser| {
-            let normalized_tokens = transform_tokens(
-                tokens,
-                self.opt_stemmer.as_ref().map(|stemmer| stemmer.as_ref()));
-            let normalized_tokens_ref = normalized_tokens.iter().map(|t| &**t).collect_vec();
-            let normalized_text = initial_string_from_tokens(&normalized_tokens[..]);
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
+        let normalized_tokens = transform_tokens(
+            tokens,
+            self.opt_stemmer.as_ref().map(|stemmer| stemmer.as_ref()));
+        let normalized_text = initial_string_from_tokens(&*normalized_tokens);
 
-            custom_entity_parser
-                .extract_entities(normalized_text, scope = self.entity_scope, use_cache = true)
-                .into_iter()
-                .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
-                .map(|e| {
-                    let entity_token_indexes = (0..tokens.len())
-                        .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.range))
-                        .collect_vec();
-                    get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme).to_string()
-                })
-        })
+        Ok(self.custom_entity_parser
+            .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]), true)?
+            .into_iter()
+            .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
+            .map(|e| {
+                let entity_token_indexes = (0..tokens.len())
+                    .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.range))
+                    .collect_vec();
+                get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme).to_string()
+            }))
     }
 }
 
@@ -334,9 +331,9 @@ impl Feature for BuiltinEntityMatchFeature {
             .collect()
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
         let text = initial_string_from_tokens(tokens);
-        self.builtin_entity_parser
+        Ok(self.builtin_entity_parser
             .extract_entities(&text, Some(&[self.builtin_entity_kind]), true)
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
@@ -345,7 +342,7 @@ impl Feature for BuiltinEntityMatchFeature {
                     .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.range))
                     .collect_vec();
                 get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme).to_string()
-            })
+            }))
     }
 }
 
@@ -375,8 +372,8 @@ impl Feature for WordClusterFeature {
         })])
     }
 
-    fn compute(&self, tokens: &[Token], token_index: usize) -> Option<String> {
-        self.word_clusterer.get_cluster(&tokens[token_index].value.to_lowercase())
+    fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
+        Ok(self.word_clusterer.get_cluster(&tokens[token_index].value.to_lowercase()))
     }
 }
 
@@ -385,12 +382,9 @@ fn transform_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<To
         .iter()
         .map(|t| {
             let normalized_value = stemmer.map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value)));
-            Token {
-                value: normalized_value,
-                range: t.range.start..t.range.start + normalized_value.len(),
-                char_range: t.char_range.start..t.char_range.start + normalized_value.chars().count(),
-                _normalized: None,
-            }
+            let range = t.range.start..t.range.start + normalized_value.len();
+            let char_range = t.char_range.start..t.char_range.start + normalized_value.chars().count();
+            Token::new(normalized_value, range, char_range)
         })
         .collect_vec()
 }
@@ -426,30 +420,6 @@ fn parse_as_vec_string(
             Ok(v.as_str()
                 .ok_or_else(|| format_err!("'{}' is not a string", v))?
                 .to_string())
-        })
-        .collect()
-}
-
-fn parse_as_vec_of_vec(
-    args: &HashMap<String, ::serde_json::Value>,
-    arg_name: &str,
-) -> Result<Vec<(String, Vec<String>)>> {
-    args.get(arg_name)
-        .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
-        .as_object()
-        .ok_or_else(|| format_err!("'{}' isn't a map", arg_name))?
-        .into_iter()
-        .map(|(k, v)| {
-            let values: Result<Vec<_>> = v.as_array()
-                .ok_or_else(|| format_err!("'{}' is not a vec", v))?
-                .into_iter()
-                .map(|item| {
-                    Ok(item.as_str()
-                        .ok_or_else(|| format_err!("'{}' is not a string", item))?
-                        .to_string())
-                })
-                .collect();
-            Ok((k.to_string(), values?))
         })
         .collect()
 }
