@@ -22,6 +22,7 @@ pub struct FeaturizerModel {
 pub struct FeaturizerConfiguration {
     pub sublinear_tf: bool,
     pub word_clusters_name: Option<String>,
+    pub use_stemming: bool
 }
 
 #[derive(Debug, Deserialize)]

@@ -29,14 +29,14 @@ pub struct Featurizer {
 
 impl Featurizer {
     pub fn new(
-        config: FeaturizerModel,
+        model: FeaturizerModel,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
-        let best_features = config.best_features;
-        let vocabulary = config.tfidf_vectorizer.vocab;
-        let language = Language::from_str(config.language_code.as_ref())?;
-        let idf_diag = config.tfidf_vectorizer.idf_diag;
-        let opt_word_clusterer = if let Some(clusters_name) = config
+        let best_features = model.best_features;
+        let vocabulary = model.tfidf_vectorizer.vocab;
+        let language = Language::from_str(model.language_code.as_ref())?;
+        let idf_diag = model.tfidf_vectorizer.idf_diag;
+        let opt_word_clusterer = if let Some(clusters_name) = model
             .config
             .word_clusters_name {
             Some(
@@ -49,13 +49,19 @@ impl Featurizer {
         } else {
             None
         };
-        let stemmer = shared_resources.stemmer.clone();
+        let stemmer = if model.config.use_stemming {
+            Some(shared_resources.stemmer.as_ref()
+                .map(|shared_stemmer| shared_stemmer.clone())
+                .ok_or_else(|| format_err!("Cannot find stemmer in shared resources"))?)
+        } else {
+            None
+        };
 
         Ok(Self {
             best_features,
             vocabulary,
             idf_diag,
-            sublinear: config.config.sublinear_tf,
+            sublinear: model.config.sublinear_tf,
             word_clusterer: opt_word_clusterer,
             stemmer,
             shared_resources,
