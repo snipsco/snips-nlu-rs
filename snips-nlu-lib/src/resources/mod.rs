@@ -6,15 +6,15 @@ pub mod word_clusterer;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
-use resources::gazetteer::HashSetGazetteer;
-use resources::stemmer::HashMapStemmer;
-use resources::word_clusterer::HashMapWordClusterer;
+use entity_parser::{BuiltinEntityParser, CustomEntityParser};
+use resources::gazetteer::Gazetteer;
+use resources::stemmer::Stemmer;
+use resources::word_clusterer::WordClusterer;
 
 pub struct SharedResources {
-    pub builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
-    pub custom_entity_parser: Arc<CachingCustomEntityParser>,
-    pub gazetteers: HashMap<String, Arc<HashSetGazetteer>>,
-    pub stemmer: Option<Arc<HashMapStemmer>>,
-    pub word_clusterers: HashMap<String, Arc<HashMapWordClusterer>>
+    pub builtin_entity_parser: Arc<BuiltinEntityParser>,
+    pub custom_entity_parser: Arc<CustomEntityParser>,
+    pub gazetteers: HashMap<String, Arc<Gazetteer>>,
+    pub stemmer: Option<Arc<Stemmer>>,
+    pub word_clusterers: HashMap<String, Arc<WordClusterer>>,
 }

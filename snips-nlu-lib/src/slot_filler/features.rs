@@ -1,15 +1,15 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
+use entity_parser::{CustomEntityParser, BuiltinEntityParser};
 use errors::*;
 use itertools::Itertools;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{get_shape, normalize};
 use nlu_utils::token::Token;
-use resources::gazetteer::{Gazetteer, HashSetGazetteer};
+use resources::gazetteer::Gazetteer;
 use resources::SharedResources;
-use resources::stemmer::{HashMapStemmer, Stemmer};
+use resources::stemmer::Stemmer;
 use resources::word_clusterer::WordClusterer;
 use slot_filler::feature_processor::{Feature, FeatureKindRepr};
 use snips_nlu_ontology::BuiltinEntityKind;
@@ -90,8 +90,8 @@ impl Feature for IsLastFeature {
 
 pub struct NgramFeature {
     ngram_size: usize,
-    opt_common_words_gazetteer: Option<Arc<HashSetGazetteer>>,
-    opt_stemmer: Option<Arc<HashMapStemmer>>,
+    opt_common_words_gazetteer: Option<Arc<Gazetteer>>,
+    opt_stemmer: Option<Arc<Stemmer>>,
 }
 
 impl Feature for NgramFeature {
@@ -115,8 +115,8 @@ impl Feature for NgramFeature {
         };
         let use_stemming = parse_as_bool(args, "use_stemming")?;
         let opt_stemmer = if use_stemming {
-            Some(shared_resources.stemmer.as_ref()
-                .map(|stemmer| stemmer.clone())
+            Some(shared_resources.stemmer
+                .clone()
                 .ok_or_else(|| format_err!("Cannot find stemmer in shared resources"))?)
         } else {
             None
@@ -241,8 +241,8 @@ impl Feature for SuffixFeature {
 pub struct CustomEntityMatchFeature {
     entity_name: String,
     tagging_scheme: TaggingScheme,
-    opt_stemmer: Option<Arc<HashMapStemmer>>,
-    custom_entity_parser: Arc<CachingCustomEntityParser>,
+    opt_stemmer: Option<Arc<Stemmer>>,
+    custom_entity_parser: Arc<CustomEntityParser>,
 }
 
 impl Feature for CustomEntityMatchFeature {
@@ -260,10 +260,8 @@ impl Feature for CustomEntityMatchFeature {
         let use_stemming = parse_as_bool(args, "use_stemming")?;
         let opt_stemmer = if use_stemming {
             Some(shared_resources.stemmer
-                .as_ref()
-                .map(|stemmer| stemmer.clone())
-                .ok_or_else(||
-                    format_err!("Cannot find stemmer in shared resources"))?)
+                .clone()
+                .ok_or_else(|| format_err!("Cannot find stemmer in shared resources"))?)
         } else {
             None
         };
@@ -281,9 +279,7 @@ impl Feature for CustomEntityMatchFeature {
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
-        let normalized_tokens = transform_tokens(
-            tokens,
-            self.opt_stemmer.as_ref().map(|stemmer| stemmer.as_ref()));
+        let normalized_tokens = transform_tokens(tokens, self.opt_stemmer.clone());
         let normalized_text = initial_string_from_tokens(&*normalized_tokens);
 
         Ok(self.custom_entity_parser
@@ -302,7 +298,7 @@ impl Feature for CustomEntityMatchFeature {
 pub struct BuiltinEntityMatchFeature {
     tagging_scheme: TaggingScheme,
     builtin_entity_kind: BuiltinEntityKind,
-    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
 }
 
 impl Feature for BuiltinEntityMatchFeature {
@@ -377,11 +373,13 @@ impl Feature for WordClusterFeature {
     }
 }
 
-fn transform_tokens<S: Stemmer>(tokens: &[Token], stemmer: Option<&S>) -> Vec<Token> {
+fn transform_tokens(tokens: &[Token], stemmer: Option<Arc<Stemmer>>) -> Vec<Token> {
     tokens
         .iter()
         .map(|t| {
-            let normalized_value = stemmer.map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value)));
+            let normalized_value = stemmer
+                .clone()
+                .map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value)));
             let range = t.range.start..t.range.start + normalized_value.len();
             let char_range = t.char_range.start..t.char_range.start + normalized_value.chars().count();
             Token::new(normalized_value, range, char_range)

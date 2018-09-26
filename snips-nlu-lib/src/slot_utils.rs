@@ -1,7 +1,7 @@
 use std::ops::Range;
 use std::sync::Arc;
 
-use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser, CustomEntity};
+use entity_parser::{CustomEntityParser, CustomEntity, BuiltinEntityParser};
 use errors::*;
 use models::nlu_engine::Entity;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Slot, SlotValue};
@@ -18,7 +18,7 @@ pub struct InternalSlot {
 pub fn resolve_builtin_slot(
     internal_slot: InternalSlot,
     builtin_entities: &Vec<BuiltinEntity>,
-    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
 ) -> Result<Option<Slot>> {
     let entity_kind = BuiltinEntityKind::from_identifier(&internal_slot.entity)?;
     let resolved_slot = builtin_entities
@@ -41,7 +41,7 @@ pub fn resolve_custom_slot(
     internal_slot: InternalSlot,
     entity: &Entity,
     custom_entities: &Vec<CustomEntity>,
-    custom_entity_parser: Arc<CachingCustomEntityParser>,
+    custom_entity_parser: Arc<CustomEntityParser>,
 ) -> Result<Option<Slot>> {
     let opt_matching_entity = match custom_entities
         .into_iter()

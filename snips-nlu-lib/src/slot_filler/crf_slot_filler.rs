@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
 
-use entity_parser::CachingBuiltinEntityParser;
+use entity_parser::BuiltinEntityParser;
 use errors::*;
 use failure::ResultExt;
 use language::FromLanguage;
@@ -132,7 +132,7 @@ impl SlotFiller for CRFSlotFiller {
                 &updated_tags,
                 self,
                 &self.slot_name_mapping,
-                &self.shared_resources.builtin_entity_parser,
+                self.shared_resources.builtin_entity_parser.clone(),
                 &builtin_slots,
             )?;
             Ok(augmented_slots)
@@ -225,7 +225,7 @@ fn augment_slots(
     tags: &[String],
     slot_filler: &SlotFiller,
     intent_slots_mapping: &HashMap<SlotName, EntityName>,
-    builtin_entity_parser: &CachingBuiltinEntityParser,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
     missing_slots: &[(String, BuiltinEntityKind)],
 ) -> Result<Vec<InternalSlot>> {
     let builtin_entities = missing_slots

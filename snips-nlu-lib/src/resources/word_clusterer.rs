@@ -31,11 +31,9 @@ impl HashMapWordClusterer {
     }
 }
 
-impl<I> From<I> for HashMapWordClusterer where I: Iterator<Item=(String, String)> {
-    fn from(values_it: I) -> Self {
-        Self {
-            values: HashMap::from_iter(values_it),
-        }
+impl FromIterator<(String, String)> for HashMapWordClusterer {
+    fn from_iter<T: IntoIterator<Item=(String, String)>>(iter: T) -> Self {
+        Self { values: HashMap::from_iter(iter) }
     }
 }
 

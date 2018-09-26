@@ -46,7 +46,7 @@ impl DeterministicIntentParser {
 impl DeterministicIntentParser {
     pub fn new(
         configuration: DeterministicParserModel,
-        shared_resources: Arc<SharedResources>
+        shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
         let language = Language::from_str(&configuration.language_code)?;
         Ok(DeterministicIntentParser {
@@ -78,9 +78,9 @@ impl IntentParser for DeterministicIntentParser {
             if !intents
                 .map(|intent_set| intent_set.contains(intent))
                 .unwrap_or(true)
-            {
-                continue;
-            }
+                {
+                    continue;
+                }
             for regex in regexes {
                 let matching_result_formatted = self.get_matching_result(
                     input,
@@ -284,8 +284,8 @@ fn get_range_shift(
     for (replaced_range, orig_range) in ranges_mapping.iter() {
         if replaced_range.end <= match_start &&
             replaced_range.end > previous_replaced_range_end {
-                previous_replaced_range_end = replaced_range.end;
-                shift = orig_range.end as i32 - replaced_range.end as i32;
+            previous_replaced_range_end = replaced_range.end;
+            shift = orig_range.end as i32 - replaced_range.end as i32;
         }
     }
     shift

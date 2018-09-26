@@ -9,9 +9,9 @@ use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
 use errors::*;
 use failure::ResultExt;
 use resources::SharedResources;
-use resources::gazetteer::HashSetGazetteer;
-use resources::word_clusterer::HashMapWordClusterer;
-use resources::stemmer::HashMapStemmer;
+use resources::gazetteer::{Gazetteer, HashSetGazetteer};
+use resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
+use resources::stemmer::{HashMapStemmer, Stemmer};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ResourcesMetadata {
@@ -49,7 +49,7 @@ pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
 fn load_stemmer<P: AsRef<Path>>(
     resources_dir: &P,
     metadata: &ResourcesMetadata,
-) -> Result<Option<Arc<HashMapStemmer>>> {
+) -> Result<Option<Arc<Stemmer>>> {
     if let Some(stems) = metadata.stems.as_ref() {
         let stemming_directory = resources_dir.as_ref().join("stemming");
         let stems_path = stemming_directory
@@ -68,8 +68,8 @@ fn load_stemmer<P: AsRef<Path>>(
 fn load_gazetteers<P: AsRef<Path>>(
     resources_dir: &P,
     metadata: &ResourcesMetadata,
-) -> Result<HashMap<String, Arc<HashSetGazetteer>>> {
-    let mut gazetteers: HashMap<String, Arc<HashSetGazetteer>> = HashMap::new();
+) -> Result<HashMap<String, Arc<Gazetteer>>> {
+    let mut gazetteers: HashMap<String, Arc<Gazetteer>> = HashMap::new();
     if let Some(gazetteer_names) = metadata.gazetteers.as_ref() {
         let gazetteers_directory = resources_dir.as_ref().join("gazetteers");
         for gazetteer_name in gazetteer_names {
@@ -90,8 +90,8 @@ fn load_gazetteers<P: AsRef<Path>>(
 fn load_word_clusterers<P: AsRef<Path>>(
     resources_dir: &P,
     metadata: &ResourcesMetadata,
-) -> Result<HashMap<String, Arc<HashMapWordClusterer>>> {
-    let mut word_clusterers: HashMap<String, Arc<HashMapWordClusterer>> = HashMap::new();
+) -> Result<HashMap<String, Arc<WordClusterer>>> {
+    let mut word_clusterers: HashMap<String, Arc<WordClusterer>> = HashMap::new();
     if let Some(word_clusters) = metadata.word_clusters.as_ref() {
         let word_clusters_directory = resources_dir.as_ref().join("word_clusters");
         for clusters_name in word_clusters {

@@ -12,8 +12,8 @@ use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::normalize;
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use resources::SharedResources;
-use resources::stemmer::{HashMapStemmer, Stemmer};
-use resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
+use resources::stemmer::Stemmer;
+use resources::word_clusterer::WordClusterer;
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
 
 pub struct Featurizer {
@@ -21,8 +21,8 @@ pub struct Featurizer {
     vocabulary: HashMap<String, usize>,
     idf_diag: Vec<f32>,
     sublinear: bool,
-    word_clusterer: Option<Arc<HashMapWordClusterer>>,
-    stemmer: Option<Arc<HashMapStemmer>>,
+    word_clusterer: Option<Arc<WordClusterer>>,
+    stemmer: Option<Arc<Stemmer>>,
     shared_resources: Arc<SharedResources>,
     language: Language,
 }
@@ -104,11 +104,10 @@ impl Featurizer {
         let language = NluUtilsLanguage::from_language(self.language);
         let tokens = tokenize_light(query, language);
         let word_cluster_features = self.word_clusterer
-            .as_ref()
-            .map(|clusterer| get_word_cluster_features(&tokens, clusterer.as_ref()))
+            .clone()
+            .map(|clusterer| get_word_cluster_features(&tokens, clusterer))
             .unwrap_or_else(|| vec![]);
-        let opt_stemmer = self.stemmer.as_ref().map(|s| s.as_ref());
-        let normalized_stemmed_tokens = normalize_stem(&tokens, opt_stemmer);
+        let normalized_stemmed_tokens = normalize_stem(&tokens, self.stemmer.clone());
         let normalized_stemmed_string = normalized_stemmed_tokens.join(" ");
         let custom_entities_features: Vec<String> = self.shared_resources.custom_entity_parser
             .extract_entities(&normalized_stemmed_string, None, true)?
@@ -151,9 +150,9 @@ fn get_custom_entity_feature_name(
     format!("entityfeature{}", e)
 }
 
-fn get_word_cluster_features<C: WordClusterer>(
+fn get_word_cluster_features(
     query_tokens: &[String],
-    word_clusterer: &C,
+    word_clusterer: Arc<WordClusterer>,
 ) -> Vec<String> {
     let tokens_ref = query_tokens.into_iter().map(|t| t.as_ref()).collect_vec();
     compute_all_ngrams(tokens_ref.as_ref(), tokens_ref.len())
@@ -162,7 +161,7 @@ fn get_word_cluster_features<C: WordClusterer>(
         .sorted()
 }
 
-fn normalize_stem<S: Stemmer>(tokens: &[String], opt_stemmer: Option<&S>) -> Vec<String> {
+fn normalize_stem(tokens: &[String], opt_stemmer: Option<Arc<Stemmer>>) -> Vec<String> {
     opt_stemmer
         .map(|stemmer| tokens.iter().map(|t| stemmer.stem(&normalize(t))).collect())
         .unwrap_or_else(|| tokens.iter().map(|t| normalize(t)).collect())

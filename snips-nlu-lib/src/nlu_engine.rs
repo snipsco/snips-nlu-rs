@@ -6,7 +6,7 @@ use std::path::{Component, Path};
 use std::str::FromStr;
 use std::sync::Arc;
 
-use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
+use entity_parser::{BuiltinEntityParser, CustomEntityParser};
 use errors::*;
 use failure::ResultExt;
 use intent_parser::*;
@@ -256,7 +256,7 @@ fn extract_custom_slot(
     entity_name: EntityName,
     slot_name: SlotName,
     custom_entity: &Entity,
-    custom_entity_parser: Arc<CachingCustomEntityParser>,
+    custom_entity_parser: Arc<CustomEntityParser>,
 ) -> Result<Option<Slot>> {
     let mut custom_entities = custom_entity_parser.extract_entities(&input, Some(&[entity_name.clone()]), true)?;
     Ok(if let Some(matched_entity) = custom_entities.pop() {
@@ -285,7 +285,7 @@ fn extract_builtin_slot(
     input: String,
     entity_name: EntityName,
     slot_name: SlotName,
-    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(builtin_entity_parser

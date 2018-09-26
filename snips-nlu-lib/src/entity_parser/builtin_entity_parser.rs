@@ -4,14 +4,19 @@ use std::sync::Mutex;
 use entity_parser::utils::Cache;
 use errors::*;
 use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntity};
-use snips_nlu_ontology_parsers::BuiltinEntityParser;
-#[cfg(test)]
-use snips_nlu_ontology::Language;
-#[cfg(test)]
-use snips_nlu_ontology_parsers::BuiltinEntityParserLoader;
+use snips_nlu_ontology_parsers::BuiltinEntityParser as _BuiltinEntityParser;
+
+pub trait BuiltinEntityParser: Send + Sync {
+    fn extract_entities(
+        &self,
+        sentence: &str,
+        filter_entity_kinds: Option<&[BuiltinEntityKind]>,
+        use_cache: bool,
+    ) -> Vec<BuiltinEntity>;
+}
 
 pub struct CachingBuiltinEntityParser {
-    parser: BuiltinEntityParser,
+    parser: _BuiltinEntityParser,
     cache: Mutex<Cache<CacheKey, Vec<BuiltinEntity>>>,
 }
 
@@ -21,14 +26,8 @@ struct CacheKey {
     kinds: Vec<BuiltinEntityKind>,
 }
 
-impl CachingBuiltinEntityParser {
-    pub fn from_path<P: AsRef<Path>>(path: P, cache_capacity: usize) -> Result<Self> {
-        let parser = BuiltinEntityParser::from_path(path)?;
-        let cache = Mutex::new(Cache::new(cache_capacity));
-        Ok(Self { parser, cache })
-    }
-
-    pub fn extract_entities(
+impl BuiltinEntityParser for CachingBuiltinEntityParser {
+    fn extract_entities(
         &self,
         sentence: &str,
         filter_entity_kinds: Option<&[BuiltinEntityKind]>,
@@ -54,12 +53,10 @@ impl CachingBuiltinEntityParser {
     }
 }
 
-#[cfg(test)]
 impl CachingBuiltinEntityParser {
-    pub fn from_language(language: Language, cache_capacity: usize) -> Result<Self> {
-        let parser = BuiltinEntityParserLoader::new(language).load()?;
-        let cache = Mutex::new(EntityCache::new(cache_capacity));
+    pub fn from_path<P: AsRef<Path>>(path: P, cache_capacity: usize) -> Result<Self> {
+        let parser = _BuiltinEntityParser::from_path(path)?;
+        let cache = Mutex::new(Cache::new(cache_capacity));
         Ok(Self { parser, cache })
     }
 }
-

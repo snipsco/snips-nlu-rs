@@ -26,11 +26,9 @@ impl HashSetGazetteer {
     }
 }
 
-impl<I> From<I> for HashSetGazetteer where I: Iterator<Item=String> {
-    fn from(values_it: I) -> Self {
-        Self {
-            values: HashSet::from_iter(values_it),
-        }
+impl FromIterator<String> for HashSetGazetteer {
+    fn from_iter<T: IntoIterator<Item=String>>(iter: T) -> Self {
+        Self { values: HashSet::from_iter(iter) }
     }
 }
 
