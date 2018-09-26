@@ -169,25 +169,68 @@ fn normalize_stem(tokens: &[String], opt_stemmer: Option<Arc<Stemmer>>) -> Vec<S
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::iter::FromIterator;
+    use std::sync::Arc;
     use super::{get_word_cluster_features, Featurizer};
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
-    use resources::loading::load_shared_resources;
     use resources::word_clusterer::HashMapWordClusterer;
     use testutils::assert_epsilon_eq_array1;
-    use utils::file_path;
+    use testutils::MockedCustomEntityParser;
+    use entity_parser::custom_entity_parser::CustomEntity;
+    use resources::SharedResources;
+    use testutils::MockedBuiltinEntityParser;
+    use resources::stemmer::HashMapStemmer;
 
     #[test]
     fn transform_works() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        let resources = load_shared_resources(resources_path).unwrap();
+        let mocked_custom_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                "hello this bird is a beauti bird".to_string(),
+                vec![
+                    CustomEntity {
+                        value: "hello".to_string(),
+                        resolved_value: "hello".to_string(),
+                        range: 0..5,
+                        entity_identifier: "greeting".to_string(),
+                    },
+                    CustomEntity {
+                        value: "hello".to_string(),
+                        resolved_value: "hello".to_string(),
+                        range: 0..5,
+                        entity_identifier: "word".to_string(),
+                    },
+                    CustomEntity {
+                        value: "bird".to_string(),
+                        resolved_value: "bird".to_string(),
+                        range: 11..15,
+                        entity_identifier: "animal".to_string(),
+                    },
+                    CustomEntity {
+                        value: "bird".to_string(),
+                        resolved_value: "bird".to_string(),
+                        range: 31..35,
+                        entity_identifier: "animal".to_string(),
+                    }
+                ]
+            )]
+        );
+        let mocked_builtin_parser = MockedBuiltinEntityParser { mocked_outputs: HashMap::new() };
+        let mocked_stemmer = HashMapStemmer::from_iter(
+            vec![("beautiful".to_string(), "beauti".to_string())]
+        );
+
+        let resources = SharedResources {
+            custom_entity_parser: Arc::new(mocked_custom_parser),
+            builtin_entity_parser: Arc::new(mocked_builtin_parser),
+            stemmer: Some(Arc::new(mocked_stemmer)),
+            word_clusterers: HashMap::new(),
+            gazetteers: HashMap::new(),
+        };
         let best_features = vec![0, 1, 2, 3, 6, 7, 8, 9];
         let vocab = hashmap![
             "awful".to_string() => 0,
@@ -197,9 +240,9 @@ mod tests {
             "hello".to_string() => 4,
             "nice".to_string() => 5,
             "world".to_string() => 6,
-            "featureentityanimal".to_string() => 7,
-            "featureentityword".to_string() => 8,
-            "featureentitygreeting".to_string() => 9
+            "entityfeatureanimal".to_string() => 7,
+            "entityfeatureword".to_string() => 8,
+            "entityfeaturegreeting".to_string() => 9
         ];
 
         let idf_diag = vec![
@@ -215,10 +258,6 @@ mod tests {
             2.7,
         ];
 
-        let entity_utterances_to_feature_names = hashmap![
-            "bird".to_string() => vec!["featureentityanimal".to_string()],
-            "hello".to_string() => vec!["featureentitygreeting".to_string(), "featureentityword".to_string()]
-        ];
         let language_code = "en";
         let tfidf_vectorizer = TfIdfVectorizerModel { idf_diag, vocab };
 
@@ -228,11 +267,12 @@ mod tests {
             config: FeaturizerConfiguration {
                 sublinear_tf: false,
                 word_clusters_name: None,
+                use_stemming: true,
             },
             best_features,
         };
 
-        let featurizer = Featurizer::new(featurizer_config, resources).unwrap();
+        let featurizer = Featurizer::new(featurizer_config, Arc::new(resources)).unwrap();
 
         // When
         let input = "Hëllo this bïrd is a beautiful Bïrd";
@@ -249,7 +289,7 @@ mod tests {
             0.30854541380686823,
             0.4900427160462025
         ];
-        assert_epsilon_eq_array1(&features, &expected_features, 1e-6);
+        assert_epsilon_eq_array1(&expected_features, &features, 1e-6);
     }
 
     #[test]
@@ -257,15 +297,15 @@ mod tests {
         // Given
         let language = Language::EN;
         let query_tokens = tokenize_light("I, love House, muSic", language);
-        let word_clusterer = HashMapWordClusterer::from(
+        let word_clusterer = HashMapWordClusterer::from_iter(
             vec![
                 ("love".to_string(), "cluster_love".to_string()),
                 ("house".to_string(), "cluster_house".to_string())
-            ].into_iter()
+            ]
         );
 
         // When
-        let augmented_query = get_word_cluster_features(&query_tokens, &word_clusterer);
+        let augmented_query = get_word_cluster_features(&query_tokens, Arc::new(word_clusterer));
 
         // Then
         let expected_augmented_query = vec![

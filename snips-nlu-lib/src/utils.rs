@@ -2,13 +2,6 @@ pub type IntentName = String;
 pub type SlotName = String;
 pub type EntityName = String;
 
-#[cfg(test)]
-pub fn file_path(filename: &str) -> ::std::path::PathBuf {
-    ::dinghy_test::try_test_file_path("data")
-        .unwrap_or_else(|| "../data".into())
-        .join(filename)
-}
-
 fn partial_cartesian<'b, T>(acc: Vec<Vec<&'b T>>, a: &'b [T]) -> Vec<Vec<&'b T>> {
     acc.into_iter()
         .flat_map(|xs| {

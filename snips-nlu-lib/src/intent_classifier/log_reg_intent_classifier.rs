@@ -162,24 +162,21 @@ fn get_filtered_out_intents_indexes(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::file_path;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
-    use resources::loading::load_shared_resources;
+    use testutils::*;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
-        let resources_path = file_path("tests")
+        let trained_engine_dir = file_path("tests")
             .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        let resources = load_shared_resources(resources_path).unwrap();
+            .join("nlu_engine");
+
+        let resources = load_shared_resources_from_engine_dir(trained_engine_dir).unwrap();
         let language_code = "en".to_string();
         let best_features = vec![
             1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92,
             93, 96, 97, 100, 101,
         ];
-        let entity_utterances_to_feature_names = hashmap![];
         let vocab = hashmap![
             "!".to_string() => 0,
             "12".to_string() => 1,
@@ -423,14 +420,14 @@ mod tests {
         let config = FeaturizerConfiguration {
             sublinear_tf: false,
             word_clusters_name: None,
+            use_stemming: true
         };
 
         let config = FeaturizerModel {
             tfidf_vectorizer,
             best_features,
             config,
-            language_code,
-            entity_utterances_to_feature_names,
+            language_code
         };
 
         let featurizer = Featurizer::new(config, resources).unwrap();
@@ -543,21 +540,18 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let resources_path = file_path("tests")
+        let trained_engine_dir = file_path("tests")
             .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        let resources = load_shared_resources(resources_path).unwrap();
+            .join("nlu_engine");
 
-        let path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
+        let classifier_path = trained_engine_dir
             .join("probabilistic_intent_parser")
             .join("intent_classifier");
 
+        let resources = load_shared_resources_from_engine_dir(trained_engine_dir).unwrap();
+
         // When
-        let intent_classifier = LogRegIntentClassifier::from_path(path, resources).unwrap();
+        let intent_classifier = LogRegIntentClassifier::from_path(classifier_path, resources).unwrap();
         let intent_result = intent_classifier
             .get_intent("Make me one cup of tea please", None)
             .unwrap()
@@ -589,13 +583,6 @@ mod tests {
     #[test]
     fn should_filter_intents() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_shared_resources(resources_path).unwrap();
-
         let classifier = get_sample_log_reg_classifier();
 
         // When

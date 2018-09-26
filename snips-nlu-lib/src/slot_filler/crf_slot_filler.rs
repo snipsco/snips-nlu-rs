@@ -391,9 +391,8 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 mod tests {
     use super::*;
     use nlu_utils::language::Language as NluUtilsLanguage;
-    use snips_nlu_ontology::{Grain, InstantTimeValue, Language, NumberValue, Precision, SlotValue};
-    use utils::file_path;
-    use resources::loading::load_shared_resources;
+    use snips_nlu_ontology::*;
+    use testutils::*;
 
     #[derive(Debug, Fail)]
     pub enum TestError {
@@ -442,14 +441,13 @@ mod tests {
         // Given
         let trained_engine_path = file_path("tests")
             .join("models")
-            .join("trained_engine");
+            .join("nlu_engine");
 
         let slot_filler_path = trained_engine_path
             .join("probabilistic_intent_parser")
-            .join("slot_filler_MakeCoffee");
+            .join("slot_filler_0");
 
-        let resources_path = trained_engine_path.join("resources").join("en");
-        let resources = load_shared_resources(resources_path).unwrap();
+        let resources = load_shared_resources_from_engine_dir(trained_engine_path).unwrap();
 
         // When
         let slot_filler = CRFSlotFiller::from_path(slot_filler_path, resources).unwrap();
@@ -572,8 +570,26 @@ mod tests {
             "start_date".to_string() => "snips/datetime".to_string(),
             "end_date".to_string() => "snips/datetime".to_string(),
         };
-        let builtin_entity_parser = CachingBuiltinEntityParser::from_language(Language::EN, 1000)
-            .unwrap();
+
+        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    BuiltinEntity {
+                        value: "before 10 pm".to_string(),
+                        range: 17..28,
+                        entity_kind: BuiltinEntityKind::Time,
+                        entity: SlotValue::TimeInterval(TimeIntervalValue { from: None, to: None }),
+                    },
+                    BuiltinEntity {
+                        value: "after 8 pm".to_string(),
+                        range: 33..42,
+                        entity_kind: BuiltinEntityKind::Time,
+                        entity: SlotValue::TimeInterval(TimeIntervalValue { from: None, to: None }),
+                    }
+                ]
+            )]
+        );
         let missing_slots = vec![
             ("start_date".to_string(), BuiltinEntityKind::Time),
             ("end_date".to_string(), BuiltinEntityKind::Time),
@@ -586,7 +602,7 @@ mod tests {
             &tags,
             &slot_filler,
             &intent_slots_mapping,
-            &builtin_entity_parser,
+            Arc::new(mocked_builtin_parser),
             &missing_slots,
         ).unwrap();
 

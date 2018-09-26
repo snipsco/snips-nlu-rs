@@ -438,14 +438,16 @@ fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> 
 
 #[cfg(test)]
 mod tests {
+    use std::iter::FromIterator;
     use nlu_utils::language::Language as NluUtilsLanguage;
     use nlu_utils::token::tokenize;
     use resources::gazetteer::HashSetGazetteer;
     use resources::stemmer::HashMapStemmer;
     use resources::word_clusterer::HashMapWordClusterer;
-    use snips_nlu_ontology::Language;
-    use std::convert::From;
+    use snips_nlu_ontology::{BuiltinEntity, SlotValue, TemperatureValue};
     use super::*;
+    use testutils::{MockedBuiltinEntityParser, MockedCustomEntityParser};
+    use entity_parser::custom_entity_parser::CustomEntity;
 
     #[test]
     fn is_digit_feature_works() {
@@ -454,7 +456,9 @@ mod tests {
         let feature = IsDigitFeature {};
 
         // When
-        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..4)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![None, None, Some("1".to_string()), None];
@@ -468,7 +472,9 @@ mod tests {
         let feature = LengthFeature {};
 
         // When
-        let results: Vec<Option<String>> = (0..3).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..3)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![
@@ -487,7 +493,9 @@ mod tests {
         let feature = PrefixFeature { prefix_size: 6 };
 
         // When
-        let actual_result: Vec<Option<String>> = (0..2).map(|i| feature.compute(&tokens, i)).collect();
+        let actual_result: Vec<Option<String>> = (0..2)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_result = vec![Some("hello_".to_string()), Some("foo_ba".to_string())];
@@ -501,7 +509,9 @@ mod tests {
         let feature = SuffixFeature { suffix_size: 6 };
 
         // When
-        let actual_result: Vec<Option<String>> = (0..2).map(|i| feature.compute(&tokens, i)).collect();
+        let actual_result: Vec<Option<String>> = (0..2)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_result = vec![Some("_world".to_string()), Some("oo_bar".to_string())];
@@ -516,7 +526,9 @@ mod tests {
         let feature = ShapeNgramFeature { ngram_size: 2 };
 
         // When
-        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..4)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_result = vec![
@@ -540,7 +552,9 @@ mod tests {
         };
 
         // When
-        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..4)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![
@@ -558,7 +572,7 @@ mod tests {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
-        let common_words_gazetteer = HashSetGazetteer::from(
+        let common_words_gazetteer = HashSetGazetteer::from_iter(
             vec!["i".to_string(), "love".to_string(), "music".to_string()].into_iter(),
         );
         let feature = NgramFeature {
@@ -568,7 +582,9 @@ mod tests {
         };
 
         // When
-        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..4)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![
@@ -585,7 +601,7 @@ mod tests {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
-        let stemmer = HashMapStemmer::from(
+        let stemmer = HashMapStemmer::from_iter(
             vec![("house".to_string(), "hous".to_string())].into_iter()
         );
         let feature = NgramFeature {
@@ -595,7 +611,9 @@ mod tests {
         };
 
         // When
-        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..4)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![
@@ -612,24 +630,33 @@ mod tests {
     fn entity_match_feature_works() {
         // Given
         let language = NluUtilsLanguage::EN;
-        let gazetteer = HashSetGazetteer::from(
-            vec![
-                "bird".to_string(),
-                "blue bird".to_string(),
-                "beautiful blue bird".to_string(),
-            ].into_iter(),
+        let entity_name = "bird_type".to_string();
+        let mocked_entity_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                "i love this beautiful blue bird !".to_string(),
+                vec![
+                    CustomEntity {
+                        value: "beautiful blue bird".to_string(),
+                        resolved_value: "beautiful blue bird".to_string(),
+                        range: 12..31,
+                        entity_identifier: entity_name.to_string(),
+                    }
+                ]
+            )]
         );
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love this beautiful blue Bird !", language);
         let feature = CustomEntityMatchFeature {
-            entity_name: "bird_type".to_string(),
-            entity_values: gazetteer,
+            entity_name,
             tagging_scheme,
             opt_stemmer: None,
+            custom_entity_parser: Arc::new(mocked_entity_parser),
         };
 
         // When
-        let results: Vec<Option<String>> = (0..6).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..6)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![
@@ -647,28 +674,35 @@ mod tests {
     fn entity_match_feature_works_with_stemming() {
         // Given
         let language = NluUtilsLanguage::EN;
-        let stemmer = HashMapStemmer::from(
-            vec![("birds".to_string(), "bird".to_string())].into_iter()
-        );
-        let gazetteer = HashSetGazetteer::from(
-            vec![
-                "bird".to_string(),
-                "blue bird".to_string(),
-                "beautiful blue bird".to_string(),
-            ].into_iter(),
+        let stemmer = HashMapStemmer::from_iter(vec![("birds".to_string(), "bird".to_string())]);
+
+        let mocked_entity_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                "i love blue bird  !".to_string(),
+                vec![
+                    CustomEntity {
+                        value: "blue bird".to_string(),
+                        resolved_value: "blue bird".to_string(),
+                        range: 7..16,
+                        entity_identifier: "bird_type".to_string(),
+                    }
+                ]
+            )]
         );
 
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love Blue Birds !", language);
         let feature = CustomEntityMatchFeature {
             entity_name: "bird_type".to_string(),
-            entity_values: gazetteer,
             tagging_scheme,
             opt_stemmer: Some(Arc::new(stemmer)),
+            custom_entity_parser: Arc::new(mocked_entity_parser),
         };
 
         // When
-        let results: Vec<Option<String>> = (0..5).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..5)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![
@@ -685,17 +719,33 @@ mod tests {
     fn builtin_entity_match_feature_works() {
         // Given
         let language = NluUtilsLanguage::EN;
-        let tokens = tokenize("Let's meet tomorrow at 9pm ok ?", language);
+        let input = "Please raise to twenty one degrees ok ?";
+        let tokens = tokenize(input, language);
         let tagging_scheme = TaggingScheme::BILOU;
-        let parser = CachingBuiltinEntityParser::from_language(Language::EN, 100).unwrap();
+        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(
+            vec![(
+                input.to_string(),
+                vec![
+                    BuiltinEntity {
+                        value: "twenty one degrees".to_string(),
+                        range: 16..34,
+                        entity: SlotValue::Temperature(TemperatureValue { value: 21.0, unit: None }),
+                        entity_kind: BuiltinEntityKind::Temperature,
+                    }
+                ]
+            )]
+        );
+
         let feature = BuiltinEntityMatchFeature {
             tagging_scheme,
             builtin_entity_kind: BuiltinEntityKind::Time,
-            builtin_entity_parser: Arc::new(parser),
+            builtin_entity_parser: Arc::new(mocked_builtin_parser),
         };
 
         // When
-        let results: Vec<Option<String>> = (0..7).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..7)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![
@@ -714,7 +764,7 @@ mod tests {
     fn word_cluster_feature_works() {
         // Given
         let language = NluUtilsLanguage::EN;
-        let word_clusterer = HashMapWordClusterer::from(
+        let word_clusterer = HashMapWordClusterer::from_iter(
             vec![("bird".to_string(), "010101".to_string())].into_iter()
         );
         let tokens = tokenize("I love this bird", language);
@@ -724,7 +774,9 @@ mod tests {
         };
 
         // When
-        let results: Vec<Option<String>> = (0..4).map(|i| feature.compute(&tokens, i)).collect();
+        let results: Vec<Option<String>> = (0..4)
+            .map(|i| feature.compute(&tokens, i).unwrap())
+            .collect();
 
         // Then
         let expected_results = vec![

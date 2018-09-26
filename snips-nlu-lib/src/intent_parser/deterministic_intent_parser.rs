@@ -293,16 +293,14 @@ fn get_range_shift(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use utils::file_path;
-    use models::DeterministicParserModel;
-    use slot_utils::InternalSlot;
-    use snips_nlu_ontology::{IntentClassifierResult, Language};
     use std::collections::HashMap;
     use std::iter::FromIterator;
-    use resources::loading::load_shared_resources;
-    use snips_nlu_ontology::{BuiltinEntityKind, SlotValue, NumberValue, OrdinalValue, StringValue};
-    use testutils::english_empty_resources;
+    use super::*;
+
+    use models::DeterministicParserModel;
+    use slot_utils::InternalSlot;
+    use snips_nlu_ontology::*;
+    use testutils::*;
 
     fn test_configuration() -> DeterministicParserModel {
         DeterministicParserModel {
@@ -353,30 +351,26 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let path = file_path("tests")
+        let trained_engine_path = file_path("tests")
             .join("models")
-            .join("trained_engine")
-            .join("deterministic_intent_parser");
+            .join("nlu_engine");
 
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_shared_resources(resources_path).unwrap();
+        let parser_path = trained_engine_path.join("deterministic_intent_parser");
+
+        let shared_resources = load_shared_resources_from_engine_dir(trained_engine_path).unwrap();
+        let intent_parser = DeterministicIntentParser::from_path(parser_path, shared_resources).unwrap();
 
         // When
-        let intent_parser = DeterministicIntentParser::from_path(path, english_empty_resources()).unwrap();
         let parsing_result = intent_parser.parse("make me two cups of coffee", None).unwrap();
 
         // Then
         let expected_intent = Some("MakeCoffee");
-        let expected_slots= Some(vec![
+        let expected_slots = Some(vec![
             InternalSlot {
                 value: "two".to_string(),
                 char_range: 8..11,
                 entity: "snips/number".to_string(),
-                slot_name: "number_of_cups".to_string()
+                slot_name: "number_of_cups".to_string(),
             }
         ]);
         assert_eq!(expected_intent, parsing_result.as_ref().map(|res| &*res.intent.intent_name));
@@ -386,14 +380,8 @@ mod tests {
     #[test]
     fn should_get_intent() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_shared_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(
-            test_configuration(), english_empty_resources()).unwrap();
+        let shared_resources = SharedResourcesBuilder::default().build();
+        let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -411,15 +399,28 @@ mod tests {
     #[test]
     fn should_get_intent_with_builtin_entity() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_shared_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(
-            test_configuration(), english_empty_resources()).unwrap();
         let text = "Send 10 dollars to John";
+        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    BuiltinEntity {
+                        value: "10 dollars".to_string(),
+                        range: 5..15,
+                        entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                            value: 10.,
+                            precision: Precision::Exact,
+                            unit: Some("dollars".to_string()),
+                        }),
+                        entity_kind: BuiltinEntityKind::AmountOfMoney,
+                    }
+                ]
+            )]
+        );
+        let shared_resources = SharedResourcesBuilder::default()
+            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .build();
+        let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
 
         // When
         let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
@@ -436,14 +437,8 @@ mod tests {
     #[test]
     fn should_get_slots() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_shared_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(
-            test_configuration(), english_empty_resources()).unwrap();
+        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -470,14 +465,8 @@ mod tests {
     #[test]
     fn should_get_slots_with_non_ascii_chars() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_shared_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(
-            test_configuration(), english_empty_resources()).unwrap();
+        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "This is another über dummy_cc query!";
 
         // When
@@ -498,15 +487,28 @@ mod tests {
     #[test]
     fn should_get_slots_with_builtin_entity() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_shared_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(
-            test_configuration(), english_empty_resources()).unwrap();
         let text = "Send 10 dollars to John at dummy c";
+        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    BuiltinEntity {
+                        value: "10 dollars".to_string(),
+                        range: 5..15,
+                        entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                            value: 10.,
+                            precision: Precision::Exact,
+                            unit: Some("dollars".to_string()),
+                        }),
+                        entity_kind: BuiltinEntityKind::AmountOfMoney,
+                    }
+                ]
+            )]
+        );
+        let shared_resources = SharedResourcesBuilder::default()
+            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .build();
+        let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
 
         // When
         let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
@@ -532,14 +534,8 @@ mod tests {
     #[test]
     fn should_get_slots_with_special_tokenized_out_characters() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources")
-            .join("en");
-        load_shared_resources(resources_path).unwrap();
-        let parser = DeterministicIntentParser::new(
-            test_configuration(), english_empty_resources()).unwrap();
+        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "this is another dummy’c";
 
         // When
@@ -618,19 +614,19 @@ mod tests {
                 value: "the third".to_string(),
                 range: 0..9,
                 entity: SlotValue::Ordinal(OrdinalValue { value: 3 }),
-                entity_kind: BuiltinEntityKind::Ordinal
+                entity_kind: BuiltinEntityKind::Ordinal,
             },
             BuiltinEntity {
                 value: "182".to_string(),
                 range: 25..28,
                 entity: SlotValue::Number(NumberValue { value: 182.0 }),
-                entity_kind: BuiltinEntityKind::Number
+                entity_kind: BuiltinEntityKind::Number,
             },
             BuiltinEntity {
                 value: "Blink 182".to_string(),
                 range: 19..28,
                 entity: SlotValue::MusicArtist(StringValue { value: "Blink 182".to_string() }),
-                entity_kind: BuiltinEntityKind::MusicArtist
+                entity_kind: BuiltinEntityKind::MusicArtist,
             },
         ];
 

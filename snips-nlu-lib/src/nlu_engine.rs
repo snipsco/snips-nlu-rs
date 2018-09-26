@@ -304,14 +304,15 @@ fn extract_builtin_slot(
 mod tests {
     use snips_nlu_ontology::NumberValue;
     use super::*;
-    use utils::file_path;
+    use entity_parser::custom_entity_parser::CustomEntity;
+    use testutils::*;
 
     #[test]
     fn from_path_works() {
         // Given
         let path = file_path("tests")
             .join("models")
-            .join("trained_engine");
+            .join("nlu_engine");
 
         // When / Then
         let nlu_engine = SnipsNluEngine::from_path(path);
@@ -323,7 +324,7 @@ mod tests {
         // Given
         let path = file_path("tests")
             .join("models")
-            .join("trained_engine.zip");
+            .join("nlu_engine.zip");
 
         let file = fs::File::open(path).unwrap();
 
@@ -359,7 +360,7 @@ mod tests {
         // Given
         let path = file_path("tests")
             .join("models")
-            .join("trained_engine");
+            .join("nlu_engine");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
@@ -387,7 +388,6 @@ mod tests {
     #[test]
     fn should_extract_custom_slot_when_tagged() {
         // Given
-        let language = Language::EN;
         let input = "hello a b c d world".to_string();
         let entity_name = "entity".to_string();
         let slot_name = "slot".to_string();
@@ -395,15 +395,35 @@ mod tests {
             automatically_extensible: true,
         };
 
+        let mocked_custom_parser = Arc::new(MockedCustomEntityParser::from_iter(
+            vec![(
+                "hello a b c d world".to_string(),
+                vec![
+                    CustomEntity {
+                        value: "a b".to_string(),
+                        resolved_value: "value1".to_string(),
+                        range: 6..9,
+                        entity_identifier: entity_name.to_string(),
+                    },
+                    CustomEntity {
+                        value: "b c d".to_string(),
+                        resolved_value: "value2".to_string(),
+                        range: 8..13,
+                        entity_identifier: entity_name.to_string(),
+                    }
+                ]
+            )]
+        ));
+
         // When
-        let extracted_slot =
-            extract_custom_slot(input, entity_name, slot_name, &custom_entity, language);
+        let extracted_slot = extract_custom_slot(
+            input, entity_name, slot_name, &custom_entity, mocked_custom_parser).unwrap();
 
         // Then
         let expected_slot = Some(Slot {
             raw_value: "b c d".to_string(),
             value: SlotValue::Custom("value2".to_string().into()),
-            range: None,
+            range: Some(8..13),
             entity: "entity".to_string(),
             slot_name: "slot".to_string(),
         });
@@ -413,7 +433,6 @@ mod tests {
     #[test]
     fn should_extract_custom_slot_when_not_tagged() {
         // Given
-        let language = Language::EN;
         let input = "hello world".to_string();
         let entity_name = "entity".to_string();
         let slot_name = "slot".to_string();
@@ -421,15 +440,17 @@ mod tests {
             automatically_extensible: true,
         };
 
+        let mocked_custom_parser = Arc::new(MockedCustomEntityParser::from_iter(vec![]));
+
         // When
-        let extracted_slot =
-            extract_custom_slot(input, entity_name, slot_name, &custom_entity, language);
+        let extracted_slot = extract_custom_slot(
+            input, entity_name, slot_name, &custom_entity, mocked_custom_parser).unwrap();
 
         // Then
         let expected_slot = Some(Slot {
             raw_value: "hello world".to_string(),
             value: SlotValue::Custom("hello world".to_string().into()),
-            range: None,
+            range: Some(0..11),
             entity: "entity".to_string(),
             slot_name: "slot".to_string(),
         });
@@ -439,7 +460,6 @@ mod tests {
     #[test]
     fn should_not_extract_custom_slot_when_not_extensible() {
         // Given
-        let language = Language::EN;
         let input = "hello world".to_string();
         let entity_name = "entity".to_string();
         let slot_name = "slot".to_string();
@@ -447,9 +467,11 @@ mod tests {
             automatically_extensible: false,
         };
 
+        let mocked_custom_parser = Arc::new(MockedCustomEntityParser::from_iter(vec![]));
+
         // When
-        let extracted_slot =
-            extract_custom_slot(input, entity_name, slot_name, &custom_entity, language);
+        let extracted_slot = extract_custom_slot(
+            input, entity_name, slot_name, &custom_entity, mocked_custom_parser).unwrap();
 
         // Then
         let expected_slot = None;
