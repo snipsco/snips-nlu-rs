@@ -192,7 +192,7 @@ mod tests {
                 value: "hot".to_string(),
                 resolved_value: "hot".to_string(),
                 range: 12..15,
-                entity_identifier: "Temperature".to_string()
+                entity_identifier: "Temperature".to_string(),
             }
         ];
 

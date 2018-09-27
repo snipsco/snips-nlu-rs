@@ -12,7 +12,7 @@ pub trait BuiltinEntityParser: Send + Sync {
         sentence: &str,
         filter_entity_kinds: Option<&[BuiltinEntityKind]>,
         use_cache: bool,
-    ) -> Vec<BuiltinEntity>;
+    ) -> Result<Vec<BuiltinEntity>>;
 }
 
 pub struct CachingBuiltinEntityParser {
@@ -32,7 +32,7 @@ impl BuiltinEntityParser for CachingBuiltinEntityParser {
         sentence: &str,
         filter_entity_kinds: Option<&[BuiltinEntityKind]>,
         use_cache: bool,
-    ) -> Vec<BuiltinEntity> {
+    ) -> Result<Vec<BuiltinEntity>> {
         let lowercased_sentence = sentence.to_lowercase();
         if !use_cache {
             return self.parser.extract_entities(&lowercased_sentence, filter_entity_kinds);
@@ -47,9 +47,8 @@ impl BuiltinEntityParser for CachingBuiltinEntityParser {
         self.cache
             .lock()
             .unwrap()
-            .cache(&cache_key,
-                   |cache_key| self.parser.extract_entities(&cache_key.input, filter_entity_kinds))
-            .clone()
+            .try_cache(&cache_key,
+                       |cache_key| self.parser.extract_entities(&cache_key.input, filter_entity_kinds))
     }
 }
 

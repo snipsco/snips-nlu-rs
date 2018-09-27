@@ -11,20 +11,6 @@ impl<K, V> Cache<K, V> where K: Eq + Hash + Clone, V: Clone {
         Cache(LruCache::new(capacity))
     }
 
-    pub fn cache<F: Fn(&K) -> V>(
-        &mut self,
-        key: &K,
-        producer: F,
-    ) -> V {
-        let cached_value = self.0.get_mut(key).cloned();
-        if let Some(value) = cached_value {
-            return value;
-        }
-        let value = producer(key);
-        self.0.insert(key.clone(), value.clone());
-        value
-    }
-
     pub fn try_cache<F: Fn(&K) -> Result<V>>(
         &mut self,
         key: &K,

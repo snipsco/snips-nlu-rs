@@ -21,20 +21,18 @@ pub fn resolve_builtin_slot(
     builtin_entity_parser: Arc<BuiltinEntityParser>,
 ) -> Result<Option<Slot>> {
     let entity_kind = BuiltinEntityKind::from_identifier(&internal_slot.entity)?;
-    let resolved_slot = builtin_entities
+    let opt_matching_entity = match builtin_entities
         .iter()
         .find(|entity|
             entity.entity_kind == entity_kind && entity.range == internal_slot.char_range
-        )
-        .map(|builtin_entity| Some(builtin_entity.entity.clone()))
-        .unwrap_or_else(||
-            builtin_entity_parser
-                .extract_entities(&internal_slot.value, Some(&[entity_kind]), false)
-                .pop()
-                .map(|builtin_entity| builtin_entity.entity)
-        )
-        .map(|entity| convert_to_builtin_slot(internal_slot, entity));
-    Ok(resolved_slot)
+        ) {
+        Some(matching_entity) => Some(matching_entity.entity.clone()),
+        None => builtin_entity_parser
+            .extract_entities(&internal_slot.value, Some(&[entity_kind]), false)?
+            .pop()
+            .map(|builtin_entity| builtin_entity.entity)
+    };
+    Ok(opt_matching_entity.map(|entity| convert_to_builtin_slot(internal_slot, entity)))
 }
 
 pub fn resolve_custom_slot(
