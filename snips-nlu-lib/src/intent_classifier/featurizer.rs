@@ -70,7 +70,7 @@ impl Featurizer {
     }
 
     pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
-        let preprocessed_tokens = self.preprocess_query(input)?;
+        let preprocessed_tokens = self.preprocess_utterance(input)?;
         let vocabulary_size = self.vocabulary.values().max().unwrap() + 1;
 
         let mut tfidf: Vec<f32> = vec![0.; vocabulary_size];
@@ -100,9 +100,9 @@ impl Featurizer {
         Ok(selected_features)
     }
 
-    fn preprocess_query(&self, query: &str) -> Result<Vec<String>> {
+    fn preprocess_utterance(&self, utterance: &str) -> Result<Vec<String>> {
         let language = NluUtilsLanguage::from_language(self.language);
-        let tokens = tokenize_light(query, language);
+        let tokens = tokenize_light(utterance, language);
         let word_cluster_features = self.word_clusterer
             .clone()
             .map(|clusterer| get_word_cluster_features(&tokens, clusterer))
@@ -117,7 +117,7 @@ impl Featurizer {
 
         let builtin_entities = self.shared_resources
             .builtin_entity_parser
-            .extract_entities(query, None, true);
+            .extract_entities(utterance, None, true)?;
         let builtin_entities_features: Vec<String> = builtin_entities
             .iter()
             .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, language))

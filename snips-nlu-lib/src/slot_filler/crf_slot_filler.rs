@@ -232,7 +232,10 @@ fn augment_slots(
         .iter()
         .map(|&(_, kind)| kind)
         .unique()
-        .flat_map(|kind| builtin_entity_parser.extract_entities(text, Some(&[kind]), true))
+        .map(|kind| builtin_entity_parser.extract_entities(text, Some(&[kind]), true))
+        .collect::<Result<Vec<Vec<BuiltinEntity>>>>()?
+        .into_iter()
+        .flat_map(|entities| entities)
         .collect();
     let filtered_entities = filter_overlapping_builtins(
         builtin_entities,

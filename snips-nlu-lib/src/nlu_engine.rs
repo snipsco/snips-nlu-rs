@@ -193,7 +193,7 @@ impl SnipsNluEngine {
         custom_entity_filter: Option<&[EntityName]>,
     ) -> Result<Vec<Slot>> {
         let builtin_entities = self.shared_resources.builtin_entity_parser
-            .extract_entities(text, builtin_entity_filter, false);
+            .extract_entities(text, builtin_entity_filter, false)?;
         let custom_entities = self.shared_resources.custom_entity_parser
             .extract_entities(text, custom_entity_filter, true)?;
 
@@ -289,7 +289,7 @@ fn extract_builtin_slot(
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(builtin_entity_parser
-        .extract_entities(&input, Some(&[builtin_entity_kind]), false)
+        .extract_entities(&input, Some(&[builtin_entity_kind]), false)?
         .first()
         .map(|builtin_entity| Slot {
             raw_value: substring_with_char_range(input, &builtin_entity.range),

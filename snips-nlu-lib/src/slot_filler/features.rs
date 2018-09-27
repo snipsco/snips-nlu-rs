@@ -330,7 +330,7 @@ impl Feature for BuiltinEntityMatchFeature {
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
         let text = initial_string_from_tokens(tokens);
         Ok(self.builtin_entity_parser
-            .extract_entities(&text, Some(&[self.builtin_entity_kind]), true)
+            .extract_entities(&text, Some(&[self.builtin_entity_kind]), true)?
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
             .map(|e| {

@@ -97,10 +97,10 @@ impl BuiltinEntityParser for MockedBuiltinEntityParser {
         sentence: &str,
         _filter_entity_kinds: Option<&[BuiltinEntityKind]>,
         _use_cache: bool,
-    ) -> Vec<BuiltinEntity> {
-        self.mocked_outputs.get(sentence)
+    ) -> Result<Vec<BuiltinEntity>> {
+        Ok(self.mocked_outputs.get(sentence)
             .cloned()
-            .unwrap_or(vec![])
+            .unwrap_or(vec![]))
     }
 }
 

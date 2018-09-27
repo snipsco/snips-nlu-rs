@@ -67,7 +67,7 @@ impl IntentParser for DeterministicIntentParser {
     ) -> Result<Option<InternalParsingResult>> {
         let builtin_entities = self.shared_resources
             .builtin_entity_parser
-            .extract_entities(input, None, true);
+            .extract_entities(input, None, true)?;
         let (ranges_mapping, formatted_input) = replace_builtin_entities(input, builtin_entities);
         let language = NluUtilsLanguage::from_language(self.language);
         let cleaned_input = replace_tokenized_out_characters(input, language, ' ');
