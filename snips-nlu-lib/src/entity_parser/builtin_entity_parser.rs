@@ -35,7 +35,7 @@ impl BuiltinEntityParser for CachingBuiltinEntityParser {
     ) -> Result<Vec<BuiltinEntity>> {
         let lowercased_sentence = sentence.to_lowercase();
         if !use_cache {
-            return Ok(self.parser.extract_entities(&lowercased_sentence, filter_entity_kinds));
+            return self.parser.extract_entities(&lowercased_sentence, filter_entity_kinds);
         }
         let cache_key = CacheKey {
             input: lowercased_sentence,
@@ -44,12 +44,11 @@ impl BuiltinEntityParser for CachingBuiltinEntityParser {
                 .unwrap_or_else(|| vec![]),
         };
 
-        Ok(self.cache
+        self.cache
             .lock()
             .unwrap()
-            .cache(&cache_key,
-                   |cache_key| self.parser.extract_entities(&cache_key.input, filter_entity_kinds))
-            .clone())
+            .try_cache(&cache_key,
+                       |cache_key| self.parser.extract_entities(&cache_key.input, filter_entity_kinds))
     }
 }
 
