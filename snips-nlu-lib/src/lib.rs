@@ -47,4 +47,6 @@ pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIn
 pub use nlu_engine::SnipsNluEngine;
 pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
+pub use resources::loading::load_shared_resources;
+pub use resources::SharedResources;
 

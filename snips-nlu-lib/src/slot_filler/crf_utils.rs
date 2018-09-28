@@ -164,9 +164,9 @@ fn _tags_to_slots<F1, F2>(
     is_start_of_slot: F1,
     is_end_of_slot: F2,
 ) -> Vec<SlotRange>
-where
-    F1: Fn(&[String], usize) -> bool,
-    F2: Fn(&[String], usize) -> bool,
+    where
+        F1: Fn(&[String], usize) -> bool,
+        F2: Fn(&[String], usize) -> bool,
 {
     let mut slots: Vec<SlotRange> = Vec::with_capacity(tags.len());
 

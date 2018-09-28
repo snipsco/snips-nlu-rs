@@ -14,7 +14,7 @@ use resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
 use resources::stemmer::{HashMapStemmer, Stemmer};
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ResourcesMetadata {
+struct ResourcesMetadata {
     language: String,
     gazetteers: Option<Vec<String>>,
     word_clusters: Option<Vec<String>>,
