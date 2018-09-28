@@ -285,10 +285,10 @@ impl Feature for CustomEntityMatchFeature {
         Ok(self.custom_entity_parser
             .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]), true)?
             .into_iter()
-            .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
+            .find(|e| ranges_overlap(&e.range, &normalized_tokens[token_index].char_range))
             .map(|e| {
-                let entity_token_indexes = (0..tokens.len())
-                    .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.range))
+                let entity_token_indexes = (0..normalized_tokens.len())
+                    .filter(|i| ranges_overlap(&normalized_tokens[*i].char_range, &e.range))
                     .collect_vec();
                 get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme).to_string()
             }))
@@ -374,15 +374,19 @@ impl Feature for WordClusterFeature {
 }
 
 fn transform_tokens(tokens: &[Token], stemmer: Option<Arc<Stemmer>>) -> Vec<Token> {
+    let mut current_char_index = 0;
+    let mut current_byte_index = 0;
     tokens
         .iter()
         .map(|t| {
             let normalized_value = stemmer
                 .clone()
                 .map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value)));
-            let range = t.range.start..t.range.start + normalized_value.len();
-            let char_range = t.char_range.start..t.char_range.start + normalized_value.chars().count();
-            Token::new(normalized_value, range, char_range)
+            let char_range = current_char_index..(current_char_index + normalized_value.chars().count());
+            let byte_range = current_byte_index..(current_byte_index + normalized_value.len());
+            current_char_index = char_range.end + 1;
+            current_byte_index = byte_range.end + 1;
+            Token::new(normalized_value, byte_range, char_range)
         })
         .collect_vec()
 }
@@ -448,6 +452,51 @@ mod tests {
     use super::*;
     use testutils::{MockedBuiltinEntityParser, MockedCustomEntityParser};
     use entity_parser::custom_entity_parser::CustomEntity;
+
+    #[test]
+    fn transform_tokens_should_work() {
+        // Given
+        let tokens = tokenize("fo£ root_suffix inflection bar", NluUtilsLanguage::EN);
+        let stemmer = HashMapStemmer::from_iter(
+            vec![
+                ("root_suffix".to_string(), "root".to_string()),
+                ("inflection".to_string(), "original_word".to_string())
+            ]
+        );
+
+        // When
+        let transformed_tokens = transform_tokens(&tokens, Some(Arc::new(stemmer)));
+
+        // Then
+        let expected_tokens = vec![
+            Token::new(
+                "fo".to_string(),
+                0..2,
+                0..2,
+            ),
+            Token::new(
+                "£".to_string(),
+                3..5,
+                3..4,
+            ),
+            Token::new(
+                "root".to_string(),
+                6..10,
+                5..9,
+            ),
+            Token::new(
+                "original_word".to_string(),
+                11..24,
+                10..23,
+            ),
+            Token::new(
+                "bar".to_string(),
+                25..28,
+                24..27,
+            )
+        ];
+        assert_eq!(expected_tokens, transformed_tokens);
+    }
 
     #[test]
     fn is_digit_feature_works() {
@@ -678,7 +727,7 @@ mod tests {
 
         let mocked_entity_parser = MockedCustomEntityParser::from_iter(
             vec![(
-                "i love blue bird  !".to_string(),
+                "i love blue bird !".to_string(),
                 vec![
                     CustomEntity {
                         value: "blue bird".to_string(),
