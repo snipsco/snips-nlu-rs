@@ -138,7 +138,7 @@ fn get_builtin_entity_feature_name(
     entity_kind: BuiltinEntityKind,
     language: NluUtilsLanguage,
 ) -> String {
-    let e = tokenize_light(entity_kind.identifier(), language).join("");
+    let e = tokenize_light(&entity_kind.identifier().to_lowercase(), language).join("");
     format!("builtinentityfeature{}", e)
 }
 
@@ -146,7 +146,7 @@ fn get_custom_entity_feature_name(
     entity_name: &str,
     language: NluUtilsLanguage,
 ) -> String {
-    let e = tokenize_light(entity_name, language).join("");
+    let e = tokenize_light(&entity_name.to_lowercase(), language).join("");
     format!("entityfeature{}", e)
 }
 
