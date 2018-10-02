@@ -30,6 +30,7 @@ zip = { version = "0.3", features=["deflate"] }
 bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
 dinghy-test = "0.3"
 maplit = "1.0"
+clap = "2.32"
 
 [[bench]]
 name = "nlu_engine"
