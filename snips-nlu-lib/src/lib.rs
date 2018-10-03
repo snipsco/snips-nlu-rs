@@ -38,7 +38,7 @@ mod slot_utils;
 mod testutils;
 mod utils;
 
-pub const MODEL_VERSION: &str = "0.16.0";
+pub const MODEL_VERSION: &str = "0.17.0";
 
 pub use models::*;
 pub use errors::*;
