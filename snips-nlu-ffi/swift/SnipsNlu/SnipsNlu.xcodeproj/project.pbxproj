@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7A92822320F65F8000DC3623 /* trained_engine in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822220F65F8000DC3623 /* trained_engine */; };
-		7A92822420F65F8000DC3623 /* trained_engine in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822220F65F8000DC3623 /* trained_engine */; };
-		7A92822620F65F9200DC3623 /* trained_engine.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822520F65F9100DC3623 /* trained_engine.zip */; };
-		7A92822720F65F9200DC3623 /* trained_engine.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822520F65F9100DC3623 /* trained_engine.zip */; };
+		7A92822320F65F8000DC3623 /* nlu_engine in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822220F65F8000DC3623 /* nlu_engine */; };
+		7A92822420F65F8000DC3623 /* nlu_engine in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822220F65F8000DC3623 /* nlu_engine */; };
+		7A92822620F65F9200DC3623 /* nlu_engine.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822520F65F9100DC3623 /* nlu_engine.zip */; };
+		7A92822720F65F9200DC3623 /* nlu_engine.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822520F65F9100DC3623 /* nlu_engine.zip */; };
 		F76280F81EFD0AB000A6D248 /* NluEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76280F71EFD0AB000A6D248 /* NluEngine.swift */; };
 		F76280F91EFD0AB000A6D248 /* NluEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76280F71EFD0AB000A6D248 /* NluEngine.swift */; };
 		F76504C81EFD086C007FF022 /* SnipsNlu.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F76504BE1EFD086C007FF022 /* SnipsNlu.framework */; };
@@ -41,8 +41,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		7A92822220F65F8000DC3623 /* trained_engine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = trained_engine; path = ../../../../data/tests/models/trained_engine; sourceTree = "<group>"; };
-		7A92822520F65F9100DC3623 /* trained_engine.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = trained_engine.zip; path = ../../../../data/tests/models/trained_engine.zip; sourceTree = "<group>"; };
+		7A92822220F65F8000DC3623 /* nlu_engine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nlu_engine; path = ../../../../data/tests/models/nlu_engine; sourceTree = "<group>"; };
+		7A92822520F65F9100DC3623 /* nlu_engine.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = nlu_engine.zip; path = ../../../../data/tests/models/nlu_engine.zip; sourceTree = "<group>"; };
 		F76280F71EFD0AB000A6D248 /* NluEngine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngine.swift; sourceTree = "<group>"; };
 		F76504BE1EFD086C007FF022 /* SnipsNlu.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SnipsNlu.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504C11EFD086C007FF022 /* SnipsNlu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SnipsNlu.h; sourceTree = "<group>"; };
@@ -142,8 +142,8 @@
 		F79B6F5D201644A200394C57 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				7A92822520F65F9100DC3623 /* trained_engine.zip */,
-				7A92822220F65F8000DC3623 /* trained_engine */,
+				7A92822520F65F9100DC3623 /* nlu_engine.zip */,
+				7A92822220F65F8000DC3623 /* nlu_engine */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -317,8 +317,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7A92822320F65F8000DC3623 /* trained_engine in Resources */,
-				7A92822620F65F9200DC3623 /* trained_engine.zip in Resources */,
+				7A92822320F65F8000DC3623 /* nlu_engine in Resources */,
+				7A92822620F65F9200DC3623 /* nlu_engine.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -333,8 +333,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7A92822420F65F8000DC3623 /* trained_engine in Resources */,
-				7A92822720F65F9200DC3623 /* trained_engine.zip in Resources */,
+				7A92822420F65F8000DC3623 /* nlu_engine in Resources */,
+				7A92822720F65F9200DC3623 /* nlu_engine.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
