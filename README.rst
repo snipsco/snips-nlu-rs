@@ -4,7 +4,7 @@ Snips NLU Rust
 .. image:: https://travis-ci.org/snipsco/snips-nlu-rs.svg?branch=develop
    :target: https://travis-ci.org/snipsco/snips-nlu-rs
 
-.. image:: https://ci.appveyor.com/api/projects/status/github/snipsco/snips-nlu-rs?branch=develop&svg=true
+.. image:: https://ci.appveyor.com/api/projects/status/rsf27a9txeomic8o/branch/develop?svg=true
    :target: https://ci.appveyor.com/project/snipsco/snips-nlu-rs
 
 Installation
