@@ -3,6 +3,7 @@ pub mod probabilistic_intent_parser;
 
 use std::collections::HashSet;
 use std::path::Path;
+use std::sync::Arc;
 
 use errors::*;
 use snips_nlu_ontology::IntentClassifierResult;
@@ -10,8 +11,8 @@ use snips_nlu_ontology::IntentClassifierResult;
 use models::ProcessingUnitMetadata;
 pub use self::deterministic_intent_parser::DeterministicIntentParser;
 pub use self::probabilistic_intent_parser::ProbabilisticIntentParser;
+use resources::SharedResources;
 pub use slot_utils::InternalSlot;
-use utils::FromPath;
 
 pub struct InternalParsingResult {
     pub intent: IntentClassifierResult,
@@ -32,7 +33,7 @@ pub fn internal_parsing_result(
     }
 }
 
-pub trait IntentParser: FromPath + Send + Sync {
+pub trait IntentParser: Send + Sync {
     fn parse(
         &self,
         input: &str,
@@ -40,10 +41,16 @@ pub trait IntentParser: FromPath + Send + Sync {
     ) -> Result<Option<InternalParsingResult>>;
 }
 
-pub fn build_intent_parser<P: AsRef<Path>>(metadata: ProcessingUnitMetadata, path: P) -> Result<Box<IntentParser>> {
+pub fn build_intent_parser<P: AsRef<Path>>(
+    metadata: ProcessingUnitMetadata,
+    path: P,
+    shared_resources: Arc<SharedResources>
+) -> Result<Box<IntentParser>> {
     match metadata {
-        ProcessingUnitMetadata::DeterministicIntentParser => Ok(Box::new(DeterministicIntentParser::from_path(path)?) as _),
-        ProcessingUnitMetadata::ProbabilisticIntentParser => Ok(Box::new(ProbabilisticIntentParser::from_path(path)?) as _),
+        ProcessingUnitMetadata::DeterministicIntentParser =>
+            Ok(Box::new(DeterministicIntentParser::from_path(path, shared_resources)?) as _),
+        ProcessingUnitMetadata::ProbabilisticIntentParser =>
+            Ok(Box::new(ProbabilisticIntentParser::from_path(path, shared_resources)?) as _),
         _ => Err(format_err!("{:?} is not an intent parser", metadata))
     }
 }

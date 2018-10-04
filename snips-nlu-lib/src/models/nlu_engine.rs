@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-
 use utils::{EntityName, IntentName, SlotName};
 
 #[derive(Debug, Deserialize)]
@@ -13,6 +12,8 @@ pub struct NluEngineModel {
     pub intent_parsers: Vec<String>,
     pub model_version: String,
     pub training_package_version: String,
+    pub builtin_entity_parser: String,
+    pub custom_entity_parser: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -25,5 +26,4 @@ pub struct DatasetMetadata {
 #[derive(Debug, Deserialize, Clone)]
 pub struct Entity {
     pub automatically_extensible: bool,
-    pub utterances: HashMap<String, String>,
 }

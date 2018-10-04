@@ -1,15 +1,12 @@
 use std::collections::HashMap;
 use std::io::Read;
-use std::path::Path;
-use std::sync::{Arc, Mutex};
+use std::iter::FromIterator;
 
 use csv;
 use errors::*;
-use failure::ResultExt;
 use snips_nlu_ontology::Language;
-use std::fs::File;
 
-pub trait WordClusterer {
+pub trait WordClusterer: Send + Sync {
     fn get_cluster(&self, word: &str) -> Option<String>;
 }
 
@@ -18,7 +15,7 @@ pub struct HashMapWordClusterer {
 }
 
 impl HashMapWordClusterer {
-    fn from_reader<R: Read>(reader: R) -> Result<Self> {
+    pub fn from_reader<R: Read>(reader: R) -> Result<Self> {
         let mut csv_reader = csv::ReaderBuilder::new()
             .delimiter(b'\t')
             .quoting(false)
@@ -34,6 +31,12 @@ impl HashMapWordClusterer {
     }
 }
 
+impl FromIterator<(String, String)> for HashMapWordClusterer {
+    fn from_iter<T: IntoIterator<Item=(String, String)>>(iter: T) -> Self {
+        Self { values: HashMap::from_iter(iter) }
+    }
+}
+
 impl WordClusterer for HashMapWordClusterer {
     fn get_cluster(&self, word: &str) -> Option<String> {
         self.values
@@ -42,58 +45,12 @@ impl WordClusterer for HashMapWordClusterer {
     }
 }
 
-lazy_static! {
-    static ref WORD_CLUSTERERS: Mutex<HashMap<WordClustererConfiguration, Arc<HashMapWordClusterer>>> =
-        Mutex::new(HashMap::new());
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct WordClustererConfiguration {
     language: Language,
     clusters_name: String,
 }
 
-pub fn load_word_clusterer<P: AsRef<Path>>(
-    clusters_name: String,
-    language: Language,
-    path: P,
-) -> Result<()> {
-    let configuration = WordClustererConfiguration { language, clusters_name };
-    if WORD_CLUSTERERS.lock().unwrap().contains_key(&configuration) {
-        return Ok(());
-    }
-
-    let word_clusters_reader = File::open(path.as_ref())
-        .with_context(|_| format!("Cannot open word clusters file '{:?}'", path.as_ref()))?;
-    let word_clusterer = HashMapWordClusterer::from_reader(word_clusters_reader)?;
-    WORD_CLUSTERERS
-        .lock()
-        .unwrap()
-        .entry(configuration)
-        .or_insert_with(|| Arc::new(word_clusterer));
-    Ok(())
-}
-
-pub fn get_word_clusterer(
-    clusters_name: String,
-    language: Language,
-) -> Result<Arc<HashMapWordClusterer>> {
-    let configuration = WordClustererConfiguration { clusters_name, language };
-    WORD_CLUSTERERS
-        .lock()
-        .unwrap()
-        .get(&configuration)
-        .cloned()
-        .ok_or_else(||
-            format_err!("Cannot find word clusterer with configuration {:?}", configuration))
-}
-
-pub fn clear_word_clusterers() {
-    WORD_CLUSTERERS
-        .lock()
-        .unwrap()
-        .clear();
-}
 
 #[cfg(test)]
 mod tests {

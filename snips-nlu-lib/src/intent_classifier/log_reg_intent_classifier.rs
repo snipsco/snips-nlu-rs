@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
+use std::sync::Arc;
 
 use itertools::Itertools;
 use ndarray::prelude::*;
@@ -11,8 +12,9 @@ use errors::*;
 use failure::ResultExt;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
+use resources::SharedResources;
 use snips_nlu_ontology::IntentClassifierResult;
-use utils::{FromPath, IntentName};
+use utils::IntentName;
 
 pub struct LogRegIntentClassifier {
     intent_list: Vec<Option<IntentName>>,
@@ -20,22 +22,28 @@ pub struct LogRegIntentClassifier {
     logreg: Option<MulticlassLogisticRegression>,
 }
 
-impl FromPath for LogRegIntentClassifier {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+impl LogRegIntentClassifier {
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        shared_resources: Arc<SharedResources>
+    ) -> Result<Self> {
         let classifier_model_path = path.as_ref().join("intent_classifier.json");
         let model_file = File::open(&classifier_model_path)
             .with_context(|_|
                 format!("Cannot open LogRegIntentClassifier file '{:?}'", &classifier_model_path))?;
         let model: IntentClassifierModel = serde_json::from_reader(model_file)
             .with_context(|_| "Cannot deserialize LogRegIntentClassifier json data")?;
-        Self::new(model)
+        Self::new(model, shared_resources)
     }
 }
 
 impl LogRegIntentClassifier {
-    pub fn new(model: IntentClassifierModel) -> Result<Self> {
+    pub fn new(
+        model: IntentClassifierModel,
+        shared_resources: Arc<SharedResources>
+    ) -> Result<Self> {
         let featurizer: Option<Featurizer> = if let Some(featurizer_model) = model.featurizer {
-            Some(Featurizer::new(featurizer_model)?)
+            Some(Featurizer::new(featurizer_model, shared_resources)?)
         } else {
             None
         };
@@ -154,18 +162,21 @@ fn get_filtered_out_intents_indexes(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use utils::file_path;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
-    use resources::loading::load_resources;
+    use testutils::*;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
+        let trained_engine_dir = file_path("tests")
+            .join("models")
+            .join("nlu_engine");
+
+        let resources = load_shared_resources_from_engine_dir(trained_engine_dir).unwrap();
         let language_code = "en".to_string();
         let best_features = vec![
             1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92,
             93, 96, 97, 100, 101,
         ];
-        let entity_utterances_to_feature_names = hashmap![];
         let vocab = hashmap![
             "!".to_string() => 0,
             "12".to_string() => 1,
@@ -409,17 +420,17 @@ mod tests {
         let config = FeaturizerConfiguration {
             sublinear_tf: false,
             word_clusters_name: None,
+            use_stemming: true
         };
 
         let config = FeaturizerModel {
             tfidf_vectorizer,
             best_features,
             config,
-            language_code,
-            entity_utterances_to_feature_names,
+            language_code
         };
 
-        let featurizer = Featurizer::new(config).unwrap();
+        let featurizer = Featurizer::new(config, resources).unwrap();
 
         let intercept = array![
             -0.6769558144299883,
@@ -529,14 +540,18 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let path = file_path("tests")
+        let trained_engine_dir = file_path("tests")
             .join("models")
-            .join("trained_engine")
+            .join("nlu_engine");
+
+        let classifier_path = trained_engine_dir
             .join("probabilistic_intent_parser")
             .join("intent_classifier");
 
+        let resources = load_shared_resources_from_engine_dir(trained_engine_dir).unwrap();
+
         // When
-        let intent_classifier = LogRegIntentClassifier::from_path(path).unwrap();
+        let intent_classifier = LogRegIntentClassifier::from_path(classifier_path, resources).unwrap();
         let intent_result = intent_classifier
             .get_intent("Make me one cup of tea please", None)
             .unwrap()
@@ -550,11 +565,6 @@ mod tests {
     #[test]
     fn get_intent_works() {
         // Given
-        let resources_path = file_path("tests")
-            .join("models")
-            .join("trained_engine")
-            .join("resources");
-        load_resources(resources_path).unwrap();
         let classifier = get_sample_log_reg_classifier();
 
         // When

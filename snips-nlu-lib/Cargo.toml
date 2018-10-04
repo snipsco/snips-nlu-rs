@@ -10,13 +10,12 @@ description = "Rust implementation of Snips NLU"
 
 [dependencies]
 crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "30b2ea6" }
-snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.58.0" }
-snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.58.0" }
+snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.59.0" }
+snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.59.0" }
 snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.7.0" }
 failure = "0.1"
 base64 = "0.9"
 itertools = { version = "0.7", default-features = false }
-lazy_static = "1.0"
 lru-cache = "0.1"
 serde = "1.0"
 serde_derive = "1.0"
@@ -31,6 +30,7 @@ zip = { version = "0.3", features=["deflate"] }
 bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
 dinghy-test = "0.3"
 maplit = "1.0"
+clap = "2.32"
 
 [[bench]]
 name = "nlu_engine"

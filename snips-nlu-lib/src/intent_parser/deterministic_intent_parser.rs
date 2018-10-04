@@ -8,7 +8,6 @@ use std::sync::Arc;
 use regex::{Regex, RegexBuilder};
 use serde_json;
 
-use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
 use errors::*;
 use failure::ResultExt;
 use models::DeterministicParserModel;
@@ -18,20 +17,21 @@ use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
+use resources::SharedResources;
 use slot_utils::*;
-use snips_nlu_ontology::Language;
-use utils::{EntityName, FromPath, IntentName, SlotName};
+use snips_nlu_ontology::{BuiltinEntity, Language};
+use utils::{deduplicate_overlapping_items, EntityName, IntentName, SlotName};
 
 pub struct DeterministicIntentParser {
+    language: Language,
     regexes_per_intent: HashMap<IntentName, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, SlotName>,
     slot_names_to_entities: HashMap<IntentName, HashMap<SlotName, EntityName>>,
-    builtin_entity_parser: Arc<CachingBuiltinEntityParser>,
-    language: Language,
+    shared_resources: Arc<SharedResources>,
 }
 
-impl FromPath for DeterministicIntentParser {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+impl DeterministicIntentParser {
+    pub fn from_path<P: AsRef<Path>>(path: P, shared_resources: Arc<SharedResources>) -> Result<Self> {
         let parser_model_path = path.as_ref().join("intent_parser.json");
         let model_file = File::open(&parser_model_path)
             .with_context(|_|
@@ -39,20 +39,22 @@ impl FromPath for DeterministicIntentParser {
                         &parser_model_path))?;
         let model: DeterministicParserModel = serde_json::from_reader(model_file)
             .with_context(|_| "Cannot deserialize DeterministicIntentParser json data")?;
-        Self::new(model)
+        Self::new(model, shared_resources)
     }
 }
 
 impl DeterministicIntentParser {
-    pub fn new(configuration: DeterministicParserModel) -> Result<Self> {
+    pub fn new(
+        configuration: DeterministicParserModel,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
         let language = Language::from_str(&configuration.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
         Ok(DeterministicIntentParser {
+            language,
             regexes_per_intent: compile_regexes_per_intent(configuration.patterns)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
             slot_names_to_entities: configuration.slot_names_to_entities,
-            builtin_entity_parser,
-            language,
+            shared_resources,
         })
     }
 }
@@ -63,8 +65,10 @@ impl IntentParser for DeterministicIntentParser {
         input: &str,
         intents: Option<&HashSet<IntentName>>,
     ) -> Result<Option<InternalParsingResult>> {
-        let (ranges_mapping, formatted_input) =
-            replace_builtin_entities(input, &*self.builtin_entity_parser);
+        let builtin_entities = self.shared_resources
+            .builtin_entity_parser
+            .extract_entities(input, None, true)?;
+        let (ranges_mapping, formatted_input) = replace_builtin_entities(input, builtin_entities);
         let language = NluUtilsLanguage::from_language(self.language);
         let cleaned_input = replace_tokenized_out_characters(input, language, ' ');
         let cleaned_formatted_input =
@@ -74,9 +78,9 @@ impl IntentParser for DeterministicIntentParser {
             if !intents
                 .map(|intent_set| intent_set.contains(intent))
                 .unwrap_or(true)
-            {
-                continue;
-            }
+                {
+                    continue;
+                }
             for regex in regexes {
                 let matching_result_formatted = self.get_matching_result(
                     input,
@@ -180,50 +184,48 @@ fn deduplicate_overlapping_slots(
     slots: Vec<InternalSlot>,
     language: Language,
 ) -> Vec<InternalSlot> {
-    let mut deduped: Vec<InternalSlot> = Vec::with_capacity(slots.len());
     let language = NluUtilsLanguage::from_language(language);
-
-    for slot in slots {
-        let conflicting_slot_index = deduped
-            .iter()
-            .position(|existing_slot| ranges_overlap(&slot.char_range, &existing_slot.char_range));
-
-        if let Some(index) = conflicting_slot_index {
-            fn extract_counts(v: &InternalSlot, l: NluUtilsLanguage) -> (usize, usize) {
-                (tokenize(&v.value, l).len(), v.value.chars().count())
-            }
-            let (existing_token_count, existing_char_count) =
-                extract_counts(&deduped[index], language);
-            let (token_count, char_count) = extract_counts(&slot, language);
-
-            if token_count > existing_token_count
-                || (token_count == existing_token_count && char_count > existing_char_count)
-            {
-                deduped[index] = slot;
-            }
-        } else {
-            deduped.push(slot);
-        }
-    }
+    let slots_overlap = |lhs_slot: &InternalSlot, rhs_slot: &InternalSlot| {
+        ranges_overlap(&lhs_slot.char_range, &rhs_slot.char_range)
+    };
+    let slot_sort_key = |slot: &InternalSlot| {
+        let tokens_count = tokenize(&slot.value, language).len();
+        let chars_count = slot.value.chars().count();
+        -((tokens_count + chars_count) as i32)
+    };
+    let mut deduped = deduplicate_overlapping_items(
+        slots, slots_overlap, slot_sort_key);
     deduped.sort_by_key(|slot| slot.char_range.start);
+    deduped
+}
+
+fn deduplicate_overlapping_entities(entities: Vec<BuiltinEntity>) -> Vec<BuiltinEntity> {
+    let entities_overlap = |lhs_entity: &BuiltinEntity, rhs_entity: &BuiltinEntity| {
+        ranges_overlap(&lhs_entity.range, &rhs_entity.range)
+    };
+    let entity_sort_key = |entity: &BuiltinEntity| -(entity.range.clone().count() as i32);
+    let mut deduped = deduplicate_overlapping_items(entities, entities_overlap, entity_sort_key);
+    deduped.sort_by_key(|entity| entity.range.start);
     deduped
 }
 
 fn replace_builtin_entities(
     text: &str,
-    parser: &CachingBuiltinEntityParser,
+    builtin_entities: Vec<BuiltinEntity>,
 ) -> (HashMap<Range<usize>, Range<usize>>, String) {
-    let builtin_entities = parser.extract_entities(text, None, true);
     if builtin_entities.is_empty() {
         return (HashMap::new(), text.to_string());
     }
+
+    let mut dedup_entities = deduplicate_overlapping_entities(builtin_entities);
+    dedup_entities.sort_by_key(|entity| entity.range.start);
 
     let mut range_mapping: HashMap<Range<usize>, Range<usize>> = HashMap::new();
     let mut processed_text = "".to_string();
     let mut offset = 0;
     let mut current_ix = 0;
 
-    for entity in builtin_entities {
+    for entity in dedup_entities {
         let range_start = (entity.range.start as i16 + offset) as usize;
         let prefix_text =
             substring_with_char_range(text.to_string(), &(current_ix..entity.range.start));
@@ -282,8 +284,8 @@ fn get_range_shift(
     for (replaced_range, orig_range) in ranges_mapping.iter() {
         if replaced_range.end <= match_start &&
             replaced_range.end > previous_replaced_range_end {
-                previous_replaced_range_end = replaced_range.end;
-                shift = orig_range.end as i32 - replaced_range.end as i32;
+            previous_replaced_range_end = replaced_range.end;
+            shift = orig_range.end as i32 - replaced_range.end as i32;
         }
     }
     shift
@@ -291,13 +293,14 @@ fn get_range_shift(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use utils::file_path;
-    use models::DeterministicParserModel;
-    use slot_utils::InternalSlot;
-    use snips_nlu_ontology::{IntentClassifierResult, Language};
     use std::collections::HashMap;
     use std::iter::FromIterator;
+    use super::*;
+
+    use models::DeterministicParserModel;
+    use slot_utils::InternalSlot;
+    use snips_nlu_ontology::*;
+    use testutils::*;
 
     fn test_configuration() -> DeterministicParserModel {
         DeterministicParserModel {
@@ -348,23 +351,26 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let path = file_path("tests")
+        let trained_engine_path = file_path("tests")
             .join("models")
-            .join("trained_engine")
-            .join("deterministic_intent_parser");
+            .join("nlu_engine");
+
+        let parser_path = trained_engine_path.join("deterministic_intent_parser");
+
+        let shared_resources = load_shared_resources_from_engine_dir(trained_engine_path).unwrap();
+        let intent_parser = DeterministicIntentParser::from_path(parser_path, shared_resources).unwrap();
 
         // When
-        let intent_parser = DeterministicIntentParser::from_path(path).unwrap();
         let parsing_result = intent_parser.parse("make me two cups of coffee", None).unwrap();
 
         // Then
         let expected_intent = Some("MakeCoffee");
-        let expected_slots= Some(vec![
+        let expected_slots = Some(vec![
             InternalSlot {
                 value: "two".to_string(),
                 char_range: 8..11,
                 entity: "snips/number".to_string(),
-                slot_name: "number_of_cups".to_string()
+                slot_name: "number_of_cups".to_string(),
             }
         ]);
         assert_eq!(expected_intent, parsing_result.as_ref().map(|res| &*res.intent.intent_name));
@@ -374,7 +380,8 @@ mod tests {
     #[test]
     fn should_get_intent() {
         // Given
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+        let shared_resources = SharedResourcesBuilder::default().build();
+        let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -392,8 +399,28 @@ mod tests {
     #[test]
     fn should_get_intent_with_builtin_entity() {
         // Given
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
         let text = "Send 10 dollars to John";
+        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    BuiltinEntity {
+                        value: "10 dollars".to_string(),
+                        range: 5..15,
+                        entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                            value: 10.,
+                            precision: Precision::Exact,
+                            unit: Some("dollars".to_string()),
+                        }),
+                        entity_kind: BuiltinEntityKind::AmountOfMoney,
+                    }
+                ]
+            )]
+        );
+        let shared_resources = SharedResourcesBuilder::default()
+            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .build();
+        let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
 
         // When
         let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
@@ -410,7 +437,8 @@ mod tests {
     #[test]
     fn should_get_slots() {
         // Given
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
         // When
@@ -437,7 +465,8 @@ mod tests {
     #[test]
     fn should_get_slots_with_non_ascii_chars() {
         // Given
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "This is another über dummy_cc query!";
 
         // When
@@ -458,8 +487,28 @@ mod tests {
     #[test]
     fn should_get_slots_with_builtin_entity() {
         // Given
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
         let text = "Send 10 dollars to John at dummy c";
+        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    BuiltinEntity {
+                        value: "10 dollars".to_string(),
+                        range: 5..15,
+                        entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                            value: 10.,
+                            precision: Precision::Exact,
+                            unit: Some("dollars".to_string()),
+                        }),
+                        entity_kind: BuiltinEntityKind::AmountOfMoney,
+                    }
+                ]
+            )]
+        );
+        let shared_resources = SharedResourcesBuilder::default()
+            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .build();
+        let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
 
         // When
         let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
@@ -485,7 +534,8 @@ mod tests {
     #[test]
     fn should_get_slots_with_special_tokenized_out_characters() {
         // Given
-        let parser = DeterministicIntentParser::new(test_configuration()).unwrap();
+        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "this is another dummy’c";
 
         // When
@@ -509,34 +559,28 @@ mod tests {
         let language = Language::EN;
         let slots = vec![
             InternalSlot {
-                value: "non_overlapping1".to_string(),
-                char_range: 3..7,
-                entity: "e".to_string(),
+                value: "kid".to_string(),
+                char_range: 0..3,
+                entity: "e1".to_string(),
                 slot_name: "s1".to_string(),
             },
             InternalSlot {
-                value: "aaaaaaa".to_string(),
-                char_range: 9..16,
+                value: "loco".to_string(),
+                char_range: 4..8,
                 entity: "e1".to_string(),
                 slot_name: "s2".to_string(),
             },
             InternalSlot {
-                value: "bbbbbbbb".to_string(),
-                char_range: 10..18,
+                value: "kid loco".to_string(),
+                char_range: 0..8,
                 entity: "e1".to_string(),
                 slot_name: "s3".to_string(),
             },
             InternalSlot {
-                value: "b cccc".to_string(),
-                char_range: 17..23,
-                entity: "e1".to_string(),
+                value: "song".to_string(),
+                char_range: 9..13,
+                entity: "e2".to_string(),
                 slot_name: "s4".to_string(),
-            },
-            InternalSlot {
-                value: "non_overlapping2".to_string(),
-                char_range: 50..60,
-                entity: "e".to_string(),
-                slot_name: "s5".to_string(),
             },
         ];
 
@@ -546,22 +590,16 @@ mod tests {
         // Then
         let expected_slots = vec![
             InternalSlot {
-                value: "non_overlapping1".to_string(),
-                char_range: 3..7,
-                entity: "e".to_string(),
-                slot_name: "s1".to_string(),
-            },
-            InternalSlot {
-                value: "b cccc".to_string(),
-                char_range: 17..23,
+                value: "kid loco".to_string(),
+                char_range: 0..8,
                 entity: "e1".to_string(),
-                slot_name: "s4".to_string(),
+                slot_name: "s3".to_string(),
             },
             InternalSlot {
-                value: "non_overlapping2".to_string(),
-                char_range: 50..60,
-                entity: "e".to_string(),
-                slot_name: "s5".to_string(),
+                value: "song".to_string(),
+                char_range: 9..13,
+                entity: "e2".to_string(),
+                slot_name: "s4".to_string(),
             },
         ];
         assert_eq!(deduplicated_slots, expected_slots);
@@ -570,17 +608,35 @@ mod tests {
     #[test]
     fn should_replace_builtin_entities() {
         // Given
-        let text = "Meeting this evening or tomorrow at 11am !";
-        let parser = BuiltinEntityParserFactory::get(Language::EN);
+        let text = "the third album of Blink 182 is great";
+        let builtin_entities = vec![
+            BuiltinEntity {
+                value: "the third".to_string(),
+                range: 0..9,
+                entity: SlotValue::Ordinal(OrdinalValue { value: 3 }),
+                entity_kind: BuiltinEntityKind::Ordinal,
+            },
+            BuiltinEntity {
+                value: "182".to_string(),
+                range: 25..28,
+                entity: SlotValue::Number(NumberValue { value: 182.0 }),
+                entity_kind: BuiltinEntityKind::Number,
+            },
+            BuiltinEntity {
+                value: "Blink 182".to_string(),
+                range: 19..28,
+                entity: SlotValue::MusicArtist(StringValue { value: "Blink 182".to_string() }),
+                entity_kind: BuiltinEntityKind::MusicArtist,
+            },
+        ];
 
         // When
-        let (range_mapping, formatted_text) = replace_builtin_entities(text, &*parser);
+        let (range_mapping, formatted_text) = replace_builtin_entities(text, builtin_entities);
 
         // Then
-        let expected_mapping =
-            HashMap::from_iter(vec![(8..23, 8..20), (27..42, 24..40)].into_iter());
+        let expected_mapping = HashMap::from_iter(vec![(0..14, 0..9), (24..42, 19..28)]);
 
-        let expected_text = "Meeting %SNIPSDATETIME% or %SNIPSDATETIME% !";
+        let expected_text = "%SNIPSORDINAL% album of %SNIPSMUSICARTIST% is great";
         assert_eq!(expected_mapping, range_mapping);
         assert_eq!(expected_text, &formatted_text);
     }

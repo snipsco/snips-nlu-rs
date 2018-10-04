@@ -11,7 +11,7 @@ import XCTest
 
 class NluEngineTests: XCTestCase {
     func testCreationFromDirectory() {
-        let directoryURL = Bundle(for: type(of: self)).url(forResource: "trained_engine", withExtension: nil)!
+        let directoryURL = Bundle(for: type(of: self)).url(forResource: "nlu_engine", withExtension: nil)!
 
         let nluEngine = try? NluEngine(nluEngineDirectoryURL: directoryURL)
 
@@ -19,7 +19,7 @@ class NluEngineTests: XCTestCase {
     }
 
     func testCreationFromZip() {
-        let fileURL = Bundle(for: type(of: self)).url(forResource: "trained_engine", withExtension: "zip")!
+        let fileURL = Bundle(for: type(of: self)).url(forResource: "nlu_engine", withExtension: "zip")!
         let data = try! Data(contentsOf: fileURL)
 
         let nluEngine = try? NluEngine(nluEngineZipData: data)
