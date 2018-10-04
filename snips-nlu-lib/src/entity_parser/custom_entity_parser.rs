@@ -115,9 +115,9 @@ fn compute_char_shifts(tokens: &Vec<Token>) -> Vec<i32> {
 }
 
 #[derive(Deserialize)]
-struct CustomEntityParserMetadata {
-    language: String,
-    parser_directory: String,
+pub struct CustomEntityParserMetadata {
+    pub language: String,
+    pub parser_directory: String,
 }
 
 impl CachingCustomEntityParser {
