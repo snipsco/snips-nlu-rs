@@ -19,7 +19,6 @@ install:
   - echo "snips-nlu-ffi", >> Cargo.toml
   - echo "snips-nlu-ffi/python/snips-nlu-python-ffi", >> Cargo.toml
   - echo "snips-nlu-lib", >> Cargo.toml
-  - echo "snips-nlu-cli", >> Cargo.toml
   - echo ] >> Cargo.toml
   - ps: (Get-Content snips-nlu-ffi/python/snips-nlu-python-ffi/Cargo.toml) | ForEach-Object { $_ -replace "^snips-nlu-ffi = .*$", "snips-nlu-ffi = { path = `"../..`" }" } | Set-Content snips-nlu-ffi/python/snips-nlu-python-ffi/Cargo.toml
 

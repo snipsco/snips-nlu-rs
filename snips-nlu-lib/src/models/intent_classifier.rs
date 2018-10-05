@@ -16,13 +16,13 @@ pub struct FeaturizerModel {
     pub tfidf_vectorizer: TfIdfVectorizerModel,
     pub config: FeaturizerConfiguration,
     pub best_features: Vec<usize>,
-    pub entity_utterances_to_feature_names: HashMap<String, Vec<String>>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct FeaturizerConfiguration {
     pub sublinear_tf: bool,
     pub word_clusters_name: Option<String>,
+    pub use_stemming: bool
 }
 
 #[derive(Debug, Deserialize)]

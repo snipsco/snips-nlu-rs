@@ -4,7 +4,7 @@ Snips NLU Rust
 .. image:: https://travis-ci.org/snipsco/snips-nlu-rs.svg?branch=develop
    :target: https://travis-ci.org/snipsco/snips-nlu-rs
 
-.. image:: https://ci.appveyor.com/api/projects/status/github/snipsco/snips-nlu-rs?branch=develop&svg=true
+.. image:: https://ci.appveyor.com/api/projects/status/rsf27a9txeomic8o/branch/develop?svg=true
    :target: https://ci.appveyor.com/project/snipsco/snips-nlu-rs
 
 Installation
@@ -64,18 +64,18 @@ This repository only contains the inference part, in order to produce trained mo
 the `Snips NLU python library <https://github.com/snipsco/snips-nlu>`_.
 
 
-Interactive CLI and API Usage
------------------------------
+Example and API Usage
+---------------------
 
-The `rust interactive cli <snips-nlu-cli>`_ is a good example of to how to use ``snips-nlu-rs``.
+The `interactive parsing CLI <snips-nlu-lib/examples/interactive_parsing_cli>`_  is a good example
+of to how to use ``snips-nlu-rs``.
 
-Here is how you can run the interactive parsing cli:
+Here is how you can run the CLI example:
 
 .. code-block:: bash
 
    $ git clone https://github.com/snipsco/snips-nlu-rs
-   $ cd snips-nlu-rs/snips-nlu-cli
-   $ cargo run ../data/tests/models/trained_engine
+   $ cargo run -p snips-nlu-lib --example interactive_parsing_cli data/tests/models/nlu_engine
 
 Here we used a sample trained engine, which consists in two intents: ``MakeCoffee`` and ``MakeTea``.
 Thus, it will be able to parse queries like ``"Make me two cups of coffee please"`` or ``"I'd like a hot tea"``.

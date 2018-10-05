@@ -1,9 +1,10 @@
 use std::ops::Range;
+use std::sync::Arc;
 
-use builtin_entity_parsing::CachingBuiltinEntityParser;
-use models::nlu_engine::DatasetMetadata;
-use snips_nlu_ontology::{BuiltinEntityKind, Slot, SlotValue};
-use nlu_utils::string::normalize;
+use entity_parser::{CustomEntityParser, CustomEntity, BuiltinEntityParser};
+use errors::*;
+use models::nlu_engine::Entity;
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Slot, SlotValue};
 use utils::{EntityName, SlotName};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -14,13 +15,60 @@ pub struct InternalSlot {
     pub slot_name: SlotName,
 }
 
+pub fn resolve_builtin_slot(
+    internal_slot: InternalSlot,
+    builtin_entities: &Vec<BuiltinEntity>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
+) -> Result<Option<Slot>> {
+    let entity_kind = BuiltinEntityKind::from_identifier(&internal_slot.entity)?;
+    let opt_matching_entity = match builtin_entities
+        .iter()
+        .find(|entity|
+            entity.entity_kind == entity_kind && entity.range == internal_slot.char_range
+        ) {
+        Some(matching_entity) => Some(matching_entity.entity.clone()),
+        None => builtin_entity_parser
+            .extract_entities(&internal_slot.value, Some(&[entity_kind]), false)?
+            .pop()
+            .map(|builtin_entity| builtin_entity.entity)
+    };
+    Ok(opt_matching_entity.map(|entity| convert_to_builtin_slot(internal_slot, entity)))
+}
+
+pub fn resolve_custom_slot(
+    internal_slot: InternalSlot,
+    entity: &Entity,
+    custom_entities: &Vec<CustomEntity>,
+    custom_entity_parser: Arc<CustomEntityParser>,
+) -> Result<Option<Slot>> {
+    let opt_matching_entity = match custom_entities
+        .into_iter()
+        .find(|custom_entity|
+            custom_entity.entity_identifier == internal_slot.entity &&
+                custom_entity.range == internal_slot.char_range
+        ) {
+        Some(matching_entity) => Some(matching_entity.clone()),
+        None => custom_entity_parser
+            .extract_entities(&internal_slot.value, Some(&[internal_slot.entity.clone()]), true)?
+            .pop()
+    };
+    let resolved_slot = opt_matching_entity
+        .map(|matching_entity| Some(matching_entity.resolved_value))
+        .unwrap_or_else(||
+            if entity.automatically_extensible {
+                Some(internal_slot.value.clone())
+            } else {
+                None
+            })
+        .map(|resolved_value| convert_to_custom_slot(internal_slot, resolved_value));
+    Ok(resolved_slot)
+}
+
 fn convert_to_custom_slot(
     slot: InternalSlot,
-    opt_resolved_value: Option<String>,
+    resolved_value: String,
 ) -> Slot {
-    let value = opt_resolved_value
-        .map(|resolved_value| SlotValue::Custom(resolved_value.into()))
-        .unwrap_or_else(|| SlotValue::Custom(slot.value.clone().into()));
+    let value = SlotValue::Custom(resolved_value.into());
     Slot {
         raw_value: slot.value,
         value,
@@ -40,129 +88,238 @@ fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slot {
     }
 }
 
-pub fn resolve_slots(
-    text: &str,
-    slots: Vec<InternalSlot>,
-    dataset_metadata: &DatasetMetadata,
-    parser: &CachingBuiltinEntityParser,
-    filter_entity_kinds: Option<&[BuiltinEntityKind]>,
-) -> Vec<Slot> {
-    let builtin_entities = parser.extract_entities(text, filter_entity_kinds, false);
-    slots
-        .into_iter()
-        .filter_map(|slot| {
-            if let Ok(entity_kind) = BuiltinEntityKind::from_identifier(&slot.entity) {
-                builtin_entities
-                    .iter()
-                    .find(|entity| {
-                        entity.entity_kind == entity_kind && entity.range == slot.char_range
-                    })
-                    .map(|rustling_entity| Some(rustling_entity.entity.clone()))
-                    .unwrap_or({
-                        parser
-                            .extract_entities(&slot.value, Some(&[entity_kind]), false)
-                            .into_iter()
-                            .find(|rustling_entity| rustling_entity.entity_kind == entity_kind)
-                            .map(|rustling_entity| rustling_entity.entity)
-                    })
-                    .map(|matching_entity| convert_to_builtin_slot(slot, matching_entity))
-            } else {
-                dataset_metadata.entities.get(&slot.entity)
-                    .map(|entity|
-                        entity
-                            .utterances
-                            .get(&slot.value)
-                            .or(entity.utterances.get(&normalize(&slot.value)))
-                            .map(|reference_value|
-                                convert_to_custom_slot(slot.clone(), Some(reference_value.clone())))
-                            .or_else(|| if entity.automatically_extensible {
-                                Some(convert_to_custom_slot(slot, None))
-                            } else {
-                                None
-                            })
-                    )
-                    .unwrap()
-            }
-        })
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use snips_nlu_ontology::{AmountOfMoneyValue, Language, OrdinalValue, Precision};
-    use std::collections::HashMap;
+    use std::iter::FromIterator;
+    use snips_nlu_ontology::*;
     use models::nlu_engine::Entity;
+    use testutils::*;
 
     #[test]
-    fn resolve_slots_works() {
+    fn should_resolve_builtin_slot() {
         // Given
-        let text = "Send 5 dollars to the 10th subscriber";
-        let slots = vec![
-            InternalSlot {
+        let internal_slot = InternalSlot {
+            value: "8 dollars".to_string(),
+            char_range: 22..31,
+            slot_name: "amount".to_string(),
+            entity: "snips/amountOfMoney".to_string(),
+        };
+        let builtin_entities = vec![
+            BuiltinEntity {
                 value: "5 dollars".to_string(),
-                char_range: 5..14,
-                entity: "snips/amountOfMoney".to_string(),
-                slot_name: "amount".to_string(),
-            },
-            InternalSlot {
-                value: "10th".to_string(),
-                char_range: 22..26,
-                entity: "snips/ordinal".to_string(),
-                slot_name: "ranking".to_string(),
-            },
-            InternalSlot {
-                value: "subscriber".to_string(),
-                char_range: 27..37,
-                entity: "userType".to_string(),
-                slot_name: "userType".to_string(),
-            }
-        ];
-        let parser = CachingBuiltinEntityParser::new(Language::EN, 1000);
-        let entity = Entity {
-            automatically_extensible: true,
-            utterances: [("subscriber".to_string(), "member".to_string())].iter().cloned().collect(),
-        };
-        let entities = [("userType".to_string(), entity)].iter().cloned().collect();
-        let dataset_metadata = DatasetMetadata {
-            language_code: Language::EN.to_string(),
-            entities,
-            slot_name_mappings: HashMap::new(),
-        };
-
-        // When
-        let filter_entity_kinds = &[BuiltinEntityKind::AmountOfMoney, BuiltinEntityKind::Ordinal];
-        let actual_results = resolve_slots(
-            text, slots, &dataset_metadata, &parser, Some(filter_entity_kinds));
-
-        // Then
-        let expected_results = vec![
-            Slot {
-                raw_value: "5 dollars".to_string(),
-                value: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                range: 5..14,
+                entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
                     value: 5.0,
                     precision: Precision::Exact,
                     unit: Some("$".to_string()),
                 }),
-                range: Some(5..14),
-                entity: "snips/amountOfMoney".to_string(),
-                slot_name: "amount".to_string(),
+                entity_kind: BuiltinEntityKind::AmountOfMoney,
             },
-            Slot {
-                raw_value: "10th".to_string(),
-                value: SlotValue::Ordinal(OrdinalValue { value: 10 }),
-                range: Some(22..26),
-                entity: "snips/ordinal".to_string(),
-                slot_name: "ranking".to_string(),
-            },
-            Slot {
-                raw_value: "subscriber".to_string(),
-                value: SlotValue::Custom("member".to_string().into()),
-                range: Some(27..37),
-                entity: "userType".to_string(),
-                slot_name: "userType".to_string()
+            BuiltinEntity {
+                value: "8 dollars".to_string(),
+                range: 22..31,
+                entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                    value: 8.0,
+                    precision: Precision::Exact,
+                    unit: Some("$".to_string()),
+                }),
+                entity_kind: BuiltinEntityKind::AmountOfMoney,
             }
         ];
-        assert_eq!(expected_results, actual_results);
+        let mocked_entity_parser = Arc::new(MockedBuiltinEntityParser::from_iter(vec![]));
+
+        // When
+        let resolved_slot = resolve_builtin_slot(
+            internal_slot, &builtin_entities, mocked_entity_parser).unwrap();
+
+        // Then
+        let expected_result = Some(Slot {
+            raw_value: "8 dollars".to_string(),
+            value: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                value: 8.0,
+                precision: Precision::Exact,
+                unit: Some("$".to_string()),
+            }),
+            range: Some(22..31),
+            entity: "snips/amountOfMoney".to_string(),
+            slot_name: "amount".to_string(),
+        });
+        assert_eq!(expected_result, resolved_slot);
+    }
+
+    #[test]
+    fn should_resolve_builtin_slot_when_no_entities_found_on_whole_input() {
+        // Given
+        let internal_slot = InternalSlot {
+            value: "5 dollars".to_string(),
+            char_range: 5..14,
+            slot_name: "amount".to_string(),
+            entity: "snips/amountOfMoney".to_string(),
+        };
+        let builtin_entities = vec![];
+        let mocked_entity_parser = Arc::new(MockedBuiltinEntityParser::from_iter(
+            vec![(
+                "5 dollars".to_string(),
+                vec![
+                    BuiltinEntity {
+                        value: "5 dollars".to_string(),
+                        range: 0..9,
+                        entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                            value: 5.0,
+                            precision: Precision::Exact,
+                            unit: Some("$".to_string()),
+                        }),
+                        entity_kind: BuiltinEntityKind::AmountOfMoney,
+                    }]
+            )]));
+
+        // When
+        let resolved_slot = resolve_builtin_slot(
+            internal_slot, &builtin_entities, mocked_entity_parser).unwrap();
+
+        // Then
+        let expected_result = Some(Slot {
+            raw_value: "5 dollars".to_string(),
+            value: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                value: 5.0,
+                precision: Precision::Exact,
+                unit: Some("$".to_string()),
+            }),
+            range: Some(5..14),
+            entity: "snips/amountOfMoney".to_string(),
+            slot_name: "amount".to_string(),
+        });
+        assert_eq!(expected_result, resolved_slot);
+    }
+
+    #[test]
+    fn should_resolve_custom_slot() {
+        // Given
+        let entity = Entity { automatically_extensible: false };
+        let internal_slot = InternalSlot {
+            value: "subscriber".to_string(),
+            char_range: 27..37,
+            entity: "userType".to_string(),
+            slot_name: "userType".to_string(),
+        };
+        let custom_entities = vec![
+            CustomEntity {
+                value: "publisher".to_string(),
+                range: 7..16,
+                resolved_value: "Publisher".to_string(),
+                entity_identifier: "userType".to_string(),
+            },
+            CustomEntity {
+                value: "subscriber".to_string(),
+                range: 27..37,
+                resolved_value: "Subscriber".to_string(),
+                entity_identifier: "userType".to_string(),
+            }
+        ];
+        let mocked_entity_parser = Arc::new(MockedCustomEntityParser::from_iter(vec![]));
+
+        // When
+        let resolved_slot = resolve_custom_slot(
+            internal_slot, &entity, &custom_entities, mocked_entity_parser).unwrap();
+
+        // Then
+        let expected_result = Some(Slot {
+            raw_value: "subscriber".to_string(),
+            value: SlotValue::Custom("Subscriber".into()),
+            range: Some(27..37),
+            entity: "userType".to_string(),
+            slot_name: "userType".to_string(),
+        });
+        assert_eq!(expected_result, resolved_slot);
+    }
+
+    #[test]
+    fn should_resolve_custom_slot_when_no_entities_found_on_whole_input() {
+        // Given
+        let entity = Entity { automatically_extensible: false };
+        let internal_slot = InternalSlot {
+            value: "subscriber".to_string(),
+            char_range: 27..37,
+            entity: "userType".to_string(),
+            slot_name: "userType".to_string(),
+        };
+        let custom_entities = vec![];
+        let mocked_entity_parser = Arc::new(MockedCustomEntityParser::from_iter(
+            vec![(
+                "subscriber".to_string(),
+                vec![
+                    CustomEntity {
+                        value: "subscriber".to_string(),
+                        range: 0..10,
+                        resolved_value: "Subscriber".to_string(),
+                        entity_identifier: "userType".to_string(),
+                    }
+                ]
+            )]));
+
+        // When
+        let resolved_slot = resolve_custom_slot(
+            internal_slot, &entity, &custom_entities, mocked_entity_parser).unwrap();
+
+        // Then
+        let expected_result = Some(Slot {
+            raw_value: "subscriber".to_string(),
+            value: SlotValue::Custom("Subscriber".into()),
+            range: Some(27..37),
+            entity: "userType".to_string(),
+            slot_name: "userType".to_string(),
+        });
+        assert_eq!(expected_result, resolved_slot);
+    }
+
+    #[test]
+    fn should_resolve_custom_slot_when_automatically_extensible() {
+        // Given
+        let entity = Entity { automatically_extensible: true };
+        let internal_slot = InternalSlot {
+            value: "subscriber".to_string(),
+            char_range: 27..37,
+            entity: "userType".to_string(),
+            slot_name: "userType".to_string(),
+        };
+        let custom_entities = vec![];
+        let mocked_entity_parser = Arc::new(MockedCustomEntityParser::from_iter(vec![]));
+
+        // When
+        let resolved_slot = resolve_custom_slot(
+            internal_slot, &entity, &custom_entities, mocked_entity_parser).unwrap();
+
+        // Then
+        let expected_result = Some(Slot {
+            raw_value: "subscriber".to_string(),
+            value: SlotValue::Custom("subscriber".into()),
+            range: Some(27..37),
+            entity: "userType".to_string(),
+            slot_name: "userType".to_string(),
+        });
+        assert_eq!(expected_result, resolved_slot);
+    }
+
+    #[test]
+    fn should_not_resolve_custom_slot_when_not_automatically_extensible() {
+        // Given
+        let entity = Entity { automatically_extensible: false };
+        let internal_slot = InternalSlot {
+            value: "subscriber".to_string(),
+            char_range: 27..37,
+            entity: "userType".to_string(),
+            slot_name: "userType".to_string(),
+        };
+        let custom_entities = vec![];
+        let mocked_entity_parser = Arc::new(MockedCustomEntityParser::from_iter(vec![]));
+
+        // When
+        let resolved_slot = resolve_custom_slot(
+            internal_slot, &entity, &custom_entities, mocked_entity_parser).unwrap();
+
+        // Then
+        let expected_result = None;
+        assert_eq!(expected_result, resolved_slot);
     }
 }

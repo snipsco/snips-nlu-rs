@@ -4,12 +4,12 @@ use std::iter::FromIterator;
 use std::ops::Range;
 use std::path::Path;
 use std::str::FromStr;
-use std::sync;
+use std::sync::{Arc, Mutex};
 
 use crfsuite::Tagger as CRFSuiteTagger;
 use itertools::Itertools;
 
-use builtin_entity_parsing::{BuiltinEntityParserFactory, CachingBuiltinEntityParser};
+use entity_parser::BuiltinEntityParser;
 use errors::*;
 use failure::ResultExt;
 use language::FromLanguage;
@@ -18,27 +18,29 @@ use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::substring_with_char_range;
 use nlu_utils::token::{tokenize, Token};
+use resources::SharedResources;
 use serde_json;
 use slot_filler::crf_utils::*;
 use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
 use slot_filler::SlotFiller;
 use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
-use utils::FromPath;
-
 use utils::{EntityName, SlotName};
 
 pub struct CRFSlotFiller {
     language: Language,
     tagging_scheme: TaggingScheme,
-    tagger: Option<sync::Mutex<CRFSuiteTagger>>,
-    feature_processor: ProbabilisticFeatureProcessor,
+    tagger: Option<Mutex<CRFSuiteTagger>>,
+    feature_processor: Option<ProbabilisticFeatureProcessor>,
     slot_name_mapping: HashMap<SlotName, EntityName>,
-    builtin_entity_parser: sync::Arc<CachingBuiltinEntityParser>,
+    shared_resources: Arc<SharedResources>,
 }
 
-impl FromPath for CRFSlotFiller {
-    fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
+impl CRFSlotFiller {
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
         let slot_filler_model_path = path.as_ref().join("slot_filler.json");
         let model_file = fs::File::open(&slot_filler_model_path)
             .with_context(|_| format!("Cannot open CRFSlotFiller file '{:?}'",
@@ -48,19 +50,18 @@ impl FromPath for CRFSlotFiller {
 
         let tagging_scheme = TaggingScheme::from_u8(model.config.tagging_scheme)?;
         let slot_name_mapping = model.slot_name_mapping;
-        let feature_processor =
-            ProbabilisticFeatureProcessor::new(&model.config.feature_factory_configs)?;
-        let tagger = if let Some(crf_model_file) = model.crf_model_file.as_ref() {
+        let (tagger, feature_processor) = if let Some(crf_model_file) = model.crf_model_file.as_ref() {
             let crf_path = path.as_ref().join(crf_model_file);
             let tagger = CRFSuiteTagger::create_from_file(&crf_path)
                 .with_context(|_| format!("Cannot create CRFSuiteTagger from file '{:?}'",
                                           &crf_path))?;
-            Some(sync::Mutex::new(tagger))
+            let feature_processor = ProbabilisticFeatureProcessor::new(
+                &model.config.feature_factory_configs, shared_resources.clone())?;
+            (Some(Mutex::new(tagger)), Some(feature_processor))
         } else {
-            None
+            (None, None)
         };
         let language = Language::from_str(&model.language_code)?;
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(language);
 
         Ok(Self {
             language,
@@ -68,7 +69,7 @@ impl FromPath for CRFSlotFiller {
             tagger,
             feature_processor,
             slot_name_mapping,
-            builtin_entity_parser,
+            shared_resources,
         })
     }
 }
@@ -79,12 +80,12 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_slots(&self, text: &str) -> Result<Vec<InternalSlot>> {
-        if let Some(ref tagger) = self.tagger {
+        if let (Some(ref tagger), Some(ref feature_processor)) = (self.tagger.as_ref(), self.feature_processor.as_ref()) {
             let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
             if tokens.is_empty() {
                 return Ok(vec![]);
             }
-            let features = self.feature_processor.compute_features(&&*tokens);
+            let features = feature_processor.compute_features(&&*tokens)?;
             let tags = tagger
                 .lock()
                 .map_err(|e| format_err!("Poisonous mutex: {}", e))?
@@ -131,7 +132,7 @@ impl SlotFiller for CRFSlotFiller {
                 &updated_tags,
                 self,
                 &self.slot_name_mapping,
-                &self.builtin_entity_parser,
+                self.shared_resources.builtin_entity_parser.clone(),
                 &builtin_slots,
             )?;
             Ok(augmented_slots)
@@ -141,8 +142,8 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
-        if let Some(ref tagger) = self.tagger {
-            let features = self.feature_processor.compute_features(&tokens);
+        if let (Some(ref tagger), Some(ref feature_processor)) = (self.tagger.as_ref(), self.feature_processor.as_ref()) {
+            let features = feature_processor.compute_features(&tokens)?;
             let tagger = tagger
                 .lock()
                 .map_err(|e| format_err!("poisonous mutex: {}", e))?;
@@ -176,12 +177,16 @@ impl SlotFiller for CRFSlotFiller {
 }
 
 impl CRFSlotFiller {
-    pub fn compute_features(&self, text: &str) -> Vec<Vec<(String, String)>> {
+    pub fn compute_features(&self, text: &str) -> Result<Vec<Vec<(String, String)>>> {
         let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
         if tokens.is_empty() {
-            return vec![];
+            return Ok(vec![]);
         };
-        self.feature_processor.compute_features(&&*tokens)
+        Ok(if let Some(feature_processor) = self.feature_processor.as_ref() {
+            feature_processor.compute_features(&&*tokens)?
+        } else {
+            tokens.iter().map(|_| vec![]).collect()
+        })
     }
 }
 
@@ -220,14 +225,17 @@ fn augment_slots(
     tags: &[String],
     slot_filler: &SlotFiller,
     intent_slots_mapping: &HashMap<SlotName, EntityName>,
-    builtin_entity_parser: &sync::Arc<CachingBuiltinEntityParser>,
+    builtin_entity_parser: Arc<BuiltinEntityParser>,
     missing_slots: &[(String, BuiltinEntityKind)],
 ) -> Result<Vec<InternalSlot>> {
     let builtin_entities = missing_slots
         .iter()
         .map(|&(_, kind)| kind)
         .unique()
-        .flat_map(|kind| builtin_entity_parser.extract_entities(text, Some(&[kind]), true))
+        .map(|kind| builtin_entity_parser.extract_entities(text, Some(&[kind]), true))
+        .collect::<Result<Vec<Vec<BuiltinEntity>>>>()?
+        .into_iter()
+        .flat_map(|entities| entities)
         .collect();
     let filtered_entities = filter_overlapping_builtins(
         builtin_entities,
@@ -386,9 +394,8 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 mod tests {
     use super::*;
     use nlu_utils::language::Language as NluUtilsLanguage;
-    use snips_nlu_ontology::{Grain, InstantTimeValue, Language, NumberValue, Precision, SlotValue};
-    use utils::file_path;
-    use resources::loading::load_resources;
+    use snips_nlu_ontology::*;
+    use testutils::*;
 
     #[derive(Debug, Fail)]
     pub enum TestError {
@@ -432,28 +439,21 @@ mod tests {
         }
     }
 
-    impl FromPath for TestSlotFiller {
-        fn from_path<P: AsRef<Path>>(_path: P) -> Result<Self> {
-            unimplemented!()
-        }
-    }
-
     #[test]
     fn from_path_works() {
         // Given
         let trained_engine_path = file_path("tests")
             .join("models")
-            .join("trained_engine");
+            .join("nlu_engine");
 
         let slot_filler_path = trained_engine_path
             .join("probabilistic_intent_parser")
-            .join("slot_filler_MakeCoffee");
+            .join("slot_filler_0");
 
-        let resources_path = trained_engine_path.join("resources");
-        load_resources(resources_path).unwrap();
+        let resources = load_shared_resources_from_engine_dir(trained_engine_path).unwrap();
 
         // When
-        let slot_filler = CRFSlotFiller::from_path(slot_filler_path).unwrap();
+        let slot_filler = CRFSlotFiller::from_path(slot_filler_path, resources).unwrap();
         let slots = slot_filler.get_slots("make me two cups of coffee").unwrap();
 
         // Then
@@ -462,7 +462,7 @@ mod tests {
                 value: "two".to_string(),
                 char_range: 8..11,
                 entity: "snips/number".to_string(),
-                slot_name: "number_of_cups".to_string()
+                slot_name: "number_of_cups".to_string(),
             }
         ];
         assert_eq!(expected_slots, slots);
@@ -573,7 +573,26 @@ mod tests {
             "start_date".to_string() => "snips/datetime".to_string(),
             "end_date".to_string() => "snips/datetime".to_string(),
         };
-        let builtin_entity_parser = BuiltinEntityParserFactory::get(Language::EN);
+
+        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    BuiltinEntity {
+                        value: "before 10 pm".to_string(),
+                        range: 17..28,
+                        entity_kind: BuiltinEntityKind::Time,
+                        entity: SlotValue::TimeInterval(TimeIntervalValue { from: None, to: None }),
+                    },
+                    BuiltinEntity {
+                        value: "after 8 pm".to_string(),
+                        range: 33..42,
+                        entity_kind: BuiltinEntityKind::Time,
+                        entity: SlotValue::TimeInterval(TimeIntervalValue { from: None, to: None }),
+                    }
+                ]
+            )]
+        );
         let missing_slots = vec![
             ("start_date".to_string(), BuiltinEntityKind::Time),
             ("end_date".to_string(), BuiltinEntityKind::Time),
@@ -586,7 +605,7 @@ mod tests {
             &tags,
             &slot_filler,
             &intent_slots_mapping,
-            &builtin_entity_parser,
+            Arc::new(mocked_builtin_parser),
             &missing_slots,
         ).unwrap();
 

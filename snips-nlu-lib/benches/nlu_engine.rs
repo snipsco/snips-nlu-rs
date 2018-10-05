@@ -29,7 +29,6 @@ fn load_nlu_engine() -> SnipsNluEngine {
 
 fn nlu_loading(b: &mut Bencher) {
     b.iter(|| {
-        clear_resources();
         let _ = load_nlu_engine();
     });
 }
@@ -41,7 +40,6 @@ fn nlu_parsing(b: &mut Bencher) {
         .unwrap();
 
     b.iter(|| {
-        BuiltinEntityParserFactory::clear();
         let _ = nlu_engine.parse(&sentence, None);
     });
 }
