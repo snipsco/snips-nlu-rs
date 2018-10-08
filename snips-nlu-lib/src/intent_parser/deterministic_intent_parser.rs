@@ -5,22 +5,30 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use regex::{Regex, RegexBuilder};
-use serde_json;
-
-use errors::*;
 use failure::ResultExt;
-use models::DeterministicParserModel;
-use intent_parser::{internal_parsing_result, IntentParser, InternalParsingResult};
-use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
+use regex::{Regex, RegexBuilder};
+use serde_json;
+use snips_nlu_ontology::Language;
+
+use errors::*;
+use intent_parser::{IntentParser, internal_parsing_result, InternalParsingResult};
+use language::FromLanguage;
+use models::DeterministicParserModel;
 use resources::SharedResources;
 use slot_utils::*;
-use snips_nlu_ontology::{BuiltinEntity, Language};
+
+
 use utils::{deduplicate_overlapping_items, EntityName, IntentName, SlotName};
+
+#[derive(Debug, Clone, PartialEq)]
+struct MatchedEntity {
+    range: Range<usize>,
+    entity_name: String,
+}
 
 pub struct DeterministicIntentParser {
     language: Language,
@@ -68,7 +76,23 @@ impl IntentParser for DeterministicIntentParser {
         let builtin_entities = self.shared_resources
             .builtin_entity_parser
             .extract_entities(input, None, true)?;
-        let (ranges_mapping, formatted_input) = replace_builtin_entities(input, builtin_entities);
+        let custom_entities = self.shared_resources
+            .custom_entity_parser
+            .extract_entities(input, None, true)?;
+
+        let mut matched_entities: Vec<MatchedEntity> = builtin_entities
+            .into_iter()
+            .map(|ent|
+                MatchedEntity { entity_name: ent.entity_kind.identifier().to_string(), range: ent.range })
+            .collect();
+        let custom_matches: Vec<MatchedEntity> = custom_entities
+            .into_iter()
+            .map(|ent|
+                MatchedEntity { entity_name: ent.entity_identifier, range: ent.range })
+            .collect();
+        matched_entities.extend(custom_matches);
+
+        let (ranges_mapping, formatted_input) = replace_entities(input, matched_entities);
         let language = NluUtilsLanguage::from_language(self.language);
         let cleaned_input = replace_tokenized_out_characters(input, language, ' ');
         let cleaned_formatted_input =
@@ -199,43 +223,43 @@ fn deduplicate_overlapping_slots(
     deduped
 }
 
-fn deduplicate_overlapping_entities(entities: Vec<BuiltinEntity>) -> Vec<BuiltinEntity> {
-    let entities_overlap = |lhs_entity: &BuiltinEntity, rhs_entity: &BuiltinEntity| {
+fn deduplicate_overlapping_entities(entities: Vec<MatchedEntity>) -> Vec<MatchedEntity> {
+    let entities_overlap = |lhs_entity: &MatchedEntity, rhs_entity: &MatchedEntity| {
         ranges_overlap(&lhs_entity.range, &rhs_entity.range)
     };
-    let entity_sort_key = |entity: &BuiltinEntity| -(entity.range.clone().count() as i32);
+    let entity_sort_key = |entity: &MatchedEntity| -(entity.range.clone().count() as i32);
     let mut deduped = deduplicate_overlapping_items(entities, entities_overlap, entity_sort_key);
     deduped.sort_by_key(|entity| entity.range.start);
     deduped
 }
 
-fn replace_builtin_entities(
+fn replace_entities(
     text: &str,
-    builtin_entities: Vec<BuiltinEntity>,
+    matched_entities: Vec<MatchedEntity>,
 ) -> (HashMap<Range<usize>, Range<usize>>, String) {
-    if builtin_entities.is_empty() {
+    if matched_entities.is_empty() {
         return (HashMap::new(), text.to_string());
     }
 
-    let mut dedup_entities = deduplicate_overlapping_entities(builtin_entities);
-    dedup_entities.sort_by_key(|entity| entity.range.start);
+    let mut dedup_matches = deduplicate_overlapping_entities(matched_entities);
+    dedup_matches.sort_by_key(|entity| entity.range.start);
 
     let mut range_mapping: HashMap<Range<usize>, Range<usize>> = HashMap::new();
     let mut processed_text = "".to_string();
     let mut offset = 0;
     let mut current_ix = 0;
 
-    for entity in dedup_entities {
-        let range_start = (entity.range.start as i16 + offset) as usize;
+    for matched_entity in dedup_matches {
+        let range_start = (matched_entity.range.start as i16 + offset) as usize;
         let prefix_text =
-            substring_with_char_range(text.to_string(), &(current_ix..entity.range.start));
-        let entity_text = get_builtin_entity_name(entity.entity_kind.identifier());
+            substring_with_char_range(text.to_string(), &(current_ix..matched_entity.range.start));
+        let entity_text = get_entity_placeholder(&*matched_entity.entity_name);
         processed_text = format!("{}{}{}", processed_text, prefix_text, entity_text);
-        offset += entity_text.chars().count() as i16 - entity.range.clone().count() as i16;
-        let range_end = (entity.range.end as i16 + offset) as usize;
+        offset += entity_text.chars().count() as i16 - matched_entity.range.clone().count() as i16;
+        let range_end = (matched_entity.range.end as i16 + offset) as usize;
         let new_range = range_start..range_end;
-        current_ix = entity.range.end;
-        range_mapping.insert(new_range, entity.range);
+        current_ix = matched_entity.range.end;
+        range_mapping.insert(new_range, matched_entity.range);
     }
 
     processed_text = format!(
@@ -246,7 +270,7 @@ fn replace_builtin_entities(
     (range_mapping, processed_text)
 }
 
-fn get_builtin_entity_name(entity_label: &str) -> String {
+fn get_entity_placeholder(entity_label: &str) -> String {
     // Here we don't need language specific tokenization, we just want to generate a feature name, that's why we use EN
     let normalized_entity_label = tokenize_light(entity_label, NluUtilsLanguage::EN)
         .join("")
@@ -295,30 +319,34 @@ fn get_range_shift(
 mod tests {
     use std::collections::HashMap;
     use std::iter::FromIterator;
+    use std::sync::Arc;
+
     use super::*;
 
     use models::DeterministicParserModel;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::*;
+    use snips_nlu_ontology_parsers::gazetteer_entity_parser::EntityValue;
     use testutils::*;
+    use entity_parser::custom_entity_parser::{CachingCustomEntityParser, CachingCustomEntityParserBuilder};
 
     fn test_configuration() -> DeterministicParserModel {
         DeterministicParserModel {
             language_code: "en".to_string(),
             patterns: hashmap![
                 "dummy_intent_1".to_string() => vec![
-                    r"^This is a (?P<group_1>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query with another (?P<group_2>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)$".to_string(),
-                    r"^(?P<group_5>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1)$".to_string(),
-                    r"^This is another (?P<group_3>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.) query.$".to_string(),
-                    r"^This is another über (?P<group_3>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.) query.$".to_string(),
-                    r"^This is another (?P<group_4>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)?$".to_string(),
+                    r"^This is a (?P<group_1>%DUMMY_ENTITY_1%) query with another (?P<group_2>%DUMMY_ENTITY_2%)$".to_string(),
+                    r"^(?P<group_5>%DUMMY_ENTITY_1%)$".to_string(),
+                    r"^This is another (?P<group_3>%DUMMY_ENTITY_2%) query.$".to_string(),
+                    r"^This is another über (?P<group_3>%DUMMY_ENTITY_2%) query.$".to_string(),
+                    r"^This is another (?P<group_4>%DUMMY_ENTITY_2%)?$".to_string(),
                 ],
                 "dummy_intent_2".to_string() => vec![
-                    r"^This is a (?P<group_0>2 dummy a|dummy 2a|dummy_bb|dummy_a|dummy a|dummy_b|dummy b|dummy\d|dummy_3|dummy_1) query from another intent$".to_string()
+                    r"^This is a (?P<group_0>%DUMMY_ENTITY_1%) query from another intent$".to_string()
                 ],
                 "dummy_intent_3".to_string() => vec![
                     r"^Send (?P<group_6>%SNIPSAMOUNTOFMONEY%) to john$".to_string(),
-                    r"^Send (?P<group_6>%SNIPSAMOUNTOFMONEY%) to john at (?P<group_7>dummy_2_again|dummy_cc|dummy_c|dummy c|dummy_2|3p\.m\.)$".to_string()
+                    r"^Send (?P<group_6>%SNIPSAMOUNTOFMONEY%) to john at (?P<group_7>%DUMMY_ENTITY_2%)$".to_string()
                 ],
             ],
             group_names_to_slot_names: hashmap![
@@ -346,6 +374,31 @@ mod tests {
                 ],
             ],
         }
+    }
+
+    fn mocked_custom_entity_parser() -> CachingCustomEntityParser {
+        let mut builder = CachingCustomEntityParserBuilder::new(NluUtilsLanguage::EN, 10);
+
+        let data = vec![
+            ("dummy_entity_1", "dummy_a"),
+            ("dummy_entity_2", "dummy_c"),
+            ("dummy_entity_2", "dummy_cc"),
+            ("dummy_entity_2", "dummy c"),
+            ("dummy_entity_2", "dummy’c"),
+            ("dummy_entity_1", "dummy_a"),
+        ];
+
+        for (entity, entity_value) in data {
+            let entity_value = EntityValue {
+                raw_value: entity_value.to_string(),
+                resolved_value: entity_value.to_string()
+            };
+            builder = builder.add_value(
+                entity.to_string(),
+                entity_value,
+            );
+        }
+        builder.build().unwrap()
     }
 
     #[test]
@@ -380,7 +433,9 @@ mod tests {
     #[test]
     fn should_get_intent() {
         // Given
-        let shared_resources = SharedResourcesBuilder::default().build();
+        let shared_resources = SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser())
+            .build();
         let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
@@ -437,7 +492,9 @@ mod tests {
     #[test]
     fn should_get_slots() {
         // Given
-        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let shared_resources = Arc::new(SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser())
+            .build());
         let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "this is a dummy_a query with another dummy_c";
 
@@ -465,7 +522,9 @@ mod tests {
     #[test]
     fn should_get_slots_with_non_ascii_chars() {
         // Given
-        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let shared_resources = Arc::new(SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser())
+            .build());
         let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "This is another über dummy_cc query!";
 
@@ -507,6 +566,7 @@ mod tests {
         );
         let shared_resources = SharedResourcesBuilder::default()
             .builtin_entity_parser(mocked_builtin_entity_parser)
+            .custom_entity_parser(mocked_custom_entity_parser())
             .build();
         let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
 
@@ -534,7 +594,9 @@ mod tests {
     #[test]
     fn should_get_slots_with_special_tokenized_out_characters() {
         // Given
-        let shared_resources = Arc::new(SharedResourcesBuilder::default().build());
+        let shared_resources = Arc::new(SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser())
+            .build());
         let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
         let text = "this is another dummy’c";
 
@@ -606,32 +668,32 @@ mod tests {
     }
 
     #[test]
-    fn should_replace_builtin_entities() {
+    fn should_replace_entities() {
         // Given
         let text = "the third album of Blink 182 is great";
-        let builtin_entities = vec![
-            BuiltinEntity {
-                value: "the third".to_string(),
+        let entities = vec![
+            MatchedEntity {
                 range: 0..9,
-                entity: SlotValue::Ordinal(OrdinalValue { value: 3 }),
-                entity_kind: BuiltinEntityKind::Ordinal,
+                entity_name: BuiltinEntityKind::Ordinal
+                    .identifier()
+                    .to_string(),
             },
-            BuiltinEntity {
-                value: "182".to_string(),
+            MatchedEntity {
                 range: 25..28,
-                entity: SlotValue::Number(NumberValue { value: 182.0 }),
-                entity_kind: BuiltinEntityKind::Number,
+                entity_name: BuiltinEntityKind::Number
+                    .identifier()
+                    .to_string(),
             },
-            BuiltinEntity {
-                value: "Blink 182".to_string(),
+            MatchedEntity {
                 range: 19..28,
-                entity: SlotValue::MusicArtist(StringValue { value: "Blink 182".to_string() }),
-                entity_kind: BuiltinEntityKind::MusicArtist,
+                entity_name: BuiltinEntityKind::MusicArtist
+                    .identifier()
+                    .to_string(),
             },
         ];
 
         // When
-        let (range_mapping, formatted_text) = replace_builtin_entities(text, builtin_entities);
+        let (range_mapping, formatted_text) = replace_entities(text, entities);
 
         // Then
         let expected_mapping = HashMap::from_iter(vec![(0..14, 0..9), (24..42, 19..28)]);
@@ -647,7 +709,7 @@ mod tests {
         let entity_label = "snips/datetime";
 
         // When
-        let formatted_label = get_builtin_entity_name(entity_label);
+        let formatted_label = get_entity_placeholder(entity_label);
 
         // Then
         assert_eq!("%SNIPSDATETIME%", &formatted_label)
