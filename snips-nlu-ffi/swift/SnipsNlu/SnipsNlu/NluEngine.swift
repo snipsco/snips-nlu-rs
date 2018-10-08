@@ -61,6 +61,9 @@ public enum SlotValue {
     case temperature(TemperatureValue)
     case duration(DurationValue)
     case percentage(PercentageValue)
+    case musicAlbum(String)
+    case musicArtist(String)
+    case musicTrack(String)
 
     init(cSlotValue: CSlotValue) throws {
         switch cSlotValue.value_type {
@@ -99,6 +102,18 @@ public enum SlotValue {
         case SNIPS_SLOT_VALUE_TYPE_PERCENTAGE:
             let x = cSlotValue.value.assumingMemoryBound(to: CDouble.self)
             self = .percentage(x.pointee)
+
+        case SNIPS_SLOT_VALUE_TYPE_MUSICALBUM:
+            let x = cSlotValue.value.assumingMemoryBound(to: CChar.self)
+            self = .musicAlbum(String(cString: x))
+
+        case SNIPS_SLOT_VALUE_TYPE_MUSICARTIST:
+            let x = cSlotValue.value.assumingMemoryBound(to: CChar.self)
+            self = .musicArtist(String(cString: x))
+
+        case SNIPS_SLOT_VALUE_TYPE_MUSICTRACK:
+            let x = cSlotValue.value.assumingMemoryBound(to: CChar.self)
+            self = .musicTrack(String(cString: x))
 
         default: throw NluEngineError(message: "Internal error: Bad type conversion")
         }
