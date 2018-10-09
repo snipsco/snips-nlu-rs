@@ -12,7 +12,7 @@ use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix
 use nlu_utils::token::{tokenize, tokenize_light};
 use regex::{Regex, RegexBuilder};
 use serde_json;
-use snips_nlu_ontology::Language;
+use snips_nlu_ontology::{BuiltinEntity, Language};
 
 use errors::*;
 use intent_parser::{IntentParser, internal_parsing_result, InternalParsingResult};
@@ -20,15 +20,9 @@ use language::FromLanguage;
 use models::DeterministicParserModel;
 use resources::SharedResources;
 use slot_utils::*;
-
-
 use utils::{deduplicate_overlapping_items, EntityName, IntentName, SlotName};
+use entity_parser::custom_entity_parser::CustomEntity;
 
-#[derive(Debug, Clone, PartialEq)]
-struct MatchedEntity {
-    range: Range<usize>,
-    entity_name: String,
-}
 
 pub struct DeterministicIntentParser {
     language: Language,
@@ -75,22 +69,19 @@ impl IntentParser for DeterministicIntentParser {
     ) -> Result<Option<InternalParsingResult>> {
         let builtin_entities = self.shared_resources
             .builtin_entity_parser
-            .extract_entities(input, None, true)?;
+            .extract_entities(input, None, true)?
+            .into_iter()
+            .map(|entity| entity.into());
+
         let custom_entities = self.shared_resources
             .custom_entity_parser
-            .extract_entities(input, None, true)?;
+            .extract_entities(input, None)?
+            .into_iter()
+            .map(|entity| entity.into());
 
-        let mut matched_entities: Vec<MatchedEntity> = builtin_entities
-            .into_iter()
-            .map(|ent|
-                MatchedEntity { entity_name: ent.entity_kind.identifier().to_string(), range: ent.range })
-            .collect();
-        let custom_matches: Vec<MatchedEntity> = custom_entities
-            .into_iter()
-            .map(|ent|
-                MatchedEntity { entity_name: ent.entity_identifier, range: ent.range })
-            .collect();
-        matched_entities.extend(custom_matches);
+        let mut matched_entities: Vec<MatchedEntity> = vec![];
+        matched_entities.extend(builtin_entities);
+        matched_entities.extend(custom_entities);
 
         let (ranges_mapping, formatted_input) = replace_entities(input, matched_entities);
         let language = NluUtilsLanguage::from_language(self.language);
@@ -186,6 +177,30 @@ impl DeterministicIntentParser {
         }
 
         None
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+struct MatchedEntity {
+    range: Range<usize>,
+    entity_name: String,
+}
+
+impl Into<MatchedEntity> for BuiltinEntity {
+    fn into(self) -> MatchedEntity {
+        MatchedEntity {
+            range: self.range,
+            entity_name: self.entity_kind.identifier().to_string()
+        }
+    }
+}
+
+impl Into<MatchedEntity> for CustomEntity {
+    fn into(self) -> MatchedEntity {
+        MatchedEntity {
+            range: self.range,
+            entity_name: self.entity_identifier
+        }
     }
 }
 
@@ -326,9 +341,7 @@ mod tests {
     use models::DeterministicParserModel;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::*;
-    use snips_nlu_ontology_parsers::gazetteer_entity_parser::EntityValue;
     use testutils::*;
-    use entity_parser::custom_entity_parser::{CachingCustomEntityParser, CachingCustomEntityParserBuilder};
 
     fn test_configuration() -> DeterministicParserModel {
         DeterministicParserModel {
@@ -376,31 +389,6 @@ mod tests {
         }
     }
 
-    fn mocked_custom_entity_parser() -> CachingCustomEntityParser {
-        let mut builder = CachingCustomEntityParserBuilder::new(NluUtilsLanguage::EN, 10);
-
-        let data = vec![
-            ("dummy_entity_1", "dummy_a"),
-            ("dummy_entity_2", "dummy_c"),
-            ("dummy_entity_2", "dummy_cc"),
-            ("dummy_entity_2", "dummy c"),
-            ("dummy_entity_2", "dummy’c"),
-            ("dummy_entity_1", "dummy_a"),
-        ];
-
-        for (entity, entity_value) in data {
-            let entity_value = EntityValue {
-                raw_value: entity_value.to_string(),
-                resolved_value: entity_value.to_string()
-            };
-            builder = builder.add_value(
-                entity.to_string(),
-                entity_value,
-            );
-        }
-        builder.build().unwrap()
-    }
-
     #[test]
     fn from_path_works() {
         // Given
@@ -433,11 +421,30 @@ mod tests {
     #[test]
     fn should_get_intent() {
         // Given
+        let text = "this is a dummy_a query with another dummy_c";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    CustomEntity {
+                        value: "dummy_a".to_string(),
+                        resolved_value: "dummy_a".to_string(),
+                        range: 10..17,
+                        entity_identifier: "dummy_entity_1".to_string()
+                    },
+                    CustomEntity {
+                        value: "dummy_c".to_string(),
+                        resolved_value: "dummy_c".to_string(),
+                        range: 37..44,
+                        entity_identifier: "dummy_entity_2".to_string()
+                    }
+                ]
+            )]
+        );
         let shared_resources = SharedResourcesBuilder::default()
-            .custom_entity_parser(mocked_custom_entity_parser())
+            .custom_entity_parser(mocked_custom_entity_parser)
             .build();
         let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
-        let text = "this is a dummy_a query with another dummy_c";
 
         // When
         let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
@@ -492,11 +499,30 @@ mod tests {
     #[test]
     fn should_get_slots() {
         // Given
+        let text = "this is a dummy_a query with another dummy_c";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    CustomEntity {
+                        value: "dummy_a".to_string(),
+                        resolved_value: "dummy_a".to_string(),
+                        range: 10..17,
+                        entity_identifier: "dummy_entity_1".to_string()
+                    },
+                    CustomEntity {
+                        value: "dummy_c".to_string(),
+                        resolved_value: "dummy_c".to_string(),
+                        range: 37..44,
+                        entity_identifier: "dummy_entity_2".to_string()
+                    }
+                ]
+            )]
+        );
         let shared_resources = Arc::new(SharedResourcesBuilder::default()
-            .custom_entity_parser(mocked_custom_entity_parser())
+            .custom_entity_parser(mocked_custom_entity_parser)
             .build());
         let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
-        let text = "this is a dummy_a query with another dummy_c";
 
         // When
         let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
@@ -522,11 +548,24 @@ mod tests {
     #[test]
     fn should_get_slots_with_non_ascii_chars() {
         // Given
+        let text = "This is another über dummy_cc query!";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    CustomEntity {
+                        value: "dummy_cc".to_string(),
+                        resolved_value: "dummy_cc".to_string(),
+                        range: 21..29,
+                        entity_identifier: "dummy_entity_2".to_string()
+                    }
+                ]
+            )]
+        );
         let shared_resources = Arc::new(SharedResourcesBuilder::default()
-            .custom_entity_parser(mocked_custom_entity_parser())
+            .custom_entity_parser(mocked_custom_entity_parser)
             .build());
         let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
-        let text = "This is another über dummy_cc query!";
 
         // When
         let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
@@ -564,9 +603,22 @@ mod tests {
                 ]
             )]
         );
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    CustomEntity {
+                        value: "dummy c".to_string(),
+                        resolved_value: "dummy c".to_string(),
+                        range: 27..34,
+                        entity_identifier: "dummy_entity_2".to_string()
+                    }
+                ]
+            )]
+        );
         let shared_resources = SharedResourcesBuilder::default()
             .builtin_entity_parser(mocked_builtin_entity_parser)
-            .custom_entity_parser(mocked_custom_entity_parser())
+            .custom_entity_parser(mocked_custom_entity_parser)
             .build();
         let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
 
@@ -594,11 +646,24 @@ mod tests {
     #[test]
     fn should_get_slots_with_special_tokenized_out_characters() {
         // Given
+        let text = "this is another dummy’c";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    CustomEntity {
+                        value: "dummy’c".to_string(),
+                        resolved_value: "dummy’c".to_string(),
+                        range: 16..23,
+                        entity_identifier: "dummy_entity_2".to_string()
+                    }
+                ]
+            )]
+        );
         let shared_resources = Arc::new(SharedResourcesBuilder::default()
-            .custom_entity_parser(mocked_custom_entity_parser())
+            .custom_entity_parser(mocked_custom_entity_parser)
             .build());
         let parser = DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
-        let text = "this is another dummy’c";
 
         // When
         let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
