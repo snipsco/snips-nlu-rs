@@ -61,7 +61,6 @@ pub fn inject_entity_values<P: AsRef<Path>>(
         info!("Injecting values for entity '{}'", entity);
 
         let parser_dir = &parsers_dirs[&entity];
-        println!("injecting: {:?} for {:?} in {:?}", entity, new_entity_values, parser_dir);
         let mut gazetteer_parser = GazetterEntityParser::from_folder(parser_dir)
             .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
                 msg: format!("could not load gazetteer parser in {:?}", parser_dir)
@@ -71,10 +70,6 @@ pub fn inject_entity_values<P: AsRef<Path>>(
             .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
                 msg: format!("could not inject values for entity '{}'", entity)
             })?;
-
-        let parsed = gazetteer_parser.run("jazzy jazzy")
-            .with_context(|_| NluInjectionErrorKind::InternalInjectionError { msg: "".to_string() })?;
-        println!("parsed: {:?}", parsed);
 
         fs::remove_dir_all(parser_dir.clone())
             .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
@@ -156,7 +151,7 @@ fn get_builtin_parser_info(
         let gazetteer_parser_metadata_file =
             fs::File::open(&gazetteer_parser_metadata_path)
                 .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
-                    msg: format!("could not open gazettteer parser metadata file in {:?}",
+                    msg: format!("could not open gazetteer parser metadata file in {:?}",
                                  gazetteer_parser_metadata_path)
                 })?;
         let gazetteer_parser_metadata: GazetteerParserMetadata =
@@ -224,38 +219,29 @@ fn get_nlu_engine_metadata<P: AsRef<Path>>(engine_dir: P) -> Result<NLUEngineInf
 
 #[cfg(test)]
 mod tests {
-    extern crate mio_httpc;
     extern crate tempfile;
-    extern crate zip;
+    extern crate fs_extra;
 
-    use self::mio_httpc::CallBuilder;
     use self::tempfile::tempdir;
+    use self::fs_extra::dir;
     use snips_nlu_ontology::*;
     use SnipsNluEngine;
-    use utils::extract_nlu_engine_zip_archive;
     use std::iter::FromIterator;
-    use std::io::Write;
     use super::*;
+    use testutils::file_path;
 
     #[test]
     fn test_should_inject() {
+        let path = file_path("tests")
+            .join("models")
+            .join("nlu_engine_music");
+
         let tdir = tempdir().unwrap();
-        let (_, body) = CallBuilder::get().max_response(20000000)
-            .timeout_ms(60000)
-            .url("https://s3.amazonaws.com/snips/nlu-lm/test/nlu-injection/nlu_engine-0.17.0.zip")
-            .unwrap()
-            .exec()
-            .unwrap();
-
-        let nlu_engine_path = tdir.as_ref().join("nlu_engine.zip");
-        let mut nlu_engine_file = fs::File::create(&nlu_engine_path).unwrap();
-        nlu_engine_file.write(&body).unwrap();
-        let file_reader = fs::File::open(nlu_engine_path).unwrap();
-
-        let engine_dir = extract_nlu_engine_zip_archive(file_reader, tdir.as_ref()).unwrap();
+        dir::copy(path, tdir.as_ref(), &dir::CopyOptions::new()).unwrap();
+        let engine_dir = tdir.as_ref().join("nlu_engine_music");
 
         // Behaviour before injection
-        let nlu_engine = SnipsNluEngine::from_path(engine_dir.clone()).unwrap();
+        let nlu_engine = SnipsNluEngine::from_path(&engine_dir).unwrap();
 
         let parsing = nlu_engine.parse("je veux écouter une chanson de artist 1", None).unwrap();
         assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic");
@@ -335,8 +321,8 @@ mod tests {
         assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic".to_string());
         let ground_true_slots = Some(vec![
             Slot {
-                raw_value: "the best playlist jazzy jazzy".to_string(),
-                range: Some(32..53),
+                raw_value: "jazzy jazzy".to_string(),
+                range: Some(32..43),
                 entity: "playlist".to_string(),
                 slot_name: "playlist".to_string(),
                 value: SlotValue::Custom(StringValue::from("jazzy jazzy")),

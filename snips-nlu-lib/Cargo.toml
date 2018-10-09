@@ -32,7 +32,7 @@ bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
 clap = "2.32"
 dinghy-test = "0.3"
 maplit = "1.0"
-mio_httpc = { version = "0.6", features = ["rtls"] }
+fs_extra = "1.1"
 
 [[bench]]
 name = "nlu_engine"
