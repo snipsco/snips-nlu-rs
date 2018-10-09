@@ -3,16 +3,17 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Mutex;
 
-use entity_parser::utils::Cache;
-use errors::*;
 use failure::ResultExt;
 use itertools::Itertools;
-use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::token::*;
 use serde_json;
 use snips_nlu_ontology::Language;
-use snips_nlu_ontology_parsers::{GazetteerParser, GazetteerEntityMatch};
+use snips_nlu_ontology_parsers::{GazetteerEntityMatch, GazetteerParser};
+
+use entity_parser::utils::Cache;
+use errors::*;
+use language::FromLanguage;
 use utils::EntityName;
 
 pub type CustomEntity = GazetteerEntityMatch<String>;
@@ -22,7 +23,6 @@ pub trait CustomEntityParser: Send + Sync {
         &self,
         sentence: &str,
         filter_entity_kinds: Option<&[String]>,
-        use_cache: bool,
     ) -> Result<Vec<CustomEntity>>;
 }
 
@@ -43,12 +43,8 @@ impl CustomEntityParser for CachingCustomEntityParser {
         &self,
         sentence: &str,
         filter_entity_kinds: Option<&[String]>,
-        use_cache: bool,
     ) -> Result<Vec<CustomEntity>> {
         let lowercased_sentence = sentence.to_lowercase();
-        if !use_cache {
-            return self._extract_entities(&lowercased_sentence, filter_entity_kinds);
-        }
         let cache_key = CacheKey {
             input: lowercased_sentence,
             kinds: filter_entity_kinds
@@ -184,7 +180,7 @@ mod tests {
         let input = "Make me a  ?hot tea";
 
         // When
-        let entities = custom_entity_parser.extract_entities(input, None, false).unwrap();
+        let entities = custom_entity_parser.extract_entities(input, None).unwrap();
 
         // Then
         let expected_entities = vec![

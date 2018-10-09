@@ -283,7 +283,7 @@ impl Feature for CustomEntityMatchFeature {
         let normalized_text = initial_string_from_tokens(&*normalized_tokens);
 
         Ok(self.custom_entity_parser
-            .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]), true)?
+            .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]))?
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &normalized_tokens[token_index].char_range))
             .map(|e| {
