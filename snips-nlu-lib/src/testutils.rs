@@ -75,6 +75,11 @@ impl SharedResourcesBuilder {
         self
     }
 
+    pub fn custom_entity_parser<P: CustomEntityParser + 'static>(mut self, parser: P) -> Self {
+        self.custom_entity_parser = Arc::new(parser) as _;
+        self
+    }
+
     pub fn build(self) -> SharedResources {
         SharedResources {
             builtin_entity_parser: self.builtin_entity_parser,
@@ -120,7 +125,6 @@ impl CustomEntityParser for MockedCustomEntityParser {
         &self,
         sentence: &str,
         _filter_entity_kinds: Option<&[String]>,
-        _use_cache: bool,
     ) -> Result<Vec<CustomEntity>> {
         Ok(self.mocked_outputs.get(sentence)
             .cloned()

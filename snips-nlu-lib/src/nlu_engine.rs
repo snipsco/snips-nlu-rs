@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::io;
 use std::iter::FromIterator;
-use std::path::{Component, Path};
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -19,8 +19,7 @@ use slot_utils::*;
 use serde_json;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
 use tempfile;
-use utils::{EntityName, IntentName, SlotName};
-use zip::ZipArchive;
+use utils::{EntityName, IntentName, SlotName, extract_nlu_engine_zip_archive};
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -87,45 +86,12 @@ impl SnipsNluEngine {
 
 impl SnipsNluEngine {
     pub fn from_zip<R: io::Read + io::Seek>(reader: R) -> Result<Self> {
-        let mut archive = ZipArchive::new(reader)
-            .with_context(|_| "Could not read nlu engine zip data")?;
         let temp_dir = tempfile::Builder::new()
             .prefix("temp_dir_nlu_")
             .tempdir()?;
         let temp_dir_path = temp_dir.path();
-
-        for file_index in 0..archive.len() {
-            let mut file = archive.by_index(file_index)?;
-            let outpath = temp_dir_path.join(file.sanitized_name());
-
-            if (&*file.name()).ends_with('/') || (&*file.name()).ends_with('\\') {
-                fs::create_dir_all(&outpath)?;
-            } else {
-                if let Some(p) = outpath.parent() {
-                    if !p.exists() {
-                        fs::create_dir_all(&p)?;
-                    }
-                }
-                let mut outfile = fs::File::create(&outpath).unwrap();
-                io::copy(&mut file, &mut outfile)?;
-            }
-        }
-
-        let first_archive_file = archive
-            .by_index(0)?
-            .sanitized_name();
-
-        let engine_dir_path = first_archive_file
-            .components()
-            .find(|component| if let Component::Normal(_) = component { true } else { false })
-            .ok_or_else(|| format_err!("Trained engine archive is incorrect"))?
-            .as_os_str();
-
-        let engine_dir_name = engine_dir_path
-            .to_str()
-            .ok_or_else(|| format_err!("Engine directory name is empty"))?;
-
-        Ok(SnipsNluEngine::from_path(temp_dir_path.join(engine_dir_name))?)
+        let engine_dir_path = extract_nlu_engine_zip_archive(reader, temp_dir_path)?;
+        Ok(SnipsNluEngine::from_path(engine_dir_path)?)
     }
 }
 
@@ -195,7 +161,7 @@ impl SnipsNluEngine {
         let builtin_entities = self.shared_resources.builtin_entity_parser
             .extract_entities(text, builtin_entity_filter, false)?;
         let custom_entities = self.shared_resources.custom_entity_parser
-            .extract_entities(text, custom_entity_filter, true)?;
+            .extract_entities(text, custom_entity_filter)?;
 
         let mut resolved_slots = Vec::with_capacity(slots.len());
         for slot in slots.into_iter() {
@@ -258,7 +224,7 @@ fn extract_custom_slot(
     custom_entity: &Entity,
     custom_entity_parser: Arc<CustomEntityParser>,
 ) -> Result<Option<Slot>> {
-    let mut custom_entities = custom_entity_parser.extract_entities(&input, Some(&[entity_name.clone()]), true)?;
+    let mut custom_entities = custom_entity_parser.extract_entities(&input, Some(&[entity_name.clone()]))?;
     Ok(if let Some(matched_entity) = custom_entities.pop() {
         Some(Slot {
             raw_value: matched_entity.value,

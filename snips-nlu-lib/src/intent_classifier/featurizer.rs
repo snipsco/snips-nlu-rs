@@ -110,7 +110,7 @@ impl Featurizer {
         let normalized_stemmed_tokens = normalize_stem(&tokens, self.stemmer.clone());
         let normalized_stemmed_string = normalized_stemmed_tokens.join(" ");
         let custom_entities_features: Vec<String> = self.shared_resources.custom_entity_parser
-            .extract_entities(&normalized_stemmed_string, None, true)?
+            .extract_entities(&normalized_stemmed_string, None)?
             .into_iter()
             .map(|entity| get_custom_entity_feature_name(&*entity.entity_identifier, language))
             .collect();

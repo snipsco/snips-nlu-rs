@@ -100,9 +100,7 @@
       },
       {
         "args": {
-          "entities": [
-            "Temperature"
-          ],
+          "entities": [],
           "language_code": "en",
           "tagging_scheme_code": 2,
           "use_stemming": true
@@ -119,11 +117,11 @@
         "args": {
           "entity_labels": [
             "snips/amountOfMoney",
-            "snips/percentage",
             "snips/ordinal",
             "snips/number",
-            "snips/temperature",
             "snips/duration",
+            "snips/percentage",
+            "snips/temperature",
             "snips/datetime"
           ],
           "language_code": "en",
@@ -155,7 +153,7 @@
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "modeljirw8bj_.crfsuite",
+  "crf_model_file": "modelFvkwxA.crfsuite",
   "intent": "MakeCoffee",
   "language_code": "en",
   "slot_name_mapping": {

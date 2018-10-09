@@ -1,0 +1,182 @@
+{
+  "intents": {
+    "adri:PlayMusic": {
+      "utterances": [
+        {
+          "data": [
+            {
+              "text": "mets un son de "
+            },
+            {
+              "text": "l'imperatrice",
+              "entity": "snips/musicArtist",
+              "slot_name": "musicArtist"
+            },
+            {
+              "text": "  "
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "je veux ecouter une chanson de "
+            },
+            {
+              "text": "linkin park",
+              "entity": "snips/musicArtist",
+              "slot_name": "musicArtist"
+            },
+            {
+              "text": " please"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "je souhaiterais écouter l'album "
+            },
+            {
+              "text": "random access memories",
+              "entity": "snips/musicAlbum",
+              "slot_name": "musicAlbum"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "mets l'album "
+            },
+            {
+              "text": "gravé dans la roche",
+              "entity": "snips/musicAlbum",
+              "slot_name": "musicAlbum"
+            },
+            {
+              "text": " de "
+            },
+            {
+              "text": "sniper",
+              "entity": "snips/musicArtist",
+              "slot_name": "musicArtist"
+            },
+            {
+              "text": " stp"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "lance l'album "
+            },
+            {
+              "text": "conspiracy of one",
+              "entity": "snips/musicAlbum",
+              "slot_name": "musicAlbum"
+            },
+            {
+              "text": " veux tu ?"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "mets-moi du "
+            },
+            {
+              "text": "jacques brel",
+              "entity": "snips/musicArtist",
+              "slot_name": "musicArtist"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "je veux ecouter l'album "
+            },
+            {
+              "text": "discovery",
+              "entity": "snips/musicAlbum",
+              "slot_name": "musicAlbum"
+            },
+            {
+              "text": " des "
+            },
+            {
+              "text": "daft punk",
+              "entity": "snips/musicArtist",
+              "slot_name": "musicArtist"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "peux-tu mettre les "
+            },
+            {
+              "text": "rolling stones",
+              "entity": "snips/musicArtist",
+              "slot_name": "musicArtist"
+            },
+            {
+              "text": " stp"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "je voudrais ecouter "
+            },
+            {
+              "text": "michael jackson",
+              "entity": "snips/musicArtist",
+              "slot_name": "musicArtist"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "je voudrais ecouter ma playlist "
+            },
+            {
+              "text": "jazz",
+              "entity": "playlist",
+              "slot_name": "playlist"
+            }
+          ]
+        }
+      ],
+      "version": "0.8.0",
+      "language": "fr"
+    }
+  },
+  "entities": {
+    "snips/musicArtist": {
+      "name": "snips/musicArtist",
+      "data": [],
+      "use_synonyms": false,
+      "automatically_extensible": false
+    },
+    "snips/musicAlbum": {
+      "name": "snips/musicAlbum",
+      "data": [],
+      "use_synonyms": false,
+      "automatically_extensible": false
+    },
+    "playlist": {
+      "name": "playlist",
+      "data": [],
+      "use_synonyms": false,
+      "automatically_extensible": false
+    }
+  },
+  "language": "fr"
+}

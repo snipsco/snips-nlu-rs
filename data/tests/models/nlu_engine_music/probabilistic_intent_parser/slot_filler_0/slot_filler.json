@@ -1,0 +1,154 @@
+{
+  "config": {
+    "crf_args": {
+      "algorithm": "lbfgs",
+      "c1": 0.1,
+      "c2": 0.1
+    },
+    "data_augmentation_config": {
+      "add_builtin_entities_examples": true,
+      "capitalization_ratio": 0.2,
+      "min_utterances": 200
+    },
+    "feature_factory_configs": [
+      {
+        "args": {
+          "common_words_gazetteer_name": "top_10000_words",
+          "language_code": "fr",
+          "n": 1,
+          "use_stemming": false
+        },
+        "factory_name": "ngram",
+        "offsets": [
+          -2,
+          -1,
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "args": {
+          "common_words_gazetteer_name": "top_10000_words",
+          "language_code": "fr",
+          "n": 2,
+          "use_stemming": false
+        },
+        "factory_name": "ngram",
+        "offsets": [
+          -2,
+          1
+        ]
+      },
+      {
+        "args": {},
+        "factory_name": "is_digit",
+        "offsets": [
+          -1,
+          0,
+          1
+        ]
+      },
+      {
+        "args": {},
+        "factory_name": "is_first",
+        "offsets": [
+          -2,
+          -1,
+          0
+        ]
+      },
+      {
+        "args": {},
+        "factory_name": "is_last",
+        "offsets": [
+          0,
+          1,
+          2
+        ]
+      },
+      {
+        "args": {
+          "language_code": "fr",
+          "n": 1
+        },
+        "factory_name": "shape_ngram",
+        "offsets": [
+          0
+        ]
+      },
+      {
+        "args": {
+          "language_code": "fr",
+          "n": 2
+        },
+        "factory_name": "shape_ngram",
+        "offsets": [
+          -1,
+          0
+        ]
+      },
+      {
+        "args": {
+          "language_code": "fr",
+          "n": 3
+        },
+        "factory_name": "shape_ngram",
+        "offsets": [
+          -1
+        ]
+      },
+      {
+        "args": {
+          "entities": [
+            "playlist"
+          ],
+          "language_code": "fr",
+          "tagging_scheme_code": 2,
+          "use_stemming": false
+        },
+        "drop_out": 0.5,
+        "factory_name": "entity_match",
+        "offsets": [
+          -2,
+          -1,
+          0
+        ]
+      },
+      {
+        "args": {
+          "entity_labels": [
+            "snips/amountOfMoney",
+            "snips/number",
+            "snips/temperature",
+            "snips/datetime",
+            "snips/ordinal",
+            "snips/percentage",
+            "snips/duration",
+            "snips/musicAlbum",
+            "snips/musicArtist"
+          ],
+          "language_code": "fr",
+          "tagging_scheme_code": 1
+        },
+        "factory_name": "builtin_entity_match",
+        "offsets": [
+          -2,
+          -1,
+          0
+        ]
+      }
+    ],
+    "random_seed": null,
+    "tagging_scheme": 1,
+    "unit_name": "crf_slot_filler"
+  },
+  "crf_model_file": "model7xim53jy.crfsuite",
+  "intent": "adri:PlayMusic",
+  "language_code": "fr",
+  "slot_name_mapping": {
+    "musicAlbum": "snips/musicAlbum",
+    "musicArtist": "snips/musicArtist",
+    "playlist": "playlist"
+  }
+}

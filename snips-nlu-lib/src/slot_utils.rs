@@ -49,7 +49,7 @@ pub fn resolve_custom_slot(
         ) {
         Some(matching_entity) => Some(matching_entity.clone()),
         None => custom_entity_parser
-            .extract_entities(&internal_slot.value, Some(&[internal_slot.entity.clone()]), true)?
+            .extract_entities(&internal_slot.value, Some(&[internal_slot.entity.clone()]))?
             .pop()
     };
     let resolved_slot = opt_matching_entity
