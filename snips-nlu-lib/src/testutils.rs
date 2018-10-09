@@ -125,7 +125,6 @@ impl CustomEntityParser for MockedCustomEntityParser {
         &self,
         sentence: &str,
         _filter_entity_kinds: Option<&[String]>,
-        _use_cache: bool,
     ) -> Result<Vec<CustomEntity>> {
         Ok(self.mocked_outputs.get(sentence)
             .cloned()

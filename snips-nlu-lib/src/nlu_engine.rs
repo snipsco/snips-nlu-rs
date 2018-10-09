@@ -195,7 +195,7 @@ impl SnipsNluEngine {
         let builtin_entities = self.shared_resources.builtin_entity_parser
             .extract_entities(text, builtin_entity_filter, false)?;
         let custom_entities = self.shared_resources.custom_entity_parser
-            .extract_entities(text, custom_entity_filter, true)?;
+            .extract_entities(text, custom_entity_filter)?;
 
         let mut resolved_slots = Vec::with_capacity(slots.len());
         for slot in slots.into_iter() {
@@ -258,7 +258,7 @@ fn extract_custom_slot(
     custom_entity: &Entity,
     custom_entity_parser: Arc<CustomEntityParser>,
 ) -> Result<Option<Slot>> {
-    let mut custom_entities = custom_entity_parser.extract_entities(&input, Some(&[entity_name.clone()]), true)?;
+    let mut custom_entities = custom_entity_parser.extract_entities(&input, Some(&[entity_name.clone()]))?;
     Ok(if let Some(matched_entity) = custom_entities.pop() {
         Some(Slot {
             raw_value: matched_entity.value,

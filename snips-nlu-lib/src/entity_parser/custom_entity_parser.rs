@@ -32,7 +32,6 @@ pub trait CustomEntityParser: Send + Sync {
         &self,
         sentence: &str,
         filter_entity_kinds: Option<&[String]>,
-        use_cache: bool,
     ) -> Result<Vec<CustomEntity>>;
 }
 
@@ -53,12 +52,8 @@ impl CustomEntityParser for CachingCustomEntityParser {
         &self,
         sentence: &str,
         filter_entity_kinds: Option<&[String]>,
-        use_cache: bool,
     ) -> Result<Vec<CustomEntity>> {
         let lowercased_sentence = sentence.to_lowercase();
-        if !use_cache {
-            return self._extract_entities(&lowercased_sentence, filter_entity_kinds);
-        }
         let cache_key = CacheKey {
             input: lowercased_sentence,
             kinds: filter_entity_kinds
@@ -262,7 +257,7 @@ mod tests {
         let input = "Make me a  ?hot tea";
 
         // When
-        let entities = custom_entity_parser.extract_entities(input, None, false).unwrap();
+        let entities = custom_entity_parser.extract_entities(input, None).unwrap();
 
         // Then
         let expected_entities = vec![
@@ -281,9 +276,6 @@ mod tests {
     fn should_build_custom_entity_parser() {
         // Given
         let language = NluUtilsLanguage::EN;
-        let cache_capacity = 10;
-
-
 
         let entity_1 = "entity_1";
         let entity_2 = "entity_2";
@@ -318,8 +310,7 @@ mod tests {
         let parser = custom_gazetteer_parser_builder.build().unwrap();
 
         // Then
-        let result_1 = parser
-            .extract_entities("dummy_1", None, true).unwrap();
+        let result_1 = parser.extract_entities("dummy_1", None).unwrap();
         assert_eq!(
             result_1,
             vec![
@@ -327,13 +318,12 @@ mod tests {
                     value: "dummy_1".to_string(),
                     resolved_value: "dummy_1_resolved".to_string(),
                     entity_identifier: entity_1.to_string(),
-                    range: 0..7
+                    range: 0..7,
                 }
             ]
         );
 
-        let result_2 = parser
-            .extract_entities("dummy_2", None, true).unwrap();
+        let result_2 = parser.extract_entities("dummy_2", None).unwrap();
         assert_eq!(
             result_2,
             vec![
@@ -341,13 +331,12 @@ mod tests {
                     value: "dummy_2".to_string(),
                     resolved_value: "dummy_2_resolved".to_string(),
                     entity_identifier: entity_2.to_string(),
-                    range: 0..7
+                    range: 0..7,
                 }
             ]
         );
 
-        let result_3 = parser
-            .extract_entities("dummy_3", None, true).unwrap();
+        let result_3 = parser.extract_entities("dummy_3", None).unwrap();
         assert_eq!(
             result_3,
             vec![
@@ -355,7 +344,7 @@ mod tests {
                     value: "dummy_3".to_string(),
                     resolved_value: "dummy_3_resolved".to_string(),
                     entity_identifier: entity_2.to_string(),
-                    range: 0..7
+                    range: 0..7,
                 }
             ]
         );
