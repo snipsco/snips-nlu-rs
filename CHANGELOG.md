@@ -1,6 +1,14 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.60.1] - 2018-10-09
+### Added
+- Entity injection API for both custom entities and builtin gazetteer entities
+
+### Fixed
+- Swift wrapper
+- `DeterministicIntentParser` now relies on the custom entity parser
+
 ## [0.60.0] - 2018-10-05
 ### Added
 - Support for 3 new builtin entities in French: `snips/musicAlbum`, `snips/musicArtist` and `snips/musicTrack`
@@ -108,6 +116,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.60.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.0...0.60.1
 [0.60.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.59.0...0.60.0
 [0.59.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.58.3...0.59.0
 [0.58.3]: https://github.com/snipsco/snips-nlu-rs/compare/0.58.2...0.58.3
