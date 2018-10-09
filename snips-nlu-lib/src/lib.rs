@@ -6,6 +6,8 @@ extern crate dinghy_test;
 #[macro_use]
 extern crate failure;
 extern crate itertools;
+#[macro_use]
+extern crate log;
 extern crate lru_cache;
 #[macro_use]
 extern crate ndarray;
@@ -27,6 +29,7 @@ extern crate maplit;
 mod entity_parser;
 pub mod models;
 pub mod errors;
+pub mod injection;
 mod intent_classifier;
 mod intent_parser;
 mod language;
@@ -42,6 +45,7 @@ pub const MODEL_VERSION: &str = "0.17.0";
 
 pub use models::*;
 pub use errors::*;
+pub use snips_nlu_ontology::Language;
 pub use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
 pub use nlu_engine::SnipsNluEngine;
@@ -49,4 +53,3 @@ pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use resources::loading::load_shared_resources;
 pub use resources::SharedResources;
-

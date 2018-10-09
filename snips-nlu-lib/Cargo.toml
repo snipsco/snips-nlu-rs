@@ -16,6 +16,7 @@ snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0
 failure = "0.1"
 base64 = "0.9"
 itertools = { version = "0.7", default-features = false }
+log = "0.4"
 lru-cache = "0.1"
 serde = "1.0"
 serde_derive = "1.0"
@@ -28,9 +29,10 @@ zip = { version = "0.3", features=["deflate"] }
 
 [dev-dependencies]
 bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
+clap = "2.32"
 dinghy-test = "0.3"
 maplit = "1.0"
-clap = "2.32"
+fs_extra = "1.1"
 
 [[bench]]
 name = "nlu_engine"
