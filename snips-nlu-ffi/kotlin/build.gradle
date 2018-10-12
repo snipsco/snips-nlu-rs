@@ -11,7 +11,7 @@ buildscript {
 
 apply plugin: 'kotlin'
 
-version = "0.61.0-SNAPSHOT"
+version = "0.61.0-a1"
 group = "ai.snips"
 
 repositories {
@@ -32,7 +32,7 @@ configurations {
 dependencies {
     compile "org.jetbrains.kotlin:kotlin-stdlib-jre7:$kotlin_version"
     compile 'net.java.dev.jna:jna:4.5.0'
-    compile "ai.snips:snips-nlu-ontology:0.60.0"
+    compile "ai.snips:snips-nlu-ontology:0.62.0-a1"
     testCompile 'junit:junit:4.12'
     testCompile 'com.google.truth:truth:0.36'
 }
