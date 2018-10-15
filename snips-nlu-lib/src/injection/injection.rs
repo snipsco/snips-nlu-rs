@@ -107,14 +107,25 @@ impl<P: AsRef<Path>> NluInjector<P> {
 
         info!("Normalizing injected values...");
         // Update all values
-        let normalized_entity_values = normalize_entity_values(
-            &self.entity_values, engine_info, custom_parser_info, maybe_stemmer)?;
+        let normalized_entity_values = self.entity_values
+            .into_iter()
+            .map(|(entity, values)| {
+                let normalized_value = normalize_entity_value(
+                        &entity,
+                        values,
+                        &engine_info,
+                        &custom_parser_info,
+                        &maybe_stemmer
+                )?;
+                Ok((entity, normalized_value))
+            })
+            .collect::<Result<HashMap<_, _>, NluInjectionError>>()?;
 
         for (entity, new_entity_values) in normalized_entity_values {
             info!("Injecting values for entity '{}'", entity);
 
             let parser_dir = &parsers_dirs[&entity];
-            let mut gazetteer_parser = GazetterEntityParser::from_folder(parser_dir)
+            let mut gazetteer_parser = GazetteerEntityParser::from_folder(parser_dir)
                 .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
                     msg: format!("could not load gazetteer parser in {:?}", parser_dir)
                 })?;
@@ -231,10 +242,7 @@ fn get_custom_parser_info(
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("invalid custom entity parser metadata format in {:?}", custom_entity_parser_metadata_path)
         })?;
-    let parser_usage = CustomEntityParserUsage::from_u8(custom_parser_metadata.parser_usage)
-        .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
-            msg: "found invalid parser usage in custom entity parser".to_string()
-        })?;
+
     let gazetteer_parser_dir = custom_parser_dir.join(custom_parser_metadata.parser_directory);
     let gazetteer_parser_metadata_path = gazetteer_parser_dir.join("metadata.json");
     let gazetteer_parser_metadata_file = fs::File::open(&gazetteer_parser_metadata_path)
@@ -246,7 +254,7 @@ fn get_custom_parser_info(
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("invalid gazetteer parser metadata format in {:?}", gazetteer_parser_metadata_path)
         })?;
-    Ok(GazetteerParserInfo { gazetteer_parser_dir, gazetteer_parser_metadata, parser_usage: Some(parser_usage) })
+    Ok(GazetteerParserInfo { gazetteer_parser_dir, gazetteer_parser_metadata, parser_usage: Some(custom_parser_metadata.parser_usage) })
 }
 
 fn get_nlu_engine_info<P: AsRef<Path>>(engine_dir: P) -> Result<NluEngineInfo, NluInjectionError> {
@@ -279,71 +287,72 @@ fn get_nlu_engine_info<P: AsRef<Path>>(engine_dir: P) -> Result<NluEngineInfo, N
     })
 }
 
-fn normalize_entity_values(
-    entity_values: &HashMap<String, Vec<InjectedValue>>,
-    engine_info: NluEngineInfo,
-    custom_parser_info: GazetteerParserInfo,
-    maybe_stemmer: Option<&Arc<Stemmer>>,
-) -> Result<HashMap<String, Vec<GazetteerEntityValue>>, NluInjectionError> {
+fn normalize_entity_value(
+    entity: &InjectedEntity,
+    entity_values: Vec<InjectedValue>,
+    engine_info: &NluEngineInfo,
+    custom_parser_info: &GazetteerParserInfo,
+    maybe_stemmer: &Option<&Arc<Stemmer>>,
+) -> Result<Vec<GazetteerEntityValue>, NluInjectionError> {
     let parser_usage = custom_parser_info.parser_usage
+        .clone()
         .ok_or_else(|| {
             let msg =  "custom parser has no parser usage".to_string();
                         NluInjectionErrorKind::InternalInjectionError { msg }
         })?;
 
-    entity_values
-        .iter()
-        .map(|(entity, values)| {
-            let normalized_values: Vec<GazetteerEntityValue> = values
-                .into_iter()
-                .map(|value| GazetteerEntityValue {
-                    raw_value: normalize(value),
-                    resolved_value: value.to_string(),
-                })
-                .collect();
-            let normalized_stemmed_values: Result<Vec<GazetteerEntityValue>, NluInjectionError> = if engine_info
-                .custom_entities
-                .contains(entity) {
-                let mut original_value: Vec<GazetteerEntityValue> = match parser_usage {
-                    CustomEntityParserUsage::WithStems => vec![],
-                    _ => normalized_values.clone()
-                };
-
-                let stemmed_values: Result<Vec<GazetteerEntityValue>, NluInjectionError> = match parser_usage {
-                    CustomEntityParserUsage::WithoutStems => Ok(vec![]),
-                    _ => {
-                        let stemmed: Vec<GazetteerEntityValue> = normalized_values
-                            .into_iter()
-                            .map(|value|{
-                                let stemmer = &maybe_stemmer
-                                    .ok_or(NluInjectionErrorKind::InternalInjectionError {
-                                        msg: format!("found {:?} parser usage but no stemmer in NLU engine.", parser_usage)
-                                    })?;
-                                let raw_value = tokenize_light(
-                                    &*value.raw_value, engine_info.language)
-                                    .into_iter()
-                                    .map(|token| stemmer.stem(&*token))
-                                    .join(" ");
-
-                                Ok(GazetteerEntityValue {
-                                    raw_value,
-                                    resolved_value: value.resolved_value,
-                                })
-                            })
-                            .collect::<Result<_, NluInjectionError>>()?;
-                        Ok(stemmed)
-                    }
-                };
-
-                original_value.extend(stemmed_values?);
-                Ok(original_value)
-            } else {
-                Ok(normalized_values)
-            };
-
-            Ok((entity.clone(), normalized_stemmed_values?))
+    let normalized_values: Vec<GazetteerEntityValue> = entity_values
+        .into_iter()
+        .map(|value| GazetteerEntityValue {
+            raw_value: normalize(&*value),
+            resolved_value: value.to_string(),
         })
-        .collect()
+        .collect();
+
+    let normalized_stemmed_values: Result<Vec<GazetteerEntityValue>, NluInjectionError> = if engine_info
+        .custom_entities
+        .contains(&*entity) {
+
+        let stemmed_values: Result<Vec<GazetteerEntityValue>, NluInjectionError> = match parser_usage {
+            CustomEntityParserUsage::WithoutStems => Ok(vec![]),
+            _ => {
+                let stemmed: Vec<GazetteerEntityValue> = normalized_values
+                    .iter()
+                    .map(|value|{
+                        let stemmer = &maybe_stemmer
+                            .ok_or(NluInjectionErrorKind::InternalInjectionError {
+                                msg: format!("found {:?} parser usage but no stemmer in NLU engine.", parser_usage)
+                            })?;
+                        let raw_value = tokenize_light(
+                            &*value.raw_value, engine_info.language)
+                            .into_iter()
+                            .map(|token| stemmer.stem(&*token))
+                            .join(" ");
+
+                        Ok(GazetteerEntityValue {
+                            raw_value,
+                            resolved_value: value.resolved_value.clone(),
+                        })
+                    })
+                    .collect::<Result<_, NluInjectionError>>()?;
+                Ok(stemmed)
+            }
+        };
+
+        let all_values: Result<Vec<GazetteerEntityValue>, NluInjectionError> = match parser_usage {
+            CustomEntityParserUsage::WithStems => stemmed_values,
+            _ => {
+                let mut values = normalized_values;
+                values.extend(stemmed_values?);
+                Ok(values)
+                // TODO: use unique on the values to do some deduplication
+            }
+        };
+        all_values
+    } else {
+        Ok(normalized_values)
+    };
+    normalized_stemmed_values
 }
 
 #[cfg(test)]
