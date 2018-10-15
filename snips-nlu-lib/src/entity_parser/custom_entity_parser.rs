@@ -26,6 +26,25 @@ pub trait CustomEntityParser: Send + Sync {
     ) -> Result<Vec<CustomEntity>>;
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CustomEntityParserUsage {
+    WithStems,
+    WithoutStems,
+    WithAndWithoutStems,
+}
+
+
+impl CustomEntityParserUsage {
+    pub fn from_u8(i: u8) -> Result<CustomEntityParserUsage> {
+        match i {
+            0 => Ok(CustomEntityParserUsage::WithStems),
+            1 => Ok(CustomEntityParserUsage::WithoutStems),
+            2 => Ok(CustomEntityParserUsage::WithAndWithoutStems),
+            _ => bail!("Unknown parser usage identifier: {}", i),
+        }
+    }
+}
+
 pub struct CachingCustomEntityParser {
     language: NluUtilsLanguage,
     parser: GazetteerParser<String>,
@@ -118,6 +137,7 @@ fn compute_char_shifts(tokens: &Vec<Token>) -> Vec<i32> {
 pub struct CustomEntityParserMetadata {
     pub language: String,
     pub parser_directory: String,
+    pub parser_usage: u8,
 }
 
 impl CachingCustomEntityParser {

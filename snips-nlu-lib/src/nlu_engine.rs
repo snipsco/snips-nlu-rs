@@ -29,39 +29,34 @@ pub struct SnipsNluEngine {
 
 impl SnipsNluEngine {
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let engine_model_path = path.as_ref().join("nlu_engine.json");
-        Self::check_model_version(&engine_model_path)
-            .with_context(|_|
-                SnipsNluError::ModelLoad(engine_model_path.to_str().unwrap().to_string()))?;
-
-
-        let model_file = fs::File::open(&engine_model_path)
-            .with_context(|_| format!("Could not open nlu engine file {:?}", &engine_model_path))?;
-        let model: NluEngineModel = serde_json::from_reader(model_file)
-            .with_context(|_| "Could not deserialize nlu engine json file")?;
+        let model = SnipsNluEngine::load_model(&path)?;
 
         let language = Language::from_str(&model.dataset_metadata.language_code)?;
+
         let resources_path = path.as_ref().join("resources").join(language.to_string());
         let builtin_parser_path = path.as_ref().join(&model.builtin_entity_parser);
         let custom_parser_path = path.as_ref().join(&model.custom_entity_parser);
+
         let shared_resources = load_shared_resources(&resources_path, builtin_parser_path, custom_parser_path)?;
 
-        let parsers = model
-            .intent_parsers
-            .iter()
-            .map(|parser_name| {
-                let parser_path = path.as_ref().join(parser_name);
-                let metadata_path = parser_path.join("metadata.json");
-                let metadata_file = fs::File::open(metadata_path)
-                    .with_context(|_|
-                        format!("Could not open metadata file of parser '{}'", parser_name))?;
-                let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)
-                    .with_context(|_|
-                        format!("Could not deserialize json metadata of parser '{}'", parser_name))?;
-                Ok(build_intent_parser(metadata, parser_path, shared_resources.clone())? as _)
-            })
-            .collect::<Result<Vec<_>>>()?;
+        let parsers = Self::load_intent_parsers(
+            path, &model, shared_resources.clone())?;
 
+        Ok(SnipsNluEngine {
+            dataset_metadata: model.dataset_metadata,
+            intent_parsers: parsers,
+            shared_resources,
+        })
+    }
+
+    #[cfg(test)]
+    pub fn from_path_with_resources<P: AsRef<Path>>(
+        path: P,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
+        let model = SnipsNluEngine::load_model(&path)?;
+        let parsers = Self::load_intent_parsers(
+            path, &model, shared_resources.clone())?;
 
         Ok(SnipsNluEngine {
             dataset_metadata: model.dataset_metadata,
@@ -81,6 +76,40 @@ impl SnipsNluEngine {
             ));
         }
         Ok(())
+    }
+
+    fn load_model<P: AsRef<Path>>(path: &P) -> Result<NluEngineModel> {
+        let engine_model_path = path.as_ref().join("nlu_engine.json");
+        Self::check_model_version(&engine_model_path)
+            .with_context(|_|
+                SnipsNluError::ModelLoad(engine_model_path.to_str().unwrap().to_string()))?;
+        let model_file = fs::File::open(&engine_model_path)
+            .with_context(|_| format!("Could not open nlu engine file {:?}", &engine_model_path))?;
+        let model = serde_json::from_reader(model_file)
+            .with_context(|_| format!("Invalid nlu engine file {:?}", &engine_model_path))?;
+        Ok(model)
+    }
+
+    fn load_intent_parsers<P: AsRef<Path>>(
+        engine_dir: P,
+        model: &NluEngineModel,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Vec<Box<IntentParser>>> {
+        model
+            .intent_parsers
+            .iter()
+            .map(|parser_name| {
+                let parser_path = engine_dir.as_ref().join(parser_name);
+                let metadata_path = parser_path.join("metadata.json");
+                let metadata_file = fs::File::open(metadata_path)
+                    .with_context(|_|
+                        format!("Could not open metadata file of parser '{}'", parser_name))?;
+                let metadata: ProcessingUnitMetadata = serde_json::from_reader(metadata_file)
+                    .with_context(|_|
+                        format!("Could not deserialize json metadata of parser '{}'", parser_name))?;
+                Ok(build_intent_parser(metadata, parser_path, shared_resources.clone())? as _)
+            })
+            .collect::<Result<Vec<_>>>()
     }
 }
 
@@ -265,6 +294,22 @@ fn extract_builtin_slot(
             slot_name,
         }))
 }
+
+pub fn load_engine_shared_resources<P: AsRef<Path>>(
+    engine_dir: P
+) -> Result<Arc<SharedResources>> {
+    let nlu_engine_file = engine_dir.as_ref().join("nlu_engine.json");
+    let model_file = fs::File::open(&nlu_engine_file)
+            .with_context(|_| format!("Could not open nlu engine file {:?}", nlu_engine_file))?;
+    let model: NluEngineModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Could not deserialize nlu engine json file")?;
+    let language = Language::from_str(&model.dataset_metadata.language_code)?;
+    let resources_path = engine_dir.as_ref().join("resources").join(language.to_string());
+    let builtin_parser_path = engine_dir.as_ref().join(&model.builtin_entity_parser);
+    let custom_parser_path = engine_dir.as_ref().join(&model.custom_entity_parser);
+    load_shared_resources(&resources_path, builtin_parser_path, custom_parser_path)
+}
+
 
 #[cfg(test)]
 mod tests {

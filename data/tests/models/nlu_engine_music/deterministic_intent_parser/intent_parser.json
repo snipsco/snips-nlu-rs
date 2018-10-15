@@ -22,15 +22,15 @@
   "patterns": {
     "adri:PlayMusic": [
       "^\\s*peux\\s*tu\\s*mettre\\s*les\\s*(?P<group_9>%SNIPSMUSICARTIST%)\\s*stp\\s*$",
-      "^\\s*je\\s*veux\\s*ecouter\\s*une\\s*chanson\\s*de\\s*(?P<group_1>%SNIPSMUSICARTIST%)\\s*please\\s*$",
-      "^\\s*je\\s*veux\\s*ecouter\\s*l\\s*album\\s*(?P<group_7>%SNIPSMUSICALBUM%)\\s*des\\s*(?P<group_8>%SNIPSMUSICARTIST%)\\s*$",
-      "^\\s*lance\\s*l\\s*album\\s*(?P<group_5>%SNIPSMUSICALBUM%)\\s*veux\\s*tu\\s*\\?\\s*$",
-      "^\\s*mets\\s*moi\\s*du\\s*(?P<group_6>%SNIPSMUSICARTIST%)\\s*$",
-      "^\\s*mets\\s*un\\s*son\\s*de\\s*(?P<group_0>%SNIPSMUSICARTIST%)\\s*$",
       "^\\s*je\\s*voudrais\\s*ecouter\\s*(?P<group_10>%SNIPSMUSICARTIST%)\\s*$",
-      "^\\s*mets\\s*l\\s*album\\s*(?P<group_3>%SNIPSMUSICALBUM%)\\s*de\\s*(?P<group_4>%SNIPSMUSICARTIST%)\\s*stp\\s*$",
       "^\\s*je\\s*souhaiterais\\s*\u00e9couter\\s*l\\s*album\\s*(?P<group_2>%SNIPSMUSICALBUM%)\\s*$",
-      "^\\s*je\\s*voudrais\\s*ecouter\\s*ma\\s*playlist\\s*(?P<group_11>%PLAYLIST%)\\s*$"
+      "^\\s*je\\s*veux\\s*ecouter\\s*une\\s*chanson\\s*de\\s*(?P<group_1>%SNIPSMUSICARTIST%)\\s*please\\s*$",
+      "^\\s*mets\\s*l\\s*album\\s*(?P<group_3>%SNIPSMUSICALBUM%)\\s*de\\s*(?P<group_4>%SNIPSMUSICARTIST%)\\s*stp\\s*$",
+      "^\\s*je\\s*voudrais\\s*ecouter\\s*ma\\s*playlist\\s*(?P<group_11>%PLAYLIST%)\\s*$",
+      "^\\s*je\\s*veux\\s*ecouter\\s*l\\s*album\\s*(?P<group_7>%SNIPSMUSICALBUM%)\\s*des\\s*(?P<group_8>%SNIPSMUSICARTIST%)\\s*$",
+      "^\\s*mets\\s*un\\s*son\\s*de\\s*(?P<group_0>%SNIPSMUSICARTIST%)\\s*$",
+      "^\\s*lance\\s*l\\s*album\\s*(?P<group_5>%SNIPSMUSICALBUM%)\\s*veux\\s*tu\\s*\\?\\s*$",
+      "^\\s*mets\\s*moi\\s*du\\s*(?P<group_6>%SNIPSMUSICARTIST%)\\s*$"
     ]
   },
   "slot_names_to_entities": {

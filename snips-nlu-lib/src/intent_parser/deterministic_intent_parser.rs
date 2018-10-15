@@ -339,6 +339,7 @@ mod tests {
     use super::*;
 
     use models::DeterministicParserModel;
+    use nlu_engine::load_engine_shared_resources;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::*;
     use testutils::*;
@@ -398,7 +399,7 @@ mod tests {
 
         let parser_path = trained_engine_path.join("deterministic_intent_parser");
 
-        let shared_resources = load_shared_resources_from_engine_dir(trained_engine_path).unwrap();
+        let shared_resources = load_engine_shared_resources(trained_engine_path).unwrap();
         let intent_parser = DeterministicIntentParser::from_path(parser_path, shared_resources).unwrap();
 
         // When
