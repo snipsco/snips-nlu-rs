@@ -29,6 +29,7 @@ fn normalize(s: &str) -> String {
     s.to_lowercase()
 }
 
+
 struct NluEngineInfo {
     language: NluUtilsLanguage,
     builtin_entity_parser_dir: PathBuf,
@@ -36,10 +37,17 @@ struct NluEngineInfo {
     custom_entities: HashSet<InjectedEntity>,
 }
 
-struct GazetteerParserInfo {
+
+struct BuiltinGazetteerParserInfo {
     gazetteer_parser_dir: PathBuf,
     gazetteer_parser_metadata: GazetteerParserMetadata,
-    parser_usage: Option<CustomEntityParserUsage>,
+}
+
+
+struct CustomGazetteerParserInfo {
+    gazetteer_parser_dir: PathBuf,
+    gazetteer_parser_metadata: GazetteerParserMetadata,
+    parser_usage: CustomEntityParserUsage
 }
 
 
@@ -49,6 +57,7 @@ pub struct NluInjector<P: AsRef<Path>> {
     from_vanilla: bool,
     shared_resources: Option<Arc<SharedResources>>,
 }
+
 
 impl<P: AsRef<Path>> NluInjector<P> {
     pub fn new(nlu_engine_dir: P) -> Self {
@@ -105,19 +114,22 @@ impl<P: AsRef<Path>> NluInjector<P> {
 
         let maybe_stemmer = shared_resources.stemmer.as_ref();
 
+        // Normalize and stem all values if needed
         info!("Normalizing injected values...");
-        // Update all values
         let normalized_entity_values = self.entity_values
             .into_iter()
             .map(|(entity, values)| {
-                let normalized_value = normalize_entity_value(
-                        &entity,
-                        values,
+                let normalize_entity_values = normalize_entity_value(values);
+                if engine_info.custom_entities.contains(&*entity) {
+                    let stemmed_normalized_values = stem_entity_value(
+                        normalize_entity_values,
                         &engine_info,
                         &custom_parser_info,
-                        &maybe_stemmer
-                )?;
-                Ok((entity, normalized_value))
+                        &maybe_stemmer)?;
+                    Ok((entity, stemmed_normalized_values))
+                } else {
+                    Ok((entity, normalize_entity_values))
+                }
             })
             .collect::<Result<HashMap<_, _>, NluInjectionError>>()?;
 
@@ -154,20 +166,38 @@ impl<P: AsRef<Path>> NluInjector<P> {
 
 fn get_entity_parsers_dirs(
     engine_info: &NluEngineInfo,
-    builtin_parser_info: &Option<GazetteerParserInfo>,
-    custom_parser_info: &GazetteerParserInfo,
+    maybe_builtin_parser_info: &Option<BuiltinGazetteerParserInfo>,
+    custom_parser_info: &CustomGazetteerParserInfo,
     entity_values: &HashMap<String, Vec<String>>,
 ) -> Result<HashMap<String, PathBuf>, NluInjectionError> {
     entity_values.keys()
         .map(|entity| {
-            let parser_info = if engine_info.custom_entities.contains(entity) {
-                Ok(custom_parser_info)
+            let dir = if engine_info.custom_entities.contains(entity) {
+                custom_parser_info
+                    .gazetteer_parser_metadata.parsers_metadata
+                    .iter()
+                    .find(|metadata| metadata.entity_identifier == *entity)
+                    .map(|metadata|
+                        custom_parser_info.gazetteer_parser_dir.join(&metadata.entity_parser))
+                    .ok_or_else(|| {
+                        let msg = format!("could not find entity '{}' in engine", entity);
+                        NluInjectionErrorKind::EntityNotInjectable { msg }.into()
+                    })
             } else if BuiltinGazetteerEntityKind::from_identifier(entity).is_ok() {
-                builtin_parser_info
+                let builtin_parser_info = maybe_builtin_parser_info
                     .as_ref()
                     .ok_or_else(|| {
                         let msg = format!("could not find gazetteer entity '{}' in engine", entity);
                         NluInjectionErrorKind::EntityNotInjectable { msg }
+                    })?;
+                builtin_parser_info.gazetteer_parser_metadata.parsers_metadata
+                    .iter()
+                    .find(|metadata| metadata.entity_identifier == *entity)
+                    .map(|metadata|
+                        builtin_parser_info.gazetteer_parser_dir.join(&metadata.entity_parser))
+                    .ok_or_else(|| {
+                        let msg = format!("could not find entity '{}' in engine", entity);
+                        NluInjectionErrorKind::EntityNotInjectable { msg }.into()
                     })
             } else if GrammarEntityKind::from_identifier(entity).is_ok() {
                 let msg = format!("Entity injection is not allowed for grammar entities: '{}'", entity);
@@ -176,17 +206,7 @@ fn get_entity_parsers_dirs(
                 let msg = format!("Unknown entity: '{}'", entity);
                 Err(NluInjectionErrorKind::EntityNotInjectable { msg })
             }?;
-            let dir: Result<PathBuf, NluInjectionError> = parser_info
-                .gazetteer_parser_metadata.parsers_metadata
-                .iter()
-                .find(|metadata| metadata.entity_identifier == *entity)
-                .map(|metadata| parser_info.gazetteer_parser_dir.join(&metadata.entity_parser))
-                .ok_or_else(|| {
-                    let msg = format!("could not find entity '{}' in engine", entity);
-                    NluInjectionErrorKind::EntityNotInjectable { msg }.into()
-                });
-
-            Ok((entity.clone(), dir?))
+            Ok((entity.clone(), dir))
         })
         .collect::<Result<HashMap<String, PathBuf>, NluInjectionError>>()
 }
@@ -194,7 +214,7 @@ fn get_entity_parsers_dirs(
 
 fn get_builtin_parser_info(
     builtin_parser_dir: &PathBuf
-) -> Result<Option<GazetteerParserInfo>, NluInjectionError> {
+) -> Result<Option<BuiltinGazetteerParserInfo>, NluInjectionError> {
     let builtin_entity_parser_metadata_path = builtin_parser_dir.join("metadata.json");
     let builtin_entity_parser_metadata_file = fs::File::open(&builtin_entity_parser_metadata_path)
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
@@ -223,7 +243,11 @@ fn get_builtin_parser_info(
                     msg: format!("invalid gazetteer parser metadata format in {:?}",
                                  gazetteer_parser_metadata_path)
                 })?;
-        Ok(Some(GazetteerParserInfo { gazetteer_parser_dir, gazetteer_parser_metadata, parser_usage: None }))
+        let parser_info = BuiltinGazetteerParserInfo {
+                gazetteer_parser_dir,
+                gazetteer_parser_metadata,
+            };
+        Ok(Some(parser_info))
     } else {
         Ok(None)
     }
@@ -231,7 +255,7 @@ fn get_builtin_parser_info(
 
 fn get_custom_parser_info(
     custom_parser_dir: &PathBuf
-) -> Result<GazetteerParserInfo, NluInjectionError> {
+) -> Result<CustomGazetteerParserInfo, NluInjectionError> {
     let custom_entity_parser_metadata_path = custom_parser_dir.join("metadata.json");
     let custom_entity_parser_metadata_file = fs::File::open(&custom_entity_parser_metadata_path)
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
@@ -254,7 +278,12 @@ fn get_custom_parser_info(
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("invalid gazetteer parser metadata format in {:?}", gazetteer_parser_metadata_path)
         })?;
-    Ok(GazetteerParserInfo { gazetteer_parser_dir, gazetteer_parser_metadata, parser_usage: Some(custom_parser_metadata.parser_usage) })
+    let parser_info = CustomGazetteerParserInfo {
+            gazetteer_parser_dir,
+            gazetteer_parser_metadata,
+            parser_usage: custom_parser_metadata.parser_usage
+        };
+    Ok(parser_info)
 }
 
 fn get_nlu_engine_info<P: AsRef<Path>>(engine_dir: P) -> Result<NluEngineInfo, NluInjectionError> {
@@ -288,71 +317,62 @@ fn get_nlu_engine_info<P: AsRef<Path>>(engine_dir: P) -> Result<NluEngineInfo, N
 }
 
 fn normalize_entity_value(
-    entity: &InjectedEntity,
-    entity_values: Vec<InjectedValue>,
-    engine_info: &NluEngineInfo,
-    custom_parser_info: &GazetteerParserInfo,
-    maybe_stemmer: &Option<&Arc<Stemmer>>,
-) -> Result<Vec<GazetteerEntityValue>, NluInjectionError> {
-    let parser_usage = custom_parser_info.parser_usage
-        .clone()
-        .ok_or_else(|| {
-            let msg =  "custom parser has no parser usage".to_string();
-                        NluInjectionErrorKind::InternalInjectionError { msg }
-        })?;
-
-    let normalized_values: Vec<GazetteerEntityValue> = entity_values
+    entity_values: Vec<InjectedValue>
+) -> Vec<GazetteerEntityValue> {
+    entity_values
         .into_iter()
         .map(|value| GazetteerEntityValue {
             raw_value: normalize(&*value),
-            resolved_value: value.to_string(),
+            resolved_value: value,
         })
-        .collect();
+        .collect()
+}
 
-    let normalized_stemmed_values: Result<Vec<GazetteerEntityValue>, NluInjectionError> = if engine_info
-        .custom_entities
-        .contains(&*entity) {
+fn stem_entity_value(
+    entity_values: Vec<GazetteerEntityValue>,
+    engine_info: &NluEngineInfo,
+    custom_entity_parser_info: &CustomGazetteerParserInfo,
+    maybe_stemmer: &Option<&Arc<Stemmer>>,
+) -> Result<Vec<GazetteerEntityValue>, NluInjectionError> {
+    let stemmed_entity_values = match custom_entity_parser_info.parser_usage {
+        CustomEntityParserUsage::WithoutStems => Ok(vec![]),
+        _ => {
+            entity_values
+                .iter()
+                .map(|value|{
+                    let stemmer = &maybe_stemmer
+                        .ok_or(NluInjectionErrorKind::InternalInjectionError {
+                            msg: format!("found {:?} parser usage but no stemmer in NLU engine.",
+                                         custom_entity_parser_info.parser_usage)
+                        })?;
+                    let raw_value = tokenize_light(
+                        &*value.raw_value, engine_info.language)
+                        .into_iter()
+                        .map(|token| stemmer.stem(&*token))
+                        .join(" ");
 
-        let stemmed_values: Result<Vec<GazetteerEntityValue>, NluInjectionError> = match parser_usage {
-            CustomEntityParserUsage::WithoutStems => Ok(vec![]),
-            _ => {
-                let stemmed: Vec<GazetteerEntityValue> = normalized_values
-                    .iter()
-                    .map(|value|{
-                        let stemmer = &maybe_stemmer
-                            .ok_or(NluInjectionErrorKind::InternalInjectionError {
-                                msg: format!("found {:?} parser usage but no stemmer in NLU engine.", parser_usage)
-                            })?;
-                        let raw_value = tokenize_light(
-                            &*value.raw_value, engine_info.language)
-                            .into_iter()
-                            .map(|token| stemmer.stem(&*token))
-                            .join(" ");
-
-                        Ok(GazetteerEntityValue {
-                            raw_value,
-                            resolved_value: value.resolved_value.clone(),
-                        })
+                    Ok(GazetteerEntityValue {
+                        raw_value,
+                        resolved_value: value.resolved_value.clone(),
                     })
-                    .collect::<Result<_, NluInjectionError>>()?;
-                Ok(stemmed)
-            }
-        };
-
-        let all_values: Result<Vec<GazetteerEntityValue>, NluInjectionError> = match parser_usage {
-            CustomEntityParserUsage::WithStems => stemmed_values,
-            _ => {
-                let mut values = normalized_values;
-                values.extend(stemmed_values?);
-                Ok(values)
-                // TODO: use unique on the values to do some deduplication
-            }
-        };
-        all_values
-    } else {
-        Ok(normalized_values)
+                })
+                .collect::<Result<_, NluInjectionError>>()
+        }
     };
-    normalized_stemmed_values
+    let all_values = match custom_entity_parser_info.parser_usage {
+        CustomEntityParserUsage::WithStems => stemmed_entity_values,
+        _ => {
+            let mut values = entity_values;
+            values.extend(stemmed_entity_values?);
+            Ok(
+                values
+                .into_iter()
+                .unique()
+                .collect::<Vec<_>>()
+            )
+        }
+    };
+    all_values
 }
 
 #[cfg(test)]

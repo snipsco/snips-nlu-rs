@@ -10,7 +10,6 @@ use snips_nlu_ontology::IntentClassifierResult;
 
 use models::IntentClassifierModel;
 use errors::*;
-use nlu_engine::load_engine_shared_resources;
 use failure::ResultExt;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
@@ -166,6 +165,7 @@ mod tests {
     use super::*;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
+    use nlu_engine::load_engine_shared_resources;
     use testutils::*;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
