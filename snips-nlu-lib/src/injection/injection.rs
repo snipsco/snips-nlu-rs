@@ -18,7 +18,7 @@ use entity_parser::custom_entity_parser::CustomEntityParserMetadata;
 use entity_parser::custom_entity_parser::CustomEntityParserUsage;
 use injection::errors::{NluInjectionError, NluInjectionErrorKind};
 use models::nlu_engine::NluEngineModel;
-use nlu_engine::load_engine_shared_resources;
+use resources::loading::load_engine_shared_resources;
 use resources::stemmer::Stemmer;
 use resources::SharedResources;
 
@@ -47,7 +47,7 @@ struct BuiltinGazetteerParserInfo {
 struct CustomGazetteerParserInfo {
     gazetteer_parser_dir: PathBuf,
     gazetteer_parser_metadata: GazetteerParserMetadata,
-    parser_usage: CustomEntityParserUsage
+    parser_usage: CustomEntityParserUsage,
 }
 
 
@@ -108,8 +108,8 @@ impl<P: AsRef<Path>> NluInjector<P> {
         } else {
             load_engine_shared_resources(self.nlu_engine_dir.as_ref())
                 .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
-                        msg: format!("Could not load shared resources from {:?}", self.nlu_engine_dir.as_ref())
-                    })
+                    msg: format!("Could not load shared resources from {:?}", self.nlu_engine_dir.as_ref())
+                })
         }?;
 
         let maybe_stemmer = shared_resources.stemmer.as_ref();
@@ -143,9 +143,9 @@ impl<P: AsRef<Path>> NluInjector<P> {
                 })?;
 
             gazetteer_parser.inject_new_values(new_entity_values, true, self.from_vanilla)
-            .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
-                msg: format!("could not inject values for entity '{}'", entity)
-            })?;
+                .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
+                    msg: format!("could not inject values for entity '{}'", entity)
+                })?;
 
             fs::remove_dir_all(parser_dir.clone())
                 .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
@@ -244,9 +244,9 @@ fn get_builtin_parser_info(
                                  gazetteer_parser_metadata_path)
                 })?;
         let parser_info = BuiltinGazetteerParserInfo {
-                gazetteer_parser_dir,
-                gazetteer_parser_metadata,
-            };
+            gazetteer_parser_dir,
+            gazetteer_parser_metadata,
+        };
         Ok(Some(parser_info))
     } else {
         Ok(None)
@@ -279,10 +279,10 @@ fn get_custom_parser_info(
             msg: format!("invalid gazetteer parser metadata format in {:?}", gazetteer_parser_metadata_path)
         })?;
     let parser_info = CustomGazetteerParserInfo {
-            gazetteer_parser_dir,
-            gazetteer_parser_metadata,
-            parser_usage: custom_parser_metadata.parser_usage
-        };
+        gazetteer_parser_dir,
+        gazetteer_parser_metadata,
+        parser_usage: custom_parser_metadata.parser_usage,
+    };
     Ok(parser_info)
 }
 
@@ -339,7 +339,7 @@ fn stem_entity_value(
         _ => {
             entity_values
                 .iter()
-                .map(|value|{
+                .map(|value| {
                     let stemmer = &maybe_stemmer
                         .ok_or(NluInjectionErrorKind::InternalInjectionError {
                             msg: format!("found {:?} parser usage but no stemmer in NLU engine.",
@@ -365,9 +365,9 @@ fn stem_entity_value(
             let mut values = entity_values;
             values.extend(stemmed_entity_values);
             values
-            .into_iter()
-            .unique()
-            .collect::<Vec<_>>()
+                .into_iter()
+                .unique()
+                .collect::<Vec<_>>()
         }
     };
     Ok(all_values)
@@ -388,7 +388,7 @@ mod tests {
     use testutils::file_path;
 
     #[derive(Clone)]
-    struct MockedStemmer<'a>{
+    struct MockedStemmer<'a> {
         values: HashMap<&'a str, &'a str>,
     }
 
@@ -421,13 +421,13 @@ mod tests {
             .collect();
         let stemmer = MockedStemmer { values: stems };
         let mocked_resources = Arc::new(
-                SharedResources {
-            builtin_entity_parser: engine_shared_resources.as_ref().builtin_entity_parser.clone(),
-            custom_entity_parser: engine_shared_resources.as_ref().custom_entity_parser.clone(),
-            gazetteers: engine_shared_resources.as_ref().gazetteers.clone(),
-            stemmer: Some(Arc::new(stemmer.clone())),
-            word_clusterers: HashMap::new(),
-        });
+            SharedResources {
+                builtin_entity_parser: engine_shared_resources.as_ref().builtin_entity_parser.clone(),
+                custom_entity_parser: engine_shared_resources.as_ref().custom_entity_parser.clone(),
+                gazetteers: engine_shared_resources.as_ref().gazetteers.clone(),
+                stemmer: Some(Arc::new(stemmer.clone())),
+                word_clusterers: HashMap::new(),
+            });
 
         // Behaviour before injection
         let nlu_engine = SnipsNluEngine::from_path_with_resources(

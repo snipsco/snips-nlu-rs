@@ -1,13 +1,16 @@
 use std::collections::HashMap;
 use std::fs::File;
 use std::path::Path;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use serde_json;
+use snips_nlu_ontology::Language;
 
 use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
 use errors::*;
 use failure::ResultExt;
+use models::nlu_engine::NluEngineModel;
 use resources::SharedResources;
 use resources::gazetteer::{Gazetteer, HashSetGazetteer};
 use resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
@@ -45,6 +48,22 @@ pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
         word_clusterers,
     }))
 }
+
+pub fn load_engine_shared_resources<P: AsRef<Path>>(
+    engine_dir: P
+) -> Result<Arc<SharedResources>> {
+    let nlu_engine_file = engine_dir.as_ref().join("nlu_engine.json");
+    let model_file = File::open(&nlu_engine_file)
+        .with_context(|_| format!("Could not open nlu engine file {:?}", nlu_engine_file))?;
+    let model: NluEngineModel = serde_json::from_reader(model_file)
+        .with_context(|_| "Could not deserialize nlu engine json file")?;
+    let language = Language::from_str(&model.dataset_metadata.language_code)?;
+    let resources_path = engine_dir.as_ref().join("resources").join(language.to_string());
+    let builtin_parser_path = engine_dir.as_ref().join(&model.builtin_entity_parser);
+    let custom_parser_path = engine_dir.as_ref().join(&model.custom_entity_parser);
+    load_shared_resources(&resources_path, builtin_parser_path, custom_parser_path)
+}
+
 
 fn load_stemmer<P: AsRef<Path>>(
     resources_dir: &P,

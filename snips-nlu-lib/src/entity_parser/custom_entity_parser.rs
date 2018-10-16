@@ -44,7 +44,7 @@ impl<'de> Deserialize<'de> for CustomEntityParserUsage {
             1 => Ok(CustomEntityParserUsage::WithoutStems),
             2 => Ok(CustomEntityParserUsage::WithAndWithoutStems),
             other => Err(D::Error::invalid_value(
-                Unexpected::Unsigned(other as u64), &"CustomEntityParserUsage expect 0, 1 or 2")),
+                Unexpected::Unsigned(other as u64), &"CustomEntityParserUsage expects 0, 1 or 2")),
         }?;
         Ok(usage)
     }

@@ -1,6 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.61.0] - 2018-10-16
+### Changed
+- Entity injection API is now handled by an `NLUInjector` object
+ 
+### Added
+- Support for builtin music entities in english
+
+### Fixed
+- Handle stemming properly in entity injection 
+
 ## [0.60.1] - 2018-10-09
 ### Added
 - Entity injection API for both custom entities and builtin gazetteer entities
@@ -116,6 +126,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.61.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.1...0.61.0
 [0.60.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.0...0.60.1
 [0.60.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.59.0...0.60.0
 [0.59.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.58.3...0.59.0
