@@ -165,7 +165,7 @@ mod tests {
     use super::*;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
-    use nlu_engine::load_engine_shared_resources;
+    use resources::loading::load_engine_shared_resources;
     use testutils::*;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {

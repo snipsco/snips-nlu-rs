@@ -393,8 +393,8 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nlu_engine::load_engine_shared_resources;
     use nlu_utils::language::Language as NluUtilsLanguage;
+    use resources::loading::load_engine_shared_resources;
     use snips_nlu_ontology::*;
     use testutils::*;
 

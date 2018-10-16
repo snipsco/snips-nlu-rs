@@ -49,22 +49,6 @@ impl SnipsNluEngine {
         })
     }
 
-    #[cfg(test)]
-    pub fn from_path_with_resources<P: AsRef<Path>>(
-        path: P,
-        shared_resources: Arc<SharedResources>,
-    ) -> Result<Self> {
-        let model = SnipsNluEngine::load_model(&path)?;
-        let parsers = Self::load_intent_parsers(
-            path, &model, shared_resources.clone())?;
-
-        Ok(SnipsNluEngine {
-            dataset_metadata: model.dataset_metadata,
-            intent_parsers: parsers,
-            shared_resources,
-        })
-    }
-
     fn check_model_version<P: AsRef<Path>>(path: P) -> Result<()> {
         let model_file = fs::File::open(&path)?;
 
@@ -110,6 +94,24 @@ impl SnipsNluEngine {
                 Ok(build_intent_parser(metadata, parser_path, shared_resources.clone())? as _)
             })
             .collect::<Result<Vec<_>>>()
+    }
+}
+
+#[cfg(test)]
+impl SnipsNluEngine {
+    pub fn from_path_with_resources<P: AsRef<Path>>(
+        path: P,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
+        let model = SnipsNluEngine::load_model(&path)?;
+        let parsers = Self::load_intent_parsers(
+            path, &model, shared_resources.clone())?;
+
+        Ok(SnipsNluEngine {
+            dataset_metadata: model.dataset_metadata,
+            intent_parsers: parsers,
+            shared_resources,
+        })
     }
 }
 
@@ -293,21 +295,6 @@ fn extract_builtin_slot(
             entity: entity_name,
             slot_name,
         }))
-}
-
-pub fn load_engine_shared_resources<P: AsRef<Path>>(
-    engine_dir: P
-) -> Result<Arc<SharedResources>> {
-    let nlu_engine_file = engine_dir.as_ref().join("nlu_engine.json");
-    let model_file = fs::File::open(&nlu_engine_file)
-            .with_context(|_| format!("Could not open nlu engine file {:?}", nlu_engine_file))?;
-    let model: NluEngineModel = serde_json::from_reader(model_file)
-            .with_context(|_| "Could not deserialize nlu engine json file")?;
-    let language = Language::from_str(&model.dataset_metadata.language_code)?;
-    let resources_path = engine_dir.as_ref().join("resources").join(language.to_string());
-    let builtin_parser_path = engine_dir.as_ref().join(&model.builtin_entity_parser);
-    let custom_parser_path = engine_dir.as_ref().join(&model.custom_entity_parser);
-    load_shared_resources(&resources_path, builtin_parser_path, custom_parser_path)
 }
 
 

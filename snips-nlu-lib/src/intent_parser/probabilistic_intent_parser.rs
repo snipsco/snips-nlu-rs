@@ -78,7 +78,7 @@ impl IntentParser for ProbabilisticIntentParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use nlu_engine::load_engine_shared_resources;
+    use resources::loading::load_engine_shared_resources;
     use slot_utils::InternalSlot;
     use testutils::*;
 
