@@ -393,6 +393,7 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nlu_engine::load_engine_shared_resources;
     use nlu_utils::language::Language as NluUtilsLanguage;
     use snips_nlu_ontology::*;
     use testutils::*;
@@ -450,7 +451,7 @@ mod tests {
             .join("probabilistic_intent_parser")
             .join("slot_filler_0");
 
-        let resources = load_shared_resources_from_engine_dir(trained_engine_path).unwrap();
+        let resources = load_engine_shared_resources(trained_engine_path).unwrap();
 
         // When
         let slot_filler = CRFSlotFiller::from_path(slot_filler_path, resources).unwrap();
