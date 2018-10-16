@@ -121,12 +121,12 @@ impl<P: AsRef<Path>> NluInjector<P> {
             .map(|(entity, values)| {
                 let normalize_entity_values = normalize_entity_value(values);
                 if engine_info.custom_entities.contains(&*entity) {
-                    let stemmed_normalized_values = stem_entity_value(
+                    let stemmed_entity_values = stem_entity_value(
                         normalize_entity_values,
                         &engine_info,
                         &custom_parser_info,
                         &maybe_stemmer)?;
-                    Ok((entity, stemmed_normalized_values))
+                    Ok((entity, stemmed_entity_values))
                 } else {
                     Ok((entity, normalize_entity_values))
                 }
@@ -335,7 +335,7 @@ fn stem_entity_value(
     maybe_stemmer: &Option<&Arc<Stemmer>>,
 ) -> Result<Vec<GazetteerEntityValue>, NluInjectionError> {
     let stemmed_entity_values = match custom_entity_parser_info.parser_usage {
-        CustomEntityParserUsage::WithoutStems => Ok(vec![]),
+        CustomEntityParserUsage::WithoutStems => vec![],
         _ => {
             entity_values
                 .iter()
@@ -356,23 +356,21 @@ fn stem_entity_value(
                         resolved_value: value.resolved_value.clone(),
                     })
                 })
-                .collect::<Result<_, NluInjectionError>>()
+                .collect::<Result<_, NluInjectionError>>()?
         }
     };
     let all_values = match custom_entity_parser_info.parser_usage {
         CustomEntityParserUsage::WithStems => stemmed_entity_values,
         _ => {
             let mut values = entity_values;
-            values.extend(stemmed_entity_values?);
-            Ok(
-                values
-                .into_iter()
-                .unique()
-                .collect::<Vec<_>>()
-            )
+            values.extend(stemmed_entity_values);
+            values
+            .into_iter()
+            .unique()
+            .collect::<Vec<_>>()
         }
     };
-    all_values
+    Ok(all_values)
 }
 
 #[cfg(test)]
