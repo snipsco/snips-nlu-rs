@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::path::Path;
+use std::result::Result as StdResult;
 use std::str::FromStr;
 use std::sync::Mutex;
 
@@ -8,6 +9,8 @@ use itertools::Itertools;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::token::*;
 use serde_json;
+use serde::{Deserialize, Deserializer};
+use serde::de::{Unexpected, Error as SerdeError};
 use snips_nlu_ontology::Language;
 use snips_nlu_ontology_parsers::{GazetteerEntityMatch, GazetteerParser};
 
@@ -24,6 +27,27 @@ pub trait CustomEntityParser: Send + Sync {
         sentence: &str,
         filter_entity_kinds: Option<&[String]>,
     ) -> Result<Vec<CustomEntity>>;
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum CustomEntityParserUsage {
+    WithStems,
+    WithoutStems,
+    WithAndWithoutStems,
+}
+
+impl<'de> Deserialize<'de> for CustomEntityParserUsage {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> StdResult<Self, D::Error> {
+
+        let usage = match u8::deserialize(deserializer)? {
+            0 => Ok(CustomEntityParserUsage::WithStems),
+            1 => Ok(CustomEntityParserUsage::WithoutStems),
+            2 => Ok(CustomEntityParserUsage::WithAndWithoutStems),
+            other => Err(D::Error::invalid_value(
+                Unexpected::Unsigned(other as u64), &"CustomEntityParserUsage expects 0, 1 or 2")),
+        }?;
+        Ok(usage)
+    }
 }
 
 pub struct CachingCustomEntityParser {
@@ -118,6 +142,7 @@ fn compute_char_shifts(tokens: &Vec<Token>) -> Vec<i32> {
 pub struct CustomEntityParserMetadata {
     pub language: String,
     pub parser_directory: String,
+    pub parser_usage: CustomEntityParserUsage,
 }
 
 impl CachingCustomEntityParser {

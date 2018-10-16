@@ -3,14 +3,14 @@
   "description": "Language resources for French",
   "email": "adrien.ball@snips.ai, clement.doumouro@snips.ai",
   "gazetteers": [
-    "top_10000_words"
+    "top_10000_words_stemmed"
   ],
   "language": "fr",
   "license": "Apache License, Version 2.0",
   "name": "snips_nlu_fr",
   "noise": "noise",
   "snips-nlu-version": ">=0.1.0,<1.0.0",
-  "stems": null,
+  "stems": "stems",
   "stop_words": "stop_words",
   "url": "https://snips-nlu.readthedocs.io",
   "version": "0.2.0",

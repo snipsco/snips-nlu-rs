@@ -6,6 +6,7 @@ use std::sync::Arc;
 use itertools::Itertools;
 use ndarray::prelude::*;
 use serde_json;
+use snips_nlu_ontology::IntentClassifierResult;
 
 use models::IntentClassifierModel;
 use errors::*;
@@ -13,7 +14,7 @@ use failure::ResultExt;
 use intent_classifier::logreg::MulticlassLogisticRegression;
 use intent_classifier::{Featurizer, IntentClassifier};
 use resources::SharedResources;
-use snips_nlu_ontology::IntentClassifierResult;
+
 use utils::IntentName;
 
 pub struct LogRegIntentClassifier {
@@ -164,6 +165,7 @@ mod tests {
     use super::*;
 
     use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
+    use resources::loading::load_engine_shared_resources;
     use testutils::*;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
@@ -171,7 +173,7 @@ mod tests {
             .join("models")
             .join("nlu_engine");
 
-        let resources = load_shared_resources_from_engine_dir(trained_engine_dir).unwrap();
+        let resources = load_engine_shared_resources(trained_engine_dir).unwrap();
         let language_code = "en".to_string();
         let best_features = vec![
             1, 2, 15, 17, 19, 20, 21, 22, 28, 30, 36, 37, 44, 45, 47, 54, 55, 68, 72, 73, 82, 92,
@@ -548,7 +550,7 @@ mod tests {
             .join("probabilistic_intent_parser")
             .join("intent_classifier");
 
-        let resources = load_shared_resources_from_engine_dir(trained_engine_dir).unwrap();
+        let resources = load_engine_shared_resources(trained_engine_dir).unwrap();
 
         // When
         let intent_classifier = LogRegIntentClassifier::from_path(classifier_path, resources).unwrap();

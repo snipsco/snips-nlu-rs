@@ -25,6 +25,7 @@ extern crate zip;
 #[cfg(test)]
 #[macro_use]
 extern crate maplit;
+extern crate snips_nlu_utils;
 
 mod entity_parser;
 pub mod models;

@@ -11,7 +11,7 @@
       "featurizer_config": {
         "pvalue_threshold": 0.4,
         "sublinear_tf": false,
-        "use_stemming": false,
+        "use_stemming": true,
         "word_clusters_name": null
       },
       "random_seed": null,
@@ -31,9 +31,9 @@
       "feature_factory_configs": [
         {
           "args": {
-            "common_words_gazetteer_name": "top_10000_words",
+            "common_words_gazetteer_name": "top_10000_words_stemmed",
             "n": 1,
-            "use_stemming": false
+            "use_stemming": true
           },
           "factory_name": "ngram",
           "offsets": [
@@ -46,9 +46,9 @@
         },
         {
           "args": {
-            "common_words_gazetteer_name": "top_10000_words",
+            "common_words_gazetteer_name": "top_10000_words_stemmed",
             "n": 2,
-            "use_stemming": false
+            "use_stemming": true
           },
           "factory_name": "ngram",
           "offsets": [
@@ -114,7 +114,7 @@
         {
           "args": {
             "tagging_scheme_code": 2,
-            "use_stemming": false
+            "use_stemming": true
           },
           "drop_out": 0.5,
           "factory_name": "entity_match",

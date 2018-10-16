@@ -78,6 +78,7 @@ impl IntentParser for ProbabilisticIntentParser {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use resources::loading::load_engine_shared_resources;
     use slot_utils::InternalSlot;
     use testutils::*;
 
@@ -91,7 +92,7 @@ mod tests {
         let parser_path = trained_engine_path
             .join("probabilistic_intent_parser");
 
-        let resources = load_shared_resources_from_engine_dir(trained_engine_path).unwrap();
+        let resources = load_engine_shared_resources(trained_engine_path).unwrap();
 
         // When
         let intent_parser = ProbabilisticIntentParser::from_path(parser_path, resources).unwrap();
