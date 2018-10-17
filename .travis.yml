@@ -1,32 +1,37 @@
 sudo: required # This ensures more memory (https://docs.travis-ci.com/user/reference/overview/#Virtualisation-Environment-vs-Operating-System)
 
-matrix:
+jobs:
   allow_failures:
     - rust: nightly
   include:
-    - os: osx
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: osx
       osx_image: xcode9.3
       language: generic
       env:
         - TOXENV=py27
         - PYTHON_TESTS=true
-    - os: osx
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: osx
       osx_image: xcode9.3
       language: generic
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
-    - os: osx
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: osx
       osx_image: xcode9.3
       language: generic
       env:
         - MACOS_SWIFT_TESTS=true
-    - os: osx
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: osx
       osx_image: xcode9.3
       language: generic
       env:
         - IOS_SWIFT_TESTS=true
-    - os: linux
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: linux
       language: python
       python: 2.7
       env:
@@ -38,7 +43,8 @@ matrix:
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
-    - os: linux
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: linux
       language: rust
       rust: stable
       env:
@@ -48,12 +54,14 @@ matrix:
       rust: stable
       env:
         - RUST_TESTS=true
-    - os: linux
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: linux
       language: rust
       rust: beta
       env:
         - RUST_TESTS=true
-    - os: linux
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: linux
       language: rust
       rust: nightly
       env:
