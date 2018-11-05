@@ -43,6 +43,7 @@
 /* Begin PBXFileReference section */
 		7A92822220F65F8000DC3623 /* nlu_engine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nlu_engine; path = ../../../../data/tests/models/nlu_engine; sourceTree = "<group>"; };
 		7A92822520F65F9100DC3623 /* nlu_engine.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = nlu_engine.zip; path = ../../../../data/tests/models/nlu_engine.zip; sourceTree = "<group>"; };
+		F73454D721909AB8000C53DF /* Dependencies */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Dependencies; sourceTree = "<group>"; };
 		F76280F71EFD0AB000A6D248 /* NluEngine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngine.swift; sourceTree = "<group>"; };
 		F76504BE1EFD086C007FF022 /* SnipsNlu.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SnipsNlu.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504C11EFD086C007FF022 /* SnipsNlu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SnipsNlu.h; sourceTree = "<group>"; };
@@ -52,8 +53,6 @@
 		F76504DF1EFD08A8007FF022 /* SnipsNlu.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SnipsNlu.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504E71EFD08A8007FF022 /* SnipsNlu-macOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "SnipsNlu-macOSTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504FE1EFD0A49007FF022 /* NluEngineTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngineTests.swift; sourceTree = "<group>"; };
-		F7A829062099E58A007554FE /* Dependencies */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Dependencies; sourceTree = "<group>"; };
-		F7ED4D631F829D1700703763 /* build.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; name = build.sh; path = Dependencies/build.sh; sourceTree = "<group>"; };
 		F7FC427E2058178F0047F56A /* libbz2.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libbz2.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.2.sdk/usr/lib/libbz2.tbd; sourceTree = DEVELOPER_DIR; };
 		F7FC42802058198B0047F56A /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS11.2.sdk/usr/lib/libresolv.tbd; sourceTree = DEVELOPER_DIR; };
 		F7FC428320581A270047F56A /* libresolv.tbd */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.text-based-dylib-definition"; name = libresolv.tbd; path = usr/lib/libresolv.tbd; sourceTree = SDKROOT; };
@@ -99,8 +98,7 @@
 		F76504B41EFD086C007FF022 = {
 			isa = PBXGroup;
 			children = (
-				F7ED4D631F829D1700703763 /* build.sh */,
-				F7A829062099E58A007554FE /* Dependencies */,
+				F73454D721909AB8000C53DF /* Dependencies */,
 				F76504C01EFD086C007FF022 /* SnipsNlu */,
 				F76504CB1EFD086C007FF022 /* SnipsNluTests */,
 				F76504BF1EFD086C007FF022 /* Products */,
