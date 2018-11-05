@@ -1,0 +1,28 @@
+language = "c"
+
+include_guard = "LIBSNIPS_NLU_H_"
+
+header = "#define SNIPS_NLU_VERSION \"0.62.0-SNAPSHOT\""
+
+[parse]
+parse_deps=true
+include = [
+    "snips_nlu_ffi",
+    "ffi_utils",
+    "snips_nlu_ontology_ffi",
+    "snips_nlu_ontology_ffi_macros",
+]
+
+[export]
+# These types are hidden behind a void pointer, let's include them
+include = [
+    "CActionSessionInit",
+    "CNumberValue",
+    "COrdinalValue",
+    "CPercentageValue",
+    "CInstantTimeValue",
+    "CTimeIntervalValue",
+    "CAmountOfMoneyValue",
+    "CTemperatureValue",
+    "CDurationValue",
+]
