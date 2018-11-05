@@ -1,145 +1,367 @@
 #ifndef LIBSNIPS_NLU_H_
 #define LIBSNIPS_NLU_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include <stdint.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
-typedef enum SNIPS_PRECISION {
-    SNIPS_PRECISION_APPROXIMATE = 0,
-    SNIPS_PRECISION_EXACT = 1,
-} SNIPS_PRECISION;
+#define SNIPS_NLU_VERSION "0.62.0-SNAPSHOT"
 
-typedef enum SNIPS_GRAIN {
-    SNIPS_GRAIN_YEAR = 0,
-    SNIPS_GRAIN_QUARTER = 1,
-    SNIPS_GRAIN_MONTH = 2,
-    SNIPS_GRAIN_WEEK = 3,
-    SNIPS_GRAIN_DAY = 4,
-    SNIPS_GRAIN_HOUR = 5,
-    SNIPS_GRAIN_MINUTE = 6,
-    SNIPS_GRAIN_SECOND = 7,
+/*
+ * Enum representing the grain of a resolved date related value
+ */
+typedef enum {
+  /*
+   * The resolved value has a granularity of a year
+   */
+  SNIPS_GRAIN_YEAR = 0,
+  /*
+   * The resolved value has a granularity of a quarter
+   */
+  SNIPS_GRAIN_QUARTER = 1,
+  /*
+   * The resolved value has a granularity of a mount
+   */
+  SNIPS_GRAIN_MONTH = 2,
+  /*
+   * The resolved value has a granularity of a week
+   */
+  SNIPS_GRAIN_WEEK = 3,
+  /*
+   * The resolved value has a granularity of a day
+   */
+  SNIPS_GRAIN_DAY = 4,
+  /*
+   * The resolved value has a granularity of an hour
+   */
+  SNIPS_GRAIN_HOUR = 5,
+  /*
+   * The resolved value has a granularity of a minute
+   */
+  SNIPS_GRAIN_MINUTE = 6,
+  /*
+   * The resolved value has a granularity of a second
+   */
+  SNIPS_GRAIN_SECOND = 7,
 } SNIPS_GRAIN;
 
-typedef enum SNIPS_SLOT_VALUE_TYPE {
-    SNIPS_SLOT_VALUE_TYPE_CUSTOM = 1,
-    SNIPS_SLOT_VALUE_TYPE_NUMBER = 2,
-    SNIPS_SLOT_VALUE_TYPE_ORDINAL = 3,
-    SNIPS_SLOT_VALUE_TYPE_INSTANTTIME = 4,
-    SNIPS_SLOT_VALUE_TYPE_TIMEINTERVAL = 5,
-    SNIPS_SLOT_VALUE_TYPE_AMOUNTOFMONEY = 6,
-    SNIPS_SLOT_VALUE_TYPE_TEMPERATURE = 7,
-    SNIPS_SLOT_VALUE_TYPE_DURATION = 8,
-    SNIPS_SLOT_VALUE_TYPE_PERCENTAGE = 9,
-    SNIPS_SLOT_VALUE_TYPE_MUSICALBUM = 10,
-    SNIPS_SLOT_VALUE_TYPE_MUSICARTIST = 11,
-    SNIPS_SLOT_VALUE_TYPE_MUSICTRACK = 12,
+/*
+ * Enum describing the precision of a resolved value
+ */
+typedef enum {
+  /*
+   * The resolved value is approximate
+   */
+  SNIPS_PRECISION_APPROXIMATE = 0,
+  /*
+   * The resolved value is exact
+   */
+  SNIPS_PRECISION_EXACT = 1,
+} SNIPS_PRECISION;
+
+/*
+ * Used as a return type of functions that can encounter errors
+ */
+typedef enum {
+  /*
+   * The function returned successfully
+   */
+  SNIPS_RESULT_OK = 0,
+  /*
+   * The function encountered an error, you can retrieve it using the dedicated function
+   */
+  SNIPS_RESULT_KO = 1,
+} SNIPS_RESULT;
+
+/*
+ * Enum type describing how to cast the value of a CSlotValue
+ */
+typedef enum {
+  /*
+   * Custom type represented by a char *
+   */
+  SNIPS_SLOT_VALUE_TYPE_CUSTOM = 1,
+  /*
+   * Number type represented by a CNumberValue
+   */
+  SNIPS_SLOT_VALUE_TYPE_NUMBER = 2,
+  /*
+   * Ordinal type represented by a COrdinalValue
+   */
+  SNIPS_SLOT_VALUE_TYPE_ORDINAL = 3,
+  /*
+   * Instant type represented by a CInstantTimeValue
+   */
+  SNIPS_SLOT_VALUE_TYPE_INSTANTTIME = 4,
+  /*
+   * Interval type represented by a CTimeIntervalValue
+   */
+  SNIPS_SLOT_VALUE_TYPE_TIMEINTERVAL = 5,
+  /*
+   * Amount of money type represented by a CAmountOfMoneyValue
+   */
+  SNIPS_SLOT_VALUE_TYPE_AMOUNTOFMONEY = 6,
+  /*
+   * Temperature type represented by a CTemperatureValue
+   */
+  SNIPS_SLOT_VALUE_TYPE_TEMPERATURE = 7,
+  /*
+   * Duration type represented by a CDurationValue
+   */
+  SNIPS_SLOT_VALUE_TYPE_DURATION = 8,
+  /*
+   * Percentage type represented by a CPercentageValue
+   */
+  SNIPS_SLOT_VALUE_TYPE_PERCENTAGE = 9,
+  /*
+   * Music Album type represented by a char *
+   */
+  SNIPS_SLOT_VALUE_TYPE_MUSICALBUM = 10,
+  /*
+   * Music Artist type represented by a char *
+   */
+  SNIPS_SLOT_VALUE_TYPE_MUSICARTIST = 11,
+  /*
+   * Music Track type represented by a char *
+   */
+  SNIPS_SLOT_VALUE_TYPE_MUSICTRACK = 12,
 } SNIPS_SLOT_VALUE_TYPE;
-
-typedef double CNumberValue;
-
-typedef double CPercentageValue;
-
-typedef long COrdinalValue;
-
-typedef struct CInstantTimeValue {
-    char *const value;
-    SNIPS_GRAIN grain;
-    SNIPS_PRECISION precision;
-} CInstantTimeValue;
-
-typedef struct CTimeIntervalValue {
-    char *const from;
-    char *const to;
-} CTimeIntervalValue;
-
-typedef struct CAmountOfMoneyValue {
-    float value;
-    SNIPS_PRECISION precision;
-    char *const unit;
-} CAmountOfMoneyValue;
-
-typedef struct CTemperatureValue {
-    float value;
-    char *const unit;
-} CTemperatureValue;
-
-typedef struct CDurationValue {
-    long years;
-    long quarters;
-    long months;
-    long weeks;
-    long days;
-    long hours;
-    long minutes;
-    long seconds;
-    SNIPS_PRECISION precision;
-} CDurationValue;
-
-typedef struct CSlotValue {
-    SNIPS_SLOT_VALUE_TYPE value_type;
-    /**
-      * Points to either a char *const, a CNumberValue, a COrdinalValue,
-      * a CInstantTimeValue, a CTimeIntervalValue, a CAmountOfMoneyValue,
-      * a CTemperatureValue or a CDurationValue depending on value_type
-      */
-    void *const value;
-} CSlotValue;
-
-typedef struct CSlot {
-    char *const raw_value;
-    CSlotValue value;
-    int range_start;
-    int range_end;
-    char *const entity;
-    char *const slot_name;
-} CSlot;
-
-typedef struct CIntentClassifierResult {
-    char *const intent_name;
-    float probability;
-} CIntentClassifierResult;
-
-typedef struct CSlotList {
-    CSlot *const slots;
-    int size;
-} CSlotList;
-
-typedef struct CIntentParserResult{
-    char *const input;
-    CIntentClassifierResult *const intent;
-    CSlotList *const slots;
-} CIntentParserResult;
 
 typedef struct CSnipsNluEngine CSnipsNluEngine;
 
-typedef enum SNIPS_RESULT {
-	SNIPS_RESULT_OK = 0,
-	SNIPS_RESULT_KO = 1,
-} SNIPS_RESULT;
+/*
+ * Results of the intent classifier
+ */
+typedef struct {
+  /*
+   * Name of the intent detected
+   */
+  const char *intent_name;
+  /*
+   * Between 0 and 1
+   */
+  float probability;
+} CIntentClassifierResult;
 
-SNIPS_RESULT snips_nlu_engine_create_from_file(char const* file_path, CSnipsNluEngine** client);
+/*
+ * A slot value
+ */
+typedef struct {
+  /*
+   * Points to either a *const char, a CNumberValue, a COrdinalValue,
+   * a CInstantTimeValue, a CTimeIntervalValue, a CAmountOfMoneyValue,
+   * a CTemperatureValue or a CDurationValue depending on value_type
+   */
+  const void *value;
+  /*
+   * The type of the value
+   */
+  SNIPS_SLOT_VALUE_TYPE value_type;
+} CSlotValue;
 
-SNIPS_RESULT snips_nlu_engine_create_from_dir(char const* root_dir, CSnipsNluEngine** client);
+/*
+ * Struct describing a Slot
+ */
+typedef struct {
+  /*
+   * The resolved value of the slot
+   */
+  CSlotValue value;
+  /*
+   * The raw value as it appears in the input text
+   */
+  const char *raw_value;
+  /*
+   * Name of the entity type of the slot
+   */
+  const char *entity;
+  /*
+   * Name of the slot
+   */
+  const char *slot_name;
+  /*
+   * Start index of raw value in input text
+   */
+  int32_t range_start;
+  /*
+   * End index of raw value in input text
+   */
+  int32_t range_end;
+} CSlot;
 
-SNIPS_RESULT snips_nlu_engine_create_from_zip(unsigned char const* zip, unsigned int zip_size, CSnipsNluEngine** client);
+/*
+ * Wrapper around a slot list
+ */
+typedef struct {
+  /*
+   * Pointer to the first slot of the list
+   */
+  const CSlot *slots;
+  /*
+   * Number of slots in the list
+   */
+  int32_t size;
+} CSlotList;
 
-SNIPS_RESULT snips_nlu_engine_run_parse(CSnipsNluEngine const* client, char const* input, CIntentParserResult** result);
+/*
+ * Results of intent parsing
+ */
+typedef struct {
+  /*
+   * The text that was parsed
+   */
+  const char *input;
+  /*
+   * The result of intent classification, may be null if no intent was detected
+   */
+  const CIntentClassifierResult *intent;
+  /*
+   * The slots extracted if an intent was detected
+   */
+  const CSlotList *slots;
+} CIntentParserResult;
 
-SNIPS_RESULT snips_nlu_engine_run_parse_into_json(CSnipsNluEngine const* client, char const* input, char** result_json);
+/*
+ * Representation of a number value
+ */
+typedef double CNumberValue;
 
-SNIPS_RESULT snips_nlu_engine_destroy_string(char* string);
+/*
+ * Representation of an ordinal value
+ */
+typedef int64_t COrdinalValue;
 
-SNIPS_RESULT snips_nlu_engine_destroy_client(CSnipsNluEngine* client);
+/*
+ * Representation of a percentage value
+ */
+typedef double CPercentageValue;
 
-SNIPS_RESULT snips_nlu_engine_destroy_result(CIntentParserResult* result);
+/*
+ * Representation of an instant value
+ */
+typedef struct {
+  /*
+   * String representation of the instant
+   */
+  const char *value;
+  /*
+   * The grain of the resolved instant
+   */
+  SNIPS_GRAIN grain;
+  /*
+   * The precision of the resolved instant
+   */
+  SNIPS_PRECISION precision;
+} CInstantTimeValue;
 
-SNIPS_RESULT snips_nlu_engine_get_last_error(char **error);
+/*
+ * Representation of an interval value
+ */
+typedef struct {
+  /*
+   * String representation of the beginning of the interval
+   */
+  const char *from;
+  /*
+   * String representation of the end of the interval
+   */
+  const char *to;
+} CTimeIntervalValue;
 
-SNIPS_RESULT snips_nlu_engine_get_model_version(char **version);
+/*
+ * Representation of an amount of money value
+ */
+typedef struct {
+  /*
+   * The currency
+   */
+  const char *unit;
+  /*
+   * The amount of money
+   */
+  float value;
+  /*
+   * The precision of the resolved value
+   */
+  SNIPS_PRECISION precision;
+} CAmountOfMoneyValue;
 
-#ifdef __cplusplus
-}
-#endif
+/*
+ * Representation of a temperature value
+ */
+typedef struct {
+  /*
+   * The unit used
+   */
+  const char *unit;
+  /*
+   * The temperature resolved
+   */
+  float value;
+} CTemperatureValue;
 
-#endif // !LIBSNIPS_NLU_H_
+/*
+ * Representation of a duration value
+ */
+typedef struct {
+  /*
+   * Number of years in the duration
+   */
+  int64_t years;
+  /*
+   * Number of quarters in the duration
+   */
+  int64_t quarters;
+  /*
+   * Number of months in the duration
+   */
+  int64_t months;
+  /*
+   * Number of weeks in the duration
+   */
+  int64_t weeks;
+  /*
+   * Number of days in the duration
+   */
+  int64_t days;
+  /*
+   * Number of hours in the duration
+   */
+  int64_t hours;
+  /*
+   * Number of minutes in the duration
+   */
+  int64_t minutes;
+  /*
+   * Number of seconds in the duration
+   */
+  int64_t seconds;
+  /*
+   * Precision of the resolved value
+   */
+  SNIPS_PRECISION precision;
+} CDurationValue;
+
+SNIPS_RESULT snips_nlu_engine_create_from_dir(const char *root_dir, const CSnipsNluEngine **client);
+
+SNIPS_RESULT snips_nlu_engine_create_from_zip(const unsigned char *zip,
+                                              unsigned int zip_size,
+                                              const CSnipsNluEngine **client);
+
+SNIPS_RESULT snips_nlu_engine_destroy_client(CSnipsNluEngine *client);
+
+SNIPS_RESULT snips_nlu_engine_destroy_result(CIntentParserResult *result);
+
+SNIPS_RESULT snips_nlu_engine_destroy_string(char *string);
+
+SNIPS_RESULT snips_nlu_engine_get_model_version(const char **version);
+
+SNIPS_RESULT snips_nlu_engine_run_parse(const CSnipsNluEngine *client,
+                                        const char *input,
+                                        const CIntentParserResult **result);
+
+SNIPS_RESULT snips_nlu_engine_run_parse_into_json(const CSnipsNluEngine *client,
+                                                  const char *input,
+                                                  const char **result_json);
+
+#endif /* LIBSNIPS_NLU_H_ */
