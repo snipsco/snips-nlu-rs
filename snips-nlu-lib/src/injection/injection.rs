@@ -416,7 +416,7 @@ mod tests {
             &engine_dir)
             .unwrap();
 
-        let stems = vec![("jazzy", "jazz")]
+        let stems = vec![("funky", "funk")]
             .into_iter()
             .collect();
         let stemmer = MockedStemmer { values: stems };
@@ -432,36 +432,22 @@ mod tests {
         // Behaviour before injection
         let nlu_engine = SnipsNluEngine::from_path_with_resources(
             &engine_dir, mocked_resources.clone()).unwrap();
-        let parsing = nlu_engine.parse("je veux ecouter une chanson de artist 1 please", None).unwrap();
-        assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic");
-        assert_eq!(parsing.slots.unwrap(), vec![]);
-        let parsing = nlu_engine.parse("je veux ecouter une chanson de artist 2  please", None).unwrap();
-        assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic");
-        assert_eq!(parsing.slots.unwrap(), vec![]);
         let parsing = nlu_engine.parse("je souhaiterais écouter l'album thisisthebestalbum", None).unwrap();
         assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic");
         assert_eq!(parsing.slots.unwrap(), vec![]);
-        let parsing = nlu_engine.parse("je voudrais ecouter ma playlist jazz jazz", None).unwrap();
+        let parsing = nlu_engine.parse("je voudrais ecouter ma playlist funk", None).unwrap();
         assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic");
         assert_eq!(parsing.slots.unwrap(), vec![]);
 
         // values to inject
         let values = vec![
             (
-                "snips/musicArtist".to_string(),
-                "Artist 1".to_string(),
-            ),
-            (
-                "snips/musicArtist".to_string(),
-                "Artist 2".to_string(),
-            ),
-            (
                 "snips/musicAlbum".to_string(),
                 "Thisisthebestalbum".to_string(),
             ),
             (
                 "playlist".to_string(),
-                "jazzy jazzy".to_string(),
+                "funky".to_string(),
             )
         ];
 
@@ -490,32 +476,6 @@ mod tests {
             &engine_dir, Arc::new(mocked_injected_resources)).unwrap();
 
         // Behavior after injection
-        let parsing = nlu_engine.parse("je veux ecouter une chanson de artist 1 please", None).unwrap();
-        assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic".to_string());
-        let ground_true_slots = Some(vec![
-            Slot {
-                raw_value: "artist 1".to_string(),
-                range: Some(31..39),
-                entity: "snips/musicArtist".to_string(),
-                slot_name: "musicArtist".to_string(),
-                value: SlotValue::MusicArtist(StringValue::from("Artist 1")),
-            }
-        ]);
-        assert_eq!(parsing.slots, ground_true_slots);
-
-        let parsing = nlu_engine.parse("je veux ecouter une chanson de artist 2 please", None).unwrap();
-        assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic".to_string());
-        let ground_true_slots = Some(vec![
-            Slot {
-                raw_value: "artist 2".to_string(),
-                range: Some(31..39),
-                entity: "snips/musicArtist".to_string(),
-                slot_name: "musicArtist".to_string(),
-                value: SlotValue::MusicArtist(StringValue::from("Artist 2")),
-            }
-        ]);
-        assert_eq!(parsing.slots, ground_true_slots);
-
         let parsing = nlu_engine.parse("je souhaiterais écouter l'album thisisthebestalbum", None).unwrap();
         assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic".to_string());
         let ground_true_slots = Some(vec![
@@ -529,15 +489,15 @@ mod tests {
         ]);
         assert_eq!(parsing.slots, ground_true_slots);
 
-        let parsing = nlu_engine.parse("je voudrais ecouter ma playlist jazz jazz", None).unwrap();
+        let parsing = nlu_engine.parse("je voudrais ecouter ma playlist funk", None).unwrap();
         assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic".to_string());
         let ground_true_slots = Some(vec![
             Slot {
-                raw_value: "jazz jazz".to_string(),
-                range: Some(32..41),
+                raw_value: "funk".to_string(),
+                range: Some(32..36),
                 entity: "playlist".to_string(),
                 slot_name: "playlist".to_string(),
-                value: SlotValue::Custom(StringValue::from("jazzy jazzy")),
+                value: SlotValue::Custom(StringValue::from("funky")),
             }
         ]);
         assert_eq!(parsing.slots, ground_true_slots);
