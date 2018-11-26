@@ -1,7 +1,9 @@
 [package]
 name = "snips-nlu-lib"
-version = "0.61.0"
+version = "0.62.0"
 authors = [
+    "Adrien Ball <adrien.ball@snips.ai>",
+    "Clement Doumouro <clement.doumouro@snips.ai>",
     "Thibaut Lorrain <thibaut.lorrain@snips.ai>",
     "Kevin Lefevre <kevin.lefevre@snips.ai>"
 ]
@@ -10,8 +12,8 @@ description = "Rust implementation of Snips NLU"
 
 [dependencies]
 crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "30b2ea6" }
-snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.61.1" }
-snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.61.1" }
+snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.62.0" }
+snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.62.0" }
 snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.7.0" }
 failure = "0.1"
 base64 = "0.9"

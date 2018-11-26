@@ -11,7 +11,7 @@
       "featurizer_config": {
         "pvalue_threshold": 0.4,
         "sublinear_tf": false,
-        "use_stemming": true,
+        "use_stemming": false,
         "word_clusters_name": null
       },
       "random_seed": null,

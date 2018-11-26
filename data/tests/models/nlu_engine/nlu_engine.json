@@ -19,7 +19,7 @@
           "featurizer_config": {
             "pvalue_threshold": 0.4,
             "sublinear_tf": false,
-            "use_stemming": true,
+            "use_stemming": false,
             "word_clusters_name": null
           },
           "random_seed": null,
@@ -188,7 +188,7 @@
     "deterministic_intent_parser",
     "probabilistic_intent_parser"
   ],
-  "model_version": "0.17.0",
-  "training_package_version": "0.17.0",
+  "model_version": "0.18.0",
+  "training_package_version": "0.18.0",
   "unit_name": "nlu_engine"
 }

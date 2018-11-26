@@ -118,15 +118,15 @@
       {
         "args": {
           "entity_labels": [
-            "snips/amountOfMoney",
-            "snips/ordinal",
             "snips/number",
-            "snips/duration",
             "snips/percentage",
+            "snips/duration",
             "snips/temperature",
             "snips/datetime",
-            "snips/musicArtist",
-            "snips/musicAlbum"
+            "snips/amountOfMoney",
+            "snips/ordinal",
+            "snips/musicAlbum",
+            "snips/musicArtist"
           ],
           "language_code": "fr",
           "tagging_scheme_code": 1
@@ -143,7 +143,7 @@
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "modelqk0RVV.crfsuite",
+  "crf_model_file": "modelxi1fu5cc.crfsuite",
   "intent": "adri:PlayMusic",
   "language_code": "fr",
   "slot_name_mapping": {

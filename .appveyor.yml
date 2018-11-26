@@ -8,6 +8,7 @@ branches:
   - master
 
 install:
+  - if "%APPVEYOR_REPO_BRANCH%" == "develop" if NOT "%APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH:~0,5%" == "main/" appveyor exit
   - appveyor-retry appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
   - rustup-init.exe -y --default-host %TARGET%
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
