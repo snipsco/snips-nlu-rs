@@ -3,6 +3,7 @@
   "config": {
     "intent_parsers_configs": [
       {
+        "ignore_stop_words": true,
         "max_pattern_length": 1000,
         "max_queries": 100,
         "unit_name": "deterministic_intent_parser"
@@ -11,6 +12,7 @@
         "intent_classifier_config": {
           "data_augmentation_config": {
             "add_builtin_entities_examples": true,
+            "max_unknown_words": null,
             "min_utterances": 20,
             "noise_factor": 5,
             "unknown_word_prob": 0,

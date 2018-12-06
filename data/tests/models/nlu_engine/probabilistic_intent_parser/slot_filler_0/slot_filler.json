@@ -116,10 +116,10 @@
       {
         "args": {
           "entity_labels": [
+            "snips/percentage",
             "snips/datetime",
             "snips/ordinal",
             "snips/amountOfMoney",
-            "snips/percentage",
             "snips/duration",
             "snips/temperature",
             "snips/number"
@@ -153,7 +153,7 @@
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "modelwjh48fhi.crfsuite",
+  "crf_model_file": "model37_1fcx2.crfsuite",
   "intent": "MakeCoffee",
   "language_code": "en",
   "slot_name_mapping": {

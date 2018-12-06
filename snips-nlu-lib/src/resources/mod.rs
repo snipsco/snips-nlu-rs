@@ -3,7 +3,7 @@ pub mod gazetteer;
 pub mod stemmer;
 pub mod word_clusterer;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use entity_parser::{BuiltinEntityParser, CustomEntityParser};
@@ -17,4 +17,5 @@ pub struct SharedResources {
     pub gazetteers: HashMap<String, Arc<Gazetteer>>,
     pub stemmer: Option<Arc<Stemmer>>,
     pub word_clusterers: HashMap<String, Arc<WordClusterer>>,
+    pub stop_words: HashSet<String>
 }
