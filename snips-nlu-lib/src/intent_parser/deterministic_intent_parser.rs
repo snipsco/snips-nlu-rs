@@ -6,13 +6,14 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use failure::ResultExt;
+use itertools::Itertools;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use regex::{Regex, RegexBuilder};
 use serde_json;
-use snips_nlu_ontology::{BuiltinEntity, Language};
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
 
 use errors::*;
 use intent_parser::{IntentParser, internal_parsing_result, InternalParsingResult};
@@ -29,6 +30,7 @@ pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<IntentName, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, SlotName>,
     slot_names_to_entities: HashMap<IntentName, HashMap<SlotName, EntityName>>,
+    builtin_scope: Vec<BuiltinEntityKind>,
     shared_resources: Arc<SharedResources>,
 }
 
@@ -51,11 +53,20 @@ impl DeterministicIntentParser {
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
         let language = Language::from_str(&configuration.language_code)?;
+        let builtin_scope = configuration.slot_names_to_entities
+            .iter()
+            .flat_map(|(_, mapping)|
+                mapping
+                    .iter()
+                    .flat_map(|(_, entity)| BuiltinEntityKind::from_identifier(entity).ok()))
+            .unique()
+            .collect();
         Ok(DeterministicIntentParser {
             language,
             regexes_per_intent: compile_regexes_per_intent(configuration.patterns)?,
             group_names_to_slot_names: configuration.group_names_to_slot_names,
             slot_names_to_entities: configuration.slot_names_to_entities,
+            builtin_scope,
             shared_resources,
         })
     }
@@ -69,7 +80,7 @@ impl IntentParser for DeterministicIntentParser {
     ) -> Result<Option<InternalParsingResult>> {
         let builtin_entities = self.shared_resources
             .builtin_entity_parser
-            .extract_entities(input, None, true)?
+            .extract_entities(input, Some(self.builtin_scope.as_ref()), true)?
             .into_iter()
             .map(|entity| entity.into());
 
