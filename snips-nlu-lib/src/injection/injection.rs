@@ -427,6 +427,7 @@ mod tests {
                 gazetteers: engine_shared_resources.as_ref().gazetteers.clone(),
                 stemmer: Some(Arc::new(stemmer.clone())),
                 word_clusterers: HashMap::new(),
+                stop_words: HashSet::new()
             });
 
         // Behaviour before injection
@@ -470,6 +471,7 @@ mod tests {
             gazetteers: injected_resources.gazetteers.clone(),
             stemmer: Some(Arc::new(stemmer)),
             word_clusterers: injected_resources.word_clusterers.clone(),
+            stop_words: HashSet::new()
         };
 
         let nlu_engine = SnipsNluEngine::from_path_with_resources(

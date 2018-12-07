@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use std::sync::Arc;
 
@@ -37,6 +37,7 @@ pub struct SharedResourcesBuilder {
     gazetteers: HashMap<String, Arc<Gazetteer>>,
     stemmer: Option<Arc<Stemmer>>,
     word_clusterers: HashMap<String, Arc<WordClusterer>>,
+    stop_words: HashSet<String>
 }
 
 impl Default for SharedResourcesBuilder {
@@ -46,7 +47,8 @@ impl Default for SharedResourcesBuilder {
             custom_entity_parser: Arc::<MockedCustomEntityParser>::default(),
             gazetteers: HashMap::default(),
             stemmer: None,
-            word_clusterers: HashMap::default()
+            word_clusterers: HashMap::default(),
+            stop_words: HashSet::default()
         }
     }
 }
@@ -62,13 +64,19 @@ impl SharedResourcesBuilder {
         self
     }
 
+    pub fn stop_words(mut self, stop_words: HashSet<String>) -> Self {
+        self.stop_words = stop_words;
+        self
+    }
+
     pub fn build(self) -> SharedResources {
         SharedResources {
             builtin_entity_parser: self.builtin_entity_parser,
             custom_entity_parser: self.custom_entity_parser,
             gazetteers: self.gazetteers,
             stemmer: self.stemmer,
-            word_clusterers: self.word_clusterers
+            word_clusterers: self.word_clusterers,
+            stop_words: self.stop_words
         }
     }
 }

@@ -6,13 +6,14 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use failure::ResultExt;
+use itertools::Itertools;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use regex::{Regex, RegexBuilder};
 use serde_json;
-use snips_nlu_ontology::{BuiltinEntity, Language};
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
 
 use errors::*;
 use intent_parser::{IntentParser, internal_parsing_result, InternalParsingResult};
@@ -29,6 +30,8 @@ pub struct DeterministicIntentParser {
     regexes_per_intent: HashMap<IntentName, Vec<Regex>>,
     group_names_to_slot_names: HashMap<String, SlotName>,
     slot_names_to_entities: HashMap<IntentName, HashMap<SlotName, EntityName>>,
+    builtin_scope: Vec<BuiltinEntityKind>,
+    ignore_stop_words: bool,
     shared_resources: Arc<SharedResources>,
 }
 
@@ -47,15 +50,25 @@ impl DeterministicIntentParser {
 
 impl DeterministicIntentParser {
     pub fn new(
-        configuration: DeterministicParserModel,
+        model: DeterministicParserModel,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
-        let language = Language::from_str(&configuration.language_code)?;
+        let language = Language::from_str(&model.language_code)?;
+        let builtin_scope = model.slot_names_to_entities
+            .iter()
+            .flat_map(|(_, mapping)|
+                mapping
+                    .iter()
+                    .flat_map(|(_, entity)| BuiltinEntityKind::from_identifier(entity).ok()))
+            .unique()
+            .collect();
         Ok(DeterministicIntentParser {
             language,
-            regexes_per_intent: compile_regexes_per_intent(configuration.patterns)?,
-            group_names_to_slot_names: configuration.group_names_to_slot_names,
-            slot_names_to_entities: configuration.slot_names_to_entities,
+            regexes_per_intent: compile_regexes_per_intent(model.patterns)?,
+            group_names_to_slot_names: model.group_names_to_slot_names,
+            slot_names_to_entities: model.slot_names_to_entities,
+            builtin_scope,
+            ignore_stop_words: model.config.ignore_stop_words,
             shared_resources,
         })
     }
@@ -69,7 +82,7 @@ impl IntentParser for DeterministicIntentParser {
     ) -> Result<Option<InternalParsingResult>> {
         let builtin_entities = self.shared_resources
             .builtin_entity_parser
-            .extract_entities(input, None, true)?
+            .extract_entities(input, Some(self.builtin_scope.as_ref()), true)?
             .into_iter()
             .map(|entity| entity.into());
 
@@ -84,10 +97,8 @@ impl IntentParser for DeterministicIntentParser {
         matched_entities.extend(custom_entities);
 
         let (ranges_mapping, formatted_input) = replace_entities(input, matched_entities);
-        let language = NluUtilsLanguage::from_language(self.language);
-        let cleaned_input = replace_tokenized_out_characters(input, language, ' ');
-        let cleaned_formatted_input =
-            replace_tokenized_out_characters(&*formatted_input, language, ' ');
+        let cleaned_input = self.preprocess_text(input);
+        let cleaned_formatted_input = self.preprocess_text(&*formatted_input);
 
         for (intent, regexes) in self.regexes_per_intent.iter() {
             if !intents
@@ -119,6 +130,26 @@ impl IntentParser for DeterministicIntentParser {
 }
 
 impl DeterministicIntentParser {
+    fn preprocess_text(&self, string: &str) -> String {
+        let tokens = tokenize(string, NluUtilsLanguage::from_language(self.language));
+        let mut current_idx = 0;
+        let mut cleaned_string = "".to_string();
+        for mut token in tokens {
+            if self.ignore_stop_words &&
+                self.shared_resources.stop_words.contains(&token.normalized_value()) {
+                token.value = (0..token.value.chars().count()).map(|_| " ").collect();
+            }
+            let prefix_length = token.char_range.start - current_idx;
+            let prefix: String = (0..prefix_length).map(|_| " ").collect();
+            cleaned_string = format!("{}{}{}", cleaned_string, prefix, token.value);
+            current_idx = token.char_range.end;
+        }
+        let suffix_length = string.chars().count() - current_idx;
+        let suffix: String = (0..suffix_length).map(|_| " ").collect();
+        cleaned_string = format!("{}{}", cleaned_string, suffix);
+        cleaned_string
+    }
+
     fn get_matching_result(
         &self,
         input: &str,
@@ -190,7 +221,7 @@ impl Into<MatchedEntity> for BuiltinEntity {
     fn into(self) -> MatchedEntity {
         MatchedEntity {
             range: self.range,
-            entity_name: self.entity_kind.identifier().to_string()
+            entity_name: self.entity_kind.identifier().to_string(),
         }
     }
 }
@@ -199,7 +230,7 @@ impl Into<MatchedEntity> for CustomEntity {
     fn into(self) -> MatchedEntity {
         MatchedEntity {
             range: self.range,
-            entity_name: self.entity_identifier
+            entity_name: self.entity_identifier,
         }
     }
 }
@@ -286,31 +317,12 @@ fn replace_entities(
 }
 
 fn get_entity_placeholder(entity_label: &str) -> String {
-    // Here we don't need language specific tokenization, we just want to generate a feature name, that's why we use EN
+    // Here we don't need language specific tokenization,
+    // we just want to generate a feature name, that's why we use EN
     let normalized_entity_label = tokenize_light(entity_label, NluUtilsLanguage::EN)
         .join("")
         .to_uppercase();
     format!("%{}%", normalized_entity_label)
-}
-
-fn replace_tokenized_out_characters(
-    string: &str,
-    language: NluUtilsLanguage,
-    replacement_char: char,
-) -> String {
-    let tokens = tokenize(string, language);
-    let mut current_idx = 0;
-    let mut cleaned_string = "".to_string();
-    for token in tokens {
-        let prefix_length = token.char_range.start - current_idx;
-        let prefix: String = (0..prefix_length).map(|_| replacement_char).collect();
-        cleaned_string = format!("{}{}{}", cleaned_string, prefix, token.value);
-        current_idx = token.char_range.end;
-    }
-    let suffix_length = string.chars().count() - current_idx;
-    let suffix: String = (0..suffix_length).map(|_| replacement_char).collect();
-    cleaned_string = format!("{}{}", cleaned_string, suffix);
-    cleaned_string
 }
 
 fn get_range_shift(
@@ -338,7 +350,7 @@ mod tests {
 
     use super::*;
 
-    use models::DeterministicParserModel;
+    use models::{DeterministicParserModel, DeterministicParserConfig};
     use resources::loading::load_engine_shared_resources;
     use slot_utils::InternalSlot;
     use snips_nlu_ontology::*;
@@ -349,18 +361,18 @@ mod tests {
             language_code: "en".to_string(),
             patterns: hashmap![
                 "dummy_intent_1".to_string() => vec![
-                    r"^This is a (?P<group_1>%DUMMY_ENTITY_1%) query with another (?P<group_2>%DUMMY_ENTITY_2%)$".to_string(),
-                    r"^(?P<group_5>%DUMMY_ENTITY_1%)$".to_string(),
-                    r"^This is another (?P<group_3>%DUMMY_ENTITY_2%) query.$".to_string(),
-                    r"^This is another über (?P<group_3>%DUMMY_ENTITY_2%) query.$".to_string(),
-                    r"^This is another (?P<group_4>%DUMMY_ENTITY_2%)?$".to_string(),
+                    r"^\s*This\s*is\s*a\s*(?P<group_1>%DUMMY_ENTITY_1%)\s*query\s*with\s*another\s*(?P<group_2>%DUMMY_ENTITY_2%)\s*$".to_string(),
+                    r"^\s*(?P<group_5>%DUMMY_ENTITY_1%)\s*$".to_string(),
+                    r"^\s*This\s*is\s*another\s*(?P<group_3>%DUMMY_ENTITY_2%)\s*query\s*$".to_string(),
+                    r"^\s*This\s*is\s*another\s*über\s*(?P<group_3>%DUMMY_ENTITY_2%)\s*query.\s*$".to_string(),
+                    r"^\s*This\s*is\s*another\s*(?P<group_4>%DUMMY_ENTITY_2%)?\s*$*".to_string(),
                 ],
                 "dummy_intent_2".to_string() => vec![
-                    r"^This is a (?P<group_0>%DUMMY_ENTITY_1%) query from another intent$".to_string()
+                    r"^\s*This\s*is\s*a\s*(?P<group_0>%DUMMY_ENTITY_1%)\s*query\s*from\s*another\s*intent\s*$".to_string()
                 ],
                 "dummy_intent_3".to_string() => vec![
-                    r"^Send (?P<group_6>%SNIPSAMOUNTOFMONEY%) to john$".to_string(),
-                    r"^Send (?P<group_6>%SNIPSAMOUNTOFMONEY%) to john at (?P<group_7>%DUMMY_ENTITY_2%)$".to_string()
+                    r"^\s*Send\s*(?P<group_6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*$".to_string(),
+                    r"^\s*Send\s*(?P<group_6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*at\s*(?P<group_7>%DUMMY_ENTITY_2%)\s*$".to_string()
                 ],
             ],
             group_names_to_slot_names: hashmap![
@@ -387,6 +399,7 @@ mod tests {
                     "dummy_slot_name4".to_string() => "snips/amountOfMoney".to_string(),
                 ],
             ],
+            config: DeterministicParserConfig { ignore_stop_words: true },
         }
     }
 
@@ -431,13 +444,13 @@ mod tests {
                         value: "dummy_a".to_string(),
                         resolved_value: "dummy_a".to_string(),
                         range: 10..17,
-                        entity_identifier: "dummy_entity_1".to_string()
+                        entity_identifier: "dummy_entity_1".to_string(),
                     },
                     CustomEntity {
                         value: "dummy_c".to_string(),
                         resolved_value: "dummy_c".to_string(),
                         range: 37..44,
-                        entity_identifier: "dummy_entity_2".to_string()
+                        entity_identifier: "dummy_entity_2".to_string(),
                     }
                 ]
             )]
@@ -498,6 +511,52 @@ mod tests {
     }
 
     #[test]
+    fn should_get_intent_by_ignoring_stop_words() {
+        // Given
+        let text = "yolo this is a dummy_a query yala with another dummy_c yili";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(
+            vec![(
+                text.to_string(),
+                vec![
+                    CustomEntity {
+                        value: "dummy_a".to_string(),
+                        resolved_value: "dummy_a".to_string(),
+                        range: 15..22,
+                        entity_identifier: "dummy_entity_1".to_string(),
+                    },
+                    CustomEntity {
+                        value: "dummy_c".to_string(),
+                        resolved_value: "dummy_c".to_string(),
+                        range: 47..54,
+                        entity_identifier: "dummy_entity_2".to_string(),
+                    }
+                ]
+            )]
+        );
+        let stop_words = vec![
+            "yolo".to_string(),
+            "yala".to_string(),
+            "yili".to_string()
+        ].into_iter().collect();
+        let shared_resources = SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser)
+            .stop_words(stop_words)
+            .build();
+        let parser = DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources)).unwrap();
+
+        // When
+        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
+
+        // Then
+        let expected_intent = Some(IntentClassifierResult {
+            intent_name: "dummy_intent_1".to_string(),
+            probability: 1.0,
+        });
+
+        assert_eq!(intent, expected_intent);
+    }
+
+    #[test]
     fn should_get_slots() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
@@ -509,13 +568,13 @@ mod tests {
                         value: "dummy_a".to_string(),
                         resolved_value: "dummy_a".to_string(),
                         range: 10..17,
-                        entity_identifier: "dummy_entity_1".to_string()
+                        entity_identifier: "dummy_entity_1".to_string(),
                     },
                     CustomEntity {
                         value: "dummy_c".to_string(),
                         resolved_value: "dummy_c".to_string(),
                         range: 37..44,
-                        entity_identifier: "dummy_entity_2".to_string()
+                        entity_identifier: "dummy_entity_2".to_string(),
                     }
                 ]
             )]
@@ -558,7 +617,7 @@ mod tests {
                         value: "dummy_cc".to_string(),
                         resolved_value: "dummy_cc".to_string(),
                         range: 21..29,
-                        entity_identifier: "dummy_entity_2".to_string()
+                        entity_identifier: "dummy_entity_2".to_string(),
                     }
                 ]
             )]
@@ -612,7 +671,7 @@ mod tests {
                         value: "dummy c".to_string(),
                         resolved_value: "dummy c".to_string(),
                         range: 27..34,
-                        entity_identifier: "dummy_entity_2".to_string()
+                        entity_identifier: "dummy_entity_2".to_string(),
                     }
                 ]
             )]
@@ -656,7 +715,7 @@ mod tests {
                         value: "dummy’c".to_string(),
                         resolved_value: "dummy’c".to_string(),
                         range: 16..23,
-                        entity_identifier: "dummy_entity_2".to_string()
+                        entity_identifier: "dummy_entity_2".to_string(),
                     }
                 ]
             )]
@@ -779,19 +838,6 @@ mod tests {
 
         // Then
         assert_eq!("%SNIPSDATETIME%", &formatted_label)
-    }
-
-    #[test]
-    fn should_replace_tokenized_out_characters() {
-        // Given
-        let string = ": hello, it's me !  ";
-        let language = NluUtilsLanguage::EN;
-
-        // When
-        let cleaned_string = replace_tokenized_out_characters(string, language, '_');
-
-        // Then
-        assert_eq!("__hello__it_s_me_!__".to_string(), cleaned_string);
     }
 
     #[test]

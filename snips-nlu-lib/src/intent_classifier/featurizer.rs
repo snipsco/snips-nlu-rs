@@ -184,6 +184,7 @@ mod tests {
     use resources::SharedResources;
     use testutils::MockedBuiltinEntityParser;
     use resources::stemmer::HashMapStemmer;
+    use std::collections::HashSet;
 
     #[test]
     fn transform_works() {
@@ -230,6 +231,7 @@ mod tests {
             stemmer: Some(Arc::new(mocked_stemmer)),
             word_clusterers: HashMap::new(),
             gazetteers: HashMap::new(),
+            stop_words: HashSet::new()
         };
         let best_features = vec![0, 1, 2, 3, 6, 7, 8, 9];
         let vocab = hashmap![

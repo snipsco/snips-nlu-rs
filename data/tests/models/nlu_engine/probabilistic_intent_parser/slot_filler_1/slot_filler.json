@@ -118,10 +118,10 @@
       {
         "args": {
           "entity_labels": [
+            "snips/percentage",
             "snips/datetime",
             "snips/ordinal",
             "snips/amountOfMoney",
-            "snips/percentage",
             "snips/duration",
             "snips/temperature",
             "snips/number"
@@ -155,7 +155,7 @@
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "modelhqz6w8gm.crfsuite",
+  "crf_model_file": "modelum55ixvc.crfsuite",
   "intent": "MakeTea",
   "language_code": "en",
   "slot_name_mapping": {

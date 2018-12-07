@@ -1,5 +1,6 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
+use std::io::{BufReader, BufRead};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -22,6 +23,7 @@ struct ResourcesMetadata {
     gazetteers: Option<Vec<String>>,
     word_clusters: Option<Vec<String>>,
     stems: Option<String>,
+    stop_words: Option<String>
 }
 
 pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
@@ -37,6 +39,7 @@ pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
     let stemmer = load_stemmer(&resources_dir, &metadata)?;
     let gazetteers = load_gazetteers(&resources_dir, &metadata)?;
     let word_clusterers = load_word_clusterers(&resources_dir, &metadata)?;
+    let stop_words = load_stop_words(&resources_dir, &metadata)?;
     let builtin_entity_parser = CachingBuiltinEntityParser::from_path(builtin_entity_parser_path, 1000)?;
     let custom_entity_parser = CachingCustomEntityParser::from_path(custom_entity_parser_path, 1000)?;
 
@@ -46,6 +49,7 @@ pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
         gazetteers,
         stemmer,
         word_clusterers,
+        stop_words
     }))
 }
 
@@ -126,4 +130,28 @@ fn load_word_clusterers<P: AsRef<Path>>(
         }
     }
     Ok(word_clusterers)
+}
+
+fn load_stop_words<P: AsRef<Path>>(
+    resources_dir: &P,
+    metadata: &ResourcesMetadata
+) -> Result<HashSet<String>> {
+    if let Some(stop_words_name) = metadata.stop_words.as_ref() {
+        let stop_words_path = resources_dir.as_ref()
+            .join(stop_words_name)
+            .with_extension("txt");
+        let file = File::open(&stop_words_path)
+            .with_context(|_| format!("Cannot open word stop words file {:?}", stop_words_path))?;
+        let reader = BufReader::new(file);
+        let mut stop_words = HashSet::<String>::new();
+        for line in reader.lines() {
+            let stop_word = line?;
+            if !stop_word.is_empty() {
+                stop_words.insert(stop_word);
+            }
+        }
+        Ok(stop_words)
+    } else {
+        Ok(HashSet::new())
+    }
 }
