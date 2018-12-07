@@ -48,9 +48,16 @@ pub fn resolve_custom_slot(
                 custom_entity.range == internal_slot.char_range
         ) {
         Some(matching_entity) => Some(matching_entity.clone()),
-        None => custom_entity_parser
-            .extract_entities(&internal_slot.value, Some(&[internal_slot.entity.clone()]))?
-            .pop()
+        None =>
+            custom_entity_parser
+                .extract_entities(&internal_slot.value, Some(&[internal_slot.entity.clone()]))?
+                .pop()
+                .and_then(|entity|
+                    if entity.value.chars().count() == internal_slot.value.chars().count() {
+                        Some(entity)
+                    } else {
+                        None
+                    })
     };
     let resolved_slot = opt_matching_entity
         .map(|matching_entity| Some(matching_entity.resolved_value))
