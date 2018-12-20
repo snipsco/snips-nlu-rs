@@ -4,15 +4,16 @@ use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::Arc;
 
-use errors::*;
 use failure::ResultExt;
-use intent_classifier::{build_intent_classifier, IntentClassifier};
-use intent_parser::{IntentParser, InternalParsingResult};
-use models::ProbabilisticParserModel;
-use resources::SharedResources;
-use serde_json;
-use slot_filler::{build_slot_filler, SlotFiller};
-use utils::IntentName;
+
+use crate::errors::*;
+use crate::intent_classifier::{build_intent_classifier, IntentClassifier};
+use crate::models::ProbabilisticParserModel;
+use crate::resources::SharedResources;
+use crate::slot_filler::{build_slot_filler, SlotFiller};
+use crate::utils::IntentName;
+
+use super::{IntentParser, InternalParsingResult};
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,
@@ -77,10 +78,10 @@ impl IntentParser for ProbabilisticIntentParser {
 
 #[cfg(test)]
 mod tests {
+    use crate::resources::loading::load_engine_shared_resources;
+    use crate::slot_utils::InternalSlot;
+    use crate::testutils::*;
     use super::*;
-    use resources::loading::load_engine_shared_resources;
-    use slot_utils::InternalSlot;
-    use testutils::*;
 
     #[test]
     fn from_path_works() {

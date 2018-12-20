@@ -3,19 +3,18 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
+use failure::ResultExt;
 use itertools::Itertools;
 use ndarray::prelude::*;
-use serde_json;
 use snips_nlu_ontology::IntentClassifierResult;
 
-use models::IntentClassifierModel;
-use errors::*;
-use failure::ResultExt;
-use intent_classifier::logreg::MulticlassLogisticRegression;
-use intent_classifier::{Featurizer, IntentClassifier};
-use resources::SharedResources;
+use crate::errors::*;
+use crate::models::IntentClassifierModel;
+use crate::intent_classifier::{Featurizer, IntentClassifier};
+use crate::resources::SharedResources;
+use crate::utils::IntentName;
 
-use utils::IntentName;
+use super::logreg::MulticlassLogisticRegression;
 
 pub struct LogRegIntentClassifier {
     intent_list: Vec<Option<IntentName>>,
@@ -164,9 +163,9 @@ fn get_filtered_out_intents_indexes(
 mod tests {
     use super::*;
 
-    use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
-    use resources::loading::load_engine_shared_resources;
-    use testutils::*;
+    use crate::models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
+    use crate::resources::loading::load_engine_shared_resources;
+    use crate::testutils::*;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
         let trained_engine_dir = file_path("tests")

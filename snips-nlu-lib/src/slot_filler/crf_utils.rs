@@ -2,13 +2,13 @@ use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
 use itertools::Itertools;
-
-use errors::*;
-use nlu_utils::string::suffix_from_char_index;
-use nlu_utils::token::Token;
-use slot_utils::InternalSlot;
-use utils::{EntityName, product, SlotName};
 use snips_nlu_ontology::BuiltinEntity;
+
+use crate::errors::*;
+use crate::nlu_utils::string::suffix_from_char_index;
+use crate::nlu_utils::token::Token;
+use crate::slot_utils::InternalSlot;
+use crate::utils::{EntityName, product, SlotName};
 
 const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";

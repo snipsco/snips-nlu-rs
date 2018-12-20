@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
 use std::iter::FromIterator;
 
-use errors::*;
+use crate::errors::*;
 
 pub trait Gazetteer: Send + Sync {
     fn contains(&self, value: &str) -> bool;

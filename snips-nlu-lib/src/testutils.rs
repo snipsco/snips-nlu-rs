@@ -5,15 +5,15 @@ use std::sync::Arc;
 use ndarray::prelude::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind};
 
-use entity_parser::{BuiltinEntityParser, CustomEntity, CustomEntityParser};
-use errors::*;
-use resources::SharedResources;
-use resources::gazetteer::Gazetteer;
-use resources::stemmer::Stemmer;
-use resources::word_clusterer::WordClusterer;
+use crate::entity_parser::{BuiltinEntityParser, CustomEntity, CustomEntityParser};
+use crate::errors::*;
+use crate::resources::SharedResources;
+use crate::resources::gazetteer::Gazetteer;
+use crate::resources::stemmer::Stemmer;
+use crate::resources::word_clusterer::WordClusterer;
 
-pub fn file_path(filename: &str) -> ::std::path::PathBuf {
-    ::dinghy_test::try_test_file_path("data")
+pub fn file_path(filename: &str) ->::std::path::PathBuf {
+    dinghy_test::try_test_file_path("data")
         .unwrap_or_else(|| "../data".into())
         .join(filename)
 }

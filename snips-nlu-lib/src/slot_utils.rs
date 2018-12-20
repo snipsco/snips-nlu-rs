@@ -1,11 +1,12 @@
 use std::ops::Range;
 use std::sync::Arc;
 
-use entity_parser::{CustomEntityParser, CustomEntity, BuiltinEntityParser};
-use errors::*;
-use models::nlu_engine::Entity;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Slot, SlotValue};
-use utils::{EntityName, SlotName};
+
+use crate::errors::*;
+use crate::entity_parser::{CustomEntityParser, CustomEntity, BuiltinEntityParser};
+use crate::models::nlu_engine::Entity;
+use crate::utils::{EntityName, SlotName};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct InternalSlot {
@@ -97,11 +98,14 @@ fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slot {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::iter::FromIterator;
+
     use snips_nlu_ontology::*;
-    use models::nlu_engine::Entity;
-    use testutils::*;
+
+    use crate::models::nlu_engine::Entity;
+    use crate::testutils::*;
+
+    use super::*;
 
     #[test]
     fn should_resolve_builtin_slot() {

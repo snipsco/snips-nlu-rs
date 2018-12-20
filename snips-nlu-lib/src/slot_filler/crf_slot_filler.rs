@@ -7,25 +7,24 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 use crfsuite::Tagger as CRFSuiteTagger;
-use itertools::Itertools;
-
-use entity_parser::BuiltinEntityParser;
-use errors::*;
 use failure::ResultExt;
-use language::FromLanguage;
-use models::SlotFillerModel;
+use itertools::Itertools;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::substring_with_char_range;
 use nlu_utils::token::{tokenize, Token};
-use resources::SharedResources;
-use serde_json;
-use slot_filler::crf_utils::*;
-use slot_filler::feature_processor::ProbabilisticFeatureProcessor;
-use slot_filler::SlotFiller;
-use slot_utils::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
-use utils::{EntityName, SlotName};
+
+use crate::entity_parser::BuiltinEntityParser;
+use crate::errors::*;
+use crate::language::FromLanguage;
+use crate::models::SlotFillerModel;
+use crate::resources::SharedResources;
+use crate::slot_filler::crf_utils::*;
+use crate::slot_filler::feature_processor::ProbabilisticFeatureProcessor;
+use crate::slot_filler::SlotFiller;
+use crate::slot_utils::*;
+use crate::utils::{EntityName, SlotName};
 
 pub struct CRFSlotFiller {
     language: Language,
@@ -194,12 +193,12 @@ impl CRFSlotFiller {
 // python-crfsuite
 
 fn decode_tag(tag: &str) -> Result<String> {
-    let bytes = ::base64::decode(tag)?;
+    let bytes = base64::decode(tag)?;
     Ok(String::from_utf8(bytes)?)
 }
 
 fn encode_tag(tag: &str) -> String {
-    ::base64::encode(tag)
+    base64::encode(tag)
 }
 
 fn filter_overlapping_builtins(
@@ -393,10 +392,12 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use nlu_utils::language::Language as NluUtilsLanguage;
-    use resources::loading::load_engine_shared_resources;
     use snips_nlu_ontology::*;
-    use testutils::*;
+
+    use crate::resources::loading::load_engine_shared_resources;
+    use crate::testutils::*;
 
     #[derive(Debug, Fail)]
     pub enum TestError {

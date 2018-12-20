@@ -6,20 +6,19 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use entity_parser::{BuiltinEntityParser, CustomEntityParser};
-use errors::*;
 use failure::ResultExt;
-use intent_parser::*;
 use itertools::Itertools;
-use models::{DatasetMetadata, Entity, ModelVersion, NluEngineModel, ProcessingUnitMetadata};
-use nlu_utils::string::substring_with_char_range;
-use resources::loading::load_shared_resources;
-use resources::SharedResources;
-use slot_utils::*;
-use serde_json;
 use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
-use tempfile;
-use utils::{EntityName, IntentName, SlotName, extract_nlu_engine_zip_archive};
+
+use crate::entity_parser::{BuiltinEntityParser, CustomEntityParser};
+use crate::errors::*;
+use crate::intent_parser::*;
+use crate::models::{DatasetMetadata, Entity, ModelVersion, NluEngineModel, ProcessingUnitMetadata};
+use crate::nlu_utils::string::substring_with_char_range;
+use crate::resources::loading::load_shared_resources;
+use crate::resources::SharedResources;
+use crate::slot_utils::*;
+use crate::utils::{EntityName, IntentName, SlotName, extract_nlu_engine_zip_archive};
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -52,11 +51,11 @@ impl SnipsNluEngine {
     fn check_model_version<P: AsRef<Path>>(path: P) -> Result<()> {
         let model_file = fs::File::open(&path)?;
 
-        let model_version: ModelVersion = ::serde_json::from_reader(model_file)?;
-        if model_version.model_version != ::MODEL_VERSION {
+        let model_version: ModelVersion = serde_json::from_reader(model_file)?;
+        if model_version.model_version != crate::MODEL_VERSION {
             bail!(SnipsNluError::WrongModelVersion(
                 model_version.model_version,
-                ::MODEL_VERSION
+                crate::MODEL_VERSION
             ));
         }
         Ok(())
@@ -300,10 +299,10 @@ fn extract_builtin_slot(
 
 #[cfg(test)]
 mod tests {
+    use crate::entity_parser::custom_entity_parser::CustomEntity;
+    use crate::testutils::*;
     use snips_nlu_ontology::NumberValue;
     use super::*;
-    use entity_parser::custom_entity_parser::CustomEntity;
-    use testutils::*;
 
     #[test]
     fn from_path_works() {

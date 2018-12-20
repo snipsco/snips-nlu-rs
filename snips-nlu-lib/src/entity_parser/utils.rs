@@ -2,7 +2,7 @@ use std::hash::Hash;
 
 use lru_cache::LruCache;
 
-use errors::*;
+use crate::errors::*;
 
 pub struct Cache<K, V>(LruCache<K, V>) where K: Eq + Hash + Clone, V: Clone;
 

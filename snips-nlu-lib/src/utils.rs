@@ -1,10 +1,11 @@
 use std::fs;
 use std::io;
 use std::path::{Component, Path, PathBuf};
-use zip::ZipArchive;
 
-use errors::*;
+use zip::ZipArchive;
 use failure::ResultExt;
+
+use crate::errors::*;
 
 pub type IntentName = String;
 pub type SlotName = String;

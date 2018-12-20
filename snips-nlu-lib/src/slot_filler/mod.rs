@@ -10,16 +10,16 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-use errors::*;
 use failure::ResultExt;
-use serde_json;
+use nlu_utils::token::Token;
+
+use crate::errors::*;
+use crate::models::ProcessingUnitMetadata;
+use crate::resources::SharedResources;
+use crate::slot_utils::InternalSlot;
 
 pub use self::crf_slot_filler::*;
 use self::crf_utils::TaggingScheme;
-use models::ProcessingUnitMetadata;
-use nlu_utils::token::Token;
-use resources::SharedResources;
-use slot_utils::InternalSlot;
 
 pub trait SlotFiller: Send + Sync {
     fn get_tagging_scheme(&self) -> TaggingScheme;

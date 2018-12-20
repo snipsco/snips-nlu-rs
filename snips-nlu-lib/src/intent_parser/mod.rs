@@ -5,14 +5,14 @@ use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
-use errors::*;
 use snips_nlu_ontology::IntentClassifierResult;
 
-use models::ProcessingUnitMetadata;
+use crate::errors::*;
+use crate::models::ProcessingUnitMetadata;
 pub use self::deterministic_intent_parser::DeterministicIntentParser;
 pub use self::probabilistic_intent_parser::ProbabilisticIntentParser;
-use resources::SharedResources;
-pub use slot_utils::InternalSlot;
+use crate::resources::SharedResources;
+pub use crate::slot_utils::InternalSlot;
 
 pub struct InternalParsingResult {
     pub intent: IntentClassifierResult,

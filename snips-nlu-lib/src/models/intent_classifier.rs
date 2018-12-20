@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use utils::IntentName;
+use crate::utils::IntentName;
 
 #[derive(Debug, Deserialize)]
 pub struct IntentClassifierModel {

@@ -8,16 +8,15 @@ use failure::ResultExt;
 use itertools::Itertools;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::token::*;
-use serde_json;
 use serde::{Deserialize, Deserializer};
 use serde::de::{Unexpected, Error as SerdeError};
 use snips_nlu_ontology::Language;
 use snips_nlu_ontology_parsers::{GazetteerEntityMatch, GazetteerParser};
 
-use entity_parser::utils::Cache;
-use errors::*;
-use language::FromLanguage;
-use utils::EntityName;
+use crate::entity_parser::utils::Cache;
+use crate::errors::*;
+use crate::language::FromLanguage;
+use crate::utils::EntityName;
 
 pub type CustomEntity = GazetteerEntityMatch<String>;
 
@@ -166,7 +165,7 @@ impl CachingCustomEntityParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use testutils::file_path;
+    use crate::testutils::file_path;
 
     #[test]
     fn should_compute_char_shifts() {

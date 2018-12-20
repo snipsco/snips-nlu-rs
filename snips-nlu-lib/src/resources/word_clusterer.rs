@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::iter::FromIterator;
 
-use csv;
-use errors::*;
 use snips_nlu_ontology::Language;
+
+use crate::errors::*;
 
 pub trait WordClusterer: Send + Sync {
     fn get_cluster(&self, word: &str) -> Option<String>;

@@ -2,6 +2,7 @@
 name = "snips-nlu-python-ffi"
 version = "0.63.0-SNAPSHOT"
 authors = ["Adrien Ball <adrien.ball@snips.ai>"]
+edition = "2018"
 
 [lib]
 name = "snips_nlu_python_ffi"

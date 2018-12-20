@@ -1,18 +1,20 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use entity_parser::{CustomEntityParser, BuiltinEntityParser};
-use errors::*;
 use itertools::Itertools;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{get_shape, normalize};
 use nlu_utils::token::Token;
-use resources::gazetteer::Gazetteer;
-use resources::SharedResources;
-use resources::stemmer::Stemmer;
-use resources::word_clusterer::WordClusterer;
-use slot_filler::feature_processor::{Feature, FeatureKindRepr};
 use snips_nlu_ontology::BuiltinEntityKind;
+
+use crate::entity_parser::{CustomEntityParser, BuiltinEntityParser};
+use crate::errors::*;
+use crate::resources::gazetteer::Gazetteer;
+use crate::resources::SharedResources;
+use crate::resources::stemmer::Stemmer;
+use crate::resources::word_clusterer::WordClusterer;
+
+use super::feature_processor::{Feature, FeatureKindRepr};
 use super::crf_utils::{get_scheme_prefix, TaggingScheme};
 use super::features_utils::{get_word_chunk, initial_string_from_tokens};
 
@@ -20,7 +22,7 @@ pub struct IsDigitFeature {}
 
 impl Feature for IsDigitFeature {
     fn build_features(
-        _args: &HashMap<String, ::serde_json::Value>,
+        _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         Ok(vec![Box::new(Self {})])
@@ -39,7 +41,7 @@ pub struct LengthFeature {}
 
 impl Feature for LengthFeature {
     fn build_features(
-        _args: &HashMap<String, ::serde_json::Value>,
+        _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         Ok(vec![Box::new(Self {})])
@@ -54,7 +56,7 @@ pub struct IsFirstFeature {}
 
 impl Feature for IsFirstFeature {
     fn build_features(
-        _args: &HashMap<String, ::serde_json::Value>,
+        _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         Ok(vec![Box::new(Self {})])
@@ -73,7 +75,7 @@ pub struct IsLastFeature {}
 
 impl Feature for IsLastFeature {
     fn build_features(
-        _args: &HashMap<String, ::serde_json::Value>,
+        _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         Ok(vec![Box::new(Self {})])
@@ -100,7 +102,7 @@ impl Feature for NgramFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let n = parse_as_u64(args, "n")? as usize;
@@ -168,7 +170,7 @@ impl Feature for ShapeNgramFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let ngram_size = parse_as_u64(args, "n")? as usize;
@@ -201,7 +203,7 @@ impl Feature for PrefixFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let prefix_size = parse_as_u64(args, "prefix_size")? as usize;
@@ -224,7 +226,7 @@ impl Feature for SuffixFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let suffix_size = parse_as_u64(args, "suffix_size")? as usize;
@@ -251,7 +253,7 @@ impl Feature for CustomEntityMatchFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let entities = parse_as_vec_string(args, "entities")?;
@@ -307,7 +309,7 @@ impl Feature for BuiltinEntityMatchFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let builtin_entity_labels = parse_as_vec_string(args, "entity_labels")?;
@@ -353,7 +355,7 @@ impl Feature for WordClusterFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let cluster_name = parse_as_string(args, "cluster_name")?;
@@ -391,7 +393,7 @@ fn transform_tokens(tokens: &[Token], stemmer: Option<Arc<Stemmer>>) -> Vec<Toke
         .collect_vec()
 }
 
-fn parse_as_string(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<String> {
+fn parse_as_string(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<String> {
     Ok(args.get(arg_name)
         .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_str()
@@ -400,7 +402,7 @@ fn parse_as_string(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) 
 }
 
 fn parse_as_opt_string(
-    args: &HashMap<String, ::serde_json::Value>,
+    args: &HashMap<String, serde_json::Value>,
     arg_name: &str,
 ) -> Result<Option<String>> {
     Ok(args.get(arg_name)
@@ -410,7 +412,7 @@ fn parse_as_opt_string(
 }
 
 fn parse_as_vec_string(
-    args: &HashMap<String, ::serde_json::Value>,
+    args: &HashMap<String, serde_json::Value>,
     arg_name: &str,
 ) -> Result<Vec<String>> {
     args.get(arg_name)
@@ -426,14 +428,14 @@ fn parse_as_vec_string(
         .collect()
 }
 
-fn parse_as_bool(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<bool> {
+fn parse_as_bool(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<bool> {
     Ok(args.get(arg_name)
         .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_bool()
         .ok_or_else(|| format_err!("'{}' isn't a bool", arg_name))?)
 }
 
-fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<u64> {
+fn parse_as_u64(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<u64> {
     Ok(args.get(arg_name)
         .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_u64()
@@ -443,15 +445,17 @@ fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> 
 #[cfg(test)]
 mod tests {
     use std::iter::FromIterator;
+
+    use snips_nlu_ontology::{BuiltinEntity, SlotValue, TemperatureValue};
     use nlu_utils::language::Language as NluUtilsLanguage;
     use nlu_utils::token::tokenize;
-    use resources::gazetteer::HashSetGazetteer;
-    use resources::stemmer::HashMapStemmer;
-    use resources::word_clusterer::HashMapWordClusterer;
-    use snips_nlu_ontology::{BuiltinEntity, SlotValue, TemperatureValue};
+
+    use crate::entity_parser::custom_entity_parser::CustomEntity;
+    use crate::resources::gazetteer::HashSetGazetteer;
+    use crate::resources::stemmer::HashMapStemmer;
+    use crate::resources::word_clusterer::HashMapWordClusterer;
+    use crate::testutils::{MockedBuiltinEntityParser, MockedCustomEntityParser};
     use super::*;
-    use testutils::{MockedBuiltinEntityParser, MockedCustomEntityParser};
-    use entity_parser::custom_entity_parser::CustomEntity;
 
     #[test]
     fn transform_tokens_should_work() {

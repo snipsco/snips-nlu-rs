@@ -14,13 +14,14 @@ use snips_nlu_ontology_parsers::gazetteer_entity_parser::{EntityValue as Gazette
                                                           Parser as GazetteerEntityParser};
 use snips_nlu_utils::token::tokenize_light;
 
-use entity_parser::custom_entity_parser::CustomEntityParserMetadata;
-use entity_parser::custom_entity_parser::CustomEntityParserUsage;
-use injection::errors::{NluInjectionError, NluInjectionErrorKind};
-use models::nlu_engine::NluEngineModel;
-use resources::loading::load_engine_shared_resources;
-use resources::stemmer::Stemmer;
-use resources::SharedResources;
+use crate::entity_parser::custom_entity_parser::CustomEntityParserMetadata;
+use crate::entity_parser::custom_entity_parser::CustomEntityParserUsage;
+use crate::models::nlu_engine::NluEngineModel;
+use crate::resources::loading::load_engine_shared_resources;
+use crate::resources::stemmer::Stemmer;
+use crate::resources::SharedResources;
+
+use super::errors::{NluInjectionError, NluInjectionErrorKind};
 
 pub type InjectedEntity = String;
 pub type InjectedValue = String;
@@ -222,7 +223,7 @@ fn get_builtin_parser_info(
                          builtin_entity_parser_metadata_path)
         })?;
     let builtin_parser_metadata: BuiltinParserMetadata =
-        ::serde_json::from_reader(builtin_entity_parser_metadata_file)
+        serde_json::from_reader(builtin_entity_parser_metadata_file)
             .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
                 msg: format!("invalid builtin entity parser metadata format in {:?}",
                              builtin_entity_parser_metadata_path)
@@ -238,7 +239,7 @@ fn get_builtin_parser_info(
                                  gazetteer_parser_metadata_path)
                 })?;
         let gazetteer_parser_metadata: GazetteerParserMetadata =
-            ::serde_json::from_reader(gazetteer_parser_metadata_file)
+            serde_json::from_reader(gazetteer_parser_metadata_file)
                 .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
                     msg: format!("invalid gazetteer parser metadata format in {:?}",
                                  gazetteer_parser_metadata_path)
@@ -261,7 +262,7 @@ fn get_custom_parser_info(
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("could not open custom entity parser metadata file in {:?}", custom_entity_parser_metadata_path)
         })?;
-    let custom_parser_metadata: CustomEntityParserMetadata = ::serde_json::from_reader(
+    let custom_parser_metadata: CustomEntityParserMetadata = serde_json::from_reader(
         custom_entity_parser_metadata_file)
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("invalid custom entity parser metadata format in {:?}", custom_entity_parser_metadata_path)
@@ -273,7 +274,7 @@ fn get_custom_parser_info(
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("could not open gazetteer parser metadata file in {:?}", gazetteer_parser_metadata_path)
         })?;
-    let gazetteer_parser_metadata: GazetteerParserMetadata = ::serde_json::from_reader(
+    let gazetteer_parser_metadata: GazetteerParserMetadata = serde_json::from_reader(
         gazetteer_parser_metadata_file)
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("invalid gazetteer parser metadata format in {:?}", gazetteer_parser_metadata_path)
@@ -292,7 +293,7 @@ fn get_nlu_engine_info<P: AsRef<Path>>(engine_dir: P) -> Result<NluEngineInfo, N
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("could not open nlu engine model file in {:?}", engine_dataset_metadata_path)
         })?;
-    let nlu_engine_model: NluEngineModel = ::serde_json::from_reader(config_file)
+    let nlu_engine_model: NluEngineModel = serde_json::from_reader(config_file)
         .with_context(|_| NluInjectionErrorKind::InternalInjectionError {
             msg: format!("invalid nlu engine model file in {:?}", engine_dataset_metadata_path)
         })?;
@@ -380,12 +381,13 @@ mod tests {
 
     use self::fs_extra::dir;
     use self::tempfile::tempdir;
-    use SharedResources;
     use snips_nlu_ontology::*;
-    use SnipsNluEngine;
+
+    use crate::SharedResources;
+    use crate::SnipsNluEngine;
+    use crate::testutils::file_path;
 
     use super::*;
-    use testutils::file_path;
 
     #[derive(Clone)]
     struct MockedStemmer<'a> {

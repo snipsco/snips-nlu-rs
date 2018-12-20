@@ -4,17 +4,17 @@ use std::sync::Arc;
 
 use itertools::Itertools;
 use ndarray::prelude::*;
-
-use models::FeaturizerModel;
-use errors::*;
-use language::FromLanguage;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::string::normalize;
 use nlu_utils::token::{compute_all_ngrams, tokenize_light};
-use resources::SharedResources;
-use resources::stemmer::Stemmer;
-use resources::word_clusterer::WordClusterer;
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
+
+use crate::errors::*;
+use crate::models::FeaturizerModel;
+use crate::language::FromLanguage;
+use crate::resources::SharedResources;
+use crate::resources::stemmer::Stemmer;
+use crate::resources::word_clusterer::WordClusterer;
 
 pub struct Featurizer {
     best_features: Vec<usize>,
@@ -169,22 +169,24 @@ fn normalize_stem(tokens: &[String], opt_stemmer: Option<Arc<Stemmer>>) -> Vec<S
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
     use std::collections::HashMap;
     use std::iter::FromIterator;
     use std::sync::Arc;
-    use super::{get_word_cluster_features, Featurizer};
 
-    use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
-    use resources::word_clusterer::HashMapWordClusterer;
-    use testutils::assert_epsilon_eq_array1;
-    use testutils::MockedCustomEntityParser;
-    use entity_parser::custom_entity_parser::CustomEntity;
-    use resources::SharedResources;
-    use testutils::MockedBuiltinEntityParser;
-    use resources::stemmer::HashMapStemmer;
-    use std::collections::HashSet;
+
+    use crate::entity_parser::custom_entity_parser::CustomEntity;
+    use crate::models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
+    use crate::resources::stemmer::HashMapStemmer;
+    use crate::resources::word_clusterer::HashMapWordClusterer;
+    use crate::resources::SharedResources;
+    use crate::testutils::assert_epsilon_eq_array1;
+    use crate::testutils::MockedBuiltinEntityParser;
+    use crate::testutils::MockedCustomEntityParser;
+
+    use super::{get_word_cluster_features, Featurizer};
 
     #[test]
     fn transform_works() {

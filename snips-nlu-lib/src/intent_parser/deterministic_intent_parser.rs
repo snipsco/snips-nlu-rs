@@ -12,18 +12,17 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
 use nlu_utils::token::{tokenize, tokenize_light};
 use regex::{Regex, RegexBuilder};
-use serde_json;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
 
-use errors::*;
-use intent_parser::{IntentParser, internal_parsing_result, InternalParsingResult};
-use language::FromLanguage;
-use models::DeterministicParserModel;
-use resources::SharedResources;
-use slot_utils::*;
-use utils::{deduplicate_overlapping_items, EntityName, IntentName, SlotName};
-use entity_parser::custom_entity_parser::CustomEntity;
+use crate::errors::*;
+use crate::entity_parser::custom_entity_parser::CustomEntity;
+use crate::language::FromLanguage;
+use crate::models::DeterministicParserModel;
+use crate::resources::SharedResources;
+use crate::slot_utils::*;
+use crate::utils::{deduplicate_overlapping_items, EntityName, IntentName, SlotName};
 
+use super::{IntentParser, internal_parsing_result, InternalParsingResult};
 
 pub struct DeterministicIntentParser {
     language: Language,
@@ -348,13 +347,14 @@ mod tests {
     use std::iter::FromIterator;
     use std::sync::Arc;
 
-    use super::*;
-
-    use models::{DeterministicParserModel, DeterministicParserConfig};
-    use resources::loading::load_engine_shared_resources;
-    use slot_utils::InternalSlot;
     use snips_nlu_ontology::*;
-    use testutils::*;
+
+    use crate::models::{DeterministicParserConfig, DeterministicParserModel};
+    use crate::resources::loading::load_engine_shared_resources;
+    use crate::slot_utils::InternalSlot;
+    use crate::testutils::*;
+
+    use super::*;
 
     fn test_configuration() -> DeterministicParserModel {
         DeterministicParserModel {

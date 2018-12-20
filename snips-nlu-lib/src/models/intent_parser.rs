@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use utils::{EntityName, IntentName, SlotName};
+use crate::utils::{EntityName, IntentName, SlotName};
 
 #[derive(Debug, Deserialize)]
 pub struct DeterministicParserModel {

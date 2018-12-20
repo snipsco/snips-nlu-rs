@@ -7,15 +7,14 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-use errors::*;
+use crate::errors::*;
 use failure::ResultExt;
-use serde_json;
 use snips_nlu_ontology::IntentClassifierResult;
 
 pub use self::featurizer::Featurizer;
 pub use self::log_reg_intent_classifier::LogRegIntentClassifier;
-use models::ProcessingUnitMetadata;
-use resources::SharedResources;
+use crate::models::ProcessingUnitMetadata;
+use crate::resources::SharedResources;
 
 pub trait IntentClassifier: Send + Sync {
     fn get_intent(

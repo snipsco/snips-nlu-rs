@@ -5,17 +5,16 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use serde_json;
+use failure::ResultExt;
 use snips_nlu_ontology::Language;
 
-use entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
-use errors::*;
-use failure::ResultExt;
-use models::nlu_engine::NluEngineModel;
-use resources::SharedResources;
-use resources::gazetteer::{Gazetteer, HashSetGazetteer};
-use resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
-use resources::stemmer::{HashMapStemmer, Stemmer};
+use crate::entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
+use crate::errors::*;
+use crate::models::nlu_engine::NluEngineModel;
+use crate::resources::SharedResources;
+use crate::resources::gazetteer::{Gazetteer, HashSetGazetteer};
+use crate::resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
+use crate::resources::stemmer::{HashMapStemmer, Stemmer};
 
 #[derive(Debug, Deserialize, Clone)]
 struct ResourcesMetadata {

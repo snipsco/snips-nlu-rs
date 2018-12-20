@@ -9,6 +9,7 @@ authors = [
 ]
 repository = "https://github.com/snipsco/snips-nlu-rs"
 description = "Rust implementation of Snips NLU"
+edition = "2018"
 
 [dependencies]
 crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "30b2ea6" }

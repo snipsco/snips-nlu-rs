@@ -1,12 +1,13 @@
-use itertools::Itertools;
 use std::collections::HashMap;
-
-use models::FeatureFactory;
-use errors::*;
-use nlu_utils::token::Token;
-use resources::SharedResources;
 use std::sync::Arc;
-use slot_filler::features::*;
+
+use itertools::Itertools;
+use nlu_utils::token::Token;
+
+use crate::errors::*;
+use crate::models::FeatureFactory;
+use crate::resources::SharedResources;
+use crate::slot_filler::features::*;
 
 pub struct ProbabilisticFeatureProcessor {
     features_offsetters: Vec<FeatureOffsetter>,
@@ -80,7 +81,7 @@ pub trait FeatureKindRepr {
 pub trait Feature: FeatureKindRepr + Send + Sync {
     fn name(&self) -> String { self.feature_kind().identifier().to_string() }
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> where Self: Sized;
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>>;

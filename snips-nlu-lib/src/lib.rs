@@ -44,13 +44,14 @@ mod utils;
 
 pub const MODEL_VERSION: &str = "0.18.0";
 
-pub use models::*;
-pub use errors::*;
+pub use crate::models::*;
+pub use crate::errors::*;
+pub use crate::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
+pub use crate::intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
+pub use crate::nlu_engine::SnipsNluEngine;
+pub use crate::slot_filler::{CRFSlotFiller, SlotFiller};
+pub use crate::resources::loading::load_shared_resources;
+pub use crate::resources::SharedResources;
+
 pub use snips_nlu_ontology::Language;
-pub use intent_classifier::{IntentClassifier, LogRegIntentClassifier};
-pub use intent_parser::{DeterministicIntentParser, IntentParser, ProbabilisticIntentParser};
-pub use nlu_engine::SnipsNluEngine;
-pub use slot_filler::{CRFSlotFiller, SlotFiller};
 pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
-pub use resources::loading::load_shared_resources;
-pub use resources::SharedResources;

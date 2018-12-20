@@ -2,9 +2,9 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::iter::FromIterator;
 
-use csv;
-use errors::*;
 use nlu_utils::string::normalize;
+
+use crate::errors::*;
 
 pub trait Stemmer: Send + Sync {
     fn stem(&self, value: &str) -> String;
