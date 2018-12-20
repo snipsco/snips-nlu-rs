@@ -142,12 +142,12 @@ impl LogRegIntentClassifier {
 }
 
 fn get_filtered_out_intents_indexes(
-    intents_list: &Vec<Option<IntentName>>,
+    intents_list: &[Option<IntentName>],
     intents_filter: Option<&HashSet<IntentName>>,
 ) -> Option<Vec<usize>> {
     intents_filter.map(|filter| {
         intents_list
-            .into_iter()
+            .iter()
             .enumerate()
             .filter_map(|(i, opt_intent)| {
                 if let Some(intent) = opt_intent.as_ref() {

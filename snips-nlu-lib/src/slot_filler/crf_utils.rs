@@ -295,13 +295,13 @@ pub fn generate_slots_permutations(
     slot_name_mapping: &HashMap<SlotName, EntityName>,
 ) -> Vec<Vec<String>> {
     let possible_slots: Vec<Vec<String>> = grouped_entities
-        .into_iter()
+        .iter()
         .map(|entities| {
             let mut slot_names: Vec<String> = entities
-                .into_iter()
+                .iter()
                 .flat_map::<Vec<String>, _>(|entity| {
                     slot_name_mapping
-                        .into_iter()
+                        .iter()
                         .filter_map(|(slot_name, entity_name)| {
                             if entity_name == entity.entity_kind.identifier() {
                                 Some(slot_name.to_string())

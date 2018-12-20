@@ -69,7 +69,7 @@ impl<P: AsRef<Path>> NluInjector<P> {
     pub fn add_value(mut self, entity: InjectedEntity, value: InjectedValue) -> Self {
         self.entity_values
             .entry(entity)
-            .or_insert(vec![])
+            .or_insert_with(|| vec![])
             .push(value);
         self
     }
@@ -189,7 +189,7 @@ fn get_entity_parsers_dirs(
                     })
                     .ok_or_else(|| {
                         let msg = format!("could not find entity '{}' in engine", entity);
-                        NluInjectionErrorKind::EntityNotInjectable { msg }.into()
+                        NluInjectionErrorKind::EntityNotInjectable { msg }
                     })
             } else if BuiltinGazetteerEntityKind::from_identifier(entity).is_ok() {
                 let builtin_parser_info = maybe_builtin_parser_info.as_ref().ok_or_else(|| {
@@ -208,7 +208,7 @@ fn get_entity_parsers_dirs(
                     })
                     .ok_or_else(|| {
                         let msg = format!("could not find entity '{}' in engine", entity);
-                        NluInjectionErrorKind::EntityNotInjectable { msg }.into()
+                        NluInjectionErrorKind::EntityNotInjectable { msg }
                     })
             } else if GrammarEntityKind::from_identifier(entity).is_ok() {
                 let msg = format!(
@@ -348,13 +348,8 @@ fn get_nlu_engine_info<P: AsRef<Path>>(engine_dir: P) -> Result<NluEngineInfo, N
             msg: "invalid nlu engine language".to_string(),
         })?;
 
-    let custom_entities = HashSet::from_iter(
-        nlu_engine_model
-            .dataset_metadata
-            .entities
-            .keys()
-            .map(|k| k.clone()),
-    );
+    let custom_entities =
+        HashSet::from_iter(nlu_engine_model.dataset_metadata.entities.keys().cloned());
 
     let builtin_entity_parser_dir = engine_dir
         .as_ref()

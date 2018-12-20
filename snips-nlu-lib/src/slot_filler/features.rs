@@ -117,7 +117,7 @@ impl Feature for NgramFeature {
                 shared_resources
                     .gazetteers
                     .get(&gazetteer_name)
-                    .map(|gazetteer| gazetteer.clone())
+                    .cloned()
                     .ok_or_else(|| {
                         format_err!(
                             "Cannot find gazetteer '{}' in shared resources",
@@ -393,7 +393,7 @@ impl Feature for WordClusterFeature {
         let word_clusterer = shared_resources
             .word_clusterers
             .get(&cluster_name)
-            .map(|clusterer| clusterer.clone())
+            .cloned()
             .ok_or_else(|| {
                 format_err!(
                     "Cannot find word clusters '{}' in shared resources",

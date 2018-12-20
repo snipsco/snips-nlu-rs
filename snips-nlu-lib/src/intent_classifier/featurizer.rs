@@ -38,7 +38,7 @@ impl Featurizer {
                 shared_resources
                     .word_clusterers
                     .get(&clusters_name)
-                    .map(|clusterer| clusterer.clone())
+                    .cloned()
                     .ok_or_else(|| {
                         format_err!(
                             "Cannot find word clusters '{}' in shared resources",
@@ -54,7 +54,7 @@ impl Featurizer {
                 shared_resources
                     .stemmer
                     .as_ref()
-                    .map(|shared_stemmer| shared_stemmer.clone())
+                    .cloned()
                     .ok_or_else(|| format_err!("Cannot find stemmer in shared resources"))?,
             )
         } else {
@@ -160,7 +160,7 @@ fn get_word_cluster_features(
     query_tokens: &[String],
     word_clusterer: Arc<WordClusterer>,
 ) -> Vec<String> {
-    let tokens_ref = query_tokens.into_iter().map(|t| t.as_ref()).collect_vec();
+    let tokens_ref = query_tokens.iter().map(|t| t.as_ref()).collect_vec();
     compute_all_ngrams(tokens_ref.as_ref(), tokens_ref.len())
         .into_iter()
         .filter_map(|ngram| word_clusterer.get_cluster(&ngram.0.to_lowercase()))

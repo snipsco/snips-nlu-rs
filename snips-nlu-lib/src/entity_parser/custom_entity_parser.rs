@@ -42,7 +42,7 @@ impl<'de> Deserialize<'de> for CustomEntityParserUsage {
             1 => Ok(CustomEntityParserUsage::WithoutStems),
             2 => Ok(CustomEntityParserUsage::WithAndWithoutStems),
             other => Err(D::Error::invalid_value(
-                Unexpected::Unsigned(other as u64),
+                Unexpected::Unsigned(u64::from(other)),
                 &"CustomEntityParserUsage expects 0, 1 or 2",
             )),
         }?;
@@ -118,7 +118,7 @@ impl CachingCustomEntityParser {
 /// For instance, if "hello?world" is tokenized in ["hello", "?", "world"],
 /// then the character shifts between "hello?world" and "hello ? world" are
 /// [0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2]
-fn compute_char_shifts(tokens: &Vec<Token>) -> Vec<i32> {
+fn compute_char_shifts(tokens: &[Token]) -> Vec<i32> {
     if tokens.is_empty() {
         return vec![];
     }

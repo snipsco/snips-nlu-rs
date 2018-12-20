@@ -177,7 +177,7 @@ impl SnipsNluEngine {
                         Some(&*builtin_entity_scope),
                         Some(&*custom_entity_scope),
                     )
-                    .with_context(|_| format!("Cannot resolve slots"))?;
+                    .with_context(|_| "Cannot resolve slots".to_string())?;
 
                 return Ok(IntentParserResult {
                     input: input.to_string(),
