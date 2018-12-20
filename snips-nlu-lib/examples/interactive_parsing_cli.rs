@@ -2,7 +2,7 @@ extern crate clap;
 extern crate serde_json;
 extern crate snips_nlu_lib;
 
-use clap::{Arg, App};
+use clap::{App, Arg};
 use snips_nlu_lib::SnipsNluEngine;
 use std::io;
 use std::io::Write;
@@ -10,11 +10,13 @@ use std::io::Write;
 fn main() {
     let matches = App::new("snips-nlu-parse")
         .about("Snips NLU interactive CLI for parsing intents")
-        .arg(Arg::with_name("NLU_ENGINE_DIR")
-            .required(true)
-            .takes_value(true)
-            .index(1)
-            .help("path to the trained nlu engine directory"))
+        .arg(
+            Arg::with_name("NLU_ENGINE_DIR")
+                .required(true)
+                .takes_value(true)
+                .index(1)
+                .help("path to the trained nlu engine directory"),
+        )
         .get_matches();
     let engine_dir = matches.value_of("NLU_ENGINE_DIR").unwrap();
 

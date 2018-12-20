@@ -1,5 +1,5 @@
-pub mod loading;
 pub mod gazetteer;
+pub mod loading;
 pub mod stemmer;
 pub mod word_clusterer;
 
@@ -17,5 +17,5 @@ pub struct SharedResources {
     pub gazetteers: HashMap<String, Arc<Gazetteer>>,
     pub stemmer: Option<Arc<Stemmer>>,
     pub word_clusterers: HashMap<String, Arc<WordClusterer>>,
-    pub stop_words: HashSet<String>
+    pub stop_words: HashSet<String>,
 }

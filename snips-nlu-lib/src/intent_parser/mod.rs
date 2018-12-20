@@ -7,10 +7,10 @@ use std::sync::Arc;
 
 use snips_nlu_ontology::IntentClassifierResult;
 
-use crate::errors::*;
-use crate::models::ProcessingUnitMetadata;
 pub use self::deterministic_intent_parser::DeterministicIntentParser;
 pub use self::probabilistic_intent_parser::ProbabilisticIntentParser;
+use crate::errors::*;
+use crate::models::ProcessingUnitMetadata;
 use crate::resources::SharedResources;
 pub use crate::slot_utils::InternalSlot;
 
@@ -44,13 +44,15 @@ pub trait IntentParser: Send + Sync {
 pub fn build_intent_parser<P: AsRef<Path>>(
     metadata: ProcessingUnitMetadata,
     path: P,
-    shared_resources: Arc<SharedResources>
+    shared_resources: Arc<SharedResources>,
 ) -> Result<Box<IntentParser>> {
     match metadata {
-        ProcessingUnitMetadata::DeterministicIntentParser =>
-            Ok(Box::new(DeterministicIntentParser::from_path(path, shared_resources)?) as _),
-        ProcessingUnitMetadata::ProbabilisticIntentParser =>
-            Ok(Box::new(ProbabilisticIntentParser::from_path(path, shared_resources)?) as _),
-        _ => Err(format_err!("{:?} is not an intent parser", metadata))
+        ProcessingUnitMetadata::DeterministicIntentParser => Ok(Box::new(
+            DeterministicIntentParser::from_path(path, shared_resources)?,
+        ) as _),
+        ProcessingUnitMetadata::ProbabilisticIntentParser => Ok(Box::new(
+            ProbabilisticIntentParser::from_path(path, shared_resources)?,
+        ) as _),
+        _ => Err(format_err!("{:?} is not an intent parser", metadata)),
     }
 }

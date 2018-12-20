@@ -41,25 +41,31 @@ impl CRFSlotFiller {
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
         let slot_filler_model_path = path.as_ref().join("slot_filler.json");
-        let model_file = fs::File::open(&slot_filler_model_path)
-            .with_context(|_| format!("Cannot open CRFSlotFiller file '{:?}'",
-                                      &slot_filler_model_path))?;
+        let model_file = fs::File::open(&slot_filler_model_path).with_context(|_| {
+            format!(
+                "Cannot open CRFSlotFiller file '{:?}'",
+                &slot_filler_model_path
+            )
+        })?;
         let model: SlotFillerModel = serde_json::from_reader(model_file)
             .with_context(|_| "Cannot deserialize CRFSlotFiller json data")?;
 
         let tagging_scheme = TaggingScheme::from_u8(model.config.tagging_scheme)?;
         let slot_name_mapping = model.slot_name_mapping;
-        let (tagger, feature_processor) = if let Some(crf_model_file) = model.crf_model_file.as_ref() {
-            let crf_path = path.as_ref().join(crf_model_file);
-            let tagger = CRFSuiteTagger::create_from_file(&crf_path)
-                .with_context(|_| format!("Cannot create CRFSuiteTagger from file '{:?}'",
-                                          &crf_path))?;
-            let feature_processor = ProbabilisticFeatureProcessor::new(
-                &model.config.feature_factory_configs, shared_resources.clone())?;
-            (Some(Mutex::new(tagger)), Some(feature_processor))
-        } else {
-            (None, None)
-        };
+        let (tagger, feature_processor) =
+            if let Some(crf_model_file) = model.crf_model_file.as_ref() {
+                let crf_path = path.as_ref().join(crf_model_file);
+                let tagger = CRFSuiteTagger::create_from_file(&crf_path).with_context(|_| {
+                    format!("Cannot create CRFSuiteTagger from file '{:?}'", &crf_path)
+                })?;
+                let feature_processor = ProbabilisticFeatureProcessor::new(
+                    &model.config.feature_factory_configs,
+                    shared_resources.clone(),
+                )?;
+                (Some(Mutex::new(tagger)), Some(feature_processor))
+            } else {
+                (None, None)
+            };
         let language = Language::from_str(&model.language_code)?;
 
         Ok(Self {
@@ -79,7 +85,9 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_slots(&self, text: &str) -> Result<Vec<InternalSlot>> {
-        if let (Some(ref tagger), Some(ref feature_processor)) = (self.tagger.as_ref(), self.feature_processor.as_ref()) {
+        if let (Some(ref tagger), Some(ref feature_processor)) =
+            (self.tagger.as_ref(), self.feature_processor.as_ref())
+        {
             let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
             if tokens.is_empty() {
                 return Ok(vec![]);
@@ -93,13 +101,14 @@ impl SlotFiller for CRFSlotFiller {
                 .map(|tag| decode_tag(&*tag))
                 .collect::<Result<Vec<String>>>()?;
 
-            let builtin_slot_names_iter = self.slot_name_mapping.iter().filter_map(
-                |(slot_name, entity)| {
-                    BuiltinEntityKind::from_identifier(entity)
-                        .ok()
-                        .map(|_| slot_name.to_string())
-                },
-            );
+            let builtin_slot_names_iter =
+                self.slot_name_mapping
+                    .iter()
+                    .filter_map(|(slot_name, entity)| {
+                        BuiltinEntityKind::from_identifier(entity)
+                            .ok()
+                            .map(|_| slot_name.to_string())
+                    });
             let slots = tags_to_slots(
                 text,
                 &tokens,
@@ -116,7 +125,8 @@ impl SlotFiller for CRFSlotFiller {
 
             let updated_tags = replace_builtin_tags(tags, &builtin_slot_names);
 
-            let builtin_slots = self.slot_name_mapping
+            let builtin_slots = self
+                .slot_name_mapping
                 .iter()
                 .filter_map(|(slot_name, entity)| {
                     BuiltinEntityKind::from_identifier(entity)
@@ -141,7 +151,9 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {
-        if let (Some(ref tagger), Some(ref feature_processor)) = (self.tagger.as_ref(), self.feature_processor.as_ref()) {
+        if let (Some(ref tagger), Some(ref feature_processor)) =
+            (self.tagger.as_ref(), self.feature_processor.as_ref())
+        {
             let features = feature_processor.compute_features(&tokens)?;
             let tagger = tagger
                 .lock()
@@ -153,7 +165,8 @@ impl SlotFiller for CRFSlotFiller {
                 .collect::<Result<Vec<String>>>()?;
             let tagger_labels_slice = tagger_labels.iter().map(|l| &**l).collect_vec();
             // Substitute tags that were not seen during training
-            let cleaned_tags = tags.iter()
+            let cleaned_tags = tags
+                .iter()
                 .map(|t| {
                     if tagger_labels.contains(t) {
                         t
@@ -167,7 +180,8 @@ impl SlotFiller for CRFSlotFiller {
             Ok(tagger.probability(&cleaned_tags)?)
         } else {
             // No tagger defined corresponds to an intent without slots
-            Ok(tags.into_iter()
+            Ok(tags
+                .into_iter()
                 .find(|tag| tag != OUTSIDE)
                 .map(|_| 0.0)
                 .unwrap_or(1.0))
@@ -181,11 +195,13 @@ impl CRFSlotFiller {
         if tokens.is_empty() {
             return Ok(vec![]);
         };
-        Ok(if let Some(feature_processor) = self.feature_processor.as_ref() {
-            feature_processor.compute_features(&&*tokens)?
-        } else {
-            tokens.iter().map(|_| vec![]).collect()
-        })
+        Ok(
+            if let Some(feature_processor) = self.feature_processor.as_ref() {
+                feature_processor.compute_features(&&*tokens)?
+            } else {
+                tokens.iter().map(|_| vec![]).collect()
+            },
+        )
     }
 }
 
@@ -444,9 +460,7 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let trained_engine_path = file_path("tests")
-            .join("models")
-            .join("nlu_engine");
+        let trained_engine_path = file_path("tests").join("models").join("nlu_engine");
 
         let slot_filler_path = trained_engine_path
             .join("probabilistic_intent_parser")
@@ -459,14 +473,12 @@ mod tests {
         let slots = slot_filler.get_slots("make me two cups of coffee").unwrap();
 
         // Then
-        let expected_slots = vec![
-            InternalSlot {
-                value: "two".to_string(),
-                char_range: 8..11,
-                entity: "snips/number".to_string(),
-                slot_name: "number_of_cups".to_string(),
-            }
-        ];
+        let expected_slots = vec![InternalSlot {
+            value: "two".to_string(),
+            char_range: 8..11,
+            entity: "snips/number".to_string(),
+            slot_name: "number_of_cups".to_string(),
+        }];
         assert_eq!(expected_slots, slots);
     }
 
@@ -525,14 +537,12 @@ mod tests {
             filter_overlapping_builtins(builtin_entities, &tokens[..], &tags, TaggingScheme::BIO);
 
         // Then
-        let expected_entities = vec![
-            BuiltinEntity {
-                value: "tomorrow at 8am".to_string(),
-                range: 58..73,
-                entity_kind: BuiltinEntityKind::Time,
-                entity: SlotValue::InstantTime(end_time),
-            },
-        ];
+        let expected_entities = vec![BuiltinEntity {
+            value: "tomorrow at 8am".to_string(),
+            range: 58..73,
+            entity_kind: BuiltinEntityKind::Time,
+            entity: SlotValue::InstantTime(end_time),
+        }];
         assert_eq!(filtered_entities, expected_entities)
     }
 
@@ -546,28 +556,98 @@ mod tests {
         let tags: Vec<String> = tokens.iter().map(|_| "O".to_string()).collect();
 
         let tags_list: &[&[&str]] = &[
-            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "B-end_date", "I-end_date"],
-            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "B-start_date", "I-start_date"],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-start_date",
+                "I-start_date",
+                "O",
+                "B-end_date",
+                "I-end_date",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-end_date",
+                "I-end_date",
+                "O",
+                "B-start_date",
+                "I-start_date",
+            ],
             &["O", "O", "O", "O", "O", "O", "O", "O", "O"],
-            &["O", "O", "O", "O", "O", "O", "O", "B-start_date", "I-start_date"],
-            &["O", "O", "O", "O", "O", "O", "O", "B-end_date", "I-end_date"],
-            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "O", "O"],
-            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "O", "O"],
-            &["O", "O", "O", "O", "B-start_date", "I-start_date", "O", "B-start_date", "I-start_date"],
-            &["O", "O", "O", "O", "B-end_date", "I-end_date", "O", "B-end_date", "I-end_date"],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-start_date",
+                "I-start_date",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-end_date",
+                "I-end_date",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-start_date",
+                "I-start_date",
+                "O",
+                "O",
+                "O",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-end_date",
+                "I-end_date",
+                "O",
+                "O",
+                "O",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-start_date",
+                "I-start_date",
+                "O",
+                "B-start_date",
+                "I-start_date",
+            ],
+            &[
+                "O",
+                "O",
+                "O",
+                "O",
+                "B-end_date",
+                "I-end_date",
+                "O",
+                "B-end_date",
+                "I-end_date",
+            ],
         ];
 
-        let probabilities = vec![
-            0.6,
-            0.8,
-            0.2,
-            0.2,
-            0.99,
-            0.0,
-            0.0,
-            0.5,
-            0.5
-        ];
+        let probabilities = vec![0.6, 0.8, 0.2, 0.2, 0.99, 0.0, 0.0, 0.5, 0.5];
 
         let slot_filler = TestSlotFiller::new(tags_list, probabilities);
         let intent_slots_mapping = hashmap! {
@@ -576,25 +656,29 @@ mod tests {
             "end_date".to_string() => "snips/datetime".to_string(),
         };
 
-        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(
-            vec![(
-                text.to_string(),
-                vec![
-                    BuiltinEntity {
-                        value: "before 10 pm".to_string(),
-                        range: 17..28,
-                        entity_kind: BuiltinEntityKind::Time,
-                        entity: SlotValue::TimeInterval(TimeIntervalValue { from: None, to: None }),
-                    },
-                    BuiltinEntity {
-                        value: "after 8 pm".to_string(),
-                        range: 33..42,
-                        entity_kind: BuiltinEntityKind::Time,
-                        entity: SlotValue::TimeInterval(TimeIntervalValue { from: None, to: None }),
-                    }
-                ]
-            )]
-        );
+        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![
+                BuiltinEntity {
+                    value: "before 10 pm".to_string(),
+                    range: 17..28,
+                    entity_kind: BuiltinEntityKind::Time,
+                    entity: SlotValue::TimeInterval(TimeIntervalValue {
+                        from: None,
+                        to: None,
+                    }),
+                },
+                BuiltinEntity {
+                    value: "after 8 pm".to_string(),
+                    range: 33..42,
+                    entity_kind: BuiltinEntityKind::Time,
+                    entity: SlotValue::TimeInterval(TimeIntervalValue {
+                        from: None,
+                        to: None,
+                    }),
+                },
+            ],
+        )]);
         let missing_slots = vec![
             ("start_date".to_string(), BuiltinEntityKind::Time),
             ("end_date".to_string(), BuiltinEntityKind::Time),
@@ -609,17 +693,16 @@ mod tests {
             &intent_slots_mapping,
             Arc::new(mocked_builtin_parser),
             &missing_slots,
-        ).unwrap();
+        )
+        .unwrap();
 
         // Then
-        let expected_slots = vec![
-            InternalSlot {
-                value: "after 8pm".to_string(),
-                char_range: 33..42,
-                entity: "snips/datetime".to_string(),
-                slot_name: "end_date".to_string(),
-            },
-        ];
+        let expected_slots = vec![InternalSlot {
+            value: "after 8pm".to_string(),
+            char_range: 33..42,
+            entity: "snips/datetime".to_string(),
+            slot_name: "end_date".to_string(),
+        }];
         assert_eq!(expected_slots, augmented_slots);
     }
 
@@ -645,39 +728,33 @@ mod tests {
     fn test_reconciliate_builtin_slots_works() {
         // Given
         let text = "tomorrow at 8a.m. please";
-        let slots = vec![
-            InternalSlot {
-                value: "tomorrow at 8a.m".to_string(),
-                char_range: 0..16,
-                entity: BuiltinEntityKind::Time.identifier().to_string(),
-                slot_name: "datetime".to_string(),
-            },
-        ];
-        let builtin_entities = vec![
-            BuiltinEntity {
-                value: "tomorrow at 8a.m.".to_string(),
-                range: 0..17,
-                entity: SlotValue::InstantTime(InstantTimeValue {
-                    value: "2018-03-10 08:00:00 +00:00".to_string(),
-                    grain: Grain::Minute,
-                    precision: Precision::Exact,
-                }),
-                entity_kind: BuiltinEntityKind::Time,
-            },
-        ];
+        let slots = vec![InternalSlot {
+            value: "tomorrow at 8a.m".to_string(),
+            char_range: 0..16,
+            entity: BuiltinEntityKind::Time.identifier().to_string(),
+            slot_name: "datetime".to_string(),
+        }];
+        let builtin_entities = vec![BuiltinEntity {
+            value: "tomorrow at 8a.m.".to_string(),
+            range: 0..17,
+            entity: SlotValue::InstantTime(InstantTimeValue {
+                value: "2018-03-10 08:00:00 +00:00".to_string(),
+                grain: Grain::Minute,
+                precision: Precision::Exact,
+            }),
+            entity_kind: BuiltinEntityKind::Time,
+        }];
 
         // When
         let reconciliated_slots = reconciliate_builtin_slots(text, slots, builtin_entities);
 
         // Then
-        let expected_slots = vec![
-            InternalSlot {
-                value: "tomorrow at 8a.m.".to_string(),
-                char_range: 0..17,
-                entity: BuiltinEntityKind::Time.identifier().to_string(),
-                slot_name: "datetime".to_string(),
-            },
-        ];
+        let expected_slots = vec![InternalSlot {
+            value: "tomorrow at 8a.m.".to_string(),
+            char_range: 0..17,
+            entity: BuiltinEntityKind::Time.identifier().to_string(),
+            slot_name: "datetime".to_string(),
+        }];
         assert_eq!(expected_slots, reconciliated_slots);
     }
 

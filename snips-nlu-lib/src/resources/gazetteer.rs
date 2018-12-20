@@ -27,8 +27,10 @@ impl HashSetGazetteer {
 }
 
 impl FromIterator<String> for HashSetGazetteer {
-    fn from_iter<T: IntoIterator<Item=String>>(iter: T) -> Self {
-        Self { values: HashSet::from_iter(iter) }
+    fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
+        Self {
+            values: HashSet::from_iter(iter),
+        }
     }
 }
 
@@ -49,7 +51,8 @@ mod tests {
 dog
 cat
 bear
-crocodile"#.as_ref();
+crocodile"#
+            .as_ref();
 
         // When
         let gazetteer = HashSetGazetteer::from_reader(gazetteer);

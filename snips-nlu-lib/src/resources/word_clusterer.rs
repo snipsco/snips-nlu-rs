@@ -11,7 +11,7 @@ pub trait WordClusterer: Send + Sync {
 }
 
 pub struct HashMapWordClusterer {
-    values: HashMap<String, String>
+    values: HashMap<String, String>,
 }
 
 impl HashMapWordClusterer {
@@ -32,16 +32,16 @@ impl HashMapWordClusterer {
 }
 
 impl FromIterator<(String, String)> for HashMapWordClusterer {
-    fn from_iter<T: IntoIterator<Item=(String, String)>>(iter: T) -> Self {
-        Self { values: HashMap::from_iter(iter) }
+    fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
+        Self {
+            values: HashMap::from_iter(iter),
+        }
     }
 }
 
 impl WordClusterer for HashMapWordClusterer {
     fn get_cluster(&self, word: &str) -> Option<String> {
-        self.values
-            .get(word)
-            .map(|v| v.to_string())
+        self.values.get(word).map(|v| v.to_string())
     }
 }
 
@@ -50,7 +50,6 @@ pub struct WordClustererConfiguration {
     language: Language,
     clusters_name: String,
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -63,7 +62,8 @@ mod tests {
 hello	1111111111111
 world	1111110111111
 "yolo	1111100111111
-"#.as_ref();
+"#
+        .as_ref();
 
         // When
         let clusterer = HashMapWordClusterer::from_reader(clusters);
@@ -71,9 +71,18 @@ world	1111110111111
         // Then
         assert!(clusterer.is_ok());
         let clusterer = clusterer.unwrap();
-        assert_eq!(clusterer.get_cluster("hello"), Some("1111111111111".to_string()));
-        assert_eq!(clusterer.get_cluster("world"), Some("1111110111111".to_string()));
-        assert_eq!(clusterer.get_cluster("\"yolo"), Some("1111100111111".to_string()));
+        assert_eq!(
+            clusterer.get_cluster("hello"),
+            Some("1111111111111".to_string())
+        );
+        assert_eq!(
+            clusterer.get_cluster("world"),
+            Some("1111110111111".to_string())
+        );
+        assert_eq!(
+            clusterer.get_cluster("\"yolo"),
+            Some("1111100111111".to_string())
+        );
         assert_eq!(clusterer.get_cluster("unknown"), None);
     }
 }

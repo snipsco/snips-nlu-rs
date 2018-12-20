@@ -1,6 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
-use std::io::{BufReader, BufRead};
+use std::io::{BufRead, BufReader};
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -11,10 +11,10 @@ use snips_nlu_ontology::Language;
 use crate::entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
 use crate::errors::*;
 use crate::models::nlu_engine::NluEngineModel;
-use crate::resources::SharedResources;
 use crate::resources::gazetteer::{Gazetteer, HashSetGazetteer};
-use crate::resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
 use crate::resources::stemmer::{HashMapStemmer, Stemmer};
+use crate::resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
+use crate::resources::SharedResources;
 
 #[derive(Debug, Deserialize, Clone)]
 struct ResourcesMetadata {
@@ -22,7 +22,7 @@ struct ResourcesMetadata {
     gazetteers: Option<Vec<String>>,
     word_clusters: Option<Vec<String>>,
     stems: Option<String>,
-    stop_words: Option<String>
+    stop_words: Option<String>,
 }
 
 pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
@@ -32,15 +32,21 @@ pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
 ) -> Result<Arc<SharedResources>> {
     let metadata_file_path = resources_dir.as_ref().join("metadata.json");
     let metadata_file = File::open(&metadata_file_path)?;
-    let metadata: ResourcesMetadata = serde_json::from_reader(metadata_file)
-        .with_context(|_|
-            format!("Cannot deserialize resources metadata file '{:?}'", metadata_file_path))?;
+    let metadata: ResourcesMetadata =
+        serde_json::from_reader(metadata_file).with_context(|_| {
+            format!(
+                "Cannot deserialize resources metadata file '{:?}'",
+                metadata_file_path
+            )
+        })?;
     let stemmer = load_stemmer(&resources_dir, &metadata)?;
     let gazetteers = load_gazetteers(&resources_dir, &metadata)?;
     let word_clusterers = load_word_clusterers(&resources_dir, &metadata)?;
     let stop_words = load_stop_words(&resources_dir, &metadata)?;
-    let builtin_entity_parser = CachingBuiltinEntityParser::from_path(builtin_entity_parser_path, 1000)?;
-    let custom_entity_parser = CachingCustomEntityParser::from_path(custom_entity_parser_path, 1000)?;
+    let builtin_entity_parser =
+        CachingBuiltinEntityParser::from_path(builtin_entity_parser_path, 1000)?;
+    let custom_entity_parser =
+        CachingCustomEntityParser::from_path(custom_entity_parser_path, 1000)?;
 
     Ok(Arc::new(SharedResources {
         builtin_entity_parser: Arc::new(builtin_entity_parser),
@@ -48,25 +54,25 @@ pub fn load_shared_resources<P: AsRef<Path>, Q: AsRef<Path>, R: AsRef<Path>>(
         gazetteers,
         stemmer,
         word_clusterers,
-        stop_words
+        stop_words,
     }))
 }
 
-pub fn load_engine_shared_resources<P: AsRef<Path>>(
-    engine_dir: P
-) -> Result<Arc<SharedResources>> {
+pub fn load_engine_shared_resources<P: AsRef<Path>>(engine_dir: P) -> Result<Arc<SharedResources>> {
     let nlu_engine_file = engine_dir.as_ref().join("nlu_engine.json");
     let model_file = File::open(&nlu_engine_file)
         .with_context(|_| format!("Could not open nlu engine file {:?}", nlu_engine_file))?;
     let model: NluEngineModel = serde_json::from_reader(model_file)
         .with_context(|_| "Could not deserialize nlu engine json file")?;
     let language = Language::from_str(&model.dataset_metadata.language_code)?;
-    let resources_path = engine_dir.as_ref().join("resources").join(language.to_string());
+    let resources_path = engine_dir
+        .as_ref()
+        .join("resources")
+        .join(language.to_string());
     let builtin_parser_path = engine_dir.as_ref().join(&model.builtin_entity_parser);
     let custom_parser_path = engine_dir.as_ref().join(&model.custom_entity_parser);
     load_shared_resources(&resources_path, builtin_parser_path, custom_parser_path)
 }
-
 
 fn load_stemmer<P: AsRef<Path>>(
     resources_dir: &P,
@@ -74,9 +80,7 @@ fn load_stemmer<P: AsRef<Path>>(
 ) -> Result<Option<Arc<Stemmer>>> {
     if let Some(stems) = metadata.stems.as_ref() {
         let stemming_directory = resources_dir.as_ref().join("stemming");
-        let stems_path = stemming_directory
-            .join(stems)
-            .with_extension("txt");
+        let stems_path = stemming_directory.join(stems).with_extension("txt");
         let stems_reader = File::open(&stems_path)
             .with_context(|_| format!("Cannot open stems file {:?}", stems_path))?;
         let stemmer = HashMapStemmer::from_reader(stems_reader)
@@ -108,7 +112,6 @@ fn load_gazetteers<P: AsRef<Path>>(
     Ok(gazetteers)
 }
 
-
 fn load_word_clusterers<P: AsRef<Path>>(
     resources_dir: &P,
     metadata: &ResourcesMetadata,
@@ -133,10 +136,11 @@ fn load_word_clusterers<P: AsRef<Path>>(
 
 fn load_stop_words<P: AsRef<Path>>(
     resources_dir: &P,
-    metadata: &ResourcesMetadata
+    metadata: &ResourcesMetadata,
 ) -> Result<HashSet<String>> {
     if let Some(stop_words_name) = metadata.stop_words.as_ref() {
-        let stop_words_path = resources_dir.as_ref()
+        let stop_words_path = resources_dir
+            .as_ref()
             .join(stop_words_name)
             .with_extension("txt");
         let file = File::open(&stop_words_path)

@@ -34,7 +34,9 @@ impl Display for NluInjectionError {
 
 impl From<NluInjectionErrorKind> for NluInjectionError {
     fn from(kind: NluInjectionErrorKind) -> NluInjectionError {
-        NluInjectionError { inner: Context::new(kind) }
+        NluInjectionError {
+            inner: Context::new(kind),
+        }
     }
 }
 
