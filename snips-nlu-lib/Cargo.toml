@@ -12,7 +12,7 @@ description = "Rust implementation of Snips NLU"
 edition = "2018"
 
 [dependencies]
-crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "30b2ea6" }
+crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", rev = "91fda4b" }
 snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.62.0" }
 snips-nlu-ontology-parsers = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.62.0" }
 snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.7.0" }

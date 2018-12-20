@@ -164,7 +164,7 @@ impl SlotFiller for CRFSlotFiller {
                 .map(|t| encode_tag(t))
                 .collect_vec();
             tagger.set(&features)?;
-            Ok(tagger.probability(cleaned_tags)?)
+            Ok(tagger.probability(&cleaned_tags)?)
         } else {
             // No tagger defined corresponds to an intent without slots
             Ok(tags.into_iter()
