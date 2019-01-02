@@ -5,15 +5,15 @@ use std::sync::Arc;
 use ndarray::prelude::*;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind};
 
-use entity_parser::{BuiltinEntityParser, CustomEntity, CustomEntityParser};
-use errors::*;
-use resources::SharedResources;
-use resources::gazetteer::Gazetteer;
-use resources::stemmer::Stemmer;
-use resources::word_clusterer::WordClusterer;
+use crate::entity_parser::{BuiltinEntityParser, CustomEntity, CustomEntityParser};
+use crate::errors::*;
+use crate::resources::gazetteer::Gazetteer;
+use crate::resources::stemmer::Stemmer;
+use crate::resources::word_clusterer::WordClusterer;
+use crate::resources::SharedResources;
 
 pub fn file_path(filename: &str) -> ::std::path::PathBuf {
-    ::dinghy_test::try_test_file_path("data")
+    dinghy_test::try_test_file_path("data")
         .unwrap_or_else(|| "../data".into())
         .join(filename)
 }
@@ -30,14 +30,13 @@ pub fn epsilon_eq(a: f32, b: f32, epsilon: f32) -> bool {
     diff < epsilon && diff > -epsilon
 }
 
-
 pub struct SharedResourcesBuilder {
     builtin_entity_parser: Arc<BuiltinEntityParser>,
     custom_entity_parser: Arc<CustomEntityParser>,
     gazetteers: HashMap<String, Arc<Gazetteer>>,
     stemmer: Option<Arc<Stemmer>>,
     word_clusterers: HashMap<String, Arc<WordClusterer>>,
-    stop_words: HashSet<String>
+    stop_words: HashSet<String>,
 }
 
 impl Default for SharedResourcesBuilder {
@@ -48,7 +47,7 @@ impl Default for SharedResourcesBuilder {
             gazetteers: HashMap::default(),
             stemmer: None,
             word_clusterers: HashMap::default(),
-            stop_words: HashSet::default()
+            stop_words: HashSet::default(),
         }
     }
 }
@@ -76,14 +75,14 @@ impl SharedResourcesBuilder {
             gazetteers: self.gazetteers,
             stemmer: self.stemmer,
             word_clusterers: self.word_clusterers,
-            stop_words: self.stop_words
+            stop_words: self.stop_words,
         }
     }
 }
 
 #[derive(Default)]
 pub struct MockedBuiltinEntityParser {
-    pub mocked_outputs: HashMap<String, Vec<BuiltinEntity>>
+    pub mocked_outputs: HashMap<String, Vec<BuiltinEntity>>,
 }
 
 impl BuiltinEntityParser for MockedBuiltinEntityParser {
@@ -93,21 +92,21 @@ impl BuiltinEntityParser for MockedBuiltinEntityParser {
         _filter_entity_kinds: Option<&[BuiltinEntityKind]>,
         _use_cache: bool,
     ) -> Result<Vec<BuiltinEntity>> {
-        Ok(self.mocked_outputs.get(sentence)
-            .cloned()
-            .unwrap_or(vec![]))
+        Ok(self.mocked_outputs.get(sentence).cloned().unwrap_or(vec![]))
     }
 }
 
 impl FromIterator<(String, Vec<BuiltinEntity>)> for MockedBuiltinEntityParser {
-    fn from_iter<T: IntoIterator<Item=(String, Vec<BuiltinEntity>)>>(iter: T) -> Self {
-        Self { mocked_outputs: HashMap::from_iter(iter) }
+    fn from_iter<T: IntoIterator<Item = (String, Vec<BuiltinEntity>)>>(iter: T) -> Self {
+        Self {
+            mocked_outputs: HashMap::from_iter(iter),
+        }
     }
 }
 
 #[derive(Default)]
 pub struct MockedCustomEntityParser {
-    pub mocked_outputs: HashMap<String, Vec<CustomEntity>>
+    pub mocked_outputs: HashMap<String, Vec<CustomEntity>>,
 }
 
 impl CustomEntityParser for MockedCustomEntityParser {
@@ -116,14 +115,14 @@ impl CustomEntityParser for MockedCustomEntityParser {
         sentence: &str,
         _filter_entity_kinds: Option<&[String]>,
     ) -> Result<Vec<CustomEntity>> {
-        Ok(self.mocked_outputs.get(sentence)
-            .cloned()
-            .unwrap_or(vec![]))
+        Ok(self.mocked_outputs.get(sentence).cloned().unwrap_or(vec![]))
     }
 }
 
 impl FromIterator<(String, Vec<CustomEntity>)> for MockedCustomEntityParser {
-    fn from_iter<T: IntoIterator<Item=(String, Vec<CustomEntity>)>>(iter: T) -> Self {
-        Self { mocked_outputs: HashMap::from_iter(iter) }
+    fn from_iter<T: IntoIterator<Item = (String, Vec<CustomEntity>)>>(iter: T) -> Self {
+        Self {
+            mocked_outputs: HashMap::from_iter(iter),
+        }
     }
 }

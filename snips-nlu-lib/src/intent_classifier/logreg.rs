@@ -1,4 +1,4 @@
-use errors::*;
+use crate::errors::*;
 use ndarray::prelude::*;
 
 /// The multiclass probability estimates are derived from binary (one-vs.-rest)
@@ -40,7 +40,7 @@ impl MulticlassLogisticRegression {
     pub fn run(
         &self,
         features: &ArrayView1<f32>,
-        filtered_out_indexes: Option<Vec<usize>>
+        filtered_out_indexes: Option<Vec<usize>>,
     ) -> Result<Array1<f32>> {
         let reshaped_features = features.into_shape((1, self.nb_features()))?;
         let reshaped_features = stack![Axis(1), array![[1.]], reshaped_features];
@@ -71,7 +71,7 @@ fn logit(x: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::MulticlassLogisticRegression;
-    use testutils::assert_epsilon_eq_array1;
+    use crate::testutils::assert_epsilon_eq_array1;
 
     #[test]
     fn multiclass_logistic_regression_works() {
@@ -129,7 +129,9 @@ mod tests {
         let regression = MulticlassLogisticRegression::new(intercept, weights).unwrap();
 
         // When
-        let predictions = regression.run(&features.view(), filtered_out_indexes).unwrap();
+        let predictions = regression
+            .run(&features.view(), filtered_out_indexes)
+            .unwrap();
 
         // Then
         let expected_predictions = array![0.67745198, 0.32254802, 0.0];

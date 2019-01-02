@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Changed
+- Update to Rust 2018
+
 ## [0.61.1] - 2018-12-14
 ### Changed
 - Bump `snips-nlu-ontology` to `0.61.2`
@@ -23,7 +27,7 @@ All notable changes to this project will be documented in this file.
 ## [0.61.0] - 2018-10-16
 ### Changed
 - Entity injection API is now handled by an `NLUInjector` object
- 
+
 ### Added
 - Support for builtin music entities in english
 
@@ -80,7 +84,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 
 ### Removed
 - `snips-nlu-resources` and `snips-nlu-resources-packed` crates no longer exists.
-- `FileBasedConfiguration`, `ZipBasedConfiguration` and `NluEngineConfigurationConvertible
+- `FileBasedConfiguration`, `ZipBasedConfiguration` and `NluEngineConfigurationConvertible`
 - Rust examples (replaced by interactive CLI).
 
 ## [0.57.2] - 2018-07-12
@@ -145,6 +149,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.62.0...HEAD
 [0.61.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.61.1
 [0.62.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.62.0
 [0.61.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.1...0.61.0

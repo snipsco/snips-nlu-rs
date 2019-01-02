@@ -8,16 +8,15 @@ use failure::ResultExt;
 use itertools::Itertools;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::token::*;
-use serde_json;
+use serde::de::{Error as SerdeError, Unexpected};
 use serde::{Deserialize, Deserializer};
-use serde::de::{Unexpected, Error as SerdeError};
 use snips_nlu_ontology::Language;
 use snips_nlu_ontology_parsers::{GazetteerEntityMatch, GazetteerParser};
 
-use entity_parser::utils::Cache;
-use errors::*;
-use language::FromLanguage;
-use utils::EntityName;
+use crate::entity_parser::utils::Cache;
+use crate::errors::*;
+use crate::language::FromLanguage;
+use crate::utils::EntityName;
 
 pub type CustomEntity = GazetteerEntityMatch<String>;
 
@@ -38,13 +37,14 @@ pub enum CustomEntityParserUsage {
 
 impl<'de> Deserialize<'de> for CustomEntityParserUsage {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> StdResult<Self, D::Error> {
-
         let usage = match u8::deserialize(deserializer)? {
             0 => Ok(CustomEntityParserUsage::WithStems),
             1 => Ok(CustomEntityParserUsage::WithoutStems),
             2 => Ok(CustomEntityParserUsage::WithAndWithoutStems),
             other => Err(D::Error::invalid_value(
-                Unexpected::Unsigned(other as u64), &"CustomEntityParserUsage expects 0, 1 or 2")),
+                Unexpected::Unsigned(u64::from(other)),
+                &"CustomEntityParserUsage expects 0, 1 or 2",
+            )),
         }?;
         Ok(usage)
     }
@@ -79,8 +79,9 @@ impl CustomEntityParser for CachingCustomEntityParser {
         self.cache
             .lock()
             .unwrap()
-            .try_cache(&cache_key,
-                       |cache_key| self._extract_entities(&cache_key.input, filter_entity_kinds))
+            .try_cache(&cache_key, |cache_key| {
+                self._extract_entities(&cache_key.input, filter_entity_kinds)
+            })
     }
 }
 
@@ -93,7 +94,9 @@ impl CachingCustomEntityParser {
         let tokens = tokenize(sentence, self.language);
         let shifts = compute_char_shifts(&tokens);
         let cleaned_input = tokens.into_iter().map(|token| token.value).join(" ");
-        Ok(self.parser.extract_entities(&cleaned_input, filter_entity_kinds)?
+        Ok(self
+            .parser
+            .extract_entities(&cleaned_input, filter_entity_kinds)?
             .into_iter()
             .map(|mut entity_match| {
                 let range_start = entity_match.range.start;
@@ -103,8 +106,7 @@ impl CachingCustomEntityParser {
                 entity_match.range = remapped_range_start..remapped_range_end;
                 entity_match
             })
-            .collect()
-        )
+            .collect())
     }
 }
 
@@ -116,7 +118,7 @@ impl CachingCustomEntityParser {
 /// For instance, if "hello?world" is tokenized in ["hello", "?", "world"],
 /// then the character shifts between "hello?world" and "hello ? world" are
 /// [0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2]
-fn compute_char_shifts(tokens: &Vec<Token>) -> Vec<i32> {
+fn compute_char_shifts(tokens: &[Token]) -> Vec<i32> {
     if tokens.is_empty() {
         return vec![];
     }
@@ -148,49 +150,45 @@ pub struct CustomEntityParserMetadata {
 impl CachingCustomEntityParser {
     pub fn from_path<P: AsRef<Path>>(path: P, cache_capacity: usize) -> Result<Self> {
         let metadata_path = path.as_ref().join("metadata.json");
-        let metadata_file = File::open(&metadata_path)
-            .with_context(|_|
-                format!("Cannot open metadata file for custom entity parser at path: {:?}",
-                        metadata_path))?;
+        let metadata_file = File::open(&metadata_path).with_context(|_| {
+            format!(
+                "Cannot open metadata file for custom entity parser at path: {:?}",
+                metadata_path
+            )
+        })?;
         let metadata: CustomEntityParserMetadata = serde_json::from_reader(metadata_file)
             .with_context(|_| "Cannot deserialize custom entity parser metadata")?;
         let language = NluUtilsLanguage::from_language(Language::from_str(&metadata.language)?);
         let gazetteer_parser_path = path.as_ref().join(&metadata.parser_directory);
         let parser = GazetteerParser::from_path(gazetteer_parser_path)?;
         let cache = Mutex::new(Cache::new(cache_capacity));
-        Ok(Self { language, parser, cache })
+        Ok(Self {
+            language,
+            parser,
+            cache,
+        })
     }
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use testutils::file_path;
+    use crate::testutils::file_path;
 
     #[test]
     fn should_compute_char_shifts() {
         // Given
         let tokens = vec![
-            Token::new(
-                "hello".to_string(),
-                0..5,
-                0..5,
-            ),
-            Token::new(
-                "?".to_string(),
-                5..6,
-                5..6,
-            ),
-            Token::new(
-                "world".to_string(),
-                6..11,
-                6..11,
-            )
+            Token::new("hello".to_string(), 0..5, 0..5),
+            Token::new("?".to_string(), 5..6, 5..6),
+            Token::new("world".to_string(), 6..11, 6..11),
         ];
 
         // When / Then
-        assert_eq!(vec![0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2], compute_char_shifts(&tokens));
+        assert_eq!(
+            vec![0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 2, 2],
+            compute_char_shifts(&tokens)
+        );
     }
 
     #[test]
@@ -208,14 +206,12 @@ mod tests {
         let entities = custom_entity_parser.extract_entities(input, None).unwrap();
 
         // Then
-        let expected_entities = vec![
-            CustomEntity {
-                value: "hot".to_string(),
-                resolved_value: "hot".to_string(),
-                range: 12..15,
-                entity_identifier: "Temperature".to_string(),
-            }
-        ];
+        let expected_entities = vec![CustomEntity {
+            value: "hot".to_string(),
+            resolved_value: "hot".to_string(),
+            range: 12..15,
+            entity_identifier: "Temperature".to_string(),
+        }];
 
         assert_eq!(expected_entities, entities);
     }

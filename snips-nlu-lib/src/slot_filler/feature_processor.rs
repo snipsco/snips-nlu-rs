@@ -1,12 +1,13 @@
-use itertools::Itertools;
 use std::collections::HashMap;
-
-use models::FeatureFactory;
-use errors::*;
-use nlu_utils::token::Token;
-use resources::SharedResources;
 use std::sync::Arc;
-use slot_filler::features::*;
+
+use itertools::Itertools;
+use nlu_utils::token::Token;
+
+use crate::errors::*;
+use crate::models::FeatureFactory;
+use crate::resources::SharedResources;
+use crate::slot_filler::features::*;
 
 pub struct ProbabilisticFeatureProcessor {
     features_offsetters: Vec<FeatureOffsetter>,
@@ -25,7 +26,9 @@ impl ProbabilisticFeatureProcessor {
             .flat_map(|fs| fs)
             .collect();
 
-        Ok(ProbabilisticFeatureProcessor { features_offsetters })
+        Ok(ProbabilisticFeatureProcessor {
+            features_offsetters,
+        })
     }
 }
 
@@ -52,7 +55,7 @@ impl ProbabilisticFeatureProcessor {
 
 struct FeatureOffsetter {
     feature: Box<Feature>,
-    offsets: Vec<i32>
+    offsets: Vec<i32>,
 }
 
 impl FeatureOffsetter {
@@ -78,11 +81,15 @@ pub trait FeatureKindRepr {
 }
 
 pub trait Feature: FeatureKindRepr + Send + Sync {
-    fn name(&self) -> String { self.feature_kind().identifier().to_string() }
+    fn name(&self) -> String {
+        self.feature_kind().identifier().to_string()
+    }
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> where Self: Sized;
+    ) -> Result<Vec<Box<Feature>>>
+    where
+        Self: Sized;
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>>;
 }
 
@@ -115,12 +122,12 @@ mod tests {
             features_offsetters: vec![
                 FeatureOffsetter {
                     offsets: vec![0],
-                    feature: Box::new(IsDigitFeature {}) as Box<_>
+                    feature: Box::new(IsDigitFeature {}) as Box<_>,
                 },
                 FeatureOffsetter {
                     offsets: vec![0],
-                    feature: Box::new(LengthFeature {}) as Box<_>
-                }
+                    feature: Box::new(LengthFeature {}) as Box<_>,
+                },
             ],
         };
         let tokens = tokenize("I prefer 7 over 777", language);
@@ -131,9 +138,15 @@ mod tests {
         let expected_features = vec![
             vec![("length".to_string(), "1".to_string())],
             vec![("length".to_string(), "6".to_string())],
-            vec![("is_digit".to_string(), "1".to_string()), ("length".to_string(), "1".to_string())],
+            vec![
+                ("is_digit".to_string(), "1".to_string()),
+                ("length".to_string(), "1".to_string()),
+            ],
             vec![("length".to_string(), "4".to_string())],
-            vec![("is_digit".to_string(), "1".to_string()), ("length".to_string(), "3".to_string())],
+            vec![
+                ("is_digit".to_string(), "1".to_string()),
+                ("length".to_string(), "3".to_string()),
+            ],
         ];
 
         // Then
@@ -148,11 +161,11 @@ mod tests {
             features_offsetters: vec![
                 FeatureOffsetter {
                     offsets: vec![-2, 0, 3],
-                    feature: Box::new(IsDigitFeature {}) as Box<_>
+                    feature: Box::new(IsDigitFeature {}) as Box<_>,
                 },
                 FeatureOffsetter {
                     offsets: vec![-1, 1],
-                    feature: Box::new(LengthFeature{}) as Box<_>
+                    feature: Box::new(LengthFeature {}) as Box<_>,
                 },
             ],
         };
@@ -163,27 +176,25 @@ mod tests {
 
         // Then
         let expected_features = vec![
-            vec![
-                ("length[+1]".to_string(), "6".to_string())
-            ],
+            vec![("length[+1]".to_string(), "6".to_string())],
             vec![
                 ("is_digit[+3]".to_string(), "1".to_string()),
                 ("length[-1]".to_string(), "1".to_string()),
-                ("length[+1]".to_string(), "1".to_string())
+                ("length[+1]".to_string(), "1".to_string()),
             ],
             vec![
                 ("is_digit".to_string(), "1".to_string()),
                 ("length[-1]".to_string(), "6".to_string()),
-                ("length[+1]".to_string(), "4".to_string())
+                ("length[+1]".to_string(), "4".to_string()),
             ],
             vec![
                 ("length[-1]".to_string(), "1".to_string()),
-                ("length[+1]".to_string(), "3".to_string())
+                ("length[+1]".to_string(), "3".to_string()),
             ],
             vec![
                 ("is_digit[-2]".to_string(), "1".to_string()),
                 ("is_digit".to_string(), "1".to_string()),
-                ("length[-1]".to_string(), "4".to_string())
+                ("length[-1]".to_string(), "4".to_string()),
             ],
         ];
         assert_eq!(expected_features, computed_features);

@@ -10,7 +10,7 @@ macro_rules! get_features {
             pub fn identifier(&self) -> &'static str {
                 match self {
                     $(
-                        &FeatureKind::$feature_type => stringify!($feature_name),
+                        FeatureKind::$feature_type => stringify!($feature_name),
                     )*
                 }
             }

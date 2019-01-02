@@ -2,16 +2,16 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::iter::FromIterator;
 
-use csv;
-use errors::*;
 use nlu_utils::string::normalize;
+
+use crate::errors::*;
 
 pub trait Stemmer: Send + Sync {
     fn stem(&self, value: &str) -> String;
 }
 
 pub struct HashMapStemmer {
-    values: HashMap<String, String>
+    values: HashMap<String, String>,
 }
 
 impl HashMapStemmer {
@@ -36,8 +36,10 @@ impl HashMapStemmer {
 }
 
 impl FromIterator<(String, String)> for HashMapStemmer {
-    fn from_iter<T: IntoIterator<Item=(String, String)>>(iter: T) -> Self {
-        Self { values: HashMap::from_iter(iter) }
+    fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
+        Self {
+            values: HashMap::from_iter(iter),
+        }
     }
 }
 
@@ -59,7 +61,8 @@ mod tests {
         // Given
         let stems: &[u8] = r#"
 investigate,investigated,investigation,"investigate
-do,done,don't,doing,did,does"#.as_ref();
+do,done,don't,doing,did,does"#
+            .as_ref();
 
         // When
         let stemmer = HashMapStemmer::from_reader(stems);

@@ -1,10 +1,11 @@
 use std::path::Path;
 use std::sync::Mutex;
 
-use entity_parser::utils::Cache;
-use errors::*;
-use snips_nlu_ontology::{BuiltinEntityKind, BuiltinEntity};
+use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind};
 use snips_nlu_ontology_parsers::BuiltinEntityParser as _BuiltinEntityParser;
+
+use super::utils::Cache;
+use crate::errors::*;
 
 pub trait BuiltinEntityParser: Send + Sync {
     fn extract_entities(
@@ -35,7 +36,9 @@ impl BuiltinEntityParser for CachingBuiltinEntityParser {
     ) -> Result<Vec<BuiltinEntity>> {
         let lowercased_sentence = sentence.to_lowercase();
         if !use_cache {
-            return self.parser.extract_entities(&lowercased_sentence, filter_entity_kinds);
+            return self
+                .parser
+                .extract_entities(&lowercased_sentence, filter_entity_kinds);
         }
         let cache_key = CacheKey {
             input: lowercased_sentence,
@@ -47,8 +50,10 @@ impl BuiltinEntityParser for CachingBuiltinEntityParser {
         self.cache
             .lock()
             .unwrap()
-            .try_cache(&cache_key,
-                       |cache_key| self.parser.extract_entities(&cache_key.input, filter_entity_kinds))
+            .try_cache(&cache_key, |cache_key| {
+                self.parser
+                    .extract_entities(&cache_key.input, filter_entity_kinds)
+            })
     }
 }
 

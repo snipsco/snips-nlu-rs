@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "snips-nlu-lib",
+    "snips-nlu-ffi",
+    "snips-nlu-ffi/python/snips-nlu-python-ffi",
+]

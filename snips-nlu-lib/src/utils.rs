@@ -1,10 +1,11 @@
 use std::fs;
 use std::io;
 use std::path::{Component, Path, PathBuf};
+
+use failure::ResultExt;
 use zip::ZipArchive;
 
-use errors::*;
-use failure::ResultExt;
+use crate::errors::*;
 
 pub type IntentName = String;
 pub type SlotName = String;
@@ -36,15 +37,22 @@ pub fn product<'a, T>(v: &'a [&'a [T]]) -> Vec<Vec<&'a T>> {
 pub fn deduplicate_overlapping_items<I, O, S, K>(
     items: Vec<I>,
     overlap: O,
-    sort_key_fn: S
+    sort_key_fn: S,
 ) -> Vec<I>
-    where I: Clone, O: Fn(&I, &I) -> bool, S: FnMut(&I) -> K, K: Ord
+where
+    I: Clone,
+    O: Fn(&I, &I) -> bool,
+    S: FnMut(&I) -> K,
+    K: Ord,
 {
     let mut sorted_items = items.clone();
     sorted_items.sort_by_key(sort_key_fn);
     let mut deduplicated_items: Vec<I> = Vec::with_capacity(items.len());
     for item in sorted_items {
-        if !deduplicated_items.iter().any(|dedup_item| overlap(dedup_item, &item)) {
+        if !deduplicated_items
+            .iter()
+            .any(|dedup_item| overlap(dedup_item, &item))
+        {
             deduplicated_items.push(item);
         }
     }
@@ -53,10 +61,10 @@ pub fn deduplicate_overlapping_items<I, O, S, K>(
 
 pub fn extract_nlu_engine_zip_archive<R: io::Read + io::Seek>(
     zip_reader: R,
-    dest_path: &Path
+    dest_path: &Path,
 ) -> Result<PathBuf> {
-    let mut archive = ZipArchive::new(zip_reader)
-        .with_context(|_| "Could not read nlu engine zip data")?;
+    let mut archive =
+        ZipArchive::new(zip_reader).with_context(|_| "Could not read nlu engine zip data")?;
     for file_index in 0..archive.len() {
         let mut file = archive.by_index(file_index)?;
         let outpath = dest_path.join(file.sanitized_name());
@@ -73,12 +81,16 @@ pub fn extract_nlu_engine_zip_archive<R: io::Read + io::Seek>(
             io::copy(&mut file, &mut outfile)?;
         }
     }
-    let first_archive_file = archive
-        .by_index(0)?
-        .sanitized_name();
+    let first_archive_file = archive.by_index(0)?.sanitized_name();
     let engine_dir_path = first_archive_file
         .components()
-        .find(|component| if let Component::Normal(_) = component { true } else { false })
+        .find(|component| {
+            if let Component::Normal(_) = component {
+                true
+            } else {
+                false
+            }
+        })
         .ok_or_else(|| format_err!("Trained engine archive is incorrect"))?
         .as_os_str();
     let engine_dir_name = engine_dir_path
@@ -91,9 +103,9 @@ pub fn extract_nlu_engine_zip_archive<R: io::Read + io::Seek>(
 mod tests {
     use super::*;
     use itertools::repeat_n;
+    use nlu_utils::range::ranges_overlap;
     use std::collections::HashSet;
     use std::ops::Range;
-    use nlu_utils::range::ranges_overlap;
 
     #[test]
     fn product_works() {
@@ -128,12 +140,7 @@ mod tests {
     #[test]
     fn test_deduplicate_items_works() {
         // Given
-        let items = vec![
-            0..3,
-            4..8,
-            0..8,
-            9..13
-        ];
+        let items = vec![0..3, 4..8, 0..8, 9..13];
 
         fn sort_key(rng: &Range<usize>) -> i32 {
             -(rng.clone().count() as i32)

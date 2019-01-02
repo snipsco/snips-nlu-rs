@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate bencher;
-extern crate snips_nlu_lib;
 extern crate dinghy_test;
+extern crate snips_nlu_lib;
 
 use std::env;
 

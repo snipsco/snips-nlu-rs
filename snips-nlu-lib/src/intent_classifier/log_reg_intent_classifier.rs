@@ -3,19 +3,18 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
+use failure::ResultExt;
 use itertools::Itertools;
 use ndarray::prelude::*;
-use serde_json;
 use snips_nlu_ontology::IntentClassifierResult;
 
-use models::IntentClassifierModel;
-use errors::*;
-use failure::ResultExt;
-use intent_classifier::logreg::MulticlassLogisticRegression;
-use intent_classifier::{Featurizer, IntentClassifier};
-use resources::SharedResources;
+use crate::errors::*;
+use crate::intent_classifier::{Featurizer, IntentClassifier};
+use crate::models::IntentClassifierModel;
+use crate::resources::SharedResources;
+use crate::utils::IntentName;
 
-use utils::IntentName;
+use super::logreg::MulticlassLogisticRegression;
 
 pub struct LogRegIntentClassifier {
     intent_list: Vec<Option<IntentName>>,
@@ -26,12 +25,15 @@ pub struct LogRegIntentClassifier {
 impl LogRegIntentClassifier {
     pub fn from_path<P: AsRef<Path>>(
         path: P,
-        shared_resources: Arc<SharedResources>
+        shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
         let classifier_model_path = path.as_ref().join("intent_classifier.json");
-        let model_file = File::open(&classifier_model_path)
-            .with_context(|_|
-                format!("Cannot open LogRegIntentClassifier file '{:?}'", &classifier_model_path))?;
+        let model_file = File::open(&classifier_model_path).with_context(|_| {
+            format!(
+                "Cannot open LogRegIntentClassifier file '{:?}'",
+                &classifier_model_path
+            )
+        })?;
         let model: IntentClassifierModel = serde_json::from_reader(model_file)
             .with_context(|_| "Cannot deserialize LogRegIntentClassifier json data")?;
         Self::new(model, shared_resources)
@@ -41,7 +43,7 @@ impl LogRegIntentClassifier {
 impl LogRegIntentClassifier {
     pub fn new(
         model: IntentClassifierModel,
-        shared_resources: Arc<SharedResources>
+        shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
         let featurizer: Option<Featurizer> = if let Some(featurizer_model) = model.featurizer {
             Some(Featurizer::new(featurizer_model, shared_resources)?)
@@ -90,10 +92,12 @@ impl IntentClassifier for LogRegIntentClassifier {
 
         if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
             let features = featurizer.transform(input)?;
-            let filtered_out_indexes = get_filtered_out_intents_indexes(&self.intent_list, intents_filter);
+            let filtered_out_indexes =
+                get_filtered_out_intents_indexes(&self.intent_list, intents_filter);
             let probabilities = logreg.run(&features.view(), filtered_out_indexes)?;
 
-            let mut intents_proba: Vec<(&Option<IntentName>, &f32)> = self.intent_list
+            let mut intents_proba: Vec<(&Option<IntentName>, &f32)> = self
+                .intent_list
                 .iter()
                 .zip(probabilities.into_iter())
                 .collect_vec();
@@ -138,14 +142,14 @@ impl LogRegIntentClassifier {
 }
 
 fn get_filtered_out_intents_indexes(
-    intents_list: &Vec<Option<IntentName>>,
+    intents_list: &[Option<IntentName>],
     intents_filter: Option<&HashSet<IntentName>>,
 ) -> Option<Vec<usize>> {
-    intents_filter.map(|filter|
+    intents_filter.map(|filter| {
         intents_list
-            .into_iter()
+            .iter()
             .enumerate()
-            .filter_map(|(i, opt_intent)|
+            .filter_map(|(i, opt_intent)| {
                 if let Some(intent) = opt_intent.as_ref() {
                     if !filter.contains(intent) {
                         Some(i)
@@ -155,23 +159,21 @@ fn get_filtered_out_intents_indexes(
                 } else {
                     None
                 }
-            )
+            })
             .collect()
-    )
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
-    use resources::loading::load_engine_shared_resources;
-    use testutils::*;
+    use crate::models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
+    use crate::resources::loading::load_engine_shared_resources;
+    use crate::testutils::*;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
-        let trained_engine_dir = file_path("tests")
-            .join("models")
-            .join("nlu_engine");
+        let trained_engine_dir = file_path("tests").join("models").join("nlu_engine");
 
         let resources = load_engine_shared_resources(trained_engine_dir).unwrap();
         let language_code = "en".to_string();
@@ -422,14 +424,14 @@ mod tests {
         let config = FeaturizerConfiguration {
             sublinear_tf: false,
             word_clusters_name: None,
-            use_stemming: true
+            use_stemming: true,
         };
 
         let config = FeaturizerModel {
             tfidf_vectorizer,
             best_features,
             config,
-            language_code
+            language_code,
         };
 
         let featurizer = Featurizer::new(config, resources).unwrap();
@@ -542,9 +544,7 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let trained_engine_dir = file_path("tests")
-            .join("models")
-            .join("nlu_engine");
+        let trained_engine_dir = file_path("tests").join("models").join("nlu_engine");
 
         let classifier_path = trained_engine_dir
             .join("probabilistic_intent_parser")
@@ -553,7 +553,8 @@ mod tests {
         let resources = load_engine_shared_resources(trained_engine_dir).unwrap();
 
         // When
-        let intent_classifier = LogRegIntentClassifier::from_path(classifier_path, resources).unwrap();
+        let intent_classifier =
+            LogRegIntentClassifier::from_path(classifier_path, resources).unwrap();
         let intent_result = intent_classifier
             .get_intent("Make me one cup of tea please", None)
             .unwrap()
@@ -625,12 +626,13 @@ mod tests {
             Some("intent1".to_string()),
             Some("intent2".to_string()),
             Some("intent3".to_string()),
-            None
+            None,
         ];
         let intents_filter = hashset!["intent1".to_string(), "intent3".to_string()];
 
         // When
-        let filtered_indexes = get_filtered_out_intents_indexes(&intents_list, Some(&intents_filter));
+        let filtered_indexes =
+            get_filtered_out_intents_indexes(&intents_list, Some(&intents_filter));
 
         // Then
         let expected_indexes = Some(vec![1]);

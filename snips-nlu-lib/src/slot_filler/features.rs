@@ -1,37 +1,41 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use entity_parser::{CustomEntityParser, BuiltinEntityParser};
-use errors::*;
 use itertools::Itertools;
 use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{get_shape, normalize};
 use nlu_utils::token::Token;
-use resources::gazetteer::Gazetteer;
-use resources::SharedResources;
-use resources::stemmer::Stemmer;
-use resources::word_clusterer::WordClusterer;
-use slot_filler::feature_processor::{Feature, FeatureKindRepr};
 use snips_nlu_ontology::BuiltinEntityKind;
+
+use crate::entity_parser::{BuiltinEntityParser, CustomEntityParser};
+use crate::errors::*;
+use crate::resources::gazetteer::Gazetteer;
+use crate::resources::stemmer::Stemmer;
+use crate::resources::word_clusterer::WordClusterer;
+use crate::resources::SharedResources;
+
 use super::crf_utils::{get_scheme_prefix, TaggingScheme};
+use super::feature_processor::{Feature, FeatureKindRepr};
 use super::features_utils::{get_word_chunk, initial_string_from_tokens};
 
 pub struct IsDigitFeature {}
 
 impl Feature for IsDigitFeature {
     fn build_features(
-        _args: &HashMap<String, ::serde_json::Value>,
+        _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         Ok(vec![Box::new(Self {})])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
-        Ok(if tokens[token_index].value.chars().all(|c| c.is_digit(10)) {
-            Some("1".to_string())
-        } else {
-            None
-        })
+        Ok(
+            if tokens[token_index].value.chars().all(|c| c.is_digit(10)) {
+                Some("1".to_string())
+            } else {
+                None
+            },
+        )
     }
 }
 
@@ -39,14 +43,17 @@ pub struct LengthFeature {}
 
 impl Feature for LengthFeature {
     fn build_features(
-        _args: &HashMap<String, ::serde_json::Value>,
+        _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         Ok(vec![Box::new(Self {})])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
-        Ok(Some(format!("{:?}", &tokens[token_index].value.chars().count())))
+        Ok(Some(format!(
+            "{:?}",
+            &tokens[token_index].value.chars().count()
+        )))
     }
 }
 
@@ -54,7 +61,7 @@ pub struct IsFirstFeature {}
 
 impl Feature for IsFirstFeature {
     fn build_features(
-        _args: &HashMap<String, ::serde_json::Value>,
+        _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         Ok(vec![Box::new(Self {})])
@@ -73,7 +80,7 @@ pub struct IsLastFeature {}
 
 impl Feature for IsLastFeature {
     fn build_features(
-        _args: &HashMap<String, ::serde_json::Value>,
+        _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         Ok(vec![Box::new(Self {})])
@@ -100,34 +107,43 @@ impl Feature for NgramFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let n = parse_as_u64(args, "n")? as usize;
         let common_words_gazetteer_name = parse_as_opt_string(args, "common_words_gazetteer_name")?;
         let opt_common_words_gazetteer = if let Some(gazetteer_name) = common_words_gazetteer_name {
-            Some(shared_resources.gazetteers.get(&gazetteer_name)
-                .map(|gazetteer| gazetteer.clone())
-                .ok_or_else(||
-                    format_err!("Cannot find gazetteer '{}' in shared resources", gazetteer_name))?)
+            Some(
+                shared_resources
+                    .gazetteers
+                    .get(&gazetteer_name)
+                    .cloned()
+                    .ok_or_else(|| {
+                        format_err!(
+                            "Cannot find gazetteer '{}' in shared resources",
+                            gazetteer_name
+                        )
+                    })?,
+            )
         } else {
             None
         };
         let use_stemming = parse_as_bool(args, "use_stemming")?;
         let opt_stemmer = if use_stemming {
-            Some(shared_resources.stemmer
-                .clone()
-                .ok_or_else(|| format_err!("Cannot find stemmer in shared resources"))?)
+            Some(
+                shared_resources
+                    .stemmer
+                    .clone()
+                    .ok_or_else(|| format_err!("Cannot find stemmer in shared resources"))?,
+            )
         } else {
             None
         };
-        Ok(vec![Box::new(
-            Self {
-                ngram_size: n,
-                opt_common_words_gazetteer,
-                opt_stemmer,
-            }
-        )])
+        Ok(vec![Box::new(Self {
+            ngram_size: n,
+            opt_common_words_gazetteer,
+            opt_stemmer,
+        })])
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
@@ -138,7 +154,8 @@ impl Feature for NgramFeature {
         let result = tokens[token_index..token_index + self.ngram_size]
             .iter()
             .map(|token| {
-                let stemmed_value = self.opt_stemmer
+                let stemmed_value = self
+                    .opt_stemmer
                     .as_ref()
                     .map(|stemmer| stemmer.stem(&normalize(&token.value)))
                     .unwrap_or_else(|| normalize(&token.value));
@@ -168,7 +185,7 @@ impl Feature for ShapeNgramFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let ngram_size = parse_as_u64(args, "n")? as usize;
@@ -201,7 +218,7 @@ impl Feature for PrefixFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let prefix_size = parse_as_u64(args, "prefix_size")? as usize;
@@ -224,7 +241,7 @@ impl Feature for SuffixFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let suffix_size = parse_as_u64(args, "suffix_size")? as usize;
@@ -234,7 +251,12 @@ impl Feature for SuffixFeature {
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
         let normalized = normalize(&tokens[token_index].value);
         let chunk_start = normalized.chars().count();
-        Ok(get_word_chunk(&normalized, self.suffix_size, chunk_start, true))
+        Ok(get_word_chunk(
+            &normalized,
+            self.suffix_size,
+            chunk_start,
+            true,
+        ))
     }
 }
 
@@ -251,7 +273,7 @@ impl Feature for CustomEntityMatchFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let entities = parse_as_vec_string(args, "entities")?;
@@ -259,9 +281,12 @@ impl Feature for CustomEntityMatchFeature {
         let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
         let use_stemming = parse_as_bool(args, "use_stemming")?;
         let opt_stemmer = if use_stemming {
-            Some(shared_resources.stemmer
-                .clone()
-                .ok_or_else(|| format_err!("Cannot find stemmer in shared resources"))?)
+            Some(
+                shared_resources
+                    .stemmer
+                    .clone()
+                    .ok_or_else(|| format_err!("Cannot find stemmer in shared resources"))?,
+            )
         } else {
             None
         };
@@ -282,7 +307,8 @@ impl Feature for CustomEntityMatchFeature {
         let normalized_tokens = transform_tokens(tokens, self.opt_stemmer.clone());
         let normalized_text = initial_string_from_tokens(&*normalized_tokens);
 
-        Ok(self.custom_entity_parser
+        Ok(self
+            .custom_entity_parser
             .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]))?
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &normalized_tokens[token_index].char_range))
@@ -290,7 +316,8 @@ impl Feature for CustomEntityMatchFeature {
                 let entity_token_indexes = (0..normalized_tokens.len())
                     .filter(|i| ranges_overlap(&normalized_tokens[*i].char_range, &e.range))
                     .collect_vec();
-                get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme).to_string()
+                get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme)
+                    .to_string()
             }))
     }
 }
@@ -303,11 +330,15 @@ pub struct BuiltinEntityMatchFeature {
 
 impl Feature for BuiltinEntityMatchFeature {
     fn name(&self) -> String {
-        format!("{}_{}", self.feature_kind().identifier(), self.builtin_entity_kind.identifier())
+        format!(
+            "{}_{}",
+            self.feature_kind().identifier(),
+            self.builtin_entity_kind.identifier()
+        )
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let builtin_entity_labels = parse_as_vec_string(args, "entity_labels")?;
@@ -329,7 +360,8 @@ impl Feature for BuiltinEntityMatchFeature {
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
         let text = initial_string_from_tokens(tokens);
-        Ok(self.builtin_entity_parser
+        Ok(self
+            .builtin_entity_parser
             .extract_entities(&text, Some(&[self.builtin_entity_kind]), true)?
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
@@ -337,7 +369,8 @@ impl Feature for BuiltinEntityMatchFeature {
                 let entity_token_indexes = (0..tokens.len())
                     .filter(|i| ranges_overlap(&tokens[*i].char_range, &e.range))
                     .collect_vec();
-                get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme).to_string()
+                get_scheme_prefix(token_index, &entity_token_indexes, self.tagging_scheme)
+                    .to_string()
             }))
     }
 }
@@ -353,15 +386,20 @@ impl Feature for WordClusterFeature {
     }
 
     fn build_features(
-        args: &HashMap<String, ::serde_json::Value>,
+        args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Vec<Box<Feature>>> {
         let cluster_name = parse_as_string(args, "cluster_name")?;
-        let word_clusterer = shared_resources.word_clusterers
+        let word_clusterer = shared_resources
+            .word_clusterers
             .get(&cluster_name)
-            .map(|clusterer| clusterer.clone())
-            .ok_or_else(|| format_err!(
-                "Cannot find word clusters '{}' in shared resources", cluster_name))?;
+            .cloned()
+            .ok_or_else(|| {
+                format_err!(
+                    "Cannot find word clusters '{}' in shared resources",
+                    cluster_name
+                )
+            })?;
         Ok(vec![Box::new(Self {
             cluster_name,
             word_clusterer,
@@ -369,7 +407,9 @@ impl Feature for WordClusterFeature {
     }
 
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>> {
-        Ok(self.word_clusterer.get_cluster(&tokens[token_index].value.to_lowercase()))
+        Ok(self
+            .word_clusterer
+            .get_cluster(&tokens[token_index].value.to_lowercase()))
     }
 }
 
@@ -382,7 +422,8 @@ fn transform_tokens(tokens: &[Token], stemmer: Option<Arc<Stemmer>>) -> Vec<Toke
             let normalized_value = stemmer
                 .clone()
                 .map_or(normalize(&t.value), |s| s.stem(&normalize(&t.value)));
-            let char_range = current_char_index..(current_char_index + normalized_value.chars().count());
+            let char_range =
+                current_char_index..(current_char_index + normalized_value.chars().count());
             let byte_range = current_byte_index..(current_byte_index + normalized_value.len());
             current_char_index = char_range.end + 1;
             current_byte_index = byte_range.end + 1;
@@ -391,8 +432,9 @@ fn transform_tokens(tokens: &[Token], stemmer: Option<Arc<Stemmer>>) -> Vec<Toke
         .collect_vec()
 }
 
-fn parse_as_string(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<String> {
-    Ok(args.get(arg_name)
+fn parse_as_string(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<String> {
+    Ok(args
+        .get(arg_name)
         .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_str()
         .ok_or_else(|| format_err!("'{}' isn't a string", arg_name))?
@@ -400,17 +442,18 @@ fn parse_as_string(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) 
 }
 
 fn parse_as_opt_string(
-    args: &HashMap<String, ::serde_json::Value>,
+    args: &HashMap<String, serde_json::Value>,
     arg_name: &str,
 ) -> Result<Option<String>> {
-    Ok(args.get(arg_name)
+    Ok(args
+        .get(arg_name)
         .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_str()
         .map(|s| s.to_string()))
 }
 
 fn parse_as_vec_string(
-    args: &HashMap<String, ::serde_json::Value>,
+    args: &HashMap<String, serde_json::Value>,
     arg_name: &str,
 ) -> Result<Vec<String>> {
     args.get(arg_name)
@@ -426,15 +469,17 @@ fn parse_as_vec_string(
         .collect()
 }
 
-fn parse_as_bool(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<bool> {
-    Ok(args.get(arg_name)
+fn parse_as_bool(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<bool> {
+    Ok(args
+        .get(arg_name)
         .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_bool()
         .ok_or_else(|| format_err!("'{}' isn't a bool", arg_name))?)
 }
 
-fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> Result<u64> {
-    Ok(args.get(arg_name)
+fn parse_as_u64(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Result<u64> {
+    Ok(args
+        .get(arg_name)
         .ok_or_else(|| format_err!("can't retrieve '{}' parameter", arg_name))?
         .as_u64()
         .ok_or_else(|| format_err!("'{}' isn't a u64", arg_name))?)
@@ -443,57 +488,37 @@ fn parse_as_u64(args: &HashMap<String, ::serde_json::Value>, arg_name: &str) -> 
 #[cfg(test)]
 mod tests {
     use std::iter::FromIterator;
+
     use nlu_utils::language::Language as NluUtilsLanguage;
     use nlu_utils::token::tokenize;
-    use resources::gazetteer::HashSetGazetteer;
-    use resources::stemmer::HashMapStemmer;
-    use resources::word_clusterer::HashMapWordClusterer;
     use snips_nlu_ontology::{BuiltinEntity, SlotValue, TemperatureValue};
+
     use super::*;
-    use testutils::{MockedBuiltinEntityParser, MockedCustomEntityParser};
-    use entity_parser::custom_entity_parser::CustomEntity;
+    use crate::entity_parser::custom_entity_parser::CustomEntity;
+    use crate::resources::gazetteer::HashSetGazetteer;
+    use crate::resources::stemmer::HashMapStemmer;
+    use crate::resources::word_clusterer::HashMapWordClusterer;
+    use crate::testutils::{MockedBuiltinEntityParser, MockedCustomEntityParser};
 
     #[test]
     fn transform_tokens_should_work() {
         // Given
         let tokens = tokenize("fo£ root_suffix inflection bar", NluUtilsLanguage::EN);
-        let stemmer = HashMapStemmer::from_iter(
-            vec![
-                ("root_suffix".to_string(), "root".to_string()),
-                ("inflection".to_string(), "original_word".to_string())
-            ]
-        );
+        let stemmer = HashMapStemmer::from_iter(vec![
+            ("root_suffix".to_string(), "root".to_string()),
+            ("inflection".to_string(), "original_word".to_string()),
+        ]);
 
         // When
         let transformed_tokens = transform_tokens(&tokens, Some(Arc::new(stemmer)));
 
         // Then
         let expected_tokens = vec![
-            Token::new(
-                "fo".to_string(),
-                0..2,
-                0..2,
-            ),
-            Token::new(
-                "£".to_string(),
-                3..5,
-                3..4,
-            ),
-            Token::new(
-                "root".to_string(),
-                6..10,
-                5..9,
-            ),
-            Token::new(
-                "original_word".to_string(),
-                11..24,
-                10..23,
-            ),
-            Token::new(
-                "bar".to_string(),
-                25..28,
-                24..27,
-            )
+            Token::new("fo".to_string(), 0..2, 0..2),
+            Token::new("£".to_string(), 3..5, 3..4),
+            Token::new("root".to_string(), 6..10, 5..9),
+            Token::new("original_word".to_string(), 11..24, 10..23),
+            Token::new("bar".to_string(), 25..28, 24..27),
         ];
         assert_eq!(expected_tokens, transformed_tokens);
     }
@@ -584,7 +609,7 @@ mod tests {
             Some("Xxx XXX".to_string()),
             Some("XXX xxx".to_string()),
             Some("xxx xX".to_string()),
-            None
+            None,
         ];
         assert_eq!(expected_result, results);
     }
@@ -610,7 +635,7 @@ mod tests {
             Some("i love".to_string()),
             Some("love house".to_string()),
             Some("house music".to_string()),
-            None
+            None,
         ];
 
         assert_eq!(expected_results, results);
@@ -640,7 +665,7 @@ mod tests {
             Some("i love".to_string()),
             Some("love rare_word".to_string()),
             Some("rare_word music".to_string()),
-            None
+            None,
         ];
         assert_eq!(expected_results, results);
     }
@@ -650,9 +675,8 @@ mod tests {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
-        let stemmer = HashMapStemmer::from_iter(
-            vec![("house".to_string(), "hous".to_string())].into_iter()
-        );
+        let stemmer =
+            HashMapStemmer::from_iter(vec![("house".to_string(), "hous".to_string())].into_iter());
         let feature = NgramFeature {
             ngram_size: 2,
             opt_common_words_gazetteer: None,
@@ -680,19 +704,15 @@ mod tests {
         // Given
         let language = NluUtilsLanguage::EN;
         let entity_name = "bird_type".to_string();
-        let mocked_entity_parser = MockedCustomEntityParser::from_iter(
-            vec![(
-                "i love this beautiful blue bird !".to_string(),
-                vec![
-                    CustomEntity {
-                        value: "beautiful blue bird".to_string(),
-                        resolved_value: "beautiful blue bird".to_string(),
-                        range: 12..31,
-                        entity_identifier: entity_name.to_string(),
-                    }
-                ]
-            )]
-        );
+        let mocked_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+            "i love this beautiful blue bird !".to_string(),
+            vec![CustomEntity {
+                value: "beautiful blue bird".to_string(),
+                resolved_value: "beautiful blue bird".to_string(),
+                range: 12..31,
+                entity_identifier: entity_name.to_string(),
+            }],
+        )]);
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love this beautiful blue Bird !", language);
         let feature = CustomEntityMatchFeature {
@@ -725,19 +745,15 @@ mod tests {
         let language = NluUtilsLanguage::EN;
         let stemmer = HashMapStemmer::from_iter(vec![("birds".to_string(), "bird".to_string())]);
 
-        let mocked_entity_parser = MockedCustomEntityParser::from_iter(
-            vec![(
-                "i love blue bird !".to_string(),
-                vec![
-                    CustomEntity {
-                        value: "blue bird".to_string(),
-                        resolved_value: "blue bird".to_string(),
-                        range: 7..16,
-                        entity_identifier: "bird_type".to_string(),
-                    }
-                ]
-            )]
-        );
+        let mocked_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+            "i love blue bird !".to_string(),
+            vec![CustomEntity {
+                value: "blue bird".to_string(),
+                resolved_value: "blue bird".to_string(),
+                range: 7..16,
+                entity_identifier: "bird_type".to_string(),
+            }],
+        )]);
 
         let tagging_scheme = TaggingScheme::BILOU;
         let tokens = tokenize("I love Blue Birds !", language);
@@ -759,7 +775,7 @@ mod tests {
             None,
             Some("B-".to_string()),
             Some("L-".to_string()),
-            None
+            None,
         ];
         assert_eq!(expected_results, results);
     }
@@ -771,19 +787,18 @@ mod tests {
         let input = "Please raise to twenty one degrees ok ?";
         let tokens = tokenize(input, language);
         let tagging_scheme = TaggingScheme::BILOU;
-        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(
-            vec![(
-                input.to_string(),
-                vec![
-                    BuiltinEntity {
-                        value: "twenty one degrees".to_string(),
-                        range: 16..34,
-                        entity: SlotValue::Temperature(TemperatureValue { value: 21.0, unit: None }),
-                        entity_kind: BuiltinEntityKind::Temperature,
-                    }
-                ]
-            )]
-        );
+        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(vec![(
+            input.to_string(),
+            vec![BuiltinEntity {
+                value: "twenty one degrees".to_string(),
+                range: 16..34,
+                entity: SlotValue::Temperature(TemperatureValue {
+                    value: 21.0,
+                    unit: None,
+                }),
+                entity_kind: BuiltinEntityKind::Temperature,
+            }],
+        )]);
 
         let feature = BuiltinEntityMatchFeature {
             tagging_scheme,
@@ -804,7 +819,7 @@ mod tests {
             Some("B-".to_string()),
             Some("I-".to_string()),
             Some("L-".to_string()),
-            None
+            None,
         ];
         assert_eq!(expected_results, results);
     }
@@ -814,7 +829,7 @@ mod tests {
         // Given
         let language = NluUtilsLanguage::EN;
         let word_clusterer = HashMapWordClusterer::from_iter(
-            vec![("bird".to_string(), "010101".to_string())].into_iter()
+            vec![("bird".to_string(), "010101".to_string())].into_iter(),
         );
         let tokens = tokenize("I love this bird", language);
         let feature = WordClusterFeature {
@@ -828,12 +843,7 @@ mod tests {
             .collect();
 
         // Then
-        let expected_results = vec![
-            None,
-            None,
-            None,
-            Some("010101".to_string())
-        ];
+        let expected_results = vec![None, None, None, Some("010101".to_string())];
         assert_eq!(expected_results, results);
     }
 }

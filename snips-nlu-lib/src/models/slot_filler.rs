@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use utils::{EntityName, IntentName, SlotName};
+use crate::utils::{EntityName, IntentName, SlotName};
 
 #[derive(Debug, Deserialize)]
 pub struct SlotFillerModel {
@@ -21,5 +21,5 @@ pub struct SlotFillerConfiguration {
 pub struct FeatureFactory {
     pub factory_name: String,
     pub offsets: Vec<i32>,
-    pub args: HashMap<String, ::serde_json::Value>,
+    pub args: HashMap<String, serde_json::Value>,
 }
