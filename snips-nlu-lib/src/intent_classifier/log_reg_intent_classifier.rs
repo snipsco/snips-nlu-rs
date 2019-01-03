@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fs::File;
+use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -68,7 +69,7 @@ impl IntentClassifier for LogRegIntentClassifier {
     fn get_intent(
         &self,
         input: &str,
-        intents_filter: Option<&HashSet<IntentName>>,
+        intents_filter: Option<&[&str]>,
     ) -> Result<Option<IntentClassifierResult>> {
         if input.is_empty() || self.intent_list.is_empty() {
             return Ok(None);
@@ -83,10 +84,12 @@ impl IntentClassifier for LogRegIntentClassifier {
                 }));
         }
 
+        let opt_intents_set: Option<HashSet<&str>> = intents_filter
+            .map(|intent_list| HashSet::from_iter(intent_list.into_iter().map(|i| *i)));
         if let (Some(featurizer), Some(logreg)) = (self.featurizer.as_ref(), self.logreg.as_ref()) {
             let features = featurizer.transform(input)?;
             let filtered_out_indexes =
-                get_filtered_out_intents_indexes(&self.intent_list, intents_filter);
+                get_filtered_out_intents_indexes(&self.intent_list, opt_intents_set.as_ref());
             let probabilities = logreg.run(&features.view(), filtered_out_indexes)?;
 
             let mut intents_proba: Vec<(&Option<IntentName>, &f32)> = self
@@ -99,9 +102,10 @@ impl IntentClassifier for LogRegIntentClassifier {
             intents_proba.sort_by(|a, b| b.1.partial_cmp(a.1).unwrap());
 
             let mut filtered_intents = intents_proba.into_iter().filter(|&(opt_intent, _)| {
-                if let Some(intent) = opt_intent.as_ref() {
-                    intents_filter
-                        .map(|intents| intents.contains(intent))
+                if let Some(intent) = opt_intent {
+                    opt_intents_set
+                        .as_ref()
+                        .map(|intents| intents.contains(&**intent))
                         .unwrap_or(true)
                 } else {
                     true
@@ -136,15 +140,15 @@ impl LogRegIntentClassifier {
 
 fn get_filtered_out_intents_indexes(
     intents_list: &[Option<IntentName>],
-    intents_filter: Option<&HashSet<IntentName>>,
+    intents_filter: Option<&HashSet<&str>>,
 ) -> Option<Vec<usize>> {
     intents_filter.map(|filter| {
         intents_list
             .iter()
             .enumerate()
             .filter_map(|(i, opt_intent)| {
-                if let Some(intent) = opt_intent.as_ref() {
-                    if !filter.contains(intent) {
+                if let Some(intent) = opt_intent {
+                    if !filter.contains(&**intent) {
                         Some(i)
                     } else {
                         None
@@ -360,21 +364,21 @@ mod tests {
 
         // When
         let text1 = "Make me two cups of tea";
+        let intents_filter1 = vec!["MakeCoffee", "MakeTea"];
         let result1 = classifier
-            .get_intent(
-                text1,
-                Some(hashset! {"MakeCoffee".to_string(), "MakeTea".to_string()}).as_ref(),
-            )
+            .get_intent(text1, Some(&*intents_filter1))
             .unwrap();
 
         let text2 = "Make me two cups of tea";
+        let intents_filter2 = vec!["MakeCoffee"];
         let result2 = classifier
-            .get_intent(text2, Some(hashset! {"MakeCoffee".to_string()}).as_ref())
+            .get_intent(text2, Some(&*intents_filter2))
             .unwrap();
 
         let text3 = "bla bla bla";
+        let intents_filter3 = vec!["MakeCoffee"];
         let result3 = classifier
-            .get_intent(text3, Some(hashset! {"MakeCoffee".to_string()}).as_ref())
+            .get_intent(text3, Some(&*intents_filter3))
             .unwrap();
 
         // Then
@@ -398,7 +402,7 @@ mod tests {
             Some("intent3".to_string()),
             None,
         ];
-        let intents_filter = hashset!["intent1".to_string(), "intent3".to_string()];
+        let intents_filter = hashset!["intent1", "intent3"];
 
         // When
         let filtered_indexes =

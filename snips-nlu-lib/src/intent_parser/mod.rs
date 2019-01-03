@@ -1,7 +1,6 @@
 pub mod deterministic_intent_parser;
 pub mod probabilistic_intent_parser;
 
-use std::collections::HashSet;
 use std::path::Path;
 use std::sync::Arc;
 
@@ -12,6 +11,7 @@ pub use self::probabilistic_intent_parser::ProbabilisticIntentParser;
 use crate::errors::*;
 use crate::models::ProcessingUnitMetadata;
 use crate::resources::SharedResources;
+use crate::utils::IntentName;
 pub use crate::slot_utils::InternalSlot;
 
 pub struct InternalParsingResult {
@@ -20,7 +20,7 @@ pub struct InternalParsingResult {
 }
 
 pub fn internal_parsing_result(
-    intent_name: String,
+    intent_name: IntentName,
     intent_proba: f32,
     slots: Vec<InternalSlot>,
 ) -> InternalParsingResult {
@@ -37,8 +37,14 @@ pub trait IntentParser: Send + Sync {
     fn parse(
         &self,
         input: &str,
-        intents: Option<&HashSet<String>>,
+        intents: Option<&[&str]>,
     ) -> Result<Option<InternalParsingResult>>;
+
+    fn get_slots(
+        &self,
+        input: &str,
+        intent: &str
+    ) -> Result<Vec<InternalSlot>>;
 }
 
 pub fn build_intent_parser<P: AsRef<Path>>(
