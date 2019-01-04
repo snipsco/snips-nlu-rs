@@ -11,8 +11,8 @@ pub use self::probabilistic_intent_parser::ProbabilisticIntentParser;
 use crate::errors::*;
 use crate::models::ProcessingUnitMetadata;
 use crate::resources::SharedResources;
-use crate::utils::IntentName;
 pub use crate::slot_utils::InternalSlot;
+use crate::utils::IntentName;
 
 pub struct InternalParsingResult {
     pub intent: IntentClassifierResult,
@@ -20,7 +20,7 @@ pub struct InternalParsingResult {
 }
 
 pub fn internal_parsing_result(
-    intent_name: IntentName,
+    intent_name: Option<IntentName>,
     intent_proba: f32,
     slots: Vec<InternalSlot>,
 ) -> InternalParsingResult {
@@ -34,17 +34,9 @@ pub fn internal_parsing_result(
 }
 
 pub trait IntentParser: Send + Sync {
-    fn parse(
-        &self,
-        input: &str,
-        intents: Option<&[&str]>,
-    ) -> Result<Option<InternalParsingResult>>;
+    fn parse(&self, input: &str, intents: Option<&[&str]>) -> Result<InternalParsingResult>;
 
-    fn get_slots(
-        &self,
-        input: &str,
-        intent: &str
-    ) -> Result<Vec<InternalSlot>>;
+    fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<InternalSlot>>;
 }
 
 pub fn build_intent_parser<P: AsRef<Path>>(

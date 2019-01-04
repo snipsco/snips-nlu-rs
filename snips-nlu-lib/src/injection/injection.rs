@@ -482,13 +482,19 @@ mod tests {
         let parsing = nlu_engine
             .parse("je souhaiterais écouter l'album thisisthebestalbum", None)
             .unwrap();
-        assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic");
-        assert_eq!(parsing.slots.unwrap(), vec![]);
+        assert_eq!(
+            parsing.intent.intent_name,
+            Some("adri:PlayMusic".to_string())
+        );
+        assert_eq!(parsing.slots, vec![]);
         let parsing = nlu_engine
             .parse("je voudrais ecouter ma playlist funk", None)
             .unwrap();
-        assert_eq!(parsing.intent.unwrap().intent_name, "adri:PlayMusic");
-        assert_eq!(parsing.slots.unwrap(), vec![]);
+        assert_eq!(
+            parsing.intent.intent_name,
+            Some("adri:PlayMusic".to_string())
+        );
+        assert_eq!(parsing.slots, vec![]);
 
         // values to inject
         let values = vec![
@@ -531,32 +537,32 @@ mod tests {
             .parse("je souhaiterais écouter l'album thisisthebestalbum", None)
             .unwrap();
         assert_eq!(
-            parsing.intent.unwrap().intent_name,
-            "adri:PlayMusic".to_string()
+            parsing.intent.intent_name,
+            Some("adri:PlayMusic".to_string())
         );
-        let ground_true_slots = Some(vec![Slot {
+        let ground_true_slots = vec![Slot {
             raw_value: "thisisthebestalbum".to_string(),
-            range: Some(32..50),
+            range: 32..50,
             entity: "snips/musicAlbum".to_string(),
             slot_name: "musicAlbum".to_string(),
             value: SlotValue::MusicAlbum(StringValue::from("Thisisthebestalbum")),
-        }]);
+        }];
         assert_eq!(parsing.slots, ground_true_slots);
 
         let parsing = nlu_engine
             .parse("je voudrais ecouter ma playlist funk", None)
             .unwrap();
         assert_eq!(
-            parsing.intent.unwrap().intent_name,
-            "adri:PlayMusic".to_string()
+            parsing.intent.intent_name,
+            Some("adri:PlayMusic".to_string())
         );
-        let ground_true_slots = Some(vec![Slot {
+        let ground_true_slots = vec![Slot {
             raw_value: "funk".to_string(),
-            range: Some(32..36),
+            range: 32..36,
             entity: "playlist".to_string(),
             slot_name: "playlist".to_string(),
             value: SlotValue::Custom(StringValue::from("funky")),
-        }]);
+        }];
         assert_eq!(parsing.slots, ground_true_slots);
     }
 }

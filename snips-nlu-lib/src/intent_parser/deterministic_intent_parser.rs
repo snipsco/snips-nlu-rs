@@ -12,7 +12,7 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range};
 use nlu_utils::token::{tokenize, tokenize_light};
 use regex::{Regex, RegexBuilder};
-use snips_nlu_ontology::{BuiltinEntityKind, Language};
+use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language};
 
 use crate::errors::*;
 use crate::language::FromLanguage;
@@ -83,13 +83,9 @@ impl DeterministicIntentParser {
 }
 
 impl IntentParser for DeterministicIntentParser {
-    fn parse(
-        &self,
-        input: &str,
-        intents: Option<&[&str]>,
-    ) -> Result<Option<InternalParsingResult>> {
-        let opt_intents_set: Option<HashSet<&str>> = intents
-            .map(|intent_list| intent_list.iter().map(|i| *i).collect());
+    fn parse(&self, input: &str, intents: Option<&[&str]>) -> Result<InternalParsingResult> {
+        let opt_intents_set: Option<HashSet<&str>> =
+            intents.map(|intent_list| intent_list.iter().map(|i| *i).collect());
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
@@ -118,37 +114,38 @@ impl IntentParser for DeterministicIntentParser {
                 .as_ref()
                 .map(|intents_set| intents_set.contains(&**intent))
                 .unwrap_or(true)
-                {
-                    continue;
-                }
+            {
+                continue;
+            }
             for regex in regexes {
-                let matching_result_formatted = self.get_matching_result(
+                if let Some(matching_result_formatted) = self.get_matching_result(
                     input,
                     &*cleaned_formatted_input,
                     regex,
                     intent,
                     Some(&ranges_mapping),
-                );
-                if matching_result_formatted.is_some() {
+                ) {
                     return Ok(matching_result_formatted);
                 }
-                let matching_result =
-                    self.get_matching_result(input, &*cleaned_input, regex, intent, None);
-                if matching_result.is_some() {
+                if let Some(matching_result) =
+                    self.get_matching_result(input, &*cleaned_input, regex, intent, None)
+                {
                     return Ok(matching_result);
                 }
             }
         }
-        Ok(None)
+        Ok(InternalParsingResult {
+            intent: IntentClassifierResult {
+                intent_name: None,
+                probability: 1.0,
+            },
+            slots: vec![],
+        })
     }
 
     fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<InternalSlot>> {
         let filter = vec![intent];
-        self.parse(input, Some(&filter))
-            .map(|opt_parsing_result|
-                opt_parsing_result
-                    .map(|parsing_result| parsing_result.slots)
-                    .unwrap_or_else(|| vec![]))
+        self.parse(input, Some(&filter)).map(|result| result.slots)
     }
 }
 
@@ -158,13 +155,14 @@ impl DeterministicIntentParser {
         let mut current_idx = 0;
         let mut cleaned_string = "".to_string();
         for mut token in tokens {
-            if self.ignore_stop_words &&
-                self.shared_resources
+            if self.ignore_stop_words
+                && self
+                    .shared_resources
                     .stop_words
                     .contains(&token.normalized_value())
-                {
-                    token.value = (0..token.value.chars().count()).map(|_| " ").collect();
-                }
+            {
+                token.value = (0..token.value.chars().count()).map(|_| " ").collect();
+            }
             let prefix_length = token.char_range.start - current_idx;
             let prefix: String = (0..prefix_length).map(|_| " ").collect();
             cleaned_string = format!("{}{}{}", cleaned_string, prefix, token.value);
@@ -228,7 +226,7 @@ impl DeterministicIntentParser {
                 })
                 .collect();
             let deduplicated_slots = deduplicate_overlapping_slots(slots, self.language);
-            let result = internal_parsing_result(intent.to_string(), 1.0, deduplicated_slots);
+            let result = internal_parsing_result(Some(intent.to_string()), 1.0, deduplicated_slots);
             return Some(result);
         }
 
@@ -374,18 +372,15 @@ mod tests {
         let parsing_result = intent_parser.parse("make two cup of coffee", None).unwrap();
 
         // Then
-        let expected_intent = Some("MakeCoffee");
-        let expected_slots = Some(vec![InternalSlot {
+        let expected_intent = Some("MakeCoffee".to_string());
+        let expected_slots = vec![InternalSlot {
             value: "two".to_string(),
             char_range: 5..8,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
-        }]);
-        assert_eq!(
-            expected_intent,
-            parsing_result.as_ref().map(|res| &*res.intent.intent_name)
-        );
-        assert_eq!(expected_slots, parsing_result.map(|res| res.slots));
+        }];
+        assert_eq!(expected_intent, parsing_result.intent.intent_name);
+        assert_eq!(expected_slots, parsing_result.slots);
     }
 
     #[test]
@@ -417,13 +412,13 @@ mod tests {
                 .unwrap();
 
         // When
-        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
+        let intent = parser.parse(text, None).unwrap().intent;
 
         // Then
-        let expected_intent = Some(IntentClassifierResult {
-            intent_name: "dummy_intent_1".to_string(),
+        let expected_intent = IntentClassifierResult {
+            intent_name: Some("dummy_intent_1".to_string()),
             probability: 1.0,
-        });
+        };
 
         assert_eq!(intent, expected_intent);
     }
@@ -453,13 +448,13 @@ mod tests {
                 .unwrap();
 
         // When
-        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
+        let intent = parser.parse(text, None).unwrap().intent;
 
         // Then
-        let expected_intent = Some(IntentClassifierResult {
-            intent_name: "dummy_intent_3".to_string(),
+        let expected_intent = IntentClassifierResult {
+            intent_name: Some("dummy_intent_3".to_string()),
             probability: 1.0,
-        });
+        };
 
         assert_eq!(intent, expected_intent);
     }
@@ -497,13 +492,13 @@ mod tests {
                 .unwrap();
 
         // When
-        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
+        let intent = parser.parse(text, None).unwrap().intent;
 
         // Then
-        let expected_intent = Some(IntentClassifierResult {
-            intent_name: "dummy_intent_1".to_string(),
+        let expected_intent = IntentClassifierResult {
+            intent_name: Some("dummy_intent_1".to_string()),
             probability: 1.0,
-        });
+        };
 
         assert_eq!(intent, expected_intent);
     }
@@ -538,10 +533,10 @@ mod tests {
             DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
 
         // When
-        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
+        let slots = parser.parse(text, None).unwrap().slots;
 
         // Then
-        let expected_slots = Some(vec![
+        let expected_slots = vec![
             InternalSlot {
                 value: "dummy_a".to_string(),
                 char_range: 10..17,
@@ -554,7 +549,7 @@ mod tests {
                 entity: "dummy_entity_2".to_string(),
                 slot_name: "dummy_slot_name2".to_string(),
             },
-        ]);
+        ];
         assert_eq!(slots, expected_slots);
     }
 
@@ -580,15 +575,15 @@ mod tests {
             DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
 
         // When
-        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
+        let slots = parser.parse(text, None).unwrap().slots;
 
         // Then
-        let expected_slots = Some(vec![InternalSlot {
+        let expected_slots = vec![InternalSlot {
             value: "dummy_cc".to_string(),
             char_range: 21..29,
             entity: "dummy_entity_2".to_string(),
             slot_name: "dummy_slot_name2".to_string(),
-        }]);
+        }];
         assert_eq!(slots, expected_slots);
     }
 
@@ -627,10 +622,10 @@ mod tests {
                 .unwrap();
 
         // When
-        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
+        let slots = parser.parse(text, None).unwrap().slots;
 
         // Then
-        let expected_slots = Some(vec![
+        let expected_slots = vec![
             InternalSlot {
                 value: "10 dollars".to_string(),
                 char_range: 5..15,
@@ -643,7 +638,7 @@ mod tests {
                 entity: "dummy_entity_2".to_string(),
                 slot_name: "dummy_slot_name2".to_string(),
             },
-        ]);
+        ];
         assert_eq!(slots, expected_slots);
     }
 
@@ -669,15 +664,15 @@ mod tests {
             DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
 
         // When
-        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
+        let slots = parser.parse(text, None).unwrap().slots;
 
         // Then
-        let expected_slots = Some(vec![InternalSlot {
+        let expected_slots = vec![InternalSlot {
             value: "dummy’c".to_string(),
             char_range: 16..23,
             entity: "dummy_entity_2".to_string(),
             slot_name: "dummy_slot_name3".to_string(),
-        }]);
+        }];
         assert_eq!(slots, expected_slots);
     }
 

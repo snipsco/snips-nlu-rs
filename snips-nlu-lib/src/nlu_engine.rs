@@ -5,7 +5,9 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use failure::ResultExt;
-use snips_nlu_ontology::{BuiltinEntityKind, IntentParserResult, Language, Slot, SlotValue};
+use snips_nlu_ontology::{
+    BuiltinEntityKind, IntentClassifierResult, IntentParserResult, Language, Slot, SlotValue,
+};
 
 use crate::entity_parser::{BuiltinEntityParser, CustomEntityParser};
 use crate::errors::*;
@@ -131,24 +133,33 @@ impl SnipsNluEngine {
         input: &str,
         intents_filter: Option<&[&str]>,
     ) -> Result<IntentParserResult> {
+        let mut none_proba: f32 = 0.0;
         for parser in &self.intent_parsers {
-            let opt_internal_parsing_result = parser.parse(input, intents_filter)?;
-            if let Some(internal_parsing_result) = opt_internal_parsing_result {
+            let internal_parsing_result = parser.parse(input, intents_filter)?;
+            if internal_parsing_result.intent.intent_name.is_some() {
                 let resolved_slots = self
                     .resolve_slots(input, internal_parsing_result.slots)
                     .with_context(|_| "Cannot resolve slots".to_string())?;
 
                 return Ok(IntentParserResult {
                     input: input.to_string(),
-                    intent: Some(internal_parsing_result.intent),
-                    slots: Some(resolved_slots),
+                    intent: internal_parsing_result.intent,
+                    slots: resolved_slots,
                 });
+            } else {
+                none_proba = internal_parsing_result.intent.probability;
             }
         }
+
+        // If all parsers failed to extract an intent, we use the probability returned by the last
+        // parser
         Ok(IntentParserResult {
             input: input.to_string(),
-            intent: None,
-            slots: None,
+            intent: IntentClassifierResult {
+                intent_name: None,
+                probability: none_proba,
+            },
+            slots: vec![],
         })
     }
 
@@ -162,23 +173,20 @@ impl SnipsNluEngine {
         Ok(vec![])
     }
 
-    fn resolve_slots(
-        &self,
-        text: &str,
-        slots: Vec<InternalSlot>,
-    ) -> Result<Vec<Slot>> {
+    fn resolve_slots(&self, text: &str, slots: Vec<InternalSlot>) -> Result<Vec<Slot>> {
         let builtin_entity_scope: Vec<BuiltinEntityKind> = slots
             .iter()
             .filter_map(|slot| BuiltinEntityKind::from_str(&slot.entity).ok())
             .collect();
         let custom_entity_scope: Vec<String> = slots
             .iter()
-            .filter_map(|slot|
+            .filter_map(|slot| {
                 if BuiltinEntityKind::from_str(&slot.entity).is_ok() {
                     None
                 } else {
                     Some(slot.entity.to_string())
-                })
+                }
+            })
             .collect();
         let builtin_entities = self
             .shared_resources
@@ -262,12 +270,12 @@ fn extract_custom_slot(
         Some(Slot {
             raw_value: matched_entity.value,
             value: SlotValue::Custom(matched_entity.resolved_value.into()),
-            range: Some(matched_entity.range),
+            range: matched_entity.range,
             entity: entity_name.clone(),
             slot_name: slot_name.clone(),
         })
     } else if custom_entity.automatically_extensible {
-        let range = Some(0..input.chars().count());
+        let range = 0..input.chars().count();
         Some(Slot {
             raw_value: input.clone(),
             value: SlotValue::Custom(input.into()),
@@ -289,11 +297,12 @@ fn extract_builtin_slot(
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(builtin_entity_parser
         .extract_entities(&input, Some(&[builtin_entity_kind]), false)?
-        .first()
+        .into_iter()
+        .next()
         .map(|builtin_entity| Slot {
             raw_value: substring_with_char_range(input, &builtin_entity.range),
-            value: builtin_entity.entity.clone(),
-            range: None,
+            value: builtin_entity.entity,
+            range: builtin_entity.range,
             entity: entity_name,
             slot_name,
         }))
@@ -302,10 +311,10 @@ fn extract_builtin_slot(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::iter::FromIterator;
     use crate::entity_parser::custom_entity_parser::CustomEntity;
     use crate::testutils::*;
     use snips_nlu_ontology::{NumberValue, StringValue};
+    use std::iter::FromIterator;
 
     #[test]
     fn from_path_works() {
@@ -336,19 +345,16 @@ mod tests {
             .unwrap();
 
         let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
-        let expected_slots = Some(vec![Slot {
+        let expected_slots = vec![Slot {
             raw_value: "two".to_string(),
             value: expected_entity_value,
-            range: Some(8..11),
+            range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
-        }]);
+        }];
         let expected_intent = Some("MakeCoffee".to_string());
 
-        assert_eq!(
-            expected_intent,
-            result.intent.map(|intent| intent.intent_name)
-        );
+        assert_eq!(expected_intent, result.intent.intent_name);
         assert_eq!(expected_slots, result.slots);
     }
 
@@ -365,19 +371,16 @@ mod tests {
 
         // Then
         let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
-        let expected_slots = Some(vec![Slot {
+        let expected_slots = vec![Slot {
             raw_value: "two".to_string(),
             value: expected_entity_value,
-            range: Some(8..11),
+            range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
-        }]);
+        }];
         let expected_intent = Some("MakeCoffee".to_string());
 
-        assert_eq!(
-            expected_intent,
-            result.intent.map(|intent| intent.intent_name)
-        );
+        assert_eq!(expected_intent, result.intent.intent_name);
         assert_eq!(expected_slots, result.slots);
     }
 
@@ -398,17 +401,19 @@ mod tests {
             Slot {
                 raw_value: "two".to_string(),
                 value: expected_entity_value,
-                range: Some(8..11),
+                range: 8..11,
                 entity: "snips/number".to_string(),
                 slot_name: "number_of_cups".to_string(),
             },
             Slot {
                 raw_value: "hot".to_string(),
-                value: SlotValue::Custom(StringValue { value: "hot".to_string() }),
-                range: Some(12..15),
+                value: SlotValue::Custom(StringValue {
+                    value: "hot".to_string(),
+                }),
+                range: 12..15,
                 entity: "Temperature".to_string(),
                 slot_name: "beverage_temperature".to_string(),
-            }
+            },
         ];
         assert_eq!(expected_slots, slots);
     }
@@ -455,7 +460,7 @@ mod tests {
         let expected_slot = Some(Slot {
             raw_value: "b c d".to_string(),
             value: SlotValue::Custom("value2".to_string().into()),
-            range: Some(8..13),
+            range: 8..13,
             entity: "entity".to_string(),
             slot_name: "slot".to_string(),
         });
@@ -488,7 +493,7 @@ mod tests {
         let expected_slot = Some(Slot {
             raw_value: "hello world".to_string(),
             value: SlotValue::Custom("hello world".to_string().into()),
-            range: Some(0..11),
+            range: 0..11,
             entity: "entity".to_string(),
             slot_name: "slot".to_string(),
         });

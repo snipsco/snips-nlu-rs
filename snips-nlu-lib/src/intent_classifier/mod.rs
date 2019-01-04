@@ -20,7 +20,7 @@ pub trait IntentClassifier: Send + Sync {
         &self,
         input: &str,
         intents_filter: Option<&[&str]>,
-    ) -> Result<Option<IntentClassifierResult>>;
+    ) -> Result<IntentClassifierResult>;
 }
 
 pub fn build_intent_classifier<P: AsRef<Path>>(
