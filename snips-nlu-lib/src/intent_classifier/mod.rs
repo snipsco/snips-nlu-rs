@@ -21,6 +21,8 @@ pub trait IntentClassifier: Send + Sync {
         input: &str,
         intents_filter: Option<&[&str]>,
     ) -> Result<IntentClassifierResult>;
+
+    fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>>;
 }
 
 pub fn build_intent_classifier<P: AsRef<Path>>(

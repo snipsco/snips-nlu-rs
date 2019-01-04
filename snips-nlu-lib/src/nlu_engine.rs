@@ -20,6 +20,8 @@ use crate::resources::loading::load_shared_resources;
 use crate::resources::SharedResources;
 use crate::slot_utils::*;
 use crate::utils::{extract_nlu_engine_zip_archive, EntityName, SlotName};
+use itertools::Itertools;
+use std::collections::HashMap;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -161,6 +163,36 @@ impl SnipsNluEngine {
             },
             slots: vec![],
         })
+    }
+
+    pub fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
+        let nb_intents = self.dataset_metadata.slot_name_mappings.len();
+        let mut results = HashMap::with_capacity(nb_intents + 1);
+        for parser in self.intent_parsers.iter() {
+            let parser_results = parser.get_intents(input)?;
+            if results.is_empty() {
+                for res in parser_results.into_iter() {
+                    results.insert(res.intent_name.clone(), res);
+                }
+                continue;
+            }
+            for res in parser_results.into_iter() {
+                let existing_proba = results
+                    .get(&res.intent_name)
+                    .map(|r| r.probability)
+                    .unwrap_or(0.0);
+                if res.probability > existing_proba {
+                    results
+                        .entry(res.intent_name.clone())
+                        .and_modify(|e| e.probability = res.probability)
+                        .or_insert_with(|| res);
+                }
+            }
+        }
+        Ok(results
+            .into_iter()
+            .map(|(_, res)| res)
+            .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap()))
     }
 
     pub fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<Slot>> {
@@ -382,6 +414,29 @@ mod tests {
 
         assert_eq!(expected_intent, result.intent.intent_name);
         assert_eq!(expected_slots, result.slots);
+    }
+
+    #[test]
+    fn get_intents_works() {
+        // Given
+        let path = file_path("tests").join("models").join("nlu_engine");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
+
+        // When
+        let intents: Vec<Option<String>> = nlu_engine
+            .get_intents("Make me two hot cups of tea")
+            .unwrap()
+            .into_iter()
+            .map(|intent| intent.intent_name)
+            .collect();
+
+        // Then
+        let expected_intents = vec![
+            Some("MakeTea".to_string()),
+            Some("MakeCoffee".to_string()),
+            None,
+        ];
+        assert_eq!(expected_intents, intents);
     }
 
     #[test]

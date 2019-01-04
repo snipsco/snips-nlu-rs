@@ -71,7 +71,7 @@ impl IntentClassifier for LogRegIntentClassifier {
         input: &str,
         intents_filter: Option<&[&str]>,
     ) -> Result<IntentClassifierResult> {
-        let intents_results = self.get_intents(input, intents_filter)?;
+        let intents_results = self.get_intents_with_filter(input, intents_filter)?;
         Ok(if intents_results.is_empty() {
             IntentClassifierResult {
                 intent_name: None,
@@ -81,10 +81,14 @@ impl IntentClassifier for LogRegIntentClassifier {
             intents_results.into_iter().next().unwrap()
         })
     }
+
+    fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
+        self.get_intents_with_filter(input, None)
+    }
 }
 
 impl LogRegIntentClassifier {
-    fn get_intents(
+    fn get_intents_with_filter(
         &self,
         input: &str,
         intents_filter: Option<&[&str]>,
@@ -365,6 +369,26 @@ mod tests {
 
         // Then
         assert_eq!(expected_result, actual_result);
+    }
+
+    #[test]
+    fn get_intents_works() {
+        // Given
+        let classifier = get_sample_log_reg_classifier();
+
+        // When
+        let intents = classifier.get_intents("Make me two cups of tea").unwrap();
+
+        // Then
+        let actual_intents: Vec<Option<String>> =
+            intents.into_iter().map(|res| res.intent_name).collect();
+        let expected_intents = vec![
+            Some("MakeTea".to_string()),
+            Some("MakeCoffee".to_string()),
+            None,
+        ];
+
+        assert_eq!(expected_intents, actual_intents);
     }
 
     #[test]

@@ -13,7 +13,7 @@ use crate::resources::SharedResources;
 use crate::slot_filler::{build_slot_filler, SlotFiller};
 use crate::utils::IntentName;
 
-use super::{IntentParser, InternalParsingResult};
+use super::{IntentClassifierResult, IntentParser, InternalParsingResult};
 use crate::slot_utils::InternalSlot;
 
 pub struct ProbabilisticIntentParser {
@@ -72,6 +72,10 @@ impl IntentParser for ProbabilisticIntentParser {
             intent: intent_result,
             slots,
         })
+    }
+
+    fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
+        self.intent_classifier.get_intents(input)
     }
 
     fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<InternalSlot>> {

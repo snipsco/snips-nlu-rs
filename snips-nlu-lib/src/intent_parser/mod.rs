@@ -36,6 +36,8 @@ pub fn internal_parsing_result(
 pub trait IntentParser: Send + Sync {
     fn parse(&self, input: &str, intents: Option<&[&str]>) -> Result<InternalParsingResult>;
 
+    fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>>;
+
     fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<InternalSlot>>;
 }
 
