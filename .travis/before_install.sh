@@ -23,6 +23,10 @@ if [ $TRAVIS_OS_NAME == "osx" ]; then
         pyenv install 3.6.1
         pyenv global 3.6.1
         ;;
+      "py37")
+        pyenv install 3.7.2
+        pyenv global 3.7.2
+        ;;
     esac
     pyenv rehash
 

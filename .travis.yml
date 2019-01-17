@@ -23,6 +23,13 @@ jobs:
       osx_image: xcode9.3
       language: generic
       env:
+      - TOXENV=py37
+      - PYTHON_TESTS=true
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: osx
+      osx_image: xcode9.3
+      language: generic
+      env:
         - MACOS_SWIFT_TESTS=true
     - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
       os: osx
@@ -43,6 +50,16 @@ jobs:
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
+    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+      os: linux
+      language: python
+      python: 3.7
+      # cf https://github.com/travis-ci/travis-ci/issues/9815
+      dist: xenial
+      sudo: true
+      env:
+      - TOXENV=py37
+      - PYTHON_TESTS=true
     - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
       os: linux
       language: rust
