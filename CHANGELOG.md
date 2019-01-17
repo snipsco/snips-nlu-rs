@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.61.2] - 2019-01-17
+### Changed
+- Bump `snips-nlu-ontology` to `0.61.3`
+
 ## [0.61.1] - 2018-12-14
 ### Changed
 - Bump `snips-nlu-ontology` to `0.61.2`
@@ -133,6 +137,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.61.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.1...0.61.2
 [0.61.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.61.1
 [0.61.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.1...0.61.0
 [0.60.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.0...0.60.1
