@@ -2,7 +2,6 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
-
 ### Added
 - Added a an optional `CooccurrenceVectorizer` to the `Featurizer` that extracts cooccurrence features
 

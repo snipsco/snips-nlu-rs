@@ -77,6 +77,7 @@ fn convert_to_custom_slot(slot: InternalSlot, resolved_value: String) -> Slot {
         range: slot.char_range,
         entity: slot.entity,
         slot_name: slot.slot_name,
+        confidence_score: None
     }
 }
 
@@ -87,6 +88,7 @@ fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slot {
         range: slot.char_range,
         entity: slot.entity,
         slot_name: slot.slot_name,
+        confidence_score: None
     }
 }
 
@@ -149,6 +151,7 @@ mod tests {
             range: 22..31,
             entity: "snips/amountOfMoney".to_string(),
             slot_name: "amount".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }
@@ -192,6 +195,7 @@ mod tests {
             range: 5..14,
             entity: "snips/amountOfMoney".to_string(),
             slot_name: "amount".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }
@@ -240,6 +244,7 @@ mod tests {
             range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }
@@ -283,6 +288,7 @@ mod tests {
             range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }
@@ -318,6 +324,7 @@ mod tests {
             range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }

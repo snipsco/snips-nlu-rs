@@ -305,6 +305,7 @@ fn extract_custom_slot(
             range: matched_entity.range,
             entity: entity_name.clone(),
             slot_name: slot_name.clone(),
+            confidence_score: None
         })
     } else if custom_entity.automatically_extensible {
         let range = 0..input.chars().count();
@@ -314,6 +315,7 @@ fn extract_custom_slot(
             range,
             entity: entity_name,
             slot_name,
+            confidence_score: None
         })
     } else {
         None
@@ -337,6 +339,7 @@ fn extract_builtin_slot(
             range: builtin_entity.range,
             entity: entity_name,
             slot_name,
+            confidence_score: None
         }))
 }
 
@@ -383,6 +386,7 @@ mod tests {
             range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
+            confidence_score: None
         }];
         let expected_intent = Some("MakeCoffee".to_string());
 
@@ -409,6 +413,7 @@ mod tests {
             range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
+            confidence_score: None
         }];
         let expected_intent = Some("MakeCoffee".to_string());
 
@@ -459,6 +464,7 @@ mod tests {
                 range: 8..11,
                 entity: "snips/number".to_string(),
                 slot_name: "number_of_cups".to_string(),
+                confidence_score: None
             },
             Slot {
                 raw_value: "hot".to_string(),
@@ -468,6 +474,7 @@ mod tests {
                 range: 12..15,
                 entity: "Temperature".to_string(),
                 slot_name: "beverage_temperature".to_string(),
+                confidence_score: None
             },
         ];
         assert_eq!(expected_slots, slots);
@@ -518,6 +525,7 @@ mod tests {
             range: 8..13,
             entity: "entity".to_string(),
             slot_name: "slot".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_slot, extracted_slot);
     }
@@ -551,6 +559,7 @@ mod tests {
             range: 0..11,
             entity: "entity".to_string(),
             slot_name: "slot".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_slot, extracted_slot);
     }

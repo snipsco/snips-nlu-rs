@@ -546,6 +546,7 @@ mod tests {
             entity: "snips/musicAlbum".to_string(),
             slot_name: "musicAlbum".to_string(),
             value: SlotValue::MusicAlbum(StringValue::from("Thisisthebestalbum")),
+            confidence_score: None
         }];
         assert_eq!(parsing.slots, ground_true_slots);
 
@@ -562,6 +563,7 @@ mod tests {
             entity: "playlist".to_string(),
             slot_name: "playlist".to_string(),
             value: SlotValue::Custom(StringValue::from("funky")),
+            confidence_score: None
         }];
         assert_eq!(parsing.slots, ground_true_slots);
     }
