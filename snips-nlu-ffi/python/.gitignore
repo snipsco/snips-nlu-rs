@@ -2,6 +2,7 @@ venv/
 venv3/
 venv34/
 venv36/
+venv37/
 build/
 dist/
 *.pyc

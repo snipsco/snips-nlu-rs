@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Update to Rust 2018
 
+## [0.61.2] - 2019-01-17
+### Changed
+- Bump `snips-nlu-ontology` to `0.61.3`
+
 ## [0.61.1] - 2018-12-14
 ### Changed
 - Bump `snips-nlu-ontology` to `0.61.2`
@@ -150,6 +154,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Rename python package to `snips_nlu_rust`
 
 [Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.62.0...HEAD
+[0.61.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.1...0.61.2
 [0.61.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.61.1
 [0.62.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.62.0
 [0.61.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.1...0.61.0
