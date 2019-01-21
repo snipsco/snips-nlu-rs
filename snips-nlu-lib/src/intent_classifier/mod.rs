@@ -11,7 +11,7 @@ use crate::errors::*;
 use failure::ResultExt;
 use snips_nlu_ontology::IntentClassifierResult;
 
-pub use self::featurizer::Featurizer;
+pub use self::featurizer::{CooccurrenceVectorizer, Featurizer, TfidfVectorizer};
 pub use self::log_reg_intent_classifier::LogRegIntentClassifier;
 use crate::models::ProcessingUnitMetadata;
 use crate::resources::SharedResources;

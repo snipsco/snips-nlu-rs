@@ -1,7 +1,11 @@
+use std::cmp::min;
 use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
+use failure::ResultExt;
 use itertools::Itertools;
 use ndarray::prelude::*;
 use nlu_utils::language::Language as NluUtilsLanguage;
@@ -11,28 +15,117 @@ use snips_nlu_ontology::{BuiltinEntityKind, Language};
 
 use crate::errors::*;
 use crate::language::FromLanguage;
-use crate::models::FeaturizerModel;
+use crate::models::{CooccurrenceVectorizerModel, FeaturizerModel, TfidfVectorizerModel};
 use crate::resources::stemmer::Stemmer;
 use crate::resources::word_clusterer::WordClusterer;
 use crate::resources::SharedResources;
+use crate::utils::{replace_entities, MatchedEntity};
+
+type WordPair = (String, String);
 
 pub struct Featurizer {
-    best_features: Vec<usize>,
-    vocabulary: HashMap<String, usize>,
-    idf_diag: Vec<f32>,
-    sublinear: bool,
-    word_clusterer: Option<Arc<WordClusterer>>,
-    stemmer: Option<Arc<Stemmer>>,
-    shared_resources: Arc<SharedResources>,
-    language: Language,
+    tfidf_vectorizer: TfidfVectorizer,
+    cooccurrence_vectorizer: Option<CooccurrenceVectorizer>,
 }
 
 impl Featurizer {
-    pub fn new(model: FeaturizerModel, shared_resources: Arc<SharedResources>) -> Result<Self> {
-        let best_features = model.best_features;
-        let vocabulary = model.tfidf_vectorizer.vocab;
-        let language = Language::from_str(model.language_code.as_ref())?;
-        let idf_diag = model.tfidf_vectorizer.idf_diag;
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
+        let featurizer_model_path = path.as_ref().join("featurizer.json");
+        let model_file = File::open(&featurizer_model_path).with_context(|_| {
+            format!("Cannot open Featurizer file '{:?}'", &featurizer_model_path)
+        })?;
+        let model: FeaturizerModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Cannot deserialize FeaturizerModel json data")?;
+
+        // Load tf-idf vectorizer
+        let tfidf_vectorizer_path = path.as_ref().join(model.tfidf_vectorizer);
+        let tfidf_vectorizer =
+            TfidfVectorizer::from_path(&tfidf_vectorizer_path, shared_resources.clone())?;
+
+        // Load cooccurrence vectorizer
+        let cooccurrence_vectorizer: Result<Option<CooccurrenceVectorizer>> =
+            if let Some(cooccurrence_name) = model.cooccurrence_vectorizer {
+                let cooccurrence_vectorizer_path = path.as_ref().join(cooccurrence_name);
+                let vectorizer = CooccurrenceVectorizer::from_path(
+                    &cooccurrence_vectorizer_path,
+                    shared_resources.clone(),
+                )?;
+                Ok(Some(vectorizer))
+            } else {
+                Ok(None)
+            };
+
+        Ok(Self {
+            tfidf_vectorizer,
+            cooccurrence_vectorizer: cooccurrence_vectorizer?,
+        })
+    }
+}
+
+impl Featurizer {
+    #[cfg(test)]
+    pub fn new(
+        tfidf_vectorizer: TfidfVectorizer,
+        cooccurrence_vectorizer: Option<CooccurrenceVectorizer>,
+    ) -> Self {
+        Self {
+            tfidf_vectorizer,
+            cooccurrence_vectorizer,
+        }
+    }
+
+    pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
+        let mut features = self.tfidf_vectorizer.transform(input)?;
+        if let Some(vectorizer) = self.cooccurrence_vectorizer.as_ref() {
+            let cooccurrence_features: Vec<f32> = vectorizer.transform(input)?;
+            features.extend(cooccurrence_features)
+        };
+        Ok(Array::from_iter(features))
+    }
+}
+
+pub struct TfidfVectorizer {
+    builtin_entity_scope: Vec<BuiltinEntityKind>,
+    vocabulary: HashMap<String, usize>,
+    idf_diag: Vec<f32>,
+    word_clusterer: Option<Arc<WordClusterer>>,
+    stemmer: Option<Arc<Stemmer>>,
+    language: NluUtilsLanguage,
+    shared_resources: Arc<SharedResources>,
+}
+
+impl TfidfVectorizer {
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
+        let parser_model_path = path.as_ref().join("vectorizer.json");
+        let model_file = File::open(&parser_model_path).with_context(|_| {
+            format!(
+                "Cannot open TfidfVectorizer file '{:?}'",
+                &parser_model_path
+            )
+        })?;
+        let model: TfidfVectorizerModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Cannot deserialize TfidfVectorizer json data")?;
+        Self::new(model, shared_resources)
+    }
+}
+
+impl TfidfVectorizer {
+    pub fn new(
+        model: TfidfVectorizerModel,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
+        let vocabulary = model.vectorizer.vocab;
+        let idf_diag = model.vectorizer.idf_diag;
+
+        let ontology_language = Language::from_str(model.language_code.as_ref())?;
+        let language = NluUtilsLanguage::from_language(ontology_language);
+
         let opt_word_clusterer = if let Some(clusters_name) = model.config.word_clusters_name {
             Some(
                 shared_resources
@@ -49,6 +142,16 @@ impl Featurizer {
         } else {
             None
         };
+
+        let builtin_entity_scope = model
+            .builtin_entity_scope
+            .iter()
+            .map(|ent| {
+                BuiltinEntityKind::from_identifier(ent)
+                    .map_err(|_| format_err!("Unknown builtin entity {:?}", ent))
+            })
+            .collect::<Result<Vec<BuiltinEntityKind>>>()?;
+
         let stemmer = if model.config.use_stemming {
             Some(
                 shared_resources
@@ -62,84 +165,214 @@ impl Featurizer {
         };
 
         Ok(Self {
-            best_features,
+            builtin_entity_scope,
             vocabulary,
             idf_diag,
-            sublinear: model.config.sublinear_tf,
             word_clusterer: opt_word_clusterer,
             stemmer,
-            shared_resources,
             language,
+            shared_resources,
         })
     }
 
-    pub fn transform(&self, input: &str) -> Result<Array1<f32>> {
-        let preprocessed_tokens = self.preprocess_utterance(input)?;
-        let vocabulary_size = self.vocabulary.values().max().unwrap() + 1;
+    pub fn transform(&self, utterance: &str) -> Result<Vec<f32>> {
+        let tokens = tokenize_light(utterance, self.language);
+        let normalized_tokens = normalize_stem(&tokens, self.stemmer.clone());
 
-        let mut tfidf: Vec<f32> = vec![0.; vocabulary_size];
+        // Extract builtin entities on the raw utterance
+        let builtin_entities = self
+            .shared_resources
+            .builtin_entity_parser
+            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true)?;
+
+        let builtin_entities_features: Vec<String> = builtin_entities
+            .iter()
+            .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, self.language))
+            .sorted();
+
+        // Extract custom entities on the normalized utterance
+        let custom_entities = self
+            .shared_resources
+            .custom_entity_parser
+            .extract_entities(&*normalized_tokens.join(" "), None)?;
+
+        let custom_entities_features: Vec<String> = custom_entities
+            .into_iter()
+            .map(|ent| get_custom_entity_feature_name(&*ent.entity_identifier, self.language))
+            .collect();
+
+        // Extract word clusters on the raw utterance
+        let word_clusters = self
+            .word_clusterer
+            .clone()
+            .map(|clusterer| get_word_clusters(&tokens, clusterer))
+            .unwrap_or_else(|| vec![]);
+
+        // Compute tf-idf features
+        let features_it = &[
+            normalized_tokens,
+            builtin_entities_features,
+            custom_entities_features,
+            word_clusters,
+        ];
+
+        let vocabulary_size = self.vocabulary.values().max().unwrap() + 1;
+        let mut features: Vec<f32> = vec![0.; vocabulary_size];
         let mut match_idx: HashSet<usize> = HashSet::new();
-        for word in preprocessed_tokens {
-            if let Some(word_idx) = self.vocabulary.get(&word) {
-                tfidf[*word_idx] += 1.;
-                match_idx.insert(*word_idx);
+        for extracted_features in features_it.iter() {
+            for word in extracted_features {
+                if let Some(word_idx) = self.vocabulary.get(word) {
+                    features[*word_idx] += 1.;
+                    match_idx.insert(*word_idx);
+                }
             }
         }
 
         for ix in match_idx {
-            if self.sublinear {
-                tfidf[ix] = (tfidf[ix].ln() + 1.) * self.idf_diag[ix]
-            } else {
-                tfidf[ix] *= self.idf_diag[ix]
-            }
+            features[ix] *= self.idf_diag[ix]
         }
 
-        let l2_norm: f32 = tfidf.iter().fold(0., |norm, v| norm + v * v).sqrt();
+        // Normalize tf-idf
+        let l2_norm: f32 = features.iter().fold(0., |norm, v| norm + v * v).sqrt();
         let safe_l2_norm = if l2_norm > 0. { l2_norm } else { 1. };
-
-        tfidf = tfidf.iter().map(|c| *c / safe_l2_norm).collect_vec();
-
-        let selected_features =
-            Array::from_iter((0..self.best_features.len()).map(|fi| tfidf[self.best_features[fi]]));
-        Ok(selected_features)
+        features = features.iter().map(|c| *c / safe_l2_norm).collect_vec();
+        Ok(features)
     }
+}
 
-    fn preprocess_utterance(&self, utterance: &str) -> Result<Vec<String>> {
-        let language = NluUtilsLanguage::from_language(self.language);
-        let tokens = tokenize_light(utterance, language);
-        let word_cluster_features = self
-            .word_clusterer
-            .clone()
-            .map(|clusterer| get_word_cluster_features(&tokens, clusterer))
-            .unwrap_or_else(|| vec![]);
-        let normalized_stemmed_tokens = normalize_stem(&tokens, self.stemmer.clone());
-        let normalized_stemmed_string = normalized_stemmed_tokens.join(" ");
-        let custom_entities_features: Vec<String> = self
-            .shared_resources
-            .custom_entity_parser
-            .extract_entities(&normalized_stemmed_string, None)?
+pub struct CooccurrenceVectorizer {
+    language: NluUtilsLanguage,
+    builtin_entity_scope: Vec<BuiltinEntityKind>,
+    word_pairs: HashMap<WordPair, usize>,
+    filter_stop_words: bool,
+    window_size: Option<usize>,
+    shared_resources: Arc<SharedResources>,
+}
+
+impl CooccurrenceVectorizer {
+    pub fn from_path<P: AsRef<Path>>(
+        path: P,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
+        let parser_model_path = path.as_ref().join("vectorizer.json");
+        let model_file = File::open(&parser_model_path).with_context(|_| {
+            format!(
+                "Cannot open CooccurrenceVectorizer file '{:?}'",
+                &parser_model_path
+            )
+        })?;
+        let model: CooccurrenceVectorizerModel = serde_json::from_reader(model_file)
+            .with_context(|_| "Cannot deserialize CooccurrenceVectorizer json data")?;
+        Self::new(model, shared_resources)
+    }
+}
+
+impl CooccurrenceVectorizer {
+    pub fn new(
+        model: CooccurrenceVectorizerModel,
+        shared_resources: Arc<SharedResources>,
+    ) -> Result<Self> {
+        let builtin_entity_scope = model
+            .builtin_entity_scope
+            .iter()
+            .map(|ent| {
+                BuiltinEntityKind::from_identifier(ent)
+                    .map_err(|_| format_err!("Unknown builtin entity {:?}", ent))
+            })
+            .collect::<Result<Vec<BuiltinEntityKind>>>()?;
+
+        let word_pairs = model
+            .word_pairs
             .into_iter()
-            .map(|entity| get_custom_entity_feature_name(&*entity.entity_identifier, language))
+            .map(|(index, pairs)| (pairs, index))
             .collect();
 
+        let filter_stop_words = model.config.filter_stop_words;
+
+        let window_size = model.config.window_size;
+
+        let ontology_language = Language::from_str(model.language_code.as_ref())?;
+        let language = NluUtilsLanguage::from_language(ontology_language);
+
+        Ok(Self {
+            language,
+            builtin_entity_scope,
+            word_pairs,
+            filter_stop_words,
+            window_size,
+            shared_resources,
+        })
+    }
+
+    fn transform(&self, utterance: &str) -> Result<Vec<f32>> {
+        // Extract builtin entities on the raw utterance
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
-            .extract_entities(utterance, None, true)?;
-        let builtin_entities_features: Vec<String> = builtin_entities
-            .iter()
-            .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, language))
-            .sorted();
+            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true)?;
 
-        Ok(vec![
-            normalized_stemmed_tokens,
-            builtin_entities_features,
-            custom_entities_features,
-            word_cluster_features,
-        ]
-        .into_iter()
-        .flat_map(|features| features)
-        .collect())
+        // Extract custom entities on the raw utterance
+        let custom_entities = self
+            .shared_resources
+            .custom_entity_parser
+            .extract_entities(utterance, None)?;
+
+        let matched_builtins = builtin_entities.into_iter().map(|entity| entity.into());
+
+        let matched_customs = custom_entities.into_iter().map(|entity| entity.into());
+
+        let mut matched_entities: Vec<MatchedEntity> = vec![];
+        matched_entities.extend(matched_builtins);
+        matched_entities.extend(matched_customs);
+
+        let enriched_utterance = replace_entities(utterance, matched_entities, |ent_kind| {
+            self.placeholder_fn(ent_kind)
+        })
+        .1;
+
+        let tokens = tokenize_light(&*enriched_utterance, self.language);
+
+        let mut features: Vec<f32> = vec![0.; self.word_pairs.len()];
+        for pair in self.extract_word_pairs(tokens) {
+            self.word_pairs.get(&pair).map(|pair_index| {
+                features[*pair_index] = 1.0;
+            });
+        }
+        Ok(features)
+    }
+
+    fn placeholder_fn(&self, entity_kind: &str) -> String {
+        tokenize_light(entity_kind, self.language)
+            .join("")
+            .to_uppercase()
+    }
+
+    fn extract_word_pairs(&self, tokens: Vec<String>) -> HashSet<WordPair> {
+        let filtered_tokens = if self.filter_stop_words {
+            tokens
+                .into_iter()
+                .filter(|t| !self.shared_resources.stop_words.contains(t))
+                .collect()
+        } else {
+            tokens
+        };
+
+        let num_tokens = filtered_tokens.len();
+
+        filtered_tokens
+            .iter()
+            .enumerate()
+            .flat_map(|(i, t)| {
+                let max_index = self.window_size.map_or(num_tokens, |window_size| {
+                    min(i + window_size + 1, num_tokens)
+                });
+                filtered_tokens[i + 1..max_index]
+                    .iter()
+                    .map(|other| (t.clone(), other.clone()))
+                    .collect::<Vec<WordPair>>()
+            })
+            .into_iter()
+            .collect()
     }
 }
 
@@ -156,10 +389,7 @@ fn get_custom_entity_feature_name(entity_name: &str, language: NluUtilsLanguage)
     format!("entityfeature{}", e)
 }
 
-fn get_word_cluster_features(
-    query_tokens: &[String],
-    word_clusterer: Arc<WordClusterer>,
-) -> Vec<String> {
+fn get_word_clusters(query_tokens: &[String], word_clusterer: Arc<WordClusterer>) -> Vec<String> {
     let tokens_ref = query_tokens.iter().map(|t| t.as_ref()).collect_vec();
     compute_all_ngrams(tokens_ref.as_ref(), tokens_ref.len())
         .into_iter()
@@ -182,9 +412,14 @@ mod tests {
 
     use nlu_utils::language::Language;
     use nlu_utils::token::tokenize_light;
+    use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind};
+    use snips_nlu_ontology::{NumberValue, SlotValue};
 
     use crate::entity_parser::custom_entity_parser::CustomEntity;
-    use crate::models::{FeaturizerConfiguration, FeaturizerModel, TfIdfVectorizerModel};
+    use crate::models::{
+        CooccurrenceVectorizerConfiguration, CooccurrenceVectorizerModel, SklearnVectorizerModel,
+        TfidfVectorizerConfiguration, TfidfVectorizerModel,
+    };
     use crate::resources::stemmer::HashMapStemmer;
     use crate::resources::word_clusterer::HashMapWordClusterer;
     use crate::resources::SharedResources;
@@ -192,13 +427,13 @@ mod tests {
     use crate::testutils::MockedBuiltinEntityParser;
     use crate::testutils::MockedCustomEntityParser;
 
-    use super::{get_word_cluster_features, Featurizer};
+    use super::*;
 
     #[test]
     fn transform_works() {
         // Given
         let mocked_custom_parser = MockedCustomEntityParser::from_iter(vec![(
-            "hello this bird is a beauti bird".to_string(),
+            "hello this bird is a beauti bird with 22 wings".to_string(),
             vec![
                 CustomEntity {
                     value: "hello".to_string(),
@@ -226,9 +461,15 @@ mod tests {
                 },
             ],
         )]);
-        let mocked_builtin_parser = MockedBuiltinEntityParser {
-            mocked_outputs: HashMap::new(),
-        };
+        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(vec![(
+            "Hëllo this bïrd is a beautiful Bïrd with 22 wings".to_string(),
+            vec![BuiltinEntity {
+                value: "22".to_string(),
+                range: 41..43,
+                entity: SlotValue::Number(NumberValue { value: 22.0 }),
+                entity_kind: BuiltinEntityKind::Number,
+            }],
+        )]);
         let mocked_stemmer =
             HashMapStemmer::from_iter(vec![("beautiful".to_string(), "beauti".to_string())]);
 
@@ -240,7 +481,7 @@ mod tests {
             gazetteers: HashMap::new(),
             stop_words: HashSet::new(),
         };
-        let best_features = vec![0, 1, 2, 3, 6, 7, 8, 9];
+
         let vocab = hashmap![
             "awful".to_string() => 0,
             "beauti".to_string() => 1,
@@ -251,7 +492,8 @@ mod tests {
             "world".to_string() => 6,
             "entityfeatureanimal".to_string() => 7,
             "entityfeatureword".to_string() => 8,
-            "entityfeaturegreeting".to_string() => 9
+            "entityfeaturegreeting".to_string() => 9,
+            "builtinentityfeaturesnipsnumber".to_string() => 10,
         ];
 
         let idf_diag = vec![
@@ -265,39 +507,244 @@ mod tests {
             0.7,
             1.7,
             2.7,
+            1.0,
         ];
 
-        let language_code = "en";
-        let tfidf_vectorizer = TfIdfVectorizerModel { idf_diag, vocab };
+        let language_code = "en".to_string();
 
-        let featurizer_config = FeaturizerModel {
-            language_code: language_code.to_string(),
-            tfidf_vectorizer,
-            config: FeaturizerConfiguration {
-                sublinear_tf: false,
-                word_clusters_name: None,
-                use_stemming: true,
-            },
-            best_features,
+        let tfidf_vectorizer_ = SklearnVectorizerModel { idf_diag, vocab };
+
+        let tfidf_vectorizer_config = TfidfVectorizerConfiguration {
+            use_stemming: true,
+            word_clusters_name: None,
         };
 
-        let featurizer = Featurizer::new(featurizer_config, Arc::new(resources)).unwrap();
+        let tfidf_vectorizer_model = TfidfVectorizerModel {
+            language_code,
+            builtin_entity_scope: vec!["snips/number".to_string()],
+            vectorizer: tfidf_vectorizer_,
+            config: tfidf_vectorizer_config,
+        };
+
+        let tfidf_vectorizer =
+            TfidfVectorizer::new(tfidf_vectorizer_model, Arc::new(resources)).unwrap();
+
+        let cooccurrence_vectorizer = None;
+
+        let featurizer = Featurizer {
+            tfidf_vectorizer,
+            cooccurrence_vectorizer,
+        };
 
         // When
-        let input = "Hëllo this bïrd is a beautiful Bïrd";
+        let input = "Hëllo this bïrd is a beautiful Bïrd with 22 wings";
         let features = featurizer.transform(input).unwrap();
 
         // Then
         let expected_features = array![
             0.0,
-            0.40887040136658365,
-            0.5661321160803057,
+            0.4022979853278378,
+            0.5570317855419762,
+            0.0,
+            0.3298901029212854,
             0.0,
             0.0,
-            0.2540962231350679,
-            0.30854541380686823,
-            0.4900427160462025
+            0.25001173551567585,
+            0.30358567884046356,
+            0.4821654899230893,
+            0.17857981108262563
         ];
+
+        assert_epsilon_eq_array1(&expected_features, &features, 1e-6);
+    }
+
+    #[test]
+    fn transform_works_with_cooccurrence() {
+        // Given
+        let mocked_custom_parser = MockedCustomEntityParser::from_iter(vec![
+            (
+                "hello this bird is a beautiful bird with 22 wings".to_string(),
+                vec![
+                    CustomEntity {
+                        value: "hello".to_string(),
+                        resolved_value: "hello".to_string(),
+                        range: 0..5,
+                        entity_identifier: "greeting".to_string(),
+                    },
+                    CustomEntity {
+                        value: "hello".to_string(),
+                        resolved_value: "hello".to_string(),
+                        range: 0..5,
+                        entity_identifier: "word".to_string(),
+                    },
+                    CustomEntity {
+                        value: "bird".to_string(),
+                        resolved_value: "bird".to_string(),
+                        range: 11..15,
+                        entity_identifier: "animal".to_string(),
+                    },
+                    CustomEntity {
+                        value: "bird".to_string(),
+                        resolved_value: "bird".to_string(),
+                        range: 31..35,
+                        entity_identifier: "animal".to_string(),
+                    },
+                ],
+            ),
+            (
+                "hello this bird is a beauti bird with 22 wings".to_string(),
+                vec![
+                    CustomEntity {
+                        value: "hello".to_string(),
+                        resolved_value: "hello".to_string(),
+                        range: 0..5,
+                        entity_identifier: "greeting".to_string(),
+                    },
+                    CustomEntity {
+                        value: "hello".to_string(),
+                        resolved_value: "hello".to_string(),
+                        range: 0..5,
+                        entity_identifier: "word".to_string(),
+                    },
+                    CustomEntity {
+                        value: "bird".to_string(),
+                        resolved_value: "bird".to_string(),
+                        range: 11..15,
+                        entity_identifier: "animal".to_string(),
+                    },
+                    CustomEntity {
+                        value: "bird".to_string(),
+                        resolved_value: "bird".to_string(),
+                        range: 28..32,
+                        entity_identifier: "animal".to_string(),
+                    },
+                ],
+            ),
+        ]);
+        let mocked_builtin_parser = MockedBuiltinEntityParser::from_iter(vec![(
+            "hello this bird is a beautiful bird with 22 wings".to_string(),
+            vec![BuiltinEntity {
+                value: "22".to_string(),
+                range: 41..43,
+                entity: SlotValue::Number(NumberValue { value: 22.0 }),
+                entity_kind: BuiltinEntityKind::Number,
+            }],
+        )]);
+        let mocked_stemmer =
+            HashMapStemmer::from_iter(vec![("beautiful".to_string(), "beauti".to_string())]);
+
+        let stop_words = hashset!["a".to_string()];
+
+        let resources = Arc::new(SharedResources {
+            custom_entity_parser: Arc::new(mocked_custom_parser),
+            builtin_entity_parser: Arc::new(mocked_builtin_parser),
+            stemmer: Some(Arc::new(mocked_stemmer)),
+            word_clusterers: HashMap::new(),
+            gazetteers: HashMap::new(),
+            stop_words,
+        });
+
+        let vocab = hashmap![
+            "awful".to_string() => 0,
+            "beauti".to_string() => 1,
+            "bird".to_string() => 2,
+            "blue".to_string() => 3,
+            "hello".to_string() => 4,
+            "nice".to_string() => 5,
+            "world".to_string() => 6,
+            "entityfeatureanimal".to_string() => 7,
+            "entityfeatureword".to_string() => 8,
+            "entityfeaturegreeting".to_string() => 9,
+            "builtinentityfeaturesnipsnumber".to_string() => 10,
+        ];
+
+        let idf_diag = vec![
+            2.252762968495368,
+            2.252762968495368,
+            1.5596157879354227,
+            2.252762968495368,
+            1.8472978603872037,
+            1.8472978603872037,
+            1.5596157879354227,
+            0.7,
+            1.7,
+            2.7,
+            1.0,
+        ];
+
+        let word_pairs = hashmap![
+            0 => ("ANIMAL".to_string(), "beautiful".to_string()),
+            1 => ("hello".to_string(), "ANIMAL".to_string()),
+            2 => ("hello".to_string(), "is".to_string()),
+            3 => ("this".to_string(), "beautiful".to_string()),
+            4 => ("with".to_string(), "SNIPSNUMBER".to_string()),
+            5 => ("hello".to_string(), "wings".to_string()),
+        ];
+
+        let language_code = "en".to_string();
+
+        let tfidf_vectorizer_ = SklearnVectorizerModel { idf_diag, vocab };
+
+        let tfidf_vectorizer_config = TfidfVectorizerConfiguration {
+            use_stemming: true,
+            word_clusters_name: None,
+        };
+
+        let tfidf_vectorizer_model = TfidfVectorizerModel {
+            language_code: language_code.clone(),
+            builtin_entity_scope: vec!["snips/number".to_string()],
+            vectorizer: tfidf_vectorizer_,
+            config: tfidf_vectorizer_config,
+        };
+
+        let tfidf_vectorizer =
+            TfidfVectorizer::new(tfidf_vectorizer_model, resources.clone()).unwrap();
+
+        let cooccurrence_vectorizer_config = CooccurrenceVectorizerConfiguration {
+            window_size: Some(2),
+            filter_stop_words: true,
+        };
+
+        let cooccurrence_vectorizer_model = CooccurrenceVectorizerModel {
+            language_code,
+            builtin_entity_scope: vec!["snips/number".to_string()],
+            word_pairs,
+            config: cooccurrence_vectorizer_config,
+        };
+
+        let cooccurrence_vectorizer =
+            CooccurrenceVectorizer::new(cooccurrence_vectorizer_model, resources).unwrap();
+
+        let featurizer = Featurizer {
+            tfidf_vectorizer,
+            cooccurrence_vectorizer: Some(cooccurrence_vectorizer),
+        };
+
+        // When
+        let input = "hello this bird is a beautiful bird with 22 wings";
+        let features = featurizer.transform(input).unwrap();
+
+        // Then
+        let expected_features = array![
+            0.0,
+            0.4022979853278378,
+            0.5570317855419762,
+            0.0,
+            0.3298901029212854,
+            0.0,
+            0.0,
+            0.25001173551567585,
+            0.30358567884046356,
+            0.4821654899230893,
+            0.17857981108262563, // last tfidf feature
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0
+        ];
+
         assert_epsilon_eq_array1(&expected_features, &features, 1e-6);
     }
 
@@ -312,11 +759,12 @@ mod tests {
         ]);
 
         // When
-        let augmented_query = get_word_cluster_features(&query_tokens, Arc::new(word_clusterer));
+        let augmented_query = get_word_clusters(&query_tokens, Arc::new(word_clusterer));
 
         // Then
         let expected_augmented_query =
             vec!["cluster_house".to_string(), "cluster_love".to_string()];
+
         assert_eq!(augmented_query, expected_augmented_query)
     }
 }

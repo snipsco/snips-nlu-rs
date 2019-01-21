@@ -1,10 +1,17 @@
+use std::collections::HashMap;
 use std::fs;
 use std::io;
+use std::ops::Range;
 use std::path::{Component, Path, PathBuf};
 
 use failure::ResultExt;
 use zip::ZipArchive;
 
+use snips_nlu_ontology::BuiltinEntity;
+use snips_nlu_utils::range::ranges_overlap;
+use snips_nlu_utils::string::{substring_with_char_range, suffix_from_char_index};
+
+use crate::entity_parser::custom_entity_parser::CustomEntity;
 use crate::errors::*;
 
 pub type IntentName = String;
@@ -97,6 +104,81 @@ pub fn extract_nlu_engine_zip_archive<R: io::Read + io::Seek>(
         .to_str()
         .ok_or_else(|| format_err!("Engine directory name is empty"))?;
     Ok(dest_path.join(engine_dir_name))
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct MatchedEntity {
+    pub range: Range<usize>,
+    pub entity_name: String,
+}
+
+impl Into<MatchedEntity> for BuiltinEntity {
+    fn into(self) -> MatchedEntity {
+        MatchedEntity {
+            range: self.range,
+            entity_name: self.entity_kind.identifier().to_string(),
+        }
+    }
+}
+
+impl Into<MatchedEntity> for CustomEntity {
+    fn into(self) -> MatchedEntity {
+        MatchedEntity {
+            range: self.range,
+            entity_name: self.entity_identifier,
+        }
+    }
+}
+
+pub fn replace_entities<F>(
+    text: &str,
+    matched_entities: Vec<MatchedEntity>,
+    placeholder_fn: F,
+) -> (HashMap<Range<usize>, Range<usize>>, String)
+where
+    F: Fn(&str) -> String,
+{
+    if matched_entities.is_empty() {
+        return (HashMap::new(), text.to_string());
+    }
+
+    let mut dedup_matches = deduplicate_overlapping_entities(matched_entities);
+    dedup_matches.sort_by_key(|entity| entity.range.start);
+
+    let mut range_mapping: HashMap<Range<usize>, Range<usize>> = HashMap::new();
+    let mut processed_text = "".to_string();
+    let mut offset = 0;
+    let mut current_ix = 0;
+
+    for matched_entity in dedup_matches {
+        let range_start = (matched_entity.range.start as i16 + offset) as usize;
+        let prefix_text =
+            substring_with_char_range(text.to_string(), &(current_ix..matched_entity.range.start));
+        let entity_text = placeholder_fn(&*matched_entity.entity_name);
+        processed_text = format!("{}{}{}", processed_text, prefix_text, entity_text);
+        offset += entity_text.chars().count() as i16 - matched_entity.range.clone().count() as i16;
+        let range_end = (matched_entity.range.end as i16 + offset) as usize;
+        let new_range = range_start..range_end;
+        current_ix = matched_entity.range.end;
+        range_mapping.insert(new_range, matched_entity.range);
+    }
+
+    processed_text = format!(
+        "{}{}",
+        processed_text,
+        suffix_from_char_index(text.to_string(), current_ix)
+    );
+    (range_mapping, processed_text)
+}
+
+fn deduplicate_overlapping_entities(entities: Vec<MatchedEntity>) -> Vec<MatchedEntity> {
+    let entities_overlap = |lhs_entity: &MatchedEntity, rhs_entity: &MatchedEntity| {
+        ranges_overlap(&lhs_entity.range, &rhs_entity.range)
+    };
+    let entity_sort_key = |entity: &MatchedEntity| -(entity.range.clone().count() as i32);
+    let mut deduped = deduplicate_overlapping_items(entities, entities_overlap, entity_sort_key);
+    deduped.sort_by_key(|entity| entity.range.start);
+    deduped
 }
 
 #[cfg(test)]
