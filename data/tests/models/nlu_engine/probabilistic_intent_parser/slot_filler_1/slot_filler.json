@@ -103,7 +103,6 @@
           "entities": [
             "Temperature"
           ],
-          "language_code": "en",
           "tagging_scheme_code": 2,
           "use_stemming": true
         },
@@ -118,13 +117,13 @@
       {
         "args": {
           "entity_labels": [
-            "snips/percentage",
-            "snips/datetime",
-            "snips/ordinal",
             "snips/amountOfMoney",
+            "snips/ordinal",
+            "snips/number",
             "snips/duration",
+            "snips/percentage",
             "snips/temperature",
-            "snips/number"
+            "snips/datetime"
           ],
           "language_code": "en",
           "tagging_scheme_code": 1
@@ -139,7 +138,6 @@
       {
         "args": {
           "cluster_name": "brown_clusters",
-          "language_code": "en",
           "use_stemming": false
         },
         "factory_name": "word_cluster",
@@ -155,7 +153,7 @@
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "modelum55ixvc.crfsuite",
+  "crf_model_file": "model0Q1LiB.crfsuite",
   "intent": "MakeTea",
   "language_code": "en",
   "slot_name_mapping": {

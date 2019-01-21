@@ -12,16 +12,15 @@
   "language_code": "en",
   "patterns": {
     "MakeCoffee": [
-      "^\\s*make\\s*(?P<group1>%SNIPSNUMBER%)\\s*cups\\s*of\\s*coffee\\s*$",
-      "^\\s*brew\\s*(?P<group1>%SNIPSNUMBER%)\\s*coffee\\s*cups\\s*$",
-      "^\\s*give\\s*(?P<group1>%SNIPSNUMBER%)\\s*coffees\\s*$",
-      "^\\s*make\\s*(?P<group1>%SNIPSNUMBER%)\\s*cup\\s*of\\s*coffee\\s*$"
+      "^\\s*make\\s*(?P<group1>%SNIPSNUMBER%)\\s*cup\\s*of\\s*coffee\\s*$",
+      "^\\s*brew\\s*(?P<group1>%SNIPSNUMBER%)\\s*cups\\s*of\\s*coffee\\s*$",
+      "^\\s*prepare\\s*(?P<group1>%SNIPSNUMBER%)\\s*cup\\s*of\\s*coffee\\s*$"
     ],
     "MakeTea": [
-      "^\\s*make\\s*(?P<group1>%SNIPSNUMBER%)\\s*(?P<group0>%TEMPERATURE%)\\s*teas\\s*$",
-      "^\\s*i\\s*get\\s*(?P<group1>%SNIPSNUMBER%)\\s*(?P<group0>%TEMPERATURE%)\\s*teas\\s*$",
-      "^\\s*prepare\\s*(?P<group1>%SNIPSNUMBER%)\\s*cups\\s*of\\s*(?P<group0>%TEMPERATURE%)\\s*tea\\s*$",
-      "^\\s*make\\s*(?P<group1>%SNIPSNUMBER%)\\s*tea\\s*$"
+      "^\\s*make\\s*(?P<group0>%TEMPERATURE%)\\s*cup\\s*of\\s*tea\\s*$",
+      "^\\s*make\\s*(?P<group1>%SNIPSNUMBER%)\\s*tea\\s*cups\\s*$",
+      "^\\s*i\\s*want\\s*(?P<group1>%SNIPSNUMBER%)\\s*cups\\s*of\\s*(?P<group0>%TEMPERATURE%)\\s*tea\\s*$",
+      "^\\s*prepare\\s*(?P<group1>%SNIPSNUMBER%)\\s*cup\\s*of\\s*(?P<group0>%TEMPERATURE%)\\s*tea\\s*$"
     ]
   },
   "slot_names_to_entities": {

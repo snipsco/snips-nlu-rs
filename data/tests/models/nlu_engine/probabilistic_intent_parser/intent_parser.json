@@ -3,17 +3,27 @@
     "intent_classifier_config": {
       "data_augmentation_config": {
         "add_builtin_entities_examples": true,
-        "max_unknown_words": null,
+        "max_unknown_words": 5,
         "min_utterances": 20,
         "noise_factor": 5,
-        "unknown_word_prob": 0,
-        "unknown_words_replacement_string": null
+        "unknown_word_prob": 0.5,
+        "unknown_words_replacement_string": "unknownword"
       },
       "featurizer_config": {
+        "added_cooccurrence_feature_ratio": 0.0,
+        "cooccurrence_vectorizer_config": {
+          "filter_stop_words": true,
+          "unit_name": "cooccurrence_vectorizer",
+          "unknown_words_replacement_string": "unknownword",
+          "window_size": null
+        },
         "pvalue_threshold": 0.4,
-        "sublinear_tf": false,
-        "use_stemming": false,
-        "word_clusters_name": null
+        "tfidf_vectorizer_config": {
+          "unit_name": "tfidf_vectorizer",
+          "use_stemming": false,
+          "word_clusters_name": null
+        },
+        "unit_name": "featurizer"
       },
       "random_seed": null,
       "unit_name": "log_reg_intent_classifier"

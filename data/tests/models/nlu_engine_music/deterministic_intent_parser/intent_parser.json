@@ -1,36 +1,28 @@
 {
   "config": {
+    "ignore_stop_words": true,
     "max_pattern_length": 1000,
     "max_queries": 100,
     "unit_name": "deterministic_intent_parser"
   },
   "group_names_to_slot_names": {
-    "group_0": "musicArtist",
-    "group_1": "musicArtist",
-    "group_10": "musicArtist",
-    "group_11": "playlist",
-    "group_2": "musicAlbum",
-    "group_3": "musicAlbum",
-    "group_4": "musicArtist",
-    "group_5": "musicAlbum",
-    "group_6": "musicArtist",
-    "group_7": "musicAlbum",
-    "group_8": "musicArtist",
-    "group_9": "musicArtist"
+    "group0": "musicAlbum",
+    "group1": "musicArtist",
+    "group2": "playlist"
   },
   "language_code": "fr",
   "patterns": {
     "adri:PlayMusic": [
-      "^\\s*peux\\s*tu\\s*mettre\\s*les\\s*(?P<group_9>%SNIPSMUSICARTIST%)\\s*stp\\s*$",
-      "^\\s*mets\\s*un\\s*son\\s*de\\s*(?P<group_0>%SNIPSMUSICARTIST%)\\s*$",
-      "^\\s*je\\s*voudrais\\s*ecouter\\s*ma\\s*playlist\\s*(?P<group_11>%PLAYLIST%)\\s*$",
-      "^\\s*je\\s*veux\\s*ecouter\\s*une\\s*chanson\\s*de\\s*(?P<group_1>%SNIPSMUSICARTIST%)\\s*please\\s*$",
-      "^\\s*lance\\s*l\\s*album\\s*(?P<group_5>%SNIPSMUSICALBUM%)\\s*veux\\s*tu\\s*\\?\\s*$",
-      "^\\s*je\\s*veux\\s*ecouter\\s*l\\s*album\\s*(?P<group_7>%SNIPSMUSICALBUM%)\\s*des\\s*(?P<group_8>%SNIPSMUSICARTIST%)\\s*$",
-      "^\\s*mets\\s*moi\\s*du\\s*(?P<group_6>%SNIPSMUSICARTIST%)\\s*$",
-      "^\\s*mets\\s*l\\s*album\\s*(?P<group_3>%SNIPSMUSICALBUM%)\\s*de\\s*(?P<group_4>%SNIPSMUSICARTIST%)\\s*stp\\s*$",
-      "^\\s*je\\s*voudrais\\s*ecouter\\s*(?P<group_10>%SNIPSMUSICARTIST%)\\s*$",
-      "^\\s*je\\s*souhaiterais\\s*\u00e9couter\\s*l\\s*album\\s*(?P<group_2>%SNIPSMUSICALBUM%)\\s*$"
+      "^\\s*mets\\s*son\\s*(?P<group1>%SNIPSMUSICARTIST%)\\s*$",
+      "^\\s*je\\s*veux\\s*ecouter\\s*chanson\\s*(?P<group1>%SNIPSMUSICARTIST%)\\s*please\\s*$",
+      "^\\s*je\\s*souhaiterais\\s*\u00e9couter\\s*album\\s*(?P<group0>%SNIPSMUSICALBUM%)\\s*$",
+      "^\\s*mets\\s*album\\s*(?P<group0>%SNIPSMUSICALBUM%)\\s*(?P<group1>%SNIPSMUSICARTIST%)\\s*$",
+      "^\\s*lance\\s*album\\s*(?P<group0>%SNIPSMUSICALBUM%)\\s*veux\\s*$",
+      "^\\s*mets\\s*(?P<group1>%SNIPSMUSICARTIST%)\\s*$",
+      "^\\s*je\\s*veux\\s*ecouter\\s*album\\s*(?P<group0>%SNIPSMUSICALBUM%)\\s*(?P<group1>%SNIPSMUSICARTIST%)\\s*$",
+      "^\\s*peux\\s*mettre\\s*(?P<group1>%SNIPSMUSICARTIST%)\\s*$",
+      "^\\s*je\\s*voudrais\\s*ecouter\\s*(?P<group1>%SNIPSMUSICARTIST%)\\s*$",
+      "^\\s*je\\s*voudrais\\s*ecouter\\s*playlist\\s*(?P<group2>%PLAYLIST%)\\s*$"
     ]
   },
   "slot_names_to_entities": {
