@@ -5,6 +5,7 @@
   ],
   "config": {
     "filter_stop_words": true,
+    "keep_order": true,
     "unit_name": "cooccurrence_vectorizer",
     "unknown_words_replacement_string": "unknownword",
     "window_size": 5
@@ -16,20 +17,20 @@
       "SNIPSMUSICALBUM"
     ],
     "1": [
-      "je",
-      "SNIPSMUSICALBUM"
+      "ecouter",
+      "SNIPSMUSICARTIST"
     ],
     "2": [
       "je",
-      "SNIPSMUSICARTIST"
+      "SNIPSMUSICALBUM"
     ],
     "3": [
       "je",
-      "ecouter"
+      "SNIPSMUSICARTIST"
     ],
     "4": [
-      "mets",
-      "SNIPSMUSICARTIST"
+      "je",
+      "ecouter"
     ]
   }
 }

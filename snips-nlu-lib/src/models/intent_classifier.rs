@@ -49,4 +49,6 @@ pub struct CooccurrenceVectorizerModel {
 pub struct CooccurrenceVectorizerConfiguration {
     pub window_size: Option<usize>,
     pub filter_stop_words: bool,
+    pub keep_order: bool,
+    pub unknown_words_replacement_string: Option<String>,
 }

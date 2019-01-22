@@ -22,6 +22,7 @@
             "added_cooccurrence_feature_ratio": 0.25,
             "cooccurrence_vectorizer_config": {
               "filter_stop_words": true,
+              "keep_order": true,
               "unit_name": "cooccurrence_vectorizer",
               "unknown_words_replacement_string": "unknownword",
               "window_size": 5

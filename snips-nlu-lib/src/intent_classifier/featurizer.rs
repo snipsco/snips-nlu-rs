@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{min, Ordering};
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::path::Path;
@@ -246,6 +246,8 @@ pub struct CooccurrenceVectorizer {
     word_pairs: HashMap<WordPair, usize>,
     filter_stop_words: bool,
     window_size: Option<usize>,
+    keep_order: bool,
+    unknown_words_replacement_string: Option<String>,
     shared_resources: Arc<SharedResources>,
 }
 
@@ -288,8 +290,9 @@ impl CooccurrenceVectorizer {
             .collect();
 
         let filter_stop_words = model.config.filter_stop_words;
-
         let window_size = model.config.window_size;
+        let keep_order = model.config.keep_order;
+        let unknown_words_replacement_string = model.config.unknown_words_replacement_string;
 
         let ontology_language = Language::from_str(model.language_code.as_ref())?;
         let language = NluUtilsLanguage::from_language(ontology_language);
@@ -300,6 +303,8 @@ impl CooccurrenceVectorizer {
             word_pairs,
             filter_stop_words,
             window_size,
+            keep_order,
+            unknown_words_replacement_string,
             shared_resources,
         })
     }
@@ -348,17 +353,13 @@ impl CooccurrenceVectorizer {
     }
 
     fn extract_word_pairs(&self, tokens: Vec<String>) -> HashSet<WordPair> {
-        let filtered_tokens = if self.filter_stop_words {
-            tokens
-                .into_iter()
-                .filter(|t| !self.shared_resources.stop_words.contains(t))
-                .collect()
-        } else {
-            tokens
-        };
-
+        let filtered_tokens: Vec<String> = tokens.into_iter()
+            .filter(|t| {
+                !(self.filter_stop_words && self.shared_resources.stop_words.contains(t))
+                    && Some(t) != self.unknown_words_replacement_string.as_ref()
+            })
+            .collect();
         let num_tokens = filtered_tokens.len();
-
         filtered_tokens
             .iter()
             .enumerate()
@@ -368,7 +369,16 @@ impl CooccurrenceVectorizer {
                 });
                 filtered_tokens[i + 1..max_index]
                     .iter()
-                    .map(|other| (t.clone(), other.clone()))
+                    .map(|other| {
+                        if self.keep_order {
+                            (t.clone(), other.clone())
+                        } else {
+                            match t.cmp(other) {
+                                Ordering::Greater => (other.clone(), t.clone()),
+                                _ => (t.clone(), other.clone()),
+                            }
+                        }
+                    })
                     .collect::<Vec<WordPair>>()
             })
             .into_iter()
@@ -703,6 +713,8 @@ mod tests {
         let cooccurrence_vectorizer_config = CooccurrenceVectorizerConfiguration {
             window_size: Some(2),
             filter_stop_words: true,
+            keep_order: true,
+            unknown_words_replacement_string: None,
         };
 
         let cooccurrence_vectorizer_model = CooccurrenceVectorizerModel {
@@ -766,5 +778,120 @@ mod tests {
             vec!["cluster_house".to_string(), "cluster_love".to_string()];
 
         assert_eq!(augmented_query, expected_augmented_query)
+    }
+
+    #[test]
+    fn extract_word_pairs_works() {
+        // Given
+        let mocked_custom_parser = MockedCustomEntityParser {
+            mocked_outputs: hashmap!(),
+        };
+
+        let mocked_builtin_parser = MockedBuiltinEntityParser {
+            mocked_outputs: hashmap!(),
+        };
+
+        let resources = Arc::new(SharedResources {
+            custom_entity_parser: Arc::new(mocked_custom_parser),
+            builtin_entity_parser: Arc::new(mocked_builtin_parser),
+            stemmer: None,
+            word_clusterers: HashMap::new(),
+            gazetteers: HashMap::new(),
+            stop_words: hashset!(),
+        });
+        let config = CooccurrenceVectorizerConfiguration {
+            window_size: None,
+            filter_stop_words: false,
+            keep_order: true,
+            unknown_words_replacement_string: Some("d".to_string()),
+        };
+
+        let word_pairs = hashmap!(
+            0 => ("a".to_string(), "c".to_string()),
+            1 => ("a".to_string(), "b".to_string()),
+            2 => ("c".to_string(), "b".to_string()),
+        );
+
+        let model = CooccurrenceVectorizerModel {
+            language_code: "en".to_string(),
+            builtin_entity_scope: vec![],
+            word_pairs,
+            config,
+        };
+
+        let vectorizer = CooccurrenceVectorizer::new(model, resources).unwrap();
+
+        let tokens = vec![
+            "a".to_string(),
+            "c".to_string(),
+            "b".to_string(),
+            "d".to_string()
+        ];
+
+        // When
+        let pairs = vectorizer.extract_word_pairs(tokens);
+
+        // Then
+        let expected_pairs = hashset!(
+            ("a".to_string(), "c".to_string()),
+            ("a".to_string(), "b".to_string()),
+            ("c".to_string(), "b".to_string()),
+        );
+        assert_eq!(expected_pairs, pairs)
+    }
+
+    #[test]
+    fn extract_word_pairs_unordered_works() {
+        // Given
+        let mocked_custom_parser = MockedCustomEntityParser {
+            mocked_outputs: hashmap!(),
+        };
+
+        let mocked_builtin_parser = MockedBuiltinEntityParser {
+            mocked_outputs: hashmap!(),
+        };
+
+        let resources = Arc::new(SharedResources {
+            custom_entity_parser: Arc::new(mocked_custom_parser),
+            builtin_entity_parser: Arc::new(mocked_builtin_parser),
+            stemmer: None,
+            word_clusterers: HashMap::new(),
+            gazetteers: HashMap::new(),
+            stop_words: hashset!(),
+        });
+        let config = CooccurrenceVectorizerConfiguration {
+            window_size: None,
+            filter_stop_words: false,
+            keep_order: false,
+            unknown_words_replacement_string: Some("d".to_string()),
+        };
+
+        let word_pairs = hashmap!(
+            0 => ("a".to_string(), "c".to_string()),
+            1 => ("a".to_string(), "b".to_string()),
+            2 => ("b".to_string(), "c".to_string()),
+        );
+
+        let model = CooccurrenceVectorizerModel {
+            language_code: "en".to_string(),
+            builtin_entity_scope: vec![],
+            word_pairs,
+            config,
+        };
+
+        let vectorizer = CooccurrenceVectorizer::new(model, resources).unwrap();
+
+        let tokens = vec!["a".to_string(), "c".to_string(), "b".to_string(), "d".to_string()];
+
+        // When
+        let pairs = vectorizer.extract_word_pairs(tokens);
+
+        // Then
+        let expected_pairs = hashset!(
+            ("a".to_string(), "c".to_string()),
+            ("a".to_string(), "b".to_string()),
+            ("b".to_string(), "c".to_string()),
+        );
+        assert_eq!(expected_pairs, pairs)
     }
 }
