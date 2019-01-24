@@ -1,1 +1,2 @@
 setuptools_rust==0.8.4
+wheel==0.30.0

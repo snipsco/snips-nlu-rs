@@ -11,7 +11,7 @@ use nlu_utils::token::*;
 use serde::de::{Error as SerdeError, Unexpected};
 use serde::{Deserialize, Deserializer};
 use snips_nlu_ontology::Language;
-use snips_nlu_ontology_parsers::{GazetteerEntityMatch, GazetteerParser};
+use snips_nlu_parsers::{GazetteerEntityMatch, GazetteerParser};
 
 use crate::entity_parser::utils::Cache;
 use crate::errors::*;

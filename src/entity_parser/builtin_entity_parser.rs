@@ -2,7 +2,7 @@ use std::path::Path;
 use std::sync::Mutex;
 
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind};
-use snips_nlu_ontology_parsers::BuiltinEntityParser as _BuiltinEntityParser;
+use snips_nlu_parsers::BuiltinEntityParser as _BuiltinEntityParser;
 
 use super::utils::Cache;
 use crate::errors::*;

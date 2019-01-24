@@ -40,7 +40,7 @@ dependencies {
 def buildType = project.hasProperty("debug") ? "debug" : "release"
 println "Using build type $buildType"
 
-def rustTargetPath = project.hasProperty("rustTargetPath") ? project.rustTargetPath : "../target"
+def rustTargetPath = project.hasProperty("rustTargetPath") ? project.rustTargetPath : "../../ffi/target"
 println "Using rust target path $rustTargetPath"
 
 def soForJar = [

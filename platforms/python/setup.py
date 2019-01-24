@@ -16,7 +16,7 @@ VERSION = "__version__"
 README = os.path.join(ROOT_PATH, "README.rst")
 
 RUST_EXTENSION_NAME = 'snips_nlu_rust.dylib.libsnips_nlu_rs'
-CARGO_ROOT_PATH = os.path.join(ROOT_PATH, 'snips-nlu-python-ffi')
+CARGO_ROOT_PATH = os.path.join(ROOT_PATH, 'ffi')
 CARGO_FILE_PATH = os.path.join(CARGO_ROOT_PATH, 'Cargo.toml')
 CARGO_TARGET_DIR = os.path.join(CARGO_ROOT_PATH, 'target')
 os.environ['CARGO_TARGET_DIR'] = CARGO_TARGET_DIR
@@ -29,7 +29,7 @@ with io.open(README, "rt", encoding="utf8") as f:
 
 setup(name=PACKAGE_NAME,
       version=version,
-      description='Python wrapper of the Snips NLU engine',
+      description='Python wrapper of the Rust Snips NLU engine',
       long_description=readme,
       author='Thibaut Lorrain, Adrien Ball',
       author_email='thibaut.lorrain@snips.ai, adrien.ball@snips.ai',
