@@ -1,5 +1,7 @@
-use crate::errors::*;
 use ndarray::prelude::*;
+use ndarray::{array, stack};
+
+use crate::errors::*;
 
 /// The multiclass probability estimates are derived from binary (one-vs.-rest)
 /// estimates by simple normalization
@@ -71,6 +73,7 @@ fn logit(x: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::MulticlassLogisticRegression;
+    use ndarray::array;
     use crate::testutils::assert_epsilon_eq_array1;
 
     #[test]

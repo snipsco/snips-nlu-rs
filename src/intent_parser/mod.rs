@@ -4,6 +4,7 @@ pub mod probabilistic_intent_parser;
 use std::path::Path;
 use std::sync::Arc;
 
+use failure::format_err;
 use snips_nlu_ontology::IntentClassifierResult;
 
 pub use self::deterministic_intent_parser::DeterministicIntentParser;

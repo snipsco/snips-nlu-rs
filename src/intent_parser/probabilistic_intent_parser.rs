@@ -4,7 +4,7 @@ use std::iter::FromIterator;
 use std::path::Path;
 use std::sync::Arc;
 
-use failure::ResultExt;
+use failure::{format_err, ResultExt};
 
 use crate::errors::*;
 use crate::intent_classifier::{build_intent_classifier, IntentClassifier};
@@ -91,12 +91,14 @@ mod tests {
     use super::*;
     use crate::resources::loading::load_engine_shared_resources;
     use crate::slot_utils::InternalSlot;
-    use crate::testutils::*;
 
     #[test]
     fn from_path_works() {
         // Given
-        let trained_engine_path = file_path("tests").join("models").join("nlu_engine");
+        let trained_engine_path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
         let parser_path = trained_engine_path.join("probabilistic_intent_parser");
         let resources = load_engine_shared_resources(trained_engine_path).unwrap();
 
@@ -121,7 +123,10 @@ mod tests {
     #[test]
     fn should_get_slots() {
         // Given
-        let trained_engine_path = file_path("tests").join("models").join("nlu_engine");
+        let trained_engine_path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
         let parser_path = trained_engine_path.join("probabilistic_intent_parser");
         let resources = load_engine_shared_resources(trained_engine_path).unwrap();
 

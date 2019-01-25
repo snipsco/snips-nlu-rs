@@ -7,7 +7,8 @@ use std::sync::Arc;
 
 use failure::ResultExt;
 use itertools::Itertools;
-use nlu_utils::language::Language as NluUtilsLanguage;
+use log::info;
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_ontology::{BuiltinGazetteerEntityKind, GrammarEntityKind};
 use snips_nlu_parsers::gazetteer_entity_parser::{
     EntityValue as GazetteerEntityValue, Parser as GazetteerEntityParser,
@@ -426,7 +427,6 @@ mod tests {
     use self::tempfile::tempdir;
     use snips_nlu_ontology::*;
 
-    use crate::testutils::file_path;
     use crate::SharedResources;
     use crate::SnipsNluEngine;
 
@@ -451,7 +451,10 @@ mod tests {
 
     #[test]
     fn test_should_inject() {
-        let path = file_path("tests").join("models").join("nlu_engine_music");
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine_music");
 
         let tdir = tempdir().unwrap();
         dir::copy(path, tdir.as_ref(), &dir::CopyOptions::new()).unwrap();
@@ -546,7 +549,7 @@ mod tests {
             entity: "snips/musicAlbum".to_string(),
             slot_name: "musicAlbum".to_string(),
             value: SlotValue::MusicAlbum(StringValue::from("Thisisthebestalbum")),
-            confidence_score: None
+            confidence_score: None,
         }];
         assert_eq!(parsing.slots, ground_true_slots);
 
@@ -563,7 +566,7 @@ mod tests {
             entity: "playlist".to_string(),
             slot_name: "playlist".to_string(),
             value: SlotValue::Custom(StringValue::from("funky")),
-            confidence_score: None
+            confidence_score: None,
         }];
         assert_eq!(parsing.slots, ground_true_slots);
     }

@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use failure::bail;
 use itertools::Itertools;
-use nlu_utils::token::Token;
+use snips_nlu_utils::token::Token;
 
 use crate::errors::*;
 use crate::models::FeatureFactory;
@@ -111,8 +112,8 @@ get_features!([
 mod tests {
     use super::*;
 
-    use nlu_utils::language::Language;
-    use nlu_utils::token::tokenize;
+    use snips_nlu_utils::language::Language;
+    use snips_nlu_utils::token::tokenize;
 
     #[test]
     fn compute_features_works() {

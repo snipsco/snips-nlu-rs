@@ -7,13 +7,13 @@ use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
 use crfsuite::Tagger as CRFSuiteTagger;
-use failure::ResultExt;
+use failure::{format_err, ResultExt};
 use itertools::Itertools;
-use nlu_utils::language::Language as NluUtilsLanguage;
-use nlu_utils::range::ranges_overlap;
-use nlu_utils::string::substring_with_char_range;
-use nlu_utils::token::{tokenize, Token};
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_utils::range::ranges_overlap;
+use snips_nlu_utils::string::substring_with_char_range;
+use snips_nlu_utils::token::{tokenize, Token};
 
 use crate::entity_parser::BuiltinEntityParser;
 use crate::errors::*;
@@ -409,8 +409,10 @@ fn spans_to_tokens_indexes(spans: &[Range<usize>], tokens: &[Token]) -> Vec<Vec<
 mod tests {
     use super::*;
 
-    use nlu_utils::language::Language as NluUtilsLanguage;
+    use failure::Fail;
+    use maplit::{hashmap, hashset};
     use snips_nlu_ontology::*;
+    use snips_nlu_utils::language::Language as NluUtilsLanguage;
 
     use crate::resources::loading::load_engine_shared_resources;
     use crate::testutils::*;
@@ -460,7 +462,10 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let trained_engine_path = file_path("tests").join("models").join("nlu_engine");
+        let trained_engine_path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
 
         let slot_filler_path = trained_engine_path
             .join("probabilistic_intent_parser")

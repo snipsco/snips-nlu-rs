@@ -1,11 +1,12 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
+use failure::format_err;
 use itertools::Itertools;
-use nlu_utils::range::ranges_overlap;
-use nlu_utils::string::{get_shape, normalize};
-use nlu_utils::token::Token;
 use snips_nlu_ontology::BuiltinEntityKind;
+use snips_nlu_utils::range::ranges_overlap;
+use snips_nlu_utils::string::{get_shape, normalize};
+use snips_nlu_utils::token::Token;
 
 use crate::entity_parser::{BuiltinEntityParser, CustomEntityParser};
 use crate::errors::*;
@@ -489,9 +490,9 @@ fn parse_as_u64(args: &HashMap<String, serde_json::Value>, arg_name: &str) -> Re
 mod tests {
     use std::iter::FromIterator;
 
-    use nlu_utils::language::Language as NluUtilsLanguage;
-    use nlu_utils::token::tokenize;
     use snips_nlu_ontology::{BuiltinEntity, SlotValue, TemperatureValue};
+    use snips_nlu_utils::language::Language as NluUtilsLanguage;
+    use snips_nlu_utils::token::tokenize;
 
     use super::*;
     use crate::entity_parser::custom_entity_parser::CustomEntity;

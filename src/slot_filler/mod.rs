@@ -10,8 +10,8 @@ use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
 
-use failure::ResultExt;
-use nlu_utils::token::Token;
+use failure::{format_err, ResultExt};
+use snips_nlu_utils::token::Token;
 
 use crate::errors::*;
 use crate::models::ProcessingUnitMetadata;

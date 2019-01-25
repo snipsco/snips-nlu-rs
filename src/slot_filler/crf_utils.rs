@@ -1,14 +1,15 @@
 use std::collections::{HashMap, HashSet};
 use std::ops::Range;
 
+use failure::{bail, format_err};
 use itertools::Itertools;
 use snips_nlu_ontology::BuiltinEntity;
 
 use crate::errors::*;
-use crate::nlu_utils::string::suffix_from_char_index;
-use crate::nlu_utils::token::Token;
 use crate::slot_utils::InternalSlot;
 use crate::utils::{product, EntityName, SlotName};
+use snips_nlu_utils::string::suffix_from_char_index;
+use snips_nlu_utils::token::Token;
 
 const BEGINNING_PREFIX: &str = "B-";
 const INSIDE_PREFIX: &str = "I-";
@@ -326,11 +327,12 @@ pub fn generate_slots_permutations(
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
+    use maplit::hashmap;
 
     use super::*;
-    use nlu_utils::language::Language;
-    use nlu_utils::token::tokenize;
     use snips_nlu_ontology::{BuiltinEntityKind, NumberValue, SlotValue};
+    use snips_nlu_utils::language::Language;
+    use snips_nlu_utils::token::tokenize;
 
     struct Test {
         text: String,

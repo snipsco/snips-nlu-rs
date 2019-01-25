@@ -12,12 +12,6 @@ use crate::resources::stemmer::Stemmer;
 use crate::resources::word_clusterer::WordClusterer;
 use crate::resources::SharedResources;
 
-pub fn file_path(filename: &str) -> ::std::path::PathBuf {
-    dinghy_test::try_test_file_path("data")
-        .unwrap_or_else(|| "../data".into())
-        .join(filename)
-}
-
 pub fn assert_epsilon_eq_array1(a: &Array1<f32>, b: &Array1<f32>, epsilon: f32) {
     assert_eq!(a.dim(), b.dim());
     for (index, elem_a) in a.indexed_iter() {

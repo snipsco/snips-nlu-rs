@@ -5,12 +5,12 @@ use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use failure::ResultExt;
+use failure::{format_err, ResultExt};
 use itertools::Itertools;
 use ndarray::prelude::*;
-use nlu_utils::language::Language as NluUtilsLanguage;
-use nlu_utils::string::normalize;
-use nlu_utils::token::{compute_all_ngrams, tokenize_light};
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_utils::string::normalize;
+use snips_nlu_utils::token::{compute_all_ngrams, tokenize_light};
 use snips_nlu_ontology::{BuiltinEntityKind, Language};
 
 use crate::errors::*;
@@ -419,8 +419,10 @@ mod tests {
     use std::iter::FromIterator;
     use std::sync::Arc;
 
-    use nlu_utils::language::Language;
-    use nlu_utils::token::tokenize_light;
+    use maplit::{hashmap, hashset};
+    use ndarray::array;
+    use snips_nlu_utils::language::Language;
+    use snips_nlu_utils::token::tokenize_light;
     use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind};
     use snips_nlu_ontology::{NumberValue, SlotValue};
 

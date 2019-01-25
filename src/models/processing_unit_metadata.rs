@@ -1,3 +1,5 @@
+use serde_derive::Deserialize;
+
 #[derive(Debug, Deserialize, Copy, Clone, PartialEq, Eq)]
 #[serde(tag = "unit_name")]
 #[serde(rename_all = "snake_case")]

@@ -180,15 +180,20 @@ fn get_filtered_out_intents_indexes(
 mod tests {
     use super::*;
 
+    use maplit::{hashmap, hashset};
+    use ndarray::array;
+
     use crate::intent_classifier::TfidfVectorizer;
     use crate::models::{
         SklearnVectorizerModel, TfidfVectorizerConfiguration, TfidfVectorizerModel,
     };
     use crate::resources::loading::load_engine_shared_resources;
-    use crate::testutils::*;
 
     fn get_sample_log_reg_classifier() -> LogRegIntentClassifier {
-        let trained_engine_dir = file_path("tests").join("models").join("nlu_engine");
+        let trained_engine_dir = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
 
         let resources = load_engine_shared_resources(trained_engine_dir).unwrap();
         let language_code = "en".to_string();
@@ -333,7 +338,10 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let trained_engine_dir = file_path("tests").join("models").join("nlu_engine");
+        let trained_engine_dir = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
 
         let classifier_path = trained_engine_dir
             .join("probabilistic_intent_parser")

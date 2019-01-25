@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::io::Read;
 use std::iter::FromIterator;
 
-use nlu_utils::string::normalize;
+use snips_nlu_utils::string::normalize;
 
 use crate::errors::*;
 

@@ -6,6 +6,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use failure::ResultExt;
+use serde_derive::Deserialize;
 use snips_nlu_ontology::Language;
 
 use crate::entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};

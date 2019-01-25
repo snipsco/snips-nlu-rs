@@ -7,12 +7,12 @@ use std::sync::Arc;
 
 use failure::ResultExt;
 use itertools::Itertools;
-use nlu_utils::language::Language as NluUtilsLanguage;
-use nlu_utils::range::ranges_overlap;
-use nlu_utils::string::{convert_to_char_range, substring_with_char_range};
-use nlu_utils::token::{tokenize, tokenize_light};
 use regex::{Regex, RegexBuilder};
 use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language};
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_utils::range::ranges_overlap;
+use snips_nlu_utils::string::{convert_to_char_range, substring_with_char_range};
+use snips_nlu_utils::token::{tokenize, tokenize_light};
 
 use crate::errors::*;
 use crate::language::FromLanguage;
@@ -127,7 +127,7 @@ impl IntentParser for DeterministicIntentParser {
 
     fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<InternalSlot>> {
         if !self.regexes_per_intent.contains_key(intent) {
-            return Err(SnipsNluError::UnknownIntent(intent.to_string()).into())
+            return Err(SnipsNluError::UnknownIntent(intent.to_string()).into());
         }
         let filter = vec![intent];
         self.parse(input, Some(&filter)).map(|result| result.slots)
@@ -346,6 +346,7 @@ mod tests {
     use std::iter::FromIterator;
     use std::sync::Arc;
 
+    use maplit::hashmap;
     use snips_nlu_ontology::*;
 
     use crate::entity_parser::custom_entity_parser::CustomEntity;
@@ -408,7 +409,10 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let trained_engine_path = file_path("tests").join("models").join("nlu_engine");
+        let trained_engine_path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
 
         let parser_path = trained_engine_path.join("deterministic_intent_parser");
 

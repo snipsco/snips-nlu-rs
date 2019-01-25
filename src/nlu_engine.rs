@@ -1,13 +1,16 @@
+use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::Path;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use failure::ResultExt;
+use failure::{bail, format_err, ResultExt};
+use itertools::Itertools;
 use snips_nlu_ontology::{
     BuiltinEntityKind, IntentClassifierResult, IntentParserResult, Language, Slot, SlotValue,
 };
+use snips_nlu_utils::string::substring_with_char_range;
 
 use crate::entity_parser::{BuiltinEntityParser, CustomEntityParser};
 use crate::errors::*;
@@ -15,13 +18,10 @@ use crate::intent_parser::*;
 use crate::models::{
     DatasetMetadata, Entity, ModelVersion, NluEngineModel, ProcessingUnitMetadata,
 };
-use crate::nlu_utils::string::substring_with_char_range;
 use crate::resources::loading::load_shared_resources;
 use crate::resources::SharedResources;
 use crate::slot_utils::*;
 use crate::utils::{extract_nlu_engine_zip_archive, EntityName, SlotName};
-use itertools::Itertools;
-use std::collections::HashMap;
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -354,7 +354,10 @@ mod tests {
     #[test]
     fn from_path_works() {
         // Given
-        let path = file_path("tests").join("models").join("nlu_engine");
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
 
         // When / Then
         let nlu_engine = SnipsNluEngine::from_path(path);
@@ -364,7 +367,10 @@ mod tests {
     #[test]
     fn from_zip_works() {
         // Given
-        let path = file_path("tests").join("models").join("nlu_engine.zip");
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine.zip");
 
         let file = fs::File::open(path).unwrap();
 
@@ -397,7 +403,10 @@ mod tests {
     #[test]
     fn parse_works() {
         // Given
-        let path = file_path("tests").join("models").join("nlu_engine");
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
@@ -424,7 +433,10 @@ mod tests {
     #[test]
     fn get_intents_works() {
         // Given
-        let path = file_path("tests").join("models").join("nlu_engine");
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
@@ -447,7 +459,10 @@ mod tests {
     #[test]
     fn get_slots_works() {
         // Given
-        let path = file_path("tests").join("models").join("nlu_engine");
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When

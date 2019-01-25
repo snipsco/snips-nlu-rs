@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use serde_derive::Deserialize;
+
 use crate::utils::{EntityName, IntentName, SlotName};
 
 #[derive(Debug, Deserialize)]

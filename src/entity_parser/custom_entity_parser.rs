@@ -6,12 +6,13 @@ use std::sync::Mutex;
 
 use failure::ResultExt;
 use itertools::Itertools;
-use nlu_utils::language::Language as NluUtilsLanguage;
-use nlu_utils::token::*;
 use serde::de::{Error as SerdeError, Unexpected};
 use serde::{Deserialize, Deserializer};
+use serde_derive::Deserialize;
 use snips_nlu_ontology::Language;
 use snips_nlu_parsers::{GazetteerEntityMatch, GazetteerParser};
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_utils::token::*;
 
 use crate::entity_parser::utils::Cache;
 use crate::errors::*;
@@ -173,7 +174,6 @@ impl CachingCustomEntityParser {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::testutils::file_path;
 
     #[test]
     fn should_compute_char_shifts() {
@@ -194,7 +194,8 @@ mod tests {
     #[test]
     fn custom_entity_parser_should_handle_char_shifts() {
         // Given
-        let parser_path = file_path("tests")
+        let parser_path = Path::new("data")
+            .join("tests")
             .join("models")
             .join("nlu_engine")
             .join("custom_entity_parser");

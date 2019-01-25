@@ -1,7 +1,7 @@
 use std::iter::FromIterator;
 use std::str;
 
-use nlu_utils::token::Token;
+use snips_nlu_utils::token::Token;
 
 pub fn get_word_chunk(
     word: &str,

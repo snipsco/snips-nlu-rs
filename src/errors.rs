@@ -1,3 +1,5 @@
+use failure::Fail;
+
 #[derive(Debug, Fail)]
 pub enum SnipsNluError {
     #[fail(display = "Unable to read file '{}'", _0)]

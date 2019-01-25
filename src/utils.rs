@@ -4,7 +4,7 @@ use std::io;
 use std::ops::Range;
 use std::path::{Component, Path, PathBuf};
 
-use failure::ResultExt;
+use failure::{format_err, ResultExt};
 use zip::ZipArchive;
 
 use snips_nlu_ontology::BuiltinEntity;
@@ -185,7 +185,8 @@ fn deduplicate_overlapping_entities(entities: Vec<MatchedEntity>) -> Vec<Matched
 mod tests {
     use super::*;
     use itertools::repeat_n;
-    use nlu_utils::range::ranges_overlap;
+    use maplit::hashset;
+    use snips_nlu_utils::range::ranges_overlap;
     use std::collections::HashSet;
     use std::ops::Range;
 

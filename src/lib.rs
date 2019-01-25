@@ -1,32 +1,3 @@
-extern crate base64;
-extern crate crfsuite;
-extern crate csv;
-#[cfg(test)]
-extern crate dinghy_test;
-#[macro_use]
-extern crate failure;
-extern crate itertools;
-#[macro_use]
-extern crate log;
-extern crate lru_cache;
-#[macro_use]
-extern crate ndarray;
-extern crate regex;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-extern crate serde_json;
-extern crate snips_nlu_ontology;
-extern crate snips_nlu_parsers;
-extern crate snips_nlu_utils as nlu_utils;
-extern crate tempfile;
-extern crate zip;
-
-#[cfg(test)]
-#[macro_use]
-extern crate maplit;
-extern crate snips_nlu_utils;
-
 mod entity_parser;
 pub mod errors;
 pub mod injection;
@@ -55,5 +26,5 @@ pub use crate::resources::loading::load_shared_resources;
 pub use crate::resources::SharedResources;
 pub use crate::slot_filler::{CRFSlotFiller, SlotFiller};
 
-pub use nlu_utils::token::{compute_all_ngrams, tokenize_light};
+pub use snips_nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use snips_nlu_ontology::Language;

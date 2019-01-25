@@ -1,23 +1,11 @@
 #![allow(non_camel_case_types)]
 
-#[macro_use]
-extern crate failure;
-#[macro_use]
-extern crate ffi_utils;
-#[macro_use]
-extern crate lazy_static;
-extern crate libc;
-extern crate serde_json;
-extern crate snips_nlu_lib;
-extern crate snips_nlu_ontology_ffi_macros;
-
-use failure::ResultExt;
-
 use std::ffi::CString;
 use std::io::Cursor;
 use std::slice;
 use std::sync::Mutex;
 
+use failure::{format_err, ResultExt};
 use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology_ffi_macros::CIntentParserResult;
 

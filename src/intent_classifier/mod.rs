@@ -7,7 +7,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::errors::*;
-use failure::ResultExt;
+use failure::{format_err, ResultExt};
 use snips_nlu_ontology::IntentClassifierResult;
 
 pub use self::featurizer::{CooccurrenceVectorizer, Featurizer, TfidfVectorizer};
