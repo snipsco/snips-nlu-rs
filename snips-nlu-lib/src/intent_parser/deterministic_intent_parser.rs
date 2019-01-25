@@ -12,7 +12,7 @@ use nlu_utils::range::ranges_overlap;
 use nlu_utils::string::{convert_to_char_range, substring_with_char_range};
 use nlu_utils::token::{tokenize, tokenize_light};
 use regex::{Regex, RegexBuilder};
-use snips_nlu_ontology::{BuiltinEntityKind, Language};
+use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language};
 
 use crate::errors::*;
 use crate::language::FromLanguage;
@@ -83,11 +83,66 @@ impl DeterministicIntentParser {
 }
 
 impl IntentParser for DeterministicIntentParser {
-    fn parse(
+    fn parse(&self, input: &str, intents: Option<&[&str]>) -> Result<InternalParsingResult> {
+        Ok(self
+            .parse_top_intents(input, 1, intents)?
+            .into_iter()
+            .next()
+            .unwrap_or_else(|| InternalParsingResult {
+                intent: IntentClassifierResult {
+                    intent_name: None,
+                    probability: 1.0,
+                },
+                slots: vec![],
+            }))
+    }
+
+    fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
+        let nb_intents = self.regexes_per_intent.keys().count();
+        let mut top_intents: Vec<IntentClassifierResult> = self
+            .parse_top_intents(input, nb_intents, None)?
+            .into_iter()
+            .map(|res| res.intent)
+            .collect();
+        let matched_intents: HashSet<String> = top_intents
+            .iter()
+            .filter_map(|res| res.intent_name.clone())
+            .collect();
+        for intent in self.regexes_per_intent.keys() {
+            if !matched_intents.contains(intent) {
+                top_intents.push(IntentClassifierResult {
+                    intent_name: Some(intent.to_string()),
+                    probability: 0.0,
+                });
+            }
+        }
+        // The None intent is not included in the regex patterns and thus it is
+        // never matched by the deterministic parser
+        top_intents.push(IntentClassifierResult {
+            intent_name: None,
+            probability: 0.0,
+        });
+        Ok(top_intents)
+    }
+
+    fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<InternalSlot>> {
+        if !self.regexes_per_intent.contains_key(intent) {
+            return Err(SnipsNluError::UnknownIntent(intent.to_string()).into())
+        }
+        let filter = vec![intent];
+        self.parse(input, Some(&filter)).map(|result| result.slots)
+    }
+}
+
+impl DeterministicIntentParser {
+    fn parse_top_intents(
         &self,
         input: &str,
-        intents: Option<&HashSet<IntentName>>,
-    ) -> Result<Option<InternalParsingResult>> {
+        top_n: usize,
+        intents: Option<&[&str]>,
+    ) -> Result<Vec<InternalParsingResult>> {
+        let opt_intents_set: Option<HashSet<&str>> =
+            intents.map(|intent_list| intent_list.iter().map(|i| *i).collect());
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
@@ -111,36 +166,38 @@ impl IntentParser for DeterministicIntentParser {
         let cleaned_input = self.preprocess_text(input);
         let cleaned_formatted_input = self.preprocess_text(&*formatted_input);
 
+        let mut results = vec![];
+
         for (intent, regexes) in self.regexes_per_intent.iter() {
-            if !intents
-                .map(|intent_set| intent_set.contains(intent))
+            if results.len() == top_n {
+                break;
+            }
+            if !opt_intents_set
+                .as_ref()
+                .map(|intents_set| intents_set.contains(&**intent))
                 .unwrap_or(true)
             {
                 continue;
             }
             for regex in regexes {
-                let matching_result_formatted = self.get_matching_result(
+                if let Some(matching_result_formatted) = self.get_matching_result(
                     input,
                     &*cleaned_formatted_input,
                     regex,
                     intent,
                     Some(&ranges_mapping),
-                );
-                if matching_result_formatted.is_some() {
-                    return Ok(matching_result_formatted);
-                }
-                let matching_result =
-                    self.get_matching_result(input, &*cleaned_input, regex, intent, None);
-                if matching_result.is_some() {
-                    return Ok(matching_result);
+                ) {
+                    results.push(matching_result_formatted);
+                } else if let Some(matching_result) =
+                    self.get_matching_result(input, &*cleaned_input, regex, intent, None)
+                {
+                    results.push(matching_result);
                 }
             }
         }
-        Ok(None)
+        Ok(results)
     }
-}
 
-impl DeterministicIntentParser {
     fn preprocess_text(&self, string: &str) -> String {
         let tokens = tokenize(string, NluUtilsLanguage::from_language(self.language));
         let mut current_idx = 0;
@@ -217,7 +274,7 @@ impl DeterministicIntentParser {
                 })
                 .collect();
             let deduplicated_slots = deduplicate_overlapping_slots(slots, self.language);
-            let result = internal_parsing_result(intent.to_string(), 1.0, deduplicated_slots);
+            let result = internal_parsing_result(Some(intent.to_string()), 1.0, deduplicated_slots);
             return Some(result);
         }
 
@@ -363,22 +420,19 @@ mod tests {
         let parsing_result = intent_parser.parse("make two cup of coffee", None).unwrap();
 
         // Then
-        let expected_intent = Some("MakeCoffee");
-        let expected_slots = Some(vec![InternalSlot {
+        let expected_intent = Some("MakeCoffee".to_string());
+        let expected_slots = vec![InternalSlot {
             value: "two".to_string(),
             char_range: 5..8,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
-        }]);
-        assert_eq!(
-            expected_intent,
-            parsing_result.as_ref().map(|res| &*res.intent.intent_name)
-        );
-        assert_eq!(expected_slots, parsing_result.map(|res| res.slots));
+        }];
+        assert_eq!(expected_intent, parsing_result.intent.intent_name);
+        assert_eq!(expected_slots, parsing_result.slots);
     }
 
     #[test]
-    fn should_get_intent() {
+    fn should_parse_intent() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -406,19 +460,105 @@ mod tests {
                 .unwrap();
 
         // When
-        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
+        let intent = parser.parse(text, None).unwrap().intent;
 
         // Then
-        let expected_intent = Some(IntentClassifierResult {
-            intent_name: "dummy_intent_1".to_string(),
+        let expected_intent = IntentClassifierResult {
+            intent_name: Some("dummy_intent_1".to_string()),
             probability: 1.0,
-        });
+        };
 
         assert_eq!(intent, expected_intent);
     }
 
     #[test]
-    fn should_get_intent_with_builtin_entity() {
+    fn should_parse_intent_with_filter() {
+        // Given
+        let text = "this is a dummy_a query with another dummy_c";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![
+                CustomEntity {
+                    value: "dummy_a".to_string(),
+                    resolved_value: "dummy_a".to_string(),
+                    range: 10..17,
+                    entity_identifier: "dummy_entity_1".to_string(),
+                },
+                CustomEntity {
+                    value: "dummy_c".to_string(),
+                    resolved_value: "dummy_c".to_string(),
+                    range: 37..44,
+                    entity_identifier: "dummy_entity_2".to_string(),
+                },
+            ],
+        )]);
+        let shared_resources = SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser)
+            .build();
+        let parser =
+            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
+                .unwrap();
+
+        // When
+        let intent = parser
+            .parse(text, Some(&["dummy_intent_2"]))
+            .unwrap()
+            .intent;
+
+        // Then
+        let expected_intent = IntentClassifierResult {
+            intent_name: None,
+            probability: 1.0,
+        };
+
+        assert_eq!(intent, expected_intent);
+    }
+
+    #[test]
+    fn should_get_intents() {
+        // Given
+        let text = "this is a dummy_a query with another dummy_c";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![
+                CustomEntity {
+                    value: "dummy_a".to_string(),
+                    resolved_value: "dummy_a".to_string(),
+                    range: 10..17,
+                    entity_identifier: "dummy_entity_1".to_string(),
+                },
+                CustomEntity {
+                    value: "dummy_c".to_string(),
+                    resolved_value: "dummy_c".to_string(),
+                    range: 37..44,
+                    entity_identifier: "dummy_entity_2".to_string(),
+                },
+            ],
+        )]);
+        let shared_resources = SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser)
+            .build();
+        let parser =
+            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
+                .unwrap();
+
+        // When
+        let intents = parser.get_intents(text).unwrap();
+
+        // Then
+        let first_intent = IntentClassifierResult {
+            intent_name: Some("dummy_intent_1".to_string()),
+            probability: 1.0,
+        };
+        assert_eq!(4, intents.len());
+        assert_eq!(&first_intent, &intents[0]);
+        assert_eq!(0.0, intents[1].probability);
+        assert_eq!(0.0, intents[2].probability);
+        assert_eq!(0.0, intents[3].probability);
+    }
+
+    #[test]
+    fn should_parse_intent_with_builtin_entity() {
         // Given
         let text = "Send 10 dollars to John";
         let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
@@ -442,19 +582,19 @@ mod tests {
                 .unwrap();
 
         // When
-        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
+        let intent = parser.parse(text, None).unwrap().intent;
 
         // Then
-        let expected_intent = Some(IntentClassifierResult {
-            intent_name: "dummy_intent_3".to_string(),
+        let expected_intent = IntentClassifierResult {
+            intent_name: Some("dummy_intent_3".to_string()),
             probability: 1.0,
-        });
+        };
 
         assert_eq!(intent, expected_intent);
     }
 
     #[test]
-    fn should_get_intent_by_ignoring_stop_words() {
+    fn should_parse_intent_by_ignoring_stop_words() {
         // Given
         let text = "yolo this is a dummy_a query yala with another dummy_c yili";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -486,19 +626,19 @@ mod tests {
                 .unwrap();
 
         // When
-        let intent = parser.parse(text, None).unwrap().map(|res| res.intent);
+        let intent = parser.parse(text, None).unwrap().intent;
 
         // Then
-        let expected_intent = Some(IntentClassifierResult {
-            intent_name: "dummy_intent_1".to_string(),
+        let expected_intent = IntentClassifierResult {
+            intent_name: Some("dummy_intent_1".to_string()),
             probability: 1.0,
-        });
+        };
 
         assert_eq!(intent, expected_intent);
     }
 
     #[test]
-    fn should_get_slots() {
+    fn should_parse_slots() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -527,10 +667,10 @@ mod tests {
             DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
 
         // When
-        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
+        let slots = parser.parse(text, None).unwrap().slots;
 
         // Then
-        let expected_slots = Some(vec![
+        let expected_slots = vec![
             InternalSlot {
                 value: "dummy_a".to_string(),
                 char_range: 10..17,
@@ -543,12 +683,12 @@ mod tests {
                 entity: "dummy_entity_2".to_string(),
                 slot_name: "dummy_slot_name2".to_string(),
             },
-        ]);
+        ];
         assert_eq!(slots, expected_slots);
     }
 
     #[test]
-    fn should_get_slots_with_non_ascii_chars() {
+    fn should_parse_slots_with_non_ascii_chars() {
         // Given
         let text = "This is another über dummy_cc query!";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -569,20 +709,20 @@ mod tests {
             DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
 
         // When
-        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
+        let slots = parser.parse(text, None).unwrap().slots;
 
         // Then
-        let expected_slots = Some(vec![InternalSlot {
+        let expected_slots = vec![InternalSlot {
             value: "dummy_cc".to_string(),
             char_range: 21..29,
             entity: "dummy_entity_2".to_string(),
             slot_name: "dummy_slot_name2".to_string(),
-        }]);
+        }];
         assert_eq!(slots, expected_slots);
     }
 
     #[test]
-    fn should_get_slots_with_builtin_entity() {
+    fn should_parse_slots_with_builtin_entity() {
         // Given
         let text = "Send 10 dollars to John at dummy c";
         let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
@@ -616,10 +756,10 @@ mod tests {
                 .unwrap();
 
         // When
-        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
+        let slots = parser.parse(text, None).unwrap().slots;
 
         // Then
-        let expected_slots = Some(vec![
+        let expected_slots = vec![
             InternalSlot {
                 value: "10 dollars".to_string(),
                 char_range: 5..15,
@@ -632,12 +772,12 @@ mod tests {
                 entity: "dummy_entity_2".to_string(),
                 slot_name: "dummy_slot_name2".to_string(),
             },
-        ]);
+        ];
         assert_eq!(slots, expected_slots);
     }
 
     #[test]
-    fn should_get_slots_with_special_tokenized_out_characters() {
+    fn should_parse_slots_with_special_tokenized_out_characters() {
         // Given
         let text = "this is another dummy’c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -658,15 +798,70 @@ mod tests {
             DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
 
         // When
-        let slots = parser.parse(text, None).unwrap().map(|res| res.slots);
+        let slots = parser.parse(text, None).unwrap().slots;
 
         // Then
-        let expected_slots = Some(vec![InternalSlot {
+        let expected_slots = vec![InternalSlot {
             value: "dummy’c".to_string(),
             char_range: 16..23,
             entity: "dummy_entity_2".to_string(),
             slot_name: "dummy_slot_name3".to_string(),
-        }]);
+        }];
+        assert_eq!(slots, expected_slots);
+    }
+
+    #[test]
+    fn should_get_slots() {
+        // Given
+        let text = "Send 10 dollars to John at dummy c";
+        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![BuiltinEntity {
+                value: "10 dollars".to_string(),
+                range: 5..15,
+                entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                    value: 10.,
+                    precision: Precision::Exact,
+                    unit: Some("dollars".to_string()),
+                }),
+                entity_kind: BuiltinEntityKind::AmountOfMoney,
+            }],
+        )]);
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![CustomEntity {
+                value: "dummy c".to_string(),
+                resolved_value: "dummy c".to_string(),
+                range: 27..34,
+                entity_identifier: "dummy_entity_2".to_string(),
+            }],
+        )]);
+        let shared_resources = SharedResourcesBuilder::default()
+            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .custom_entity_parser(mocked_custom_entity_parser)
+            .build();
+        let parser =
+            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
+                .unwrap();
+
+        // When
+        let slots = parser.get_slots(text, "dummy_intent_3").unwrap();
+
+        // Then
+        let expected_slots = vec![
+            InternalSlot {
+                value: "10 dollars".to_string(),
+                char_range: 5..15,
+                entity: "snips/amountOfMoney".to_string(),
+                slot_name: "dummy_slot_name4".to_string(),
+            },
+            InternalSlot {
+                value: "dummy c".to_string(),
+                char_range: 27..34,
+                entity: "dummy_entity_2".to_string(),
+                slot_name: "dummy_slot_name2".to_string(),
+            },
+        ];
         assert_eq!(slots, expected_slots);
     }
 

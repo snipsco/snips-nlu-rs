@@ -74,9 +74,10 @@ fn convert_to_custom_slot(slot: InternalSlot, resolved_value: String) -> Slot {
     Slot {
         raw_value: slot.value,
         value,
-        range: Some(slot.char_range),
+        range: slot.char_range,
         entity: slot.entity,
         slot_name: slot.slot_name,
+        confidence_score: None
     }
 }
 
@@ -84,9 +85,10 @@ fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slot {
     Slot {
         raw_value: slot.value,
         value: slot_value,
-        range: Some(slot.char_range),
+        range: slot.char_range,
         entity: slot.entity,
         slot_name: slot.slot_name,
+        confidence_score: None
     }
 }
 
@@ -146,9 +148,10 @@ mod tests {
                 precision: Precision::Exact,
                 unit: Some("$".to_string()),
             }),
-            range: Some(22..31),
+            range: 22..31,
             entity: "snips/amountOfMoney".to_string(),
             slot_name: "amount".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }
@@ -189,9 +192,10 @@ mod tests {
                 precision: Precision::Exact,
                 unit: Some("$".to_string()),
             }),
-            range: Some(5..14),
+            range: 5..14,
             entity: "snips/amountOfMoney".to_string(),
             slot_name: "amount".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }
@@ -237,9 +241,10 @@ mod tests {
         let expected_result = Some(Slot {
             raw_value: "subscriber".to_string(),
             value: SlotValue::Custom("Subscriber".into()),
-            range: Some(27..37),
+            range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }
@@ -280,9 +285,10 @@ mod tests {
         let expected_result = Some(Slot {
             raw_value: "subscriber".to_string(),
             value: SlotValue::Custom("Subscriber".into()),
-            range: Some(27..37),
+            range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }
@@ -315,9 +321,10 @@ mod tests {
         let expected_result = Some(Slot {
             raw_value: "subscriber".to_string(),
             value: SlotValue::Custom("subscriber".into()),
-            range: Some(27..37),
+            range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
+            confidence_score: None
         });
         assert_eq!(expected_result, resolved_slot);
     }

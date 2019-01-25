@@ -2,7 +2,6 @@ mod featurizer;
 mod log_reg_intent_classifier;
 mod logreg;
 
-use std::collections::HashSet;
 use std::fs::File;
 use std::path::Path;
 use std::sync::Arc;
@@ -20,8 +19,10 @@ pub trait IntentClassifier: Send + Sync {
     fn get_intent(
         &self,
         input: &str,
-        intents_filter: Option<&HashSet<String>>,
-    ) -> Result<Option<IntentClassifierResult>>;
+        intents_filter: Option<&[&str]>,
+    ) -> Result<IntentClassifierResult>;
+
+    fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>>;
 }
 
 pub fn build_intent_classifier<P: AsRef<Path>>(

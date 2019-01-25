@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fs::File;
 use std::iter::FromIterator;
 use std::path::Path;
@@ -13,7 +13,8 @@ use crate::resources::SharedResources;
 use crate::slot_filler::{build_slot_filler, SlotFiller};
 use crate::utils::IntentName;
 
-use super::{IntentParser, InternalParsingResult};
+use super::{IntentClassifierResult, IntentParser, InternalParsingResult};
+use crate::slot_utils::InternalSlot;
 
 pub struct ProbabilisticIntentParser {
     intent_classifier: Box<IntentClassifier>,
@@ -57,30 +58,31 @@ impl ProbabilisticIntentParser {
 }
 
 impl IntentParser for ProbabilisticIntentParser {
-    fn parse(
-        &self,
-        input: &str,
-        intents: Option<&HashSet<IntentName>>,
-    ) -> Result<Option<InternalParsingResult>> {
-        let opt_intent_result = self.intent_classifier.get_intent(input, intents)?;
-        if let Some(intent_result) = opt_intent_result {
-            let slots = self
-                .slot_fillers
-                .get(&*intent_result.intent_name)
-                .ok_or_else(|| {
-                    format_err!(
-                        "intent {} not found in slot fillers",
-                        intent_result.intent_name
-                    )
-                })?
-                .get_slots(input)?;
-            Ok(Some(InternalParsingResult {
-                intent: intent_result,
-                slots,
-            }))
+    fn parse(&self, input: &str, intents: Option<&[&str]>) -> Result<InternalParsingResult> {
+        let intent_result = self.intent_classifier.get_intent(input, intents)?;
+        let slots = if let Some(name) = intent_result.intent_name.as_ref() {
+            self.slot_fillers
+                .get(name)
+                .ok_or_else(|| SnipsNluError::UnknownIntent(name.to_string()))?
+                .get_slots(input)?
         } else {
-            Ok(None)
-        }
+            vec![]
+        };
+        Ok(InternalParsingResult {
+            intent: intent_result,
+            slots,
+        })
+    }
+
+    fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
+        self.intent_classifier.get_intents(input)
+    }
+
+    fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<InternalSlot>> {
+        self.slot_fillers
+            .get(intent)
+            .ok_or_else(|| format_err!("Unknown intent: {}", intent))
+            .and_then(|slot_filler| slot_filler.get_slots(input))
     }
 }
 
@@ -95,9 +97,7 @@ mod tests {
     fn from_path_works() {
         // Given
         let trained_engine_path = file_path("tests").join("models").join("nlu_engine");
-
         let parser_path = trained_engine_path.join("probabilistic_intent_parser");
-
         let resources = load_engine_shared_resources(trained_engine_path).unwrap();
 
         // When
@@ -107,17 +107,45 @@ mod tests {
             .unwrap();
 
         // Then
-        let expected_intent = Some("MakeCoffee");
-        let expected_slots = Some(vec![InternalSlot {
+        let expected_intent = Some("MakeCoffee".to_string());
+        let expected_slots = vec![InternalSlot {
             value: "two".to_string(),
             char_range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
-        }]);
-        assert_eq!(
-            expected_intent,
-            parsing_result.as_ref().map(|res| &*res.intent.intent_name)
-        );
-        assert_eq!(expected_slots, parsing_result.map(|res| res.slots));
+        }];
+        assert_eq!(expected_intent, parsing_result.intent.intent_name);
+        assert_eq!(expected_slots, parsing_result.slots);
+    }
+
+    #[test]
+    fn should_get_slots() {
+        // Given
+        let trained_engine_path = file_path("tests").join("models").join("nlu_engine");
+        let parser_path = trained_engine_path.join("probabilistic_intent_parser");
+        let resources = load_engine_shared_resources(trained_engine_path).unwrap();
+
+        // When
+        let intent_parser = ProbabilisticIntentParser::from_path(parser_path, resources).unwrap();
+        let slots = intent_parser
+            .get_slots("make me two hot cups of tea", "MakeTea")
+            .unwrap();
+
+        // Then
+        let expected_slots = vec![
+            InternalSlot {
+                value: "two".to_string(),
+                char_range: 8..11,
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string(),
+            },
+            InternalSlot {
+                value: "hot".to_string(),
+                char_range: 12..15,
+                entity: "Temperature".to_string(),
+                slot_name: "beverage_temperature".to_string(),
+            },
+        ];
+        assert_eq!(expected_slots, slots);
     }
 }
