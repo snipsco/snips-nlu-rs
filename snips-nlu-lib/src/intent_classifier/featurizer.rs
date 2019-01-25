@@ -1,4 +1,4 @@
-use std::cmp::{min, Ordering};
+use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::path::Path;
@@ -363,25 +363,24 @@ impl CooccurrenceVectorizer {
         filtered_tokens
             .iter()
             .enumerate()
-            .flat_map(|(i, t)| {
+            .flat_map( |(i, t)| {
                 let max_index = self.window_size.map_or(num_tokens, |window_size| {
                     min(i + window_size + 1, num_tokens)
                 });
                 filtered_tokens[i + 1..max_index]
                     .iter()
-                    .map(|other| {
+                    .map(move |other| {
                         if self.keep_order {
                             (t.clone(), other.clone())
                         } else {
-                            match t.cmp(other) {
-                                Ordering::Greater => (other.clone(), t.clone()),
-                                _ => (t.clone(), other.clone()),
+                            if t < other {
+                                (t.clone(), other.clone())
+                            } else {
+                                (other.clone(), t.clone())
                             }
                         }
                     })
-                    .collect::<Vec<WordPair>>()
             })
-            .into_iter()
             .collect()
     }
 }

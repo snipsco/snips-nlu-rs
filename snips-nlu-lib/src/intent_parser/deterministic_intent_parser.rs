@@ -370,10 +370,6 @@ mod tests {
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
         }]);
-        println!(
-            "parsing_result {:?}",
-            parsing_result.as_ref().map(|res| &*res.intent.intent_name)
-        );
         assert_eq!(
             expected_intent,
             parsing_result.as_ref().map(|res| &*res.intent.intent_name)
