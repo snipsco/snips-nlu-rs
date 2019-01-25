@@ -1,0 +1,62 @@
+{
+  "builtin_entity_scope": [
+    "snips/musicArtist",
+    "snips/musicAlbum"
+  ],
+  "config": {
+    "unit_name": "tfidf_vectorizer",
+    "use_stemming": true,
+    "word_clusters_name": null
+  },
+  "language_code": "fr",
+  "vectorizer": {
+    "idf_diag": [
+      4.697178256928631,
+      3.4932054526026954,
+      3.5985659682605218,
+      3.087740344494531,
+      4.697178256928631,
+      3.716349003916905,
+      3.3978952727983707,
+      4.697178256928631,
+      4.697178256928631,
+      3.4932054526026954,
+      3.087740344494531,
+      4.697178256928631,
+      4.186352633162641,
+      3.5985659682605218,
+      4.4094961844768505,
+      4.697178256928631,
+      4.697178256928631,
+      4.186352633162641,
+      4.697178256928631,
+      4.186352633162641,
+      1.1136593184725214,
+      3.310883895808741
+    ],
+    "vocab": {
+      "?": 0,
+      "album": 1,
+      "builtinentityfeaturesnipsmusicalbum": 2,
+      "builtinentityfeaturesnipsmusicartist": 3,
+      "chanson": 4,
+      "dans": 5,
+      "ecout": 6,
+      "entityfeatureplaylist": 7,
+      "jazz": 8,
+      "l": 9,
+      "la": 10,
+      "lanc": 11,
+      "ma": 12,
+      "mettr": 13,
+      "moi": 14,
+      "playlist": 15,
+      "please": 16,
+      "son": 17,
+      "souhait": 18,
+      "stp": 19,
+      "unknownword": 20,
+      "vouloir": 21
+    }
+  }
+}

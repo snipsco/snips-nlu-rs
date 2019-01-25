@@ -42,7 +42,7 @@ mod slot_utils;
 mod testutils;
 mod utils;
 
-pub const MODEL_VERSION: &str = "0.18.0";
+pub const MODEL_VERSION: &str = "0.19.0";
 
 pub use crate::errors::*;
 pub use crate::intent_classifier::{IntentClassifier, LogRegIntentClassifier};

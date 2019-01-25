@@ -9,18 +9,20 @@ use failure::ResultExt;
 use itertools::Itertools;
 use nlu_utils::language::Language as NluUtilsLanguage;
 use nlu_utils::range::ranges_overlap;
-use nlu_utils::string::{convert_to_char_range, substring_with_char_range, suffix_from_char_index};
+use nlu_utils::string::{convert_to_char_range, substring_with_char_range};
 use nlu_utils::token::{tokenize, tokenize_light};
 use regex::{Regex, RegexBuilder};
-use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind, Language};
+use snips_nlu_ontology::{BuiltinEntityKind, Language};
 
-use crate::entity_parser::custom_entity_parser::CustomEntity;
 use crate::errors::*;
 use crate::language::FromLanguage;
 use crate::models::DeterministicParserModel;
 use crate::resources::SharedResources;
 use crate::slot_utils::*;
-use crate::utils::{deduplicate_overlapping_items, EntityName, IntentName, SlotName};
+use crate::utils::{
+    deduplicate_overlapping_items, replace_entities, EntityName, IntentName, MatchedEntity,
+    SlotName,
+};
 
 use super::{internal_parsing_result, IntentParser, InternalParsingResult};
 
@@ -104,7 +106,8 @@ impl IntentParser for DeterministicIntentParser {
         matched_entities.extend(builtin_entities);
         matched_entities.extend(custom_entities);
 
-        let (ranges_mapping, formatted_input) = replace_entities(input, matched_entities);
+        let (ranges_mapping, formatted_input) =
+            replace_entities(input, matched_entities, get_entity_placeholder);
         let cleaned_input = self.preprocess_text(input);
         let cleaned_formatted_input = self.preprocess_text(&*formatted_input);
 
@@ -222,30 +225,6 @@ impl DeterministicIntentParser {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-struct MatchedEntity {
-    range: Range<usize>,
-    entity_name: String,
-}
-
-impl Into<MatchedEntity> for BuiltinEntity {
-    fn into(self) -> MatchedEntity {
-        MatchedEntity {
-            range: self.range,
-            entity_name: self.entity_kind.identifier().to_string(),
-        }
-    }
-}
-
-impl Into<MatchedEntity> for CustomEntity {
-    fn into(self) -> MatchedEntity {
-        MatchedEntity {
-            range: self.range,
-            entity_name: self.entity_identifier,
-        }
-    }
-}
-
 fn compile_regexes_per_intent(
     patterns: HashMap<IntentName, Vec<String>>,
 ) -> Result<HashMap<IntentName, Vec<Regex>>> {
@@ -277,53 +256,6 @@ fn deduplicate_overlapping_slots(
     let mut deduped = deduplicate_overlapping_items(slots, slots_overlap, slot_sort_key);
     deduped.sort_by_key(|slot| slot.char_range.start);
     deduped
-}
-
-fn deduplicate_overlapping_entities(entities: Vec<MatchedEntity>) -> Vec<MatchedEntity> {
-    let entities_overlap = |lhs_entity: &MatchedEntity, rhs_entity: &MatchedEntity| {
-        ranges_overlap(&lhs_entity.range, &rhs_entity.range)
-    };
-    let entity_sort_key = |entity: &MatchedEntity| -(entity.range.clone().count() as i32);
-    let mut deduped = deduplicate_overlapping_items(entities, entities_overlap, entity_sort_key);
-    deduped.sort_by_key(|entity| entity.range.start);
-    deduped
-}
-
-fn replace_entities(
-    text: &str,
-    matched_entities: Vec<MatchedEntity>,
-) -> (HashMap<Range<usize>, Range<usize>>, String) {
-    if matched_entities.is_empty() {
-        return (HashMap::new(), text.to_string());
-    }
-
-    let mut dedup_matches = deduplicate_overlapping_entities(matched_entities);
-    dedup_matches.sort_by_key(|entity| entity.range.start);
-
-    let mut range_mapping: HashMap<Range<usize>, Range<usize>> = HashMap::new();
-    let mut processed_text = "".to_string();
-    let mut offset = 0;
-    let mut current_ix = 0;
-
-    for matched_entity in dedup_matches {
-        let range_start = (matched_entity.range.start as i16 + offset) as usize;
-        let prefix_text =
-            substring_with_char_range(text.to_string(), &(current_ix..matched_entity.range.start));
-        let entity_text = get_entity_placeholder(&*matched_entity.entity_name);
-        processed_text = format!("{}{}{}", processed_text, prefix_text, entity_text);
-        offset += entity_text.chars().count() as i16 - matched_entity.range.clone().count() as i16;
-        let range_end = (matched_entity.range.end as i16 + offset) as usize;
-        let new_range = range_start..range_end;
-        current_ix = matched_entity.range.end;
-        range_mapping.insert(new_range, matched_entity.range);
-    }
-
-    processed_text = format!(
-        "{}{}",
-        processed_text,
-        suffix_from_char_index(text.to_string(), current_ix)
-    );
-    (range_mapping, processed_text)
 }
 
 fn get_entity_placeholder(entity_label: &str) -> String {
@@ -359,6 +291,7 @@ mod tests {
 
     use snips_nlu_ontology::*;
 
+    use crate::entity_parser::custom_entity_parser::CustomEntity;
     use crate::models::{DeterministicParserConfig, DeterministicParserModel};
     use crate::resources::loading::load_engine_shared_resources;
     use crate::slot_utils::InternalSlot;
@@ -427,15 +360,13 @@ mod tests {
             DeterministicIntentParser::from_path(parser_path, shared_resources).unwrap();
 
         // When
-        let parsing_result = intent_parser
-            .parse("make me two cups of coffee", None)
-            .unwrap();
+        let parsing_result = intent_parser.parse("make two cup of coffee", None).unwrap();
 
         // Then
         let expected_intent = Some("MakeCoffee");
         let expected_slots = Some(vec![InternalSlot {
             value: "two".to_string(),
-            char_range: 8..11,
+            char_range: 5..8,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
         }]);
@@ -811,7 +742,8 @@ mod tests {
         ];
 
         // When
-        let (range_mapping, formatted_text) = replace_entities(text, entities);
+        let (range_mapping, formatted_text) =
+            replace_entities(text, entities, get_entity_placeholder);
 
         // Then
         let expected_mapping = HashMap::from_iter(vec![(0..14, 0..9), (24..42, 19..28)]);
