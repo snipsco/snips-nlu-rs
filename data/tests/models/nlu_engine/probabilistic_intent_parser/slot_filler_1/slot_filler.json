@@ -153,7 +153,7 @@
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "model0Q1LiB.crfsuite",
+  "crf_model_file": "modelGnIqP6.crfsuite",
   "intent": "MakeTea",
   "language_code": "en",
   "slot_name_mapping": {

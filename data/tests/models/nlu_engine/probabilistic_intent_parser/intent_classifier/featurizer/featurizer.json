@@ -3,8 +3,9 @@
     "added_cooccurrence_feature_ratio": 0.0,
     "cooccurrence_vectorizer_config": {
       "filter_stop_words": true,
+      "keep_order": true,
       "unit_name": "cooccurrence_vectorizer",
-      "unknown_words_replacement_string": "unknownword",
+      "unknown_words_replacement_string": null,
       "window_size": null
     },
     "pvalue_threshold": 0.4,

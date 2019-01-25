@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "Temperature": {
+      "automatically_extensible": true,
+      "use_synonyms": true,
+      "data": [],
+      "matching_strictness": 1.0
+    },
+    "snips/number": {}
+  },
+  "intents": {
+    "MakeCoffee": {
+      "utterances": [
+        {
+          "data": [
+            {
+              "text": "make me "
+            },
+            {
+              "text": "one",
+              "entity": "snips/number",
+              "slot_name": "number_of_cups"
+            },
+            {
+              "text": " cup of coffee please"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "brew "
+            },
+            {
+              "text": "three hundred and four",
+              "entity": "snips/number",
+              "slot_name": "number_of_cups"
+            },
+            {
+              "text": " cups of coffee"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "can you prepare "
+            },
+            {
+              "text": "2001",
+              "entity": "snips/number",
+              "slot_name": "number_of_cups"
+            },
+            {
+              "text": " cup of coffee"
+            }
+          ]
+        }
+      ]
+    },
+    "MakeTea": {
+      "utterances": [
+        {
+          "data": [
+            {
+              "text": "make me a "
+            },
+            {
+              "text": "hot",
+              "entity": "Temperature",
+              "slot_name": "beverage_temperature"
+            },
+            {
+              "text": " cup of tea"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "make me "
+            },
+            {
+              "text": "five",
+              "entity": "snips/number",
+              "slot_name": "number_of_cups"
+            },
+            {
+              "text": " tea cups"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "i want "
+            },
+            {
+              "text": "2001",
+              "entity": "snips/number",
+              "slot_name": "number_of_cups"
+            },
+            {
+              "text": " cups of "
+            },
+            {
+              "text": "boiling hot",
+              "entity": "Temperature",
+              "slot_name": "beverage_temperature"
+            },
+            {
+              "text": " tea pls"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "can you prepare "
+            },
+            {
+              "text": "twenty one",
+              "entity": "snips/number",
+              "slot_name": "number_of_cups"
+            },
+            {
+              "text": " cup of "
+            },
+            {
+              "text": "cold",
+              "entity": "Temperature",
+              "slot_name": "beverage_temperature"
+            },
+            {
+              "text": " tea ?"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "language": "en"
+}
