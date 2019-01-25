@@ -126,6 +126,9 @@ impl IntentParser for DeterministicIntentParser {
     }
 
     fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<InternalSlot>> {
+        if !self.regexes_per_intent.contains_key(intent) {
+            return Err(SnipsNluError::UnknownIntent(intent.to_string()).into())
+        }
         let filter = vec![intent];
         self.parse(input, Some(&filter)).map(|result| result.slots)
     }

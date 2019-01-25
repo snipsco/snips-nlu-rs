@@ -63,7 +63,7 @@ impl IntentParser for ProbabilisticIntentParser {
         let slots = if let Some(name) = intent_result.intent_name.as_ref() {
             self.slot_fillers
                 .get(name)
-                .ok_or_else(|| format_err!("intent {} not found in slot fillers", name))?
+                .ok_or_else(|| SnipsNluError::UnknownIntent(name.to_string()))?
                 .get_slots(input)?
         } else {
             vec![]
