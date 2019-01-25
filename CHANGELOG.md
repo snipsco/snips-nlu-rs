@@ -2,8 +2,13 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+### Added
+- Added a an optional `CooccurrenceVectorizer` to the `Featurizer` that extracts cooccurrence features
+
 ### Changed
 - Update to Rust 2018
+- Refactored the `Featurizer` and moved its attributes to an underlying `TfidfVectorizer`
 
 ## [0.61.2] - 2019-01-17
 ### Changed
