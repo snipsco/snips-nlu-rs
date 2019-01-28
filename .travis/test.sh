@@ -10,7 +10,7 @@ fi
 
 if [ "${PYTHON_TESTS}" == "true" ]; then
     echo "Running python tests..."
-    cd snips-nlu-ffi/python
+    cd platforms/python
     python -m pip install tox
     tox || die "Python tests failed"
     cd -
@@ -19,7 +19,7 @@ fi
 if [ "${KOTLIN_TESTS}" == "true" ]; then
     echo "Running kotlin tests..."
     cargo build -p snips-nlu-ffi
-    cd snips-nlu-ffi/kotlin
+    cd platforms/kotlin
     ./gradlew -Pdebug -PrustTargetPath=../../target test --info
     cd -
 fi
@@ -27,7 +27,7 @@ fi
 if [ "${MACOS_SWIFT_TESTS}" == "true" ]; then
     echo "Running macOS swift tests..."
     cargo build -p snips-nlu-ffi
-    cd snips-nlu-ffi/swift
+    cd platforms/swift
     mkdir -p build/DerivedData
     set -o pipefail && xcodebuild \
         -IDECustomDerivedDataLocation=build/DerivedData \
@@ -45,7 +45,7 @@ if [ "${IOS_SWIFT_TESTS}" == "true" ]; then
     echo "Running iOS swift tests..."
     TARGET_SYSROOT=$(xcrun --sdk iphonesimulator --show-sdk-path) \
       cargo build -p snips-nlu-ffi --target x86_64-apple-ios
-    cd snips-nlu-ffi/swift
+    cd platforms/swift
     mkdir -p build/DerivedData
     set -o pipefail && xcodebuild \
         -IDECustomDerivedDataLocation=build/DerivedData \
