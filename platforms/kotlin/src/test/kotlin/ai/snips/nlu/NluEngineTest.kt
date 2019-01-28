@@ -17,8 +17,7 @@ class NluEngineTest {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
             it.parse("make me two cups of hot tea").apply {
                 assertThat(input).isEqualTo("make me two cups of hot tea")
-                assertThat(intent).isNotNull()
-                assertThat(intent!!.intentName).isEqualTo("MakeTea")
+                assertThat(intent.intentName!!).isEqualTo("MakeTea")
                 assertThat(slots).hasSize(2)
                 assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
             }
@@ -30,8 +29,7 @@ class NluEngineTest {
         NluEngine(File("../../data/tests/models/nlu_engine.zip").readBytes()).use {
             it.parse("make me two cups of hot tea").apply {
                 assertThat(input).isEqualTo("make me two cups of hot tea")
-                assertThat(intent).isNotNull()
-                assertThat(intent!!.intentName).isEqualTo("MakeTea")
+                assertThat(intent.intentName!!).isEqualTo("MakeTea")
                 assertThat(slots).hasSize(2)
                 assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
             }

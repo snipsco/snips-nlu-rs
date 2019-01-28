@@ -21,32 +21,28 @@ public struct NluEngineError: Error {
 
 public struct IntentParserResult {
     public let input: String
-    public let intent: IntentClassifierResult?
+    public let intent: IntentClassifierResult
     public let slots: [Slot]
 
     init(cResult: CIntentParserResult) throws {
         self.input = String(cString: cResult.input)
+        self.intent = IntentClassifierResult(cResult: cResult.intent.pointee)
 
-        if let cClassifierResult = cResult.intent?.pointee {
-            self.intent = IntentClassifierResult(cResult: cClassifierResult)
-        } else {
-            self.intent = nil
-        }
-
-        if let cSlotList = cResult.slots?.pointee {
-            self.slots = try UnsafeBufferPointer(start: cSlotList.slots, count: Int(cSlotList.size)).map(Slot.init)
-        } else {
-            self.slots = []
-        }
+        let cSlotList = cResult.slots.pointee
+        self.slots = try UnsafeBufferPointer(start: cSlotList.slots, count: Int(cSlotList.size)).map(Slot.init)
     }
 }
 
 public struct IntentClassifierResult {
-    public let intentName: String
+    public let intentName: String?
     public let probability: Float
 
     init(cResult: CIntentClassifierResult) {
-        self.intentName = String(cString: cResult.intent_name)
+        if let cIntentName = cResult.intent_name {
+            self.intentName = String(cString: cIntentName)
+        } else {
+            self.intentName = nil
+        }
         self.probability = cResult.probability
     }
 }
@@ -198,14 +194,14 @@ public struct DurationValue {
      public let precision: Precision
 
     init(cValue: CDurationValue) throws {
-        self.years = cValue.years
-        self.quarters = cValue.quarters
-        self.months = cValue.months
-        self.weeks = cValue.weeks
-        self.days = cValue.days
-        self.hours = cValue.hours
-        self.minutes = cValue.minutes
-        self.seconds = cValue.seconds
+        self.years = Int(truncatingIfNeeded: cValue.years)
+        self.quarters = Int(truncatingIfNeeded: cValue.quarters)
+        self.months = Int(truncatingIfNeeded: cValue.months)
+        self.weeks = Int(truncatingIfNeeded: cValue.weeks)
+        self.days = Int(truncatingIfNeeded: cValue.days)
+        self.hours = Int(truncatingIfNeeded: cValue.hours)
+        self.minutes = Int(truncatingIfNeeded: cValue.minutes)
+        self.seconds = Int(truncatingIfNeeded: cValue.seconds)
         self.precision = try Precision(cValue: cValue.precision)
     }
 }
@@ -254,6 +250,7 @@ public struct Slot {
     public let range: Range<Int>
     public let entity: String
     public let slotName: String
+    public let confidenceScore: Float?
 
     init(cSlot: CSlot) throws {
         self.rawValue = String(cString: cSlot.raw_value)
@@ -261,6 +258,7 @@ public struct Slot {
         self.range = Range(uncheckedBounds: (Int(cSlot.range_start), Int(cSlot.range_end)))
         self.entity = String(cString: cSlot.entity)
         self.slotName = String(cString: cSlot.slot_name)
+        self.confidenceScore = cSlot.confidence_score >= 0 ? cSlot.confidence_score : nil
     }
 }
 
@@ -285,9 +283,11 @@ public class NluEngine {
     }
 
     public func parse(string: String) throws -> IntentParserResult {
-        var cResult: UnsafeMutablePointer<CIntentParserResult>? = nil;
+        var cResult: UnsafePointer<CIntentParserResult>? = nil;
         guard snips_nlu_engine_run_parse(self.client, string, &cResult) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
-        defer { snips_nlu_engine_destroy_result(cResult) }
+        defer {
+            snips_nlu_engine_destroy_result(UnsafeMutablePointer(mutating: cResult))
+        }
         guard let result = cResult?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
         return try IntentParserResult(cResult: result)
     }

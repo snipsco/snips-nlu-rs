@@ -187,6 +187,10 @@ typedef struct {
    * End index of raw value in input text
    */
   int32_t range_end;
+  /*
+   * Confidence score of the slot
+   */
+  float confidence_score;
 } CSlot;
 
 /*
@@ -363,5 +367,7 @@ SNIPS_RESULT snips_nlu_engine_run_parse(const CSnipsNluEngine *client,
 SNIPS_RESULT snips_nlu_engine_run_parse_into_json(const CSnipsNluEngine *client,
                                                   const char *input,
                                                   const char **result_json);
+
+SNIPS_RESULT snips_nlu_engine_get_last_error(char **error);
 
 #endif /* LIBSNIPS_NLU_H_ */
