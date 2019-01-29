@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 [dependencies]
 libc = "0.2"
 ffi-utils = { git = "https://github.com/snipsco/snips-utils-rs", rev = "b1f4af3" }
-snips-nlu-ffi = { git = "https://github.com/snipsco/snips-nlu-rs", branch = "develop" }
+snips-nlu-ffi = { path = "../.." }
