@@ -1,0 +1,166 @@
+{
+  "unit_name": "nlu_engine",
+  "intent_parsers_configs": [
+    {
+      "unit_name": "deterministic_intent_parser",
+      "max_pattern_length": 1000,
+      "max_queries": 100,
+      "ignore_stop_words": true
+    },
+    {
+      "unit_name": "probabilistic_intent_parser",
+      "intent_classifier_config": {
+        "data_augmentation_config": {
+          "noise_factor": 5,
+          "unknown_word_prob": 0.5,
+          "max_unknown_words": 5,
+          "add_builtin_entities_examples": true,
+          "unknown_words_replacement_string": "unknownword",
+          "min_utterances": 20
+        },
+        "unit_name": "log_reg_intent_classifier",
+        "featurizer_config": {
+          "cooccurrence_vectorizer_config": {
+            "window_size": 5,
+            "unit_name": "cooccurrence_vectorizer",
+            "filter_stop_words": true,
+            "unknown_words_replacement_string": "unknownword",
+            "keep_order": true
+          },
+          "unit_name": "featurizer",
+          "added_cooccurrence_feature_ratio": 0.25,
+          "tfidf_vectorizer_config": {
+            "unit_name": "tfidf_vectorizer",
+            "use_stemming": false,
+            "word_clusters_name": null
+          },
+          "pvalue_threshold": 0.4
+        },
+        "random_seed": null
+      },
+      "slot_filler_config": {
+        "unit_name": "crf_slot_filler",
+        "random_seed": null,
+        "tagging_scheme": 1,
+        "data_augmentation_config": {
+          "capitalization_ratio": 0.2,
+          "min_utterances": 200,
+          "add_builtin_entities_examples": true
+        },
+        "crf_args": {
+          "c2": 0.1,
+          "c1": 0.1,
+          "algorithm": "lbfgs"
+        },
+        "feature_factory_configs": [
+          {
+            "args": {
+              "common_words_gazetteer_name": "top_10000_words_stemmed",
+              "use_stemming": true,
+              "n": 1
+            },
+            "factory_name": "ngram",
+            "offsets": [
+              -2,
+              -1,
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "args": {
+              "common_words_gazetteer_name": "top_10000_words_stemmed",
+              "use_stemming": true,
+              "n": 2
+            },
+            "factory_name": "ngram",
+            "offsets": [
+              -2,
+              1
+            ]
+          },
+          {
+            "args": {},
+            "factory_name": "is_digit",
+            "offsets": [
+              -1,
+              0,
+              1
+            ]
+          },
+          {
+            "args": {},
+            "factory_name": "is_first",
+            "offsets": [
+              -2,
+              -1,
+              0
+            ]
+          },
+          {
+            "args": {},
+            "factory_name": "is_last",
+            "offsets": [
+              0,
+              1,
+              2
+            ]
+          },
+          {
+            "args": {
+              "n": 1
+            },
+            "factory_name": "shape_ngram",
+            "offsets": [
+              0
+            ]
+          },
+          {
+            "args": {
+              "n": 2
+            },
+            "factory_name": "shape_ngram",
+            "offsets": [
+              -1,
+              0
+            ]
+          },
+          {
+            "args": {
+              "n": 3
+            },
+            "factory_name": "shape_ngram",
+            "offsets": [
+              -1
+            ]
+          },
+          {
+            "args": {
+              "tagging_scheme_code": 2,
+              "use_stemming": true
+            },
+            "factory_name": "entity_match",
+            "drop_out": 0.5,
+            "offsets": [
+              -2,
+              -1,
+              0
+            ]
+          },
+          {
+            "args": {
+              "tagging_scheme_code": 1
+            },
+            "factory_name": "builtin_entity_match",
+            "offsets": [
+              -2,
+              -1,
+              0
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
