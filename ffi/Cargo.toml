@@ -1,0 +1,22 @@
+[package]
+name = "snips-nlu-ffi"
+version = "0.63.0-SNAPSHOT"
+edition = "2018"
+authors = [
+    "Adrien Ball <adrien.ball@snips.ai>",
+    "Clement Doumouro <clement.doumouro@snips.ai>",
+    "Kevin Lefevre <kevin.lefevre@snips.ai>",
+    "Thibaut Lorrain <thibaut.lorrain@snips.ai>"
+]
+
+[dependencies]
+ffi-utils = { git = "https://github.com/snipsco/snips-utils-rs", rev = "4292ad9" }
+snips-nlu-lib = { path = ".." }
+snips-nlu-ontology-ffi-macros = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.63.1" }
+failure = "0.1"
+lazy_static = "1.0"
+libc = "0.2"
+serde_json = "1.0"
+
+[lib]
+crate-type = ["rlib", "staticlib", "cdylib"]

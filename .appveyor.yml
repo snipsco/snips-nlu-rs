@@ -15,10 +15,15 @@ install:
   - if defined MSYS2_BITS set PATH=%PATH%;C:\msys64\mingw%MSYS2_BITS%\bin
   - rustc -V
   - cargo -V
-  - ps: (Get-Content snips-nlu-ffi/python/snips-nlu-python-ffi/Cargo.toml) | ForEach-Object { $_ -replace "^snips-nlu-ffi = .*$", "snips-nlu-ffi = { path = `"../..`" }" } | Set-Content snips-nlu-ffi/python/snips-nlu-python-ffi/Cargo.toml
+  - ps: (Get-Content platforms/python/ffi/Cargo.toml) | ForEach-Object { $_ -replace "^snips-nlu-ffi = .*$", "snips-nlu-ffi = { path = `"../../../ffi`" }" } | Set-Content platforms/python/ffi/Cargo.toml
 
 build: false
 
 test_script:
   - cargo build --all --tests --benches
   - cargo test --all
+
+cache:
+- target
+- platforms\python\ffi\target
+- C:\Users\appveyor\.cargo\registry
