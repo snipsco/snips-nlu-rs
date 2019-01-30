@@ -26,5 +26,5 @@ pub use crate::resources::loading::load_shared_resources;
 pub use crate::resources::SharedResources;
 pub use crate::slot_filler::{CRFSlotFiller, SlotFiller};
 
-pub use snips_nlu_utils::token::{compute_all_ngrams, tokenize_light};
 pub use snips_nlu_ontology::Language;
+pub use snips_nlu_utils::token::{compute_all_ngrams, tokenize_light};

@@ -1,5 +1,5 @@
-use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_ontology::Language;
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
 
 pub trait FromLanguage {
     fn from_language(l: Language) -> Self;

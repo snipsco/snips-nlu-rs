@@ -8,10 +8,10 @@ use std::sync::Arc;
 use failure::{format_err, ResultExt};
 use itertools::Itertools;
 use ndarray::prelude::*;
+use snips_nlu_ontology::{BuiltinEntityKind, Language};
 use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_utils::string::normalize;
 use snips_nlu_utils::token::{compute_all_ngrams, tokenize_light};
-use snips_nlu_ontology::{BuiltinEntityKind, Language};
 
 use crate::errors::*;
 use crate::language::FromLanguage;
@@ -353,7 +353,8 @@ impl CooccurrenceVectorizer {
     }
 
     fn extract_word_pairs(&self, tokens: Vec<String>) -> HashSet<WordPair> {
-        let filtered_tokens: Vec<String> = tokens.into_iter()
+        let filtered_tokens: Vec<String> = tokens
+            .into_iter()
             .filter(|t| {
                 !(self.filter_stop_words && self.shared_resources.stop_words.contains(t))
                     && Some(t) != self.unknown_words_replacement_string.as_ref()
@@ -363,23 +364,21 @@ impl CooccurrenceVectorizer {
         filtered_tokens
             .iter()
             .enumerate()
-            .flat_map( |(i, t)| {
+            .flat_map(|(i, t)| {
                 let max_index = self.window_size.map_or(num_tokens, |window_size| {
                     min(i + window_size + 1, num_tokens)
                 });
-                filtered_tokens[i + 1..max_index]
-                    .iter()
-                    .map(move |other| {
-                        if self.keep_order {
+                filtered_tokens[i + 1..max_index].iter().map(move |other| {
+                    if self.keep_order {
+                        (t.clone(), other.clone())
+                    } else {
+                        if t < other {
                             (t.clone(), other.clone())
                         } else {
-                            if t < other {
-                                (t.clone(), other.clone())
-                            } else {
-                                (other.clone(), t.clone())
-                            }
+                            (other.clone(), t.clone())
                         }
-                    })
+                    }
+                })
             })
             .collect()
     }
@@ -421,10 +420,10 @@ mod tests {
 
     use maplit::{hashmap, hashset};
     use ndarray::array;
-    use snips_nlu_utils::language::Language;
-    use snips_nlu_utils::token::tokenize_light;
     use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind};
     use snips_nlu_ontology::{NumberValue, SlotValue};
+    use snips_nlu_utils::language::Language;
+    use snips_nlu_utils::token::tokenize_light;
 
     use crate::entity_parser::custom_entity_parser::CustomEntity;
     use crate::models::{
@@ -826,7 +825,7 @@ mod tests {
             "a".to_string(),
             "c".to_string(),
             "b".to_string(),
-            "d".to_string()
+            "d".to_string(),
         ];
 
         // When
@@ -882,7 +881,12 @@ mod tests {
 
         let vectorizer = CooccurrenceVectorizer::new(model, resources).unwrap();
 
-        let tokens = vec!["a".to_string(), "c".to_string(), "b".to_string(), "d".to_string()];
+        let tokens = vec![
+            "a".to_string(),
+            "c".to_string(),
+            "b".to_string(),
+            "d".to_string(),
+        ];
 
         // When
         let pairs = vectorizer.extract_word_pairs(tokens);

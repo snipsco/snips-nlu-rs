@@ -8,12 +8,12 @@ use std::sync::Arc;
 use failure::ResultExt;
 use itertools::Itertools;
 use log::info;
-use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_ontology::{BuiltinGazetteerEntityKind, GrammarEntityKind};
 use snips_nlu_parsers::gazetteer_entity_parser::{
     EntityValue as GazetteerEntityValue, Parser as GazetteerEntityParser,
 };
 use snips_nlu_parsers::{BuiltinParserMetadata, GazetteerParserMetadata};
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_utils::token::tokenize_light;
 
 use crate::entity_parser::custom_entity_parser::CustomEntityParserMetadata;

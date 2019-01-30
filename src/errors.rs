@@ -9,7 +9,7 @@ pub enum SnipsNluError {
     #[fail(display = "Unknown intent: '{}'", _0)]
     UnknownIntent(String),
     #[fail(display = "Internal error: {}", _0)]
-    InternalError(String)
+    InternalError(String),
 }
 
 pub type Result<T> = ::std::result::Result<T, ::failure::Error>;

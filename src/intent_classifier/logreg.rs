@@ -73,8 +73,8 @@ fn logit(x: f32) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::MulticlassLogisticRegression;
-    use ndarray::array;
     use crate::testutils::assert_epsilon_eq_array1;
+    use ndarray::array;
 
     #[test]
     fn multiclass_logistic_regression_works() {
