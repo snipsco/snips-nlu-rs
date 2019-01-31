@@ -42,7 +42,7 @@ fn nlu_parsing(b: &mut Bencher) {
         .unwrap();
 
     b.iter(|| {
-        let _ = nlu_engine.parse(&sentence, None);
+        let _ = nlu_engine.parse(&sentence, None, None);
     });
 }
 

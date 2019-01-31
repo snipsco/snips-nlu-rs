@@ -6,6 +6,7 @@ source .travis/common.sh
 if [ "${RUST_TESTS}" == "true" ]; then
     echo "Running rust tests..."
     cargo test --all || die "Rust tests failed"
+    cargo check --benches || die
 fi
 
 if [ "${PYTHON_TESTS}" == "true" ]; then
