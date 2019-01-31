@@ -2,12 +2,12 @@
 set -ev
 
 # Install Rust
-if [ -z ${TRAVIS_RUST_VERSION+w} ]; then
+if [[ -z ${TRAVIS_RUST_VERSION+w} ]]; then
   curl https://sh.rustup.rs -sSf | bash -s -- -y
 fi
 
-if [ $TRAVIS_OS_NAME == "osx" ]; then
-  if [ $PYTHON_TESTS == true ]; then
+if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
+  if [[ ${PYTHON_TESTS} == true ]]; then
     # install pyenv
     git clone --depth 1 https://github.com/pyenv/pyenv ~/.pyenv
     PYENV_ROOT="$HOME/.pyenv"
@@ -34,7 +34,7 @@ if [ $TRAVIS_OS_NAME == "osx" ]; then
     python --version
   fi
 
-  if [ "${IOS_SWIFT_TESTS}" == "true" ]; then
+  if [[ "${IOS_SWIFT_TESTS}" == "true" ]]; then
     PATH="$HOME/.cargo/bin:$PATH"
     rustup target install x86_64-apple-ios
   fi
