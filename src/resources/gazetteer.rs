@@ -45,7 +45,7 @@ mod tests {
     use super::{Gazetteer, HashSetGazetteer};
 
     #[test]
-    fn hashset_gazetteer_works() {
+    fn test_hashset_gazetteer() {
         // Given
         let gazetteer: &[u8] = r#"
 dog

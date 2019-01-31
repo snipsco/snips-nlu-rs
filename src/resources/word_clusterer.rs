@@ -56,7 +56,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn hashmap_word_clusterer_works() {
+    fn test_hashmap_word_clusterer() {
         // Given
         let clusters: &[u8] = r#"
 hello	1111111111111

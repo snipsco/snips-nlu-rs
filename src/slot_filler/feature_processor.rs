@@ -116,7 +116,7 @@ mod tests {
     use snips_nlu_utils::token::tokenize;
 
     #[test]
-    fn compute_features_works() {
+    fn test_compute_features() {
         // Given
         let language = Language::EN;
         let fp = ProbabilisticFeatureProcessor {
@@ -155,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn offset_works() {
+    fn test_offset() {
         // Given
         let language = Language::EN;
         let fp = ProbabilisticFeatureProcessor {

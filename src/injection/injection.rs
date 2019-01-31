@@ -449,7 +449,7 @@ mod tests {
     }
 
     #[test]
-    fn test_should_inject() {
+    fn test_injection() {
         let path = Path::new("data")
             .join("tests")
             .join("models")

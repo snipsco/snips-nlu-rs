@@ -16,7 +16,7 @@ mod tests {
     use serde_json;
 
     #[test]
-    fn deserialize_works() {
+    fn test_deserialize() {
         let data = r#"{
                         "unit_name": "crf_slot_filler"
                       }"#;

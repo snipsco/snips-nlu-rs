@@ -176,7 +176,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_compute_char_shifts() {
+    fn test_compute_char_shifts() {
         // Given
         let tokens = vec![
             Token::new("hello".to_string(), 0..5, 0..5),
@@ -192,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn custom_entity_parser_should_handle_char_shifts() {
+    fn test_custom_entity_parser_handles_char_shifts() {
         // Given
         let parser_path = Path::new("data")
             .join("tests")

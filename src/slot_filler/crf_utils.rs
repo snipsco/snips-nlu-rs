@@ -944,7 +944,7 @@ mod tests {
     }
 
     #[test]
-    fn get_scheme_prefix_works() {
+    fn tests_get_scheme_prefix() {
         // Given
         let indexes = vec![3, 4, 5];
 

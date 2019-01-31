@@ -104,7 +104,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_resolve_builtin_slot() {
+    fn test_resolve_builtin_slot() {
         // Given
         let internal_slot = InternalSlot {
             value: "8 dollars".to_string(),
@@ -157,7 +157,7 @@ mod tests {
     }
 
     #[test]
-    fn should_resolve_builtin_slot_when_no_entities_found_on_whole_input() {
+    fn test_resolve_builtin_slot_when_no_entities_found_on_whole_input() {
         // Given
         let internal_slot = InternalSlot {
             value: "5 dollars".to_string(),
@@ -201,7 +201,7 @@ mod tests {
     }
 
     #[test]
-    fn should_resolve_custom_slot() {
+    fn test_resolve_custom_slot() {
         // Given
         let entity = Entity {
             automatically_extensible: false,
@@ -250,7 +250,7 @@ mod tests {
     }
 
     #[test]
-    fn should_resolve_custom_slot_when_no_entities_found_on_whole_input() {
+    fn test_resolve_custom_slot_when_no_entities_found_on_whole_input() {
         // Given
         let entity = Entity {
             automatically_extensible: false,
@@ -294,7 +294,7 @@ mod tests {
     }
 
     #[test]
-    fn should_resolve_custom_slot_when_automatically_extensible() {
+    fn test_resolve_custom_slot_when_automatically_extensible() {
         // Given
         let entity = Entity {
             automatically_extensible: true,
@@ -330,7 +330,7 @@ mod tests {
     }
 
     #[test]
-    fn should_not_resolve_custom_slot_when_not_automatically_extensible() {
+    fn test_do_not_resolve_custom_slot_when_not_automatically_extensible() {
         // Given
         let entity = Entity {
             automatically_extensible: false,

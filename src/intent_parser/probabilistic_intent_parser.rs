@@ -93,7 +93,7 @@ mod tests {
     use crate::slot_utils::InternalSlot;
 
     #[test]
-    fn from_path_works() {
+    fn test_parse() {
         // Given
         let trained_engine_path = Path::new("data")
             .join("tests")
@@ -121,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn should_get_slots() {
+    fn test_get_slots() {
         // Given
         let trained_engine_path = Path::new("data")
             .join("tests")

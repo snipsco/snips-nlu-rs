@@ -436,7 +436,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn transform_works() {
+    fn test_transform() {
         // Given
         let mocked_custom_parser = MockedCustomEntityParser::from_iter(vec![(
             "hello this bird is a beauti bird with 22 wings".to_string(),
@@ -565,7 +565,7 @@ mod tests {
     }
 
     #[test]
-    fn transform_works_with_cooccurrence() {
+    fn test_transform_with_cooccurrence() {
         // Given
         let mocked_custom_parser = MockedCustomEntityParser::from_iter(vec![
             (
@@ -757,7 +757,7 @@ mod tests {
     }
 
     #[test]
-    fn get_word_cluster_features_works() {
+    fn test_get_word_cluster_features() {
         // Given
         let language = Language::EN;
         let query_tokens = tokenize_light("I, love House, muSic", language);
@@ -777,7 +777,7 @@ mod tests {
     }
 
     #[test]
-    fn extract_word_pairs_works() {
+    fn test_extract_word_pairs() {
         // Given
         let mocked_custom_parser = MockedCustomEntityParser {
             mocked_outputs: hashmap!(),
@@ -837,7 +837,7 @@ mod tests {
     }
 
     #[test]
-    fn extract_word_pairs_unordered_works() {
+    fn test_extract_word_pairs_unordered() {
         // Given
         let mocked_custom_parser = MockedCustomEntityParser {
             mocked_outputs: hashmap!(),

@@ -336,7 +336,7 @@ mod tests {
     }
 
     #[test]
-    fn from_path_works() {
+    fn test_load_from_path() {
         // Given
         let trained_engine_dir = Path::new("data")
             .join("tests")
@@ -363,7 +363,7 @@ mod tests {
     }
 
     #[test]
-    fn get_intent_works() {
+    fn test_get_intent() {
         // Given
         let classifier = get_sample_log_reg_classifier();
 
@@ -380,7 +380,7 @@ mod tests {
     }
 
     #[test]
-    fn get_intents_works() {
+    fn test_get_intents() {
         // Given
         let classifier = get_sample_log_reg_classifier();
 
@@ -400,7 +400,7 @@ mod tests {
     }
 
     #[test]
-    fn should_filter_intents() {
+    fn test_filter_intents() {
         // Given
         let classifier = get_sample_log_reg_classifier();
 
@@ -430,7 +430,7 @@ mod tests {
     }
 
     #[test]
-    fn should_get_filtered_out_intents_indexes() {
+    fn test_get_filtered_out_intents_indexes() {
         // Given
         let intents_list = vec![
             Some("intent1".to_string()),

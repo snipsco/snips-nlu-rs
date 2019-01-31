@@ -57,7 +57,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn hashmap_stemmer_works() {
+    fn test_hashmap_stemmer() {
         // Given
         let stems: &[u8] = r#"
 investigate,investigated,investigation,"investigate

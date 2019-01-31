@@ -191,7 +191,7 @@ mod tests {
     use std::ops::Range;
 
     #[test]
-    fn product_works() {
+    fn test_product() {
         // Given
         let pool: Vec<Vec<i32>> = repeat_n(0..2, 3)
             .map(|range| range.collect())

@@ -77,7 +77,7 @@ mod tests {
     use ndarray::array;
 
     #[test]
-    fn multiclass_logistic_regression_works() {
+    fn test_multiclass_logistic_regression() {
         // Given
         let intercept = array![0.98, 0.32, -0.76];
         let weights = array![
@@ -99,7 +99,7 @@ mod tests {
     }
 
     #[test]
-    fn multiclass_logistic_regression_works_when_binary() {
+    fn test_multiclass_logistic_regression_when_binary() {
         // Given
         let intercept = array![0.98];
         let weights = array![[2.5], [1.2], [1.5], [-0.9]];
@@ -116,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn multiclass_logistic_regression_works_with_filtered_out_indexes() {
+    fn test_multiclass_logistic_regression_with_filtered_out_indexes() {
         // Given
         let intercept = array![0.98, 0.32, -0.76];
         let weights = array![
