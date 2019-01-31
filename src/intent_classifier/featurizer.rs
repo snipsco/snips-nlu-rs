@@ -339,9 +339,9 @@ impl CooccurrenceVectorizer {
 
         let mut features: Vec<f32> = vec![0.; self.word_pairs.len()];
         for pair in self.extract_word_pairs(tokens) {
-            self.word_pairs.get(&pair).map(|pair_index| {
+            if let Some(pair_index) = self.word_pairs.get(&pair) {
                 features[*pair_index] = 1.0;
-            });
+            }
         }
         Ok(features)
     }
@@ -369,14 +369,10 @@ impl CooccurrenceVectorizer {
                     min(i + window_size + 1, num_tokens)
                 });
                 filtered_tokens[i + 1..max_index].iter().map(move |other| {
-                    if self.keep_order {
+                    if self.keep_order || t < other {
                         (t.clone(), other.clone())
                     } else {
-                        if t < other {
-                            (t.clone(), other.clone())
-                        } else {
-                            (other.clone(), t.clone())
-                        }
+                        (other.clone(), t.clone())
                     }
                 })
             })

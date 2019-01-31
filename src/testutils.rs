@@ -86,7 +86,7 @@ impl BuiltinEntityParser for MockedBuiltinEntityParser {
         _filter_entity_kinds: Option<&[BuiltinEntityKind]>,
         _use_cache: bool,
     ) -> Result<Vec<BuiltinEntity>> {
-        Ok(self.mocked_outputs.get(sentence).cloned().unwrap_or(vec![]))
+        Ok(self.mocked_outputs.get(sentence).cloned().unwrap_or_else(|| vec![]))
     }
 }
 
@@ -109,7 +109,7 @@ impl CustomEntityParser for MockedCustomEntityParser {
         sentence: &str,
         _filter_entity_kinds: Option<&[String]>,
     ) -> Result<Vec<CustomEntity>> {
-        Ok(self.mocked_outputs.get(sentence).cloned().unwrap_or(vec![]))
+        Ok(self.mocked_outputs.get(sentence).cloned().unwrap_or_else(|| vec![]))
     }
 }
 

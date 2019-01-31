@@ -1,3 +1,5 @@
+#![allow(clippy::unreadable_literal, clippy::excessive_precision, clippy::module_inception)]
+
 mod entity_parser;
 pub mod errors;
 pub mod injection;

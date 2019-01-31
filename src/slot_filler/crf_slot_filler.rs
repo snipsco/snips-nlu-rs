@@ -455,7 +455,7 @@ mod tests {
                 .iter()
                 .find_position(|t| **t == tags)
                 .map(|(i, _)| self.tags_probabilities[i])
-                .ok_or(TestError::UnknownTags(tags).into())
+                .ok_or_else(|| TestError::UnknownTags(tags).into())
         }
     }
 

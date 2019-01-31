@@ -112,7 +112,7 @@ impl LogRegIntentClassifier {
         }
 
         let opt_intents_set: Option<HashSet<&str>> = intents_filter
-            .map(|intent_list| HashSet::from_iter(intent_list.into_iter().map(|i| *i)));
+            .map(|intent_list| HashSet::from_iter(intent_list.iter().cloned()));
 
         let featurizer = self.featurizer.as_ref().unwrap(); // Checked above
         let logreg = self.logreg.as_ref().unwrap(); // Checked above

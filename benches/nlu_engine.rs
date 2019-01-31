@@ -1,3 +1,5 @@
+#![allow(clippy::never_loop)]
+
 #[macro_use]
 extern crate bencher;
 extern crate dinghy_test;

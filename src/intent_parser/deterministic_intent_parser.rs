@@ -142,7 +142,7 @@ impl DeterministicIntentParser {
         intents: Option<&[&str]>,
     ) -> Result<Vec<InternalParsingResult>> {
         let opt_intents_set: Option<HashSet<&str>> =
-            intents.map(|intent_list| intent_list.iter().map(|i| *i).collect());
+            intents.map(|intent_list| intent_list.iter().cloned().collect());
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
@@ -342,6 +342,8 @@ fn get_range_shift(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::float_cmp)]
+
     use std::collections::HashMap;
     use std::iter::FromIterator;
     use std::sync::Arc;

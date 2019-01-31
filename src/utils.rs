@@ -194,7 +194,7 @@ mod tests {
     fn product_works() {
         // Given
         let pool: Vec<Vec<i32>> = repeat_n(0..2, 3)
-            .map(|range| range.into_iter().collect())
+            .map(|range| range.collect())
             .collect();
 
         let ref_pool: Vec<&[i32]> = pool.iter().map(|v| &v[..]).collect();

@@ -75,6 +75,7 @@ impl<P: AsRef<Path>> NluInjector<P> {
         self
     }
 
+    #[allow(clippy::wrong_self_convention)]
     pub fn from_vanilla(mut self, from_vanilla: bool) -> Self {
         self.from_vanilla = from_vanilla;
         self
@@ -126,7 +127,7 @@ impl<P: AsRef<Path>> NluInjector<P> {
                         normalize_entity_values,
                         &engine_info,
                         &custom_parser_info,
-                        &maybe_stemmer,
+                        maybe_stemmer,
                     )?;
                     Ok((entity, stemmed_entity_values))
                 } else {
@@ -381,7 +382,7 @@ fn stem_entity_value(
     entity_values: Vec<GazetteerEntityValue>,
     engine_info: &NluEngineInfo,
     custom_entity_parser_info: &CustomGazetteerParserInfo,
-    maybe_stemmer: &Option<&Arc<Stemmer>>,
+    maybe_stemmer: Option<&Arc<Stemmer>>,
 ) -> Result<Vec<GazetteerEntityValue>, NluInjectionError> {
     let stemmed_entity_values = match custom_entity_parser_info.parser_usage {
         CustomEntityParserUsage::WithoutStems => vec![],
@@ -439,13 +440,11 @@ mod tests {
 
     impl<'a> Stemmer for MockedStemmer<'a> {
         fn stem(&self, value: &str) -> String {
-            let stemmed = self
-                .values
+            self.values
                 .get(value)
-                .map(|stemmed_value| *stemmed_value)
+                .cloned()
                 .unwrap_or(value)
-                .to_string();
-            stemmed
+                .to_string()
         }
     }
 
