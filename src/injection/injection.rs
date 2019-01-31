@@ -482,7 +482,7 @@ mod tests {
             SnipsNluEngine::from_path_with_resources(&engine_dir, mocked_resources.clone())
                 .unwrap();
         let parsing = nlu_engine
-            .parse("je souhaiterais écouter l'album thisisthebestalbum", None)
+            .parse("je souhaiterais écouter l'album thisisthebestalbum", None, None)
             .unwrap();
         assert_eq!(
             parsing.intent.intent_name,
@@ -490,7 +490,7 @@ mod tests {
         );
         assert_eq!(parsing.slots, vec![]);
         let parsing = nlu_engine
-            .parse("je voudrais ecouter ma playlist funk", None)
+            .parse("je voudrais ecouter ma playlist funk", None, None)
             .unwrap();
         assert_eq!(
             parsing.intent.intent_name,
@@ -536,7 +536,7 @@ mod tests {
 
         // Behavior after injection
         let parsing = nlu_engine
-            .parse("je souhaiterais écouter l'album thisisthebestalbum", None)
+            .parse("je souhaiterais écouter l'album thisisthebestalbum", None, None)
             .unwrap();
         assert_eq!(
             parsing.intent.intent_name,
@@ -553,7 +553,7 @@ mod tests {
         assert_eq!(parsing.slots, ground_true_slots);
 
         let parsing = nlu_engine
-            .parse("je voudrais ecouter ma playlist funk", None)
+            .parse("je voudrais ecouter ma playlist funk", None, None)
             .unwrap();
         assert_eq!(
             parsing.intent.intent_name,

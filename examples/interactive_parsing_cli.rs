@@ -41,7 +41,7 @@ fn main() {
             let result = engine.get_intents(query.trim()).unwrap();
             serde_json::to_string_pretty(&result).unwrap()
         } else {
-            let result = engine.parse(query.trim(), None).unwrap();
+            let result = engine.parse(query.trim(), None, None).unwrap();
             serde_json::to_string_pretty(&result).unwrap()
         };
         println!("{}", result_json);

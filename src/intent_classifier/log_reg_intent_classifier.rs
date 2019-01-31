@@ -69,9 +69,9 @@ impl IntentClassifier for LogRegIntentClassifier {
     fn get_intent(
         &self,
         input: &str,
-        intents_filter: Option<&[&str]>,
+        intents_whitelist: Option<&[&str]>,
     ) -> Result<IntentClassifierResult> {
-        let intents_results = self.get_intents_with_filter(input, intents_filter)?;
+        let intents_results = self.get_intents_with_whitelist(input, intents_whitelist)?;
         Ok(if intents_results.is_empty() {
             IntentClassifierResult {
                 intent_name: None,
@@ -83,15 +83,15 @@ impl IntentClassifier for LogRegIntentClassifier {
     }
 
     fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
-        self.get_intents_with_filter(input, None)
+        self.get_intents_with_whitelist(input, None)
     }
 }
 
 impl LogRegIntentClassifier {
-    fn get_intents_with_filter(
+    fn get_intents_with_whitelist(
         &self,
         input: &str,
-        intents_filter: Option<&[&str]>,
+        intents_whitelist: Option<&[&str]>,
     ) -> Result<Vec<IntentClassifierResult>> {
         if self.intent_list.len() <= 1 {
             return Ok(vec![IntentClassifierResult {
@@ -111,8 +111,8 @@ impl LogRegIntentClassifier {
                 .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap()));
         }
 
-        let opt_intents_set: Option<HashSet<&str>> = intents_filter
-            .map(|intent_list| HashSet::from_iter(intent_list.iter().cloned()));
+        let opt_intents_set: Option<HashSet<&str>> =
+            intents_whitelist.map(|intent_list| HashSet::from_iter(intent_list.iter().cloned()));
 
         let featurizer = self.featurizer.as_ref().unwrap(); // Checked above
         let logreg = self.logreg.as_ref().unwrap(); // Checked above

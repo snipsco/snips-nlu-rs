@@ -19,7 +19,7 @@ pub trait IntentClassifier: Send + Sync {
     fn get_intent(
         &self,
         input: &str,
-        intents_filter: Option<&[&str]>,
+        intents_whitelist: Option<&[&str]>,
     ) -> Result<IntentClassifierResult>;
 
     fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>>;

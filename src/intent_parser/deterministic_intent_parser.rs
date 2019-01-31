@@ -83,9 +83,13 @@ impl DeterministicIntentParser {
 }
 
 impl IntentParser for DeterministicIntentParser {
-    fn parse(&self, input: &str, intents: Option<&[&str]>) -> Result<InternalParsingResult> {
+    fn parse(
+        &self,
+        input: &str,
+        intents_whitelist: Option<&[&str]>,
+    ) -> Result<InternalParsingResult> {
         Ok(self
-            .parse_top_intents(input, 1, intents)?
+            .parse_top_intents(input, 1, intents_whitelist)?
             .into_iter()
             .next()
             .unwrap_or_else(|| InternalParsingResult {

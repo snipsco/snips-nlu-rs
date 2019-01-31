@@ -133,11 +133,22 @@ impl SnipsNluEngine {
     pub fn parse(
         &self,
         input: &str,
-        intents_filter: Option<&[&str]>,
+        intents_whitelist: Option<&[&str]>,
+        intents_blacklist: Option<&[&str]>,
     ) -> Result<IntentParserResult> {
+        let reverted_whitelist: Option<Vec<&str>> = intents_blacklist.map(|blacklist| {
+            self.dataset_metadata
+                .slot_name_mappings
+                .keys()
+                .map(|intent| &**intent)
+                .filter(|intent_name| !blacklist.contains(intent_name))
+                .collect()
+        });
+        let intents_whitelist =
+            intents_whitelist.or_else(|| reverted_whitelist.as_ref().map(|l| l.as_ref()));
         let mut none_proba: f32 = 0.0;
         for parser in &self.intent_parsers {
-            let internal_parsing_result = parser.parse(input, intents_filter)?;
+            let internal_parsing_result = parser.parse(input, intents_whitelist)?;
             if internal_parsing_result.intent.intent_name.is_some() {
                 let resolved_slots = self
                     .resolve_slots(input, internal_parsing_result.slots)
@@ -369,7 +380,7 @@ mod tests {
 
         let result = nlu_engine
             .unwrap()
-            .parse("Make me two cups of coffee please", None)
+            .parse("Make me two cups of coffee please", None, None)
             .unwrap();
 
         let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
@@ -398,7 +409,7 @@ mod tests {
 
         // When
         let result = nlu_engine
-            .parse("Make me two cups of coffee please", None)
+            .parse("Make me two cups of coffee please", None, None)
             .unwrap();
 
         // Then
@@ -418,7 +429,44 @@ mod tests {
     }
 
     #[test]
-    fn get_intents_works() {
+    fn test_parse_with_whitelist_and_blacklist() {
+        // Given
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
+
+        // When
+        let whitelist_result = nlu_engine
+            .parse(
+                "Make me two cups of coffee please",
+                Some(&["MakeTea"]),
+                None,
+            )
+            .unwrap();
+
+        let blacklist_result = nlu_engine
+            .parse(
+                "Make me two cups of coffee please",
+                None,
+                Some(&["MakeCoffee"]),
+            )
+            .unwrap();
+
+        // Then
+        assert_eq!(
+            Some("MakeTea".to_string()),
+            whitelist_result.intent.intent_name
+        );
+        assert_eq!(
+            Some("MakeTea".to_string()),
+            blacklist_result.intent.intent_name
+        );
+    }
+
+    #[test]
+    fn test_get_intents() {
         // Given
         let path = Path::new("data")
             .join("tests")

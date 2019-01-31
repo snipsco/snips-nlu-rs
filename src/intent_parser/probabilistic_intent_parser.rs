@@ -58,8 +58,14 @@ impl ProbabilisticIntentParser {
 }
 
 impl IntentParser for ProbabilisticIntentParser {
-    fn parse(&self, input: &str, intents: Option<&[&str]>) -> Result<InternalParsingResult> {
-        let intent_result = self.intent_classifier.get_intent(input, intents)?;
+    fn parse(
+        &self,
+        input: &str,
+        intents_whitelist: Option<&[&str]>,
+    ) -> Result<InternalParsingResult> {
+        let intent_result = self
+            .intent_classifier
+            .get_intent(input, intents_whitelist)?;
         let slots = if let Some(name) = intent_result.intent_name.as_ref() {
             self.slot_fillers
                 .get(name)

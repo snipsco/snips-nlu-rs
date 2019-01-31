@@ -121,7 +121,7 @@ fn run_parse(
     let input = create_rust_string_from!(input);
     let nlu_engine = get_nlu_engine!(client);
 
-    let results = nlu_engine.parse(&input, None)?;
+    let results = nlu_engine.parse(&input, None, None)?;
     let raw_pointer = CIntentParserResult::from(results).into_raw_pointer();
 
     unsafe { *result = raw_pointer };
@@ -137,7 +137,7 @@ fn run_parse_into_json(
     let input = create_rust_string_from!(input);
     let nlu_engine = get_nlu_engine!(client);
 
-    let results = nlu_engine.parse(&input, None)?;
+    let results = nlu_engine.parse(&input, None, None)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
