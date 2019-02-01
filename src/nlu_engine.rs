@@ -130,13 +130,17 @@ impl SnipsNluEngine {
 }
 
 impl SnipsNluEngine {
-    pub fn parse(
+    pub fn parse<'a, 'b, W, B>(
         &self,
         input: &str,
-        intents_whitelist: Option<&[&str]>,
-        intents_blacklist: Option<&[&str]>,
-    ) -> Result<IntentParserResult> {
-        let reverted_whitelist: Option<Vec<&str>> = intents_blacklist.map(|blacklist| {
+        intents_whitelist: W,
+        intents_blacklist: B,
+    ) -> Result<IntentParserResult>
+    where
+        W: Into<Option<Vec<&'a str>>>,
+        B: Into<Option<Vec<&'b str>>>,
+    {
+        let reverted_whitelist: Option<Vec<&str>> = intents_blacklist.into().map(|blacklist| {
             self.dataset_metadata
                 .slot_name_mappings
                 .keys()
@@ -144,8 +148,10 @@ impl SnipsNluEngine {
                 .filter(|intent_name| !blacklist.contains(intent_name))
                 .collect()
         });
-        let intents_whitelist =
-            intents_whitelist.or_else(|| reverted_whitelist.as_ref().map(|l| l.as_ref()));
+        let intents_whitelist_owned = intents_whitelist.into().or_else(|| reverted_whitelist);
+        let intents_whitelist = intents_whitelist_owned
+            .as_ref()
+            .map(|whitelist| whitelist.as_ref());
         let mut none_proba: f32 = 0.0;
         for parser in &self.intent_parsers {
             let internal_parsing_result = parser.parse(input, intents_whitelist)?;
@@ -439,18 +445,14 @@ mod tests {
 
         // When
         let whitelist_result = nlu_engine
-            .parse(
-                "Make me two cups of coffee please",
-                Some(&["MakeTea"]),
-                None,
-            )
+            .parse("Make me two cups of coffee please", vec!["MakeTea"], None)
             .unwrap();
 
         let blacklist_result = nlu_engine
             .parse(
                 "Make me two cups of coffee please",
                 None,
-                Some(&["MakeCoffee"]),
+                vec!["MakeCoffee"],
             )
             .unwrap();
 
