@@ -1,22 +1,23 @@
 #!/bin/bash
 set -ev
 
-source .travis/common.sh
+export PATH="$HOME/.cargo/bin:$PATH"
 
-if [ "${RUST_TESTS}" == "true" ]; then
+if [[ "${RUST_TESTS}" == "true" ]]; then
     echo "Running rust tests..."
-    cargo test --all || die "Rust tests failed"
+    cargo test --all
+    cargo check --benches
 fi
 
-if [ "${PYTHON_TESTS}" == "true" ]; then
+if [[ "${PYTHON_TESTS}" == "true" ]]; then
     echo "Running python tests..."
     cd platforms/python
     python -m pip install tox
-    tox || die "Python tests failed"
+    tox
     cd -
 fi
 
-if [ "${KOTLIN_TESTS}" == "true" ]; then
+if [[ "${KOTLIN_TESTS}" == "true" ]]; then
     echo "Running kotlin tests..."
     cargo build -p snips-nlu-ffi
     cd platforms/kotlin
@@ -24,7 +25,7 @@ if [ "${KOTLIN_TESTS}" == "true" ]; then
     cd -
 fi
 
-if [ "${MACOS_SWIFT_TESTS}" == "true" ]; then
+if [[ "${MACOS_SWIFT_TESTS}" == "true" ]]; then
     echo "Running macOS swift tests..."
     cargo build -p snips-nlu-ffi
     cd platforms/swift
@@ -41,7 +42,7 @@ if [ "${MACOS_SWIFT_TESTS}" == "true" ]; then
     cd -
 fi
 
-if [ "${IOS_SWIFT_TESTS}" == "true" ]; then
+if [[ "${IOS_SWIFT_TESTS}" == "true" ]]; then
     echo "Running iOS swift tests..."
     TARGET_SYSROOT=$(xcrun --sdk iphonesimulator --show-sdk-path) \
       cargo build -p snips-nlu-ffi --target x86_64-apple-ios

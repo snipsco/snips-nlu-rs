@@ -77,7 +77,7 @@ fn convert_to_custom_slot(slot: InternalSlot, resolved_value: String) -> Slot {
         range: slot.char_range,
         entity: slot.entity,
         slot_name: slot.slot_name,
-        confidence_score: None
+        confidence_score: None,
     }
 }
 
@@ -88,7 +88,7 @@ fn convert_to_builtin_slot(slot: InternalSlot, slot_value: SlotValue) -> Slot {
         range: slot.char_range,
         entity: slot.entity,
         slot_name: slot.slot_name,
-        confidence_score: None
+        confidence_score: None,
     }
 }
 
@@ -104,7 +104,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn should_resolve_builtin_slot() {
+    fn test_resolve_builtin_slot() {
         // Given
         let internal_slot = InternalSlot {
             value: "8 dollars".to_string(),
@@ -151,13 +151,13 @@ mod tests {
             range: 22..31,
             entity: "snips/amountOfMoney".to_string(),
             slot_name: "amount".to_string(),
-            confidence_score: None
+            confidence_score: None,
         });
         assert_eq!(expected_result, resolved_slot);
     }
 
     #[test]
-    fn should_resolve_builtin_slot_when_no_entities_found_on_whole_input() {
+    fn test_resolve_builtin_slot_when_no_entities_found_on_whole_input() {
         // Given
         let internal_slot = InternalSlot {
             value: "5 dollars".to_string(),
@@ -195,13 +195,13 @@ mod tests {
             range: 5..14,
             entity: "snips/amountOfMoney".to_string(),
             slot_name: "amount".to_string(),
-            confidence_score: None
+            confidence_score: None,
         });
         assert_eq!(expected_result, resolved_slot);
     }
 
     #[test]
-    fn should_resolve_custom_slot() {
+    fn test_resolve_custom_slot() {
         // Given
         let entity = Entity {
             automatically_extensible: false,
@@ -244,13 +244,13 @@ mod tests {
             range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
-            confidence_score: None
+            confidence_score: None,
         });
         assert_eq!(expected_result, resolved_slot);
     }
 
     #[test]
-    fn should_resolve_custom_slot_when_no_entities_found_on_whole_input() {
+    fn test_resolve_custom_slot_when_no_entities_found_on_whole_input() {
         // Given
         let entity = Entity {
             automatically_extensible: false,
@@ -288,13 +288,13 @@ mod tests {
             range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
-            confidence_score: None
+            confidence_score: None,
         });
         assert_eq!(expected_result, resolved_slot);
     }
 
     #[test]
-    fn should_resolve_custom_slot_when_automatically_extensible() {
+    fn test_resolve_custom_slot_when_automatically_extensible() {
         // Given
         let entity = Entity {
             automatically_extensible: true,
@@ -324,13 +324,13 @@ mod tests {
             range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
-            confidence_score: None
+            confidence_score: None,
         });
         assert_eq!(expected_result, resolved_slot);
     }
 
     #[test]
-    fn should_not_resolve_custom_slot_when_not_automatically_extensible() {
+    fn test_do_not_resolve_custom_slot_when_not_automatically_extensible() {
         // Given
         let entity = Entity {
             automatically_extensible: false,

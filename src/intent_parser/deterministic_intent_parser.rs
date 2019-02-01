@@ -83,9 +83,13 @@ impl DeterministicIntentParser {
 }
 
 impl IntentParser for DeterministicIntentParser {
-    fn parse(&self, input: &str, intents: Option<&[&str]>) -> Result<InternalParsingResult> {
+    fn parse(
+        &self,
+        input: &str,
+        intents_whitelist: Option<&[&str]>,
+    ) -> Result<InternalParsingResult> {
         Ok(self
-            .parse_top_intents(input, 1, intents)?
+            .parse_top_intents(input, 1, intents_whitelist)?
             .into_iter()
             .next()
             .unwrap_or_else(|| InternalParsingResult {
@@ -142,7 +146,7 @@ impl DeterministicIntentParser {
         intents: Option<&[&str]>,
     ) -> Result<Vec<InternalParsingResult>> {
         let opt_intents_set: Option<HashSet<&str>> =
-            intents.map(|intent_list| intent_list.iter().map(|i| *i).collect());
+            intents.map(|intent_list| intent_list.iter().cloned().collect());
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
@@ -342,6 +346,8 @@ fn get_range_shift(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::float_cmp)]
+
     use std::collections::HashMap;
     use std::iter::FromIterator;
     use std::sync::Arc;
@@ -407,7 +413,7 @@ mod tests {
     }
 
     #[test]
-    fn from_path_works() {
+    fn test_load_from_path() {
         // Given
         let trained_engine_path = Path::new("data")
             .join("tests")
@@ -436,7 +442,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_intent() {
+    fn test_parse_intent() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -476,7 +482,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_intent_with_filter() {
+    fn test_parse_intent_with_whitelist() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -519,7 +525,7 @@ mod tests {
     }
 
     #[test]
-    fn should_get_intents() {
+    fn test_get_intents() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -562,7 +568,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_intent_with_builtin_entity() {
+    fn test_parse_intent_with_builtin_entity() {
         // Given
         let text = "Send 10 dollars to John";
         let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
@@ -598,7 +604,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_intent_by_ignoring_stop_words() {
+    fn test_parse_intent_by_ignoring_stop_words() {
         // Given
         let text = "yolo this is a dummy_a query yala with another dummy_c yili";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -642,7 +648,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_slots() {
+    fn test_parse_slots() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -692,7 +698,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_slots_with_non_ascii_chars() {
+    fn test_parse_slots_with_non_ascii_chars() {
         // Given
         let text = "This is another über dummy_cc query!";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -726,7 +732,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_slots_with_builtin_entity() {
+    fn test_parse_slots_with_builtin_entity() {
         // Given
         let text = "Send 10 dollars to John at dummy c";
         let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
@@ -781,7 +787,7 @@ mod tests {
     }
 
     #[test]
-    fn should_parse_slots_with_special_tokenized_out_characters() {
+    fn test_parse_slots_with_special_tokenized_out_characters() {
         // Given
         let text = "this is another dummy’c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -815,7 +821,7 @@ mod tests {
     }
 
     #[test]
-    fn should_get_slots() {
+    fn test_get_slots() {
         // Given
         let text = "Send 10 dollars to John at dummy c";
         let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
@@ -870,7 +876,7 @@ mod tests {
     }
 
     #[test]
-    fn should_deduplicate_overlapping_slots() {
+    fn test_deduplicate_overlapping_slots() {
         // Given
         let language = Language::EN;
         let slots = vec![
@@ -922,7 +928,7 @@ mod tests {
     }
 
     #[test]
-    fn should_replace_entities() {
+    fn test_replace_entities() {
         // Given
         let text = "the third album of Blink 182 is great";
         let entities = vec![
@@ -953,7 +959,7 @@ mod tests {
     }
 
     #[test]
-    fn get_builtin_entity_name_works() {
+    fn test_get_builtin_entity_name() {
         // Given
         let entity_label = "snips/datetime";
 
@@ -965,7 +971,7 @@ mod tests {
     }
 
     #[test]
-    fn should_get_range_shift() {
+    fn test_get_range_shift() {
         // Given
         let ranges_mapping = hashmap! {
             2..5 => 2..4,

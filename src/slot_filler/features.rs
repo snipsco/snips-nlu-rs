@@ -502,7 +502,7 @@ mod tests {
     use crate::testutils::{MockedBuiltinEntityParser, MockedCustomEntityParser};
 
     #[test]
-    fn transform_tokens_should_work() {
+    fn test_transform_tokens() {
         // Given
         let tokens = tokenize("fo£ root_suffix inflection bar", NluUtilsLanguage::EN);
         let stemmer = HashMapStemmer::from_iter(vec![
@@ -525,7 +525,7 @@ mod tests {
     }
 
     #[test]
-    fn is_digit_feature_works() {
+    fn test_is_digit_feature() {
         // Given
         let tokens = tokenize("e3 abc 42 5r", NluUtilsLanguage::EN);
         let feature = IsDigitFeature {};
@@ -541,7 +541,7 @@ mod tests {
     }
 
     #[test]
-    fn length_feature_works() {
+    fn test_length_feature() {
         // Given
         let tokens = tokenize("hello world helloworld", NluUtilsLanguage::EN);
         let feature = LengthFeature {};
@@ -562,7 +562,7 @@ mod tests {
     }
 
     #[test]
-    fn prefix_feature_works() {
+    fn test_prefix_feature() {
         // Given
         let tokens = tokenize("hello_world foo_bar", NluUtilsLanguage::EN);
         let feature = PrefixFeature { prefix_size: 6 };
@@ -578,7 +578,7 @@ mod tests {
     }
 
     #[test]
-    fn suffix_feature_works() {
+    fn test_suffix_feature() {
         // Given
         let tokens = tokenize("hello_world foo_bar", NluUtilsLanguage::EN);
         let feature = SuffixFeature { suffix_size: 6 };
@@ -594,7 +594,7 @@ mod tests {
     }
 
     #[test]
-    fn shape_feature_works() {
+    fn test_shape_feature() {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("Hello BEAUTIFUL world !!!", language);
@@ -616,7 +616,7 @@ mod tests {
     }
 
     #[test]
-    fn ngram_feature_works() {
+    fn test_ngram_feature() {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
@@ -643,7 +643,7 @@ mod tests {
     }
 
     #[test]
-    fn ngram_feature_works_with_common_words_gazetteer() {
+    fn test_ngram_feature_with_common_words_gazetteer() {
         // Given
         let language = NluUtilsLanguage::EN;
         let tokens = tokenize("I love House Music", language);
@@ -701,7 +701,7 @@ mod tests {
     }
 
     #[test]
-    fn entity_match_feature_works() {
+    fn test_entity_match_feature() {
         // Given
         let language = NluUtilsLanguage::EN;
         let entity_name = "bird_type".to_string();
@@ -741,7 +741,7 @@ mod tests {
     }
 
     #[test]
-    fn entity_match_feature_works_with_stemming() {
+    fn test_entity_match_feature_with_stemming() {
         // Given
         let language = NluUtilsLanguage::EN;
         let stemmer = HashMapStemmer::from_iter(vec![("birds".to_string(), "bird".to_string())]);
@@ -782,7 +782,7 @@ mod tests {
     }
 
     #[test]
-    fn builtin_entity_match_feature_works() {
+    fn test_builtin_entity_match_feature() {
         // Given
         let language = NluUtilsLanguage::EN;
         let input = "Please raise to twenty one degrees ok ?";
@@ -826,7 +826,7 @@ mod tests {
     }
 
     #[test]
-    fn word_cluster_feature_works() {
+    fn test_word_cluster_feature() {
         // Given
         let language = NluUtilsLanguage::EN;
         let word_clusterer = HashMapWordClusterer::from_iter(

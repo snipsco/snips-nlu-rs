@@ -34,7 +34,7 @@ impl ProbabilisticFeatureProcessor {
 }
 
 impl ProbabilisticFeatureProcessor {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
+    #[rustfmt::skip]
     pub fn compute_features(&self, input: &&[Token]) -> Result<Vec<Vec<(String, String)>>> {
         let mut features = vec![vec![]; input.len()];
         for offsetter in self.features_offsetters.iter() {
@@ -116,7 +116,7 @@ mod tests {
     use snips_nlu_utils::token::tokenize;
 
     #[test]
-    fn compute_features_works() {
+    fn test_compute_features() {
         // Given
         let language = Language::EN;
         let fp = ProbabilisticFeatureProcessor {
@@ -155,7 +155,7 @@ mod tests {
     }
 
     #[test]
-    fn offset_works() {
+    fn test_offset() {
         // Given
         let language = Language::EN;
         let fp = ProbabilisticFeatureProcessor {

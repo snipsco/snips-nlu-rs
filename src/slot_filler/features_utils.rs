@@ -44,7 +44,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn get_word_chunk_works() {
+    fn test_get_word_chunk() {
         // Given
         let word = "hello_world";
         let chunk_size = 6;
@@ -60,7 +60,7 @@ mod tests {
     }
 
     #[test]
-    fn get_word_chunk_reversed_works() {
+    fn test_get_word_chunk_reversed() {
         // Given
         let word = "hello_world";
         let chunk_size = 8;
@@ -76,7 +76,7 @@ mod tests {
     }
 
     #[test]
-    fn get_word_chunk_out_of_bound_works() {
+    fn test_get_word_chunk_out_of_bound() {
         // Given
         let word = "hello_world";
         let chunk_size = 4;
@@ -91,7 +91,7 @@ mod tests {
     }
 
     #[test]
-    fn initial_string_from_tokens_works() {
+    fn test_initial_string_from_tokens() {
         // Given
         let tokens = vec![
             Token::new("hello".to_string(), 0..5, 0..5),

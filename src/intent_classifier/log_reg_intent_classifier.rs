@@ -69,9 +69,9 @@ impl IntentClassifier for LogRegIntentClassifier {
     fn get_intent(
         &self,
         input: &str,
-        intents_filter: Option<&[&str]>,
+        intents_whitelist: Option<&[&str]>,
     ) -> Result<IntentClassifierResult> {
-        let intents_results = self.get_intents_with_filter(input, intents_filter)?;
+        let intents_results = self.get_intents_with_whitelist(input, intents_whitelist)?;
         Ok(if intents_results.is_empty() {
             IntentClassifierResult {
                 intent_name: None,
@@ -83,15 +83,15 @@ impl IntentClassifier for LogRegIntentClassifier {
     }
 
     fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
-        self.get_intents_with_filter(input, None)
+        self.get_intents_with_whitelist(input, None)
     }
 }
 
 impl LogRegIntentClassifier {
-    fn get_intents_with_filter(
+    fn get_intents_with_whitelist(
         &self,
         input: &str,
-        intents_filter: Option<&[&str]>,
+        intents_whitelist: Option<&[&str]>,
     ) -> Result<Vec<IntentClassifierResult>> {
         if self.intent_list.len() <= 1 {
             return Ok(vec![IntentClassifierResult {
@@ -111,8 +111,8 @@ impl LogRegIntentClassifier {
                 .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap()));
         }
 
-        let opt_intents_set: Option<HashSet<&str>> = intents_filter
-            .map(|intent_list| HashSet::from_iter(intent_list.into_iter().map(|i| *i)));
+        let opt_intents_set: Option<HashSet<&str>> =
+            intents_whitelist.map(|intent_list| HashSet::from_iter(intent_list.iter().cloned()));
 
         let featurizer = self.featurizer.as_ref().unwrap(); // Checked above
         let logreg = self.logreg.as_ref().unwrap(); // Checked above
@@ -336,7 +336,7 @@ mod tests {
     }
 
     #[test]
-    fn from_path_works() {
+    fn test_load_from_path() {
         // Given
         let trained_engine_dir = Path::new("data")
             .join("tests")
@@ -363,7 +363,7 @@ mod tests {
     }
 
     #[test]
-    fn get_intent_works() {
+    fn test_get_intent() {
         // Given
         let classifier = get_sample_log_reg_classifier();
 
@@ -380,7 +380,7 @@ mod tests {
     }
 
     #[test]
-    fn get_intents_works() {
+    fn test_get_intents() {
         // Given
         let classifier = get_sample_log_reg_classifier();
 
@@ -400,7 +400,7 @@ mod tests {
     }
 
     #[test]
-    fn should_filter_intents() {
+    fn test_filter_intents() {
         // Given
         let classifier = get_sample_log_reg_classifier();
 
@@ -430,7 +430,7 @@ mod tests {
     }
 
     #[test]
-    fn should_get_filtered_out_intents_indexes() {
+    fn test_get_filtered_out_intents_indexes() {
         // Given
         let intents_list = vec![
             Some("intent1".to_string()),

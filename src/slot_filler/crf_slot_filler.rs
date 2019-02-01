@@ -455,12 +455,12 @@ mod tests {
                 .iter()
                 .find_position(|t| **t == tags)
                 .map(|(i, _)| self.tags_probabilities[i])
-                .ok_or(TestError::UnknownTags(tags).into())
+                .ok_or_else(|| TestError::UnknownTags(tags).into())
         }
     }
 
     #[test]
-    fn from_path_works() {
+    fn test_load_from_path() {
         // Given
         let trained_engine_path = Path::new("data")
             .join("tests")
@@ -488,7 +488,7 @@ mod tests {
     }
 
     #[test]
-    fn filter_overlapping_builtin_works() {
+    fn test_filter_overlapping_builtin_entities() {
         // Given
         let language = NluUtilsLanguage::EN;
         let text =
@@ -552,7 +552,7 @@ mod tests {
     }
 
     #[test]
-    fn augment_slots_works() {
+    fn test_augment_slots() {
         // Given
         let language = NluUtilsLanguage::EN;
         let text = "Find me a flight before 10pm and after 8pm";
@@ -712,7 +712,7 @@ mod tests {
     }
 
     #[test]
-    fn spans_to_tokens_indexes_works() {
+    fn test_spans_to_tokens_indexes() {
         // Given
         let spans = vec![0..1, 2..6, 5..6, 9..15];
         let tokens = vec![
@@ -730,7 +730,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reconciliate_builtin_slots_works() {
+    fn test_reconciliate_builtin_slots() {
         // Given
         let text = "tomorrow at 8a.m. please";
         let slots = vec![InternalSlot {
@@ -764,7 +764,7 @@ mod tests {
     }
 
     #[test]
-    fn replace_tags_works() {
+    fn test_replace_tags() {
         // Given
         let tags = vec![
             "B-tag1".to_string(),

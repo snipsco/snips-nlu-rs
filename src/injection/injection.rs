@@ -8,12 +8,12 @@ use std::sync::Arc;
 use failure::ResultExt;
 use itertools::Itertools;
 use log::info;
-use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_ontology::{BuiltinGazetteerEntityKind, GrammarEntityKind};
 use snips_nlu_parsers::gazetteer_entity_parser::{
     EntityValue as GazetteerEntityValue, Parser as GazetteerEntityParser,
 };
 use snips_nlu_parsers::{BuiltinParserMetadata, GazetteerParserMetadata};
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_utils::token::tokenize_light;
 
 use crate::entity_parser::custom_entity_parser::CustomEntityParserMetadata;
@@ -75,6 +75,7 @@ impl<P: AsRef<Path>> NluInjector<P> {
         self
     }
 
+    #[allow(clippy::wrong_self_convention)]
     pub fn from_vanilla(mut self, from_vanilla: bool) -> Self {
         self.from_vanilla = from_vanilla;
         self
@@ -126,7 +127,7 @@ impl<P: AsRef<Path>> NluInjector<P> {
                         normalize_entity_values,
                         &engine_info,
                         &custom_parser_info,
-                        &maybe_stemmer,
+                        maybe_stemmer,
                     )?;
                     Ok((entity, stemmed_entity_values))
                 } else {
@@ -381,7 +382,7 @@ fn stem_entity_value(
     entity_values: Vec<GazetteerEntityValue>,
     engine_info: &NluEngineInfo,
     custom_entity_parser_info: &CustomGazetteerParserInfo,
-    maybe_stemmer: &Option<&Arc<Stemmer>>,
+    maybe_stemmer: Option<&Arc<Stemmer>>,
 ) -> Result<Vec<GazetteerEntityValue>, NluInjectionError> {
     let stemmed_entity_values = match custom_entity_parser_info.parser_usage {
         CustomEntityParserUsage::WithoutStems => vec![],
@@ -439,18 +440,12 @@ mod tests {
 
     impl<'a> Stemmer for MockedStemmer<'a> {
         fn stem(&self, value: &str) -> String {
-            let stemmed = self
-                .values
-                .get(value)
-                .map(|stemmed_value| *stemmed_value)
-                .unwrap_or(value)
-                .to_string();
-            stemmed
+            self.values.get(value).cloned().unwrap_or(value).to_string()
         }
     }
 
     #[test]
-    fn test_should_inject() {
+    fn test_injection() {
         let path = Path::new("data")
             .join("tests")
             .join("models")
@@ -483,7 +478,11 @@ mod tests {
             SnipsNluEngine::from_path_with_resources(&engine_dir, mocked_resources.clone())
                 .unwrap();
         let parsing = nlu_engine
-            .parse("je souhaiterais écouter l'album thisisthebestalbum", None)
+            .parse(
+                "je souhaiterais écouter l'album thisisthebestalbum",
+                None,
+                None,
+            )
             .unwrap();
         assert_eq!(
             parsing.intent.intent_name,
@@ -491,7 +490,7 @@ mod tests {
         );
         assert_eq!(parsing.slots, vec![]);
         let parsing = nlu_engine
-            .parse("je voudrais ecouter ma playlist funk", None)
+            .parse("je voudrais ecouter ma playlist funk", None, None)
             .unwrap();
         assert_eq!(
             parsing.intent.intent_name,
@@ -537,7 +536,11 @@ mod tests {
 
         // Behavior after injection
         let parsing = nlu_engine
-            .parse("je souhaiterais écouter l'album thisisthebestalbum", None)
+            .parse(
+                "je souhaiterais écouter l'album thisisthebestalbum",
+                None,
+                None,
+            )
             .unwrap();
         assert_eq!(
             parsing.intent.intent_name,
@@ -554,7 +557,7 @@ mod tests {
         assert_eq!(parsing.slots, ground_true_slots);
 
         let parsing = nlu_engine
-            .parse("je voudrais ecouter ma playlist funk", None)
+            .parse("je voudrais ecouter ma playlist funk", None, None)
             .unwrap();
         assert_eq!(
             parsing.intent.intent_name,

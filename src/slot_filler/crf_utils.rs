@@ -94,22 +94,16 @@ fn is_start_of_bio_slot(tags: &[String], i: usize) -> bool {
         false
     } else if tags[i].starts_with(BEGINNING_PREFIX) {
         true
-    } else if tags[i - 1] != OUTSIDE {
-        false
     } else {
-        true
+        tags[i - 1] == OUTSIDE
     }
 }
 
 fn is_end_of_bio_slot(tags: &[String], i: usize) -> bool {
     if i + 1 == tags.len() {
         tags[i] != OUTSIDE
-    } else if tags[i] == OUTSIDE {
-        false
-    } else if tags[i + 1].starts_with(INSIDE_PREFIX) {
-        false
     } else {
-        true
+        tags[i] != OUTSIDE && !tags[i + 1].starts_with(INSIDE_PREFIX)
     }
 }
 
@@ -118,18 +112,14 @@ fn is_start_of_bilou_slot(tags: &[String], i: usize) -> bool {
         tags[i] != OUTSIDE
     } else if tags[i] == OUTSIDE {
         false
-    } else if tags[i].starts_with(BEGINNING_PREFIX) {
+    } else if tags[i].starts_with(BEGINNING_PREFIX)
+        || tags[i].starts_with(UNIT_PREFIX)
+        || tags[i - 1].starts_with(UNIT_PREFIX)
+        || tags[i - 1].starts_with(LAST_PREFIX)
+    {
         true
-    } else if tags[i].starts_with(UNIT_PREFIX) {
-        true
-    } else if tags[i - 1].starts_with(UNIT_PREFIX) {
-        true
-    } else if tags[i - 1].starts_with(LAST_PREFIX) {
-        true
-    } else if tags[i - 1] != OUTSIDE {
-        false
     } else {
-        true
+        tags[i - 1] == OUTSIDE
     }
 }
 
@@ -138,18 +128,12 @@ fn is_end_of_bilou_slot(tags: &[String], i: usize) -> bool {
         tags[i] != OUTSIDE
     } else if tags[i] == OUTSIDE {
         false
-    } else if tags[i + 1] == OUTSIDE {
-        true
-    } else if tags[i].starts_with(LAST_PREFIX) {
-        true
-    } else if tags[i].starts_with(UNIT_PREFIX) {
-        true
-    } else if tags[i + 1].starts_with(BEGINNING_PREFIX) {
-        true
-    } else if tags[i + 1].starts_with(UNIT_PREFIX) {
-        true
     } else {
-        false
+        tags[i + 1] == OUTSIDE
+            || tags[i].starts_with(LAST_PREFIX)
+            || tags[i].starts_with(UNIT_PREFIX)
+            || tags[i + 1].starts_with(BEGINNING_PREFIX)
+            || tags[i + 1].starts_with(UNIT_PREFIX)
     }
 }
 
@@ -960,7 +944,7 @@ mod tests {
     }
 
     #[test]
-    fn get_scheme_prefix_works() {
+    fn tests_get_scheme_prefix() {
         // Given
         let indexes = vec![3, 4, 5];
 

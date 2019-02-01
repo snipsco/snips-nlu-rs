@@ -6,12 +6,16 @@ All notable changes to this project will be documented in this file.
 - `get_intents` API: get the probabilities of all intents (including the null intent) with respect to an input text
 - Pass `--top_intents` to the parsing CLI to use the `get_intents` API instead of `parse`
 - `get_slots` API: extract slots by providing a text along with its corresponding intent
-- Added a an optional `CooccurrenceVectorizer` to the `Featurizer` that extracts cooccurrence features
+- Added a an optional `CooccurrenceVectorizer` to the `Featurizer` that extracts co-occurrence features
 
 ### Changed
+- A probability is now returned when no intent is found
+- The `parse` API now takes a new optional parameter `intents_blacklist` which allows to filter out specific intents
+- `Slot` object now contains an optional `confidence_score` attribute
+- `intent` value of `IntentParserResult` is no longer optional: the optionality is moved to `intent_name` in the `IntentClassificationResult` object
+- `slots` value of `IntentParserResult` is no longer optional (`None` is replaced by empty `Vec`)
 - Update to Rust 2018
 - Refactored the `Featurizer` and moved its attributes to an underlying `TfidfVectorizer`
-- `Slot` object now contains an optional `confidence_score` attribute
 
 ## [0.61.2] - 2019-01-17
 ### Changed

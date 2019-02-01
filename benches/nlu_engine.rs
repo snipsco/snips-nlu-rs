@@ -1,3 +1,5 @@
+#![allow(clippy::never_loop)]
+
 #[macro_use]
 extern crate bencher;
 extern crate dinghy_test;
@@ -40,7 +42,7 @@ fn nlu_parsing(b: &mut Bencher) {
         .unwrap();
 
     b.iter(|| {
-        let _ = nlu_engine.parse(&sentence, None);
+        let _ = nlu_engine.parse(&sentence, None, None);
     });
 }
 

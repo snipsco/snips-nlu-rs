@@ -64,7 +64,7 @@ impl SnipsNluEngine {
         Ok(())
     }
 
-    fn load_model<P: AsRef<Path>>(path: &P) -> Result<NluEngineModel> {
+    fn load_model<P: AsRef<Path>>(path: P) -> Result<NluEngineModel> {
         let engine_model_path = path.as_ref().join("nlu_engine.json");
         Self::check_model_version(&engine_model_path).with_context(|_| {
             SnipsNluError::ModelLoad(engine_model_path.to_str().unwrap().to_string())
@@ -130,14 +130,31 @@ impl SnipsNluEngine {
 }
 
 impl SnipsNluEngine {
-    pub fn parse(
+    pub fn parse<'a, 'b, W, B>(
         &self,
         input: &str,
-        intents_filter: Option<&[&str]>,
-    ) -> Result<IntentParserResult> {
+        intents_whitelist: W,
+        intents_blacklist: B,
+    ) -> Result<IntentParserResult>
+    where
+        W: Into<Option<Vec<&'a str>>>,
+        B: Into<Option<Vec<&'b str>>>,
+    {
+        let reverted_whitelist: Option<Vec<&str>> = intents_blacklist.into().map(|blacklist| {
+            self.dataset_metadata
+                .slot_name_mappings
+                .keys()
+                .map(|intent| &**intent)
+                .filter(|intent_name| !blacklist.contains(intent_name))
+                .collect()
+        });
+        let intents_whitelist_owned = intents_whitelist.into().or_else(|| reverted_whitelist);
+        let intents_whitelist = intents_whitelist_owned
+            .as_ref()
+            .map(|whitelist| whitelist.as_ref());
         let mut none_proba: f32 = 0.0;
         for parser in &self.intent_parsers {
-            let internal_parsing_result = parser.parse(input, intents_filter)?;
+            let internal_parsing_result = parser.parse(input, intents_whitelist)?;
             if internal_parsing_result.intent.intent_name.is_some() {
                 let resolved_slots = self
                     .resolve_slots(input, internal_parsing_result.slots)
@@ -352,20 +369,7 @@ mod tests {
     use std::iter::FromIterator;
 
     #[test]
-    fn from_path_works() {
-        // Given
-        let path = Path::new("data")
-            .join("tests")
-            .join("models")
-            .join("nlu_engine");
-
-        // When / Then
-        let nlu_engine = SnipsNluEngine::from_path(path);
-        assert!(nlu_engine.is_ok());
-    }
-
-    #[test]
-    fn from_zip_works() {
+    fn test_load_from_zip() {
         // Given
         let path = Path::new("data")
             .join("tests")
@@ -382,7 +386,7 @@ mod tests {
 
         let result = nlu_engine
             .unwrap()
-            .parse("Make me two cups of coffee please", None)
+            .parse("Make me two cups of coffee please", None, None)
             .unwrap();
 
         let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
@@ -401,7 +405,7 @@ mod tests {
     }
 
     #[test]
-    fn parse_works() {
+    fn test_parse() {
         // Given
         let path = Path::new("data")
             .join("tests")
@@ -411,7 +415,7 @@ mod tests {
 
         // When
         let result = nlu_engine
-            .parse("Make me two cups of coffee please", None)
+            .parse("Make me two cups of coffee please", None, None)
             .unwrap();
 
         // Then
@@ -431,7 +435,40 @@ mod tests {
     }
 
     #[test]
-    fn get_intents_works() {
+    fn test_parse_with_whitelist_and_blacklist() {
+        // Given
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
+
+        // When
+        let whitelist_result = nlu_engine
+            .parse("Make me two cups of coffee please", vec!["MakeTea"], None)
+            .unwrap();
+
+        let blacklist_result = nlu_engine
+            .parse(
+                "Make me two cups of coffee please",
+                None,
+                vec!["MakeCoffee"],
+            )
+            .unwrap();
+
+        // Then
+        assert_eq!(
+            Some("MakeTea".to_string()),
+            whitelist_result.intent.intent_name
+        );
+        assert_eq!(
+            Some("MakeTea".to_string()),
+            blacklist_result.intent.intent_name
+        );
+    }
+
+    #[test]
+    fn test_get_intents() {
         // Given
         let path = Path::new("data")
             .join("tests")
@@ -457,7 +494,7 @@ mod tests {
     }
 
     #[test]
-    fn get_slots_works() {
+    fn test_get_slots() {
         // Given
         let path = Path::new("data")
             .join("tests")
@@ -496,7 +533,7 @@ mod tests {
     }
 
     #[test]
-    fn should_extract_custom_slot_when_tagged() {
+    fn test_extract_custom_slot_when_tagged() {
         // Given
         let input = "hello a b c d world".to_string();
         let entity_name = "entity".to_string();
@@ -546,7 +583,7 @@ mod tests {
     }
 
     #[test]
-    fn should_extract_custom_slot_when_not_tagged() {
+    fn test_extract_custom_slot_when_not_tagged() {
         // Given
         let input = "hello world".to_string();
         let entity_name = "entity".to_string();
@@ -580,7 +617,7 @@ mod tests {
     }
 
     #[test]
-    fn should_not_extract_custom_slot_when_not_extensible() {
+    fn test_do_not_extract_custom_slot_when_not_extensible() {
         // Given
         let input = "hello world".to_string();
         let entity_name = "entity".to_string();
