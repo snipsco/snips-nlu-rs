@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.63.0] - 2019-02-04
 ### Added
 - `get_intents` API: get the probabilities of all intents (including the null intent) with respect to an input text
 - Pass `--top_intents` to the parsing CLI to use the `get_intents` API instead of `parse`
@@ -165,7 +165,8 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
-[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.62.0...HEAD
+[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.0...HEAD
+[0.63.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.62.0...0.63.0
 [0.61.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.1...0.61.2
 [0.61.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.61.1
 [0.62.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.62.0
