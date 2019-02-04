@@ -1,0 +1,6 @@
+include snips_nlu_rust/__version__
+include LICENSE README.rst
+recursive-include snips_nlu_rust/dylib/ *
+recursive-include ffi/ *
+recursive-exclude ffi/target/ *
+global-exclude __pycache__ *.py[cod]

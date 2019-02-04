@@ -1,33 +1,34 @@
 #!/bin/bash
 set -ev
 
-source .travis/common.sh
+export PATH="$HOME/.cargo/bin:$PATH"
 
-if [ "${RUST_TESTS}" == "true" ]; then
+if [[ "${RUST_TESTS}" == "true" ]]; then
     echo "Running rust tests..."
-    cargo test --all || die "Rust tests failed"
+    cargo test --all
+    cargo check --benches
 fi
 
-if [ "${PYTHON_TESTS}" == "true" ]; then
+if [[ "${PYTHON_TESTS}" == "true" ]]; then
     echo "Running python tests..."
-    cd snips-nlu-ffi/python
-    python -m pip install tox
-    tox || die "Python tests failed"
+    cd platforms/python
+    pip install tox
+    tox
     cd -
 fi
 
-if [ "${KOTLIN_TESTS}" == "true" ]; then
+if [[ "${KOTLIN_TESTS}" == "true" ]]; then
     echo "Running kotlin tests..."
     cargo build -p snips-nlu-ffi
-    cd snips-nlu-ffi/kotlin
+    cd platforms/kotlin
     ./gradlew -Pdebug -PrustTargetPath=../../target test --info
     cd -
 fi
 
-if [ "${MACOS_SWIFT_TESTS}" == "true" ]; then
+if [[ "${MACOS_SWIFT_TESTS}" == "true" ]]; then
     echo "Running macOS swift tests..."
     cargo build -p snips-nlu-ffi
-    cd snips-nlu-ffi/swift
+    cd platforms/swift
     mkdir -p build/DerivedData
     set -o pipefail && xcodebuild \
         -IDECustomDerivedDataLocation=build/DerivedData \
@@ -41,11 +42,11 @@ if [ "${MACOS_SWIFT_TESTS}" == "true" ]; then
     cd -
 fi
 
-if [ "${IOS_SWIFT_TESTS}" == "true" ]; then
+if [[ "${IOS_SWIFT_TESTS}" == "true" ]]; then
     echo "Running iOS swift tests..."
     TARGET_SYSROOT=$(xcrun --sdk iphonesimulator --show-sdk-path) \
       cargo build -p snips-nlu-ffi --target x86_64-apple-ios
-    cd snips-nlu-ffi/swift
+    cd platforms/swift
     mkdir -p build/DerivedData
     set -o pipefail && xcodebuild \
         -IDECustomDerivedDataLocation=build/DerivedData \

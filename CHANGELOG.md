@@ -1,9 +1,34 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.63.0] - 2019-02-04
+### Added
+- `get_intents` API: get the probabilities of all intents (including the null intent) with respect to an input text
+- Pass `--top_intents` to the parsing CLI to use the `get_intents` API instead of `parse`
+- `get_slots` API: extract slots by providing a text along with its corresponding intent
+- Added a an optional `CooccurrenceVectorizer` to the `Featurizer` that extracts co-occurrence features
+
+### Changed
+- A probability is now returned when no intent is found
+- The `parse` API now takes a new optional parameter `intents_blacklist` which allows to filter out specific intents
+- `Slot` object now contains an optional `confidence_score` attribute
+- `intent` value of `IntentParserResult` is no longer optional: the optionality is moved to `intent_name` in the `IntentClassificationResult` object
+- `slots` value of `IntentParserResult` is no longer optional (`None` is replaced by empty `Vec`)
+- Update to Rust 2018
+- Refactored the `Featurizer` and moved its attributes to an underlying `TfidfVectorizer`
+
+## [0.61.2] - 2019-01-17
+### Changed
+- Bump `snips-nlu-ontology` to `0.61.3`
+
+## [0.61.1] - 2018-12-14
+### Changed
+- Bump `snips-nlu-ontology` to `0.61.2`
+
+### Fixed
+- Issue when resolving custom entities
 
 ## [0.62.0] - 2018-11-26
-
 ### Changed
 - Bumped `snips-nlu-ontology` to `0.62.0`
 
@@ -18,7 +43,7 @@ All notable changes to this project will be documented in this file.
 ## [0.61.0] - 2018-10-16
 ### Changed
 - Entity injection API is now handled by an `NLUInjector` object
- 
+
 ### Added
 - Support for builtin music entities in english
 
@@ -75,7 +100,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 
 ### Removed
 - `snips-nlu-resources` and `snips-nlu-resources-packed` crates no longer exists.
-- `FileBasedConfiguration`, `ZipBasedConfiguration` and `NluEngineConfigurationConvertible
+- `FileBasedConfiguration`, `ZipBasedConfiguration` and `NluEngineConfigurationConvertible`
 - Rust examples (replaced by interactive CLI).
 
 ## [0.57.2] - 2018-07-12
@@ -140,7 +165,10 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
-
+[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.0...HEAD
+[0.63.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.62.0...0.63.0
+[0.61.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.1...0.61.2
+[0.61.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.61.1
 [0.62.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.62.0
 [0.61.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.1...0.61.0
 [0.60.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.60.0...0.60.1

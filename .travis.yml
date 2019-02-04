@@ -1,36 +1,32 @@
-sudo: required # This ensures more memory (https://docs.travis-ci.com/user/reference/overview/#Virtualisation-Environment-vs-Operating-System)
+cache:
+- cargo
+- directories:
+  - platforms/python/ffi/target
 
 jobs:
-  allow_failures:
-    - rust: nightly
   include:
-    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+    - if: branch = master or head_branch =~ /^release\/.+$/
       os: osx
-      osx_image: xcode9.3
+      osx_image: xcode10.1
       language: generic
       env:
         - TOXENV=py27
         - PYTHON_TESTS=true
-    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+    - if: branch = master or head_branch =~ /^release\/.+$/
       os: osx
-      osx_image: xcode9.3
+      osx_image: xcode10.1
       language: generic
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
-    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+    - if: branch = master or head_branch =~ /^release\/.+$/
       os: osx
-      osx_image: xcode9.3
+      osx_image: xcode10.1
       language: generic
       env:
         - MACOS_SWIFT_TESTS=true
-    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
-      os: osx
-      osx_image: xcode9.3
-      language: generic
-      env:
         - IOS_SWIFT_TESTS=true
-    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+    - if: branch = master or head_branch =~ /^release\/.+$/
       os: linux
       language: python
       python: 2.7
@@ -43,7 +39,7 @@ jobs:
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
-    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
+    - if: branch = master or head_branch =~ /^release\/.+$/
       os: linux
       language: rust
       rust: stable
@@ -52,18 +48,6 @@ jobs:
     - os: linux
       language: rust
       rust: stable
-      env:
-        - RUST_TESTS=true
-    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
-      os: linux
-      language: rust
-      rust: beta
-      env:
-        - RUST_TESTS=true
-    - if: env(TRAVIS_BRANCH) = master or branch =~ /^main\/.+$/
-      os: linux
-      language: rust
-      rust: nightly
       env:
         - RUST_TESTS=true
 

@@ -1,0 +1,36 @@
+{
+  "builtin_entity_scope": [
+    "snips/musicArtist",
+    "snips/musicAlbum"
+  ],
+  "config": {
+    "filter_stop_words": true,
+    "keep_order": true,
+    "unit_name": "cooccurrence_vectorizer",
+    "unknown_words_replacement_string": "unknownword",
+    "window_size": 5
+  },
+  "language_code": "fr",
+  "word_pairs": {
+    "0": [
+      "album",
+      "SNIPSMUSICALBUM"
+    ],
+    "1": [
+      "ecouter",
+      "SNIPSMUSICARTIST"
+    ],
+    "2": [
+      "je",
+      "SNIPSMUSICALBUM"
+    ],
+    "3": [
+      "je",
+      "SNIPSMUSICARTIST"
+    ],
+    "4": [
+      "je",
+      "ecouter"
+    ]
+  }
+}

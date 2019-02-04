@@ -13,6 +13,6 @@
   "stems": "stems",
   "stop_words": "stop_words",
   "url": "https://snips-nlu.readthedocs.io",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "word_clusters": []
 }

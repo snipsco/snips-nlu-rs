@@ -101,7 +101,6 @@
       {
         "args": {
           "entities": [],
-          "language_code": "en",
           "tagging_scheme_code": 2,
           "use_stemming": true
         },
@@ -116,13 +115,13 @@
       {
         "args": {
           "entity_labels": [
-            "snips/datetime",
-            "snips/ordinal",
             "snips/amountOfMoney",
-            "snips/percentage",
+            "snips/ordinal",
+            "snips/number",
             "snips/duration",
+            "snips/percentage",
             "snips/temperature",
-            "snips/number"
+            "snips/datetime"
           ],
           "language_code": "en",
           "tagging_scheme_code": 1
@@ -137,7 +136,6 @@
       {
         "args": {
           "cluster_name": "brown_clusters",
-          "language_code": "en",
           "use_stemming": false
         },
         "factory_name": "word_cluster",
@@ -153,7 +151,7 @@
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "modelwjh48fhi.crfsuite",
+  "crf_model_file": "modelX0zNzD.crfsuite",
   "intent": "MakeCoffee",
   "language_code": "en",
   "slot_name_mapping": {
