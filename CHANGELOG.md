@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Fixed
+- Fix an issue regarding the way builtin entities were handled by the `CRFSlotFiller`
+
 ## [0.63.0] - 2019-02-04
 ### Added
 - `get_intents` API: get the probabilities of all intents (including the null intent) with respect to an input text

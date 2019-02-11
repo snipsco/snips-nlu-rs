@@ -1,13 +1,10 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::ops::Range;
 
 use failure::{bail, format_err};
-use itertools::Itertools;
-use snips_nlu_ontology::BuiltinEntity;
 
 use crate::errors::*;
 use crate::slot_utils::InternalSlot;
-use crate::utils::{product, EntityName, SlotName};
 use snips_nlu_utils::string::suffix_from_char_index;
 use snips_nlu_utils::token::Token;
 
@@ -41,26 +38,6 @@ pub fn get_substitution_label<'a>(labels: &[&'a str]) -> &'a str {
     } else {
         labels[0]
     }
-}
-
-pub fn replace_builtin_tags(
-    tags: Vec<String>,
-    builtin_slot_names: &HashSet<String>,
-) -> Vec<String> {
-    tags.into_iter()
-        .map(|tag| {
-            if tag == OUTSIDE {
-                tag
-            } else {
-                let slot_name = tag_name_to_slot_name(tag.to_string());
-                if builtin_slot_names.contains(&slot_name) {
-                    OUTSIDE.to_string()
-                } else {
-                    tag
-                }
-            }
-        })
-        .collect_vec()
 }
 
 pub fn tag_name_to_slot_name(tag: String) -> String {
@@ -216,41 +193,6 @@ pub fn tags_to_slots(
         .collect()
 }
 
-pub fn positive_tagging(
-    tagging_scheme: TaggingScheme,
-    slot_name: &str,
-    slot_size: usize,
-) -> Vec<String> {
-    if slot_name == OUTSIDE {
-        return vec![OUTSIDE.to_string(); slot_size];
-    };
-
-    match tagging_scheme {
-        TaggingScheme::IO => vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size],
-        TaggingScheme::BIO => {
-            if slot_size > 0 {
-                let mut v1 = vec![format!("{}{}", BEGINNING_PREFIX, slot_name)];
-                let mut v2 = vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size - 1];
-                v1.append(&mut v2);
-                v1
-            } else {
-                vec![]
-            }
-        }
-        TaggingScheme::BILOU => match slot_size {
-            0 => vec![],
-            1 => vec![format!("{}{}", UNIT_PREFIX, slot_name)],
-            _ => {
-                let mut v1 = vec![format!("{}{}", BEGINNING_PREFIX, slot_name)];
-                let mut v2 = vec![format!("{}{}", INSIDE_PREFIX, slot_name); slot_size - 2];
-                v1.append(&mut v2);
-                v1.push(format!("{}{}", LAST_PREFIX, slot_name));
-                v1
-            }
-        },
-    }
-}
-
 pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: TaggingScheme) -> &str {
     match tagging_scheme {
         TaggingScheme::IO => INSIDE_PREFIX,
@@ -275,46 +217,12 @@ pub fn get_scheme_prefix(index: usize, indexes: &[usize], tagging_scheme: Taggin
     }
 }
 
-pub fn generate_slots_permutations(
-    grouped_entities: &[Vec<BuiltinEntity>],
-    slot_name_mapping: &HashMap<SlotName, EntityName>,
-) -> Vec<Vec<String>> {
-    let possible_slots: Vec<Vec<String>> = grouped_entities
-        .iter()
-        .map(|entities| {
-            let mut slot_names: Vec<String> = entities
-                .iter()
-                .flat_map::<Vec<String>, _>(|entity| {
-                    slot_name_mapping
-                        .iter()
-                        .filter_map(|(slot_name, entity_name)| {
-                            if entity_name == entity.entity_kind.identifier() {
-                                Some(slot_name.to_string())
-                            } else {
-                                None
-                            }
-                        })
-                        .collect()
-                })
-                .collect();
-            slot_names.push(OUTSIDE.to_string());
-            slot_names
-        })
-        .collect();
-    let possible_slots_slice: Vec<&[String]> = possible_slots.iter().map(|s| &**s).collect();
-    product(possible_slots_slice.as_slice())
-        .into_iter()
-        .map(|perm| perm.into_iter().map(|s| s.to_string()).collect())
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
     use itertools::Itertools;
     use maplit::hashmap;
 
     use super::*;
-    use snips_nlu_ontology::{BuiltinEntityKind, NumberValue, SlotValue};
     use snips_nlu_utils::language::Language;
     use snips_nlu_utils::token::tokenize;
 
@@ -970,117 +878,5 @@ mod tests {
             "U-".to_string(),
         ];
         assert_eq!(actual_results, expected_results);
-    }
-
-    #[test]
-    fn test_positive_tagging_with_io() {
-        // Given
-        let tagging_scheme = TaggingScheme::IO;
-        let slot_name = "animal";
-        let slot_size = 3;
-
-        // When
-        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
-
-        // Then
-        let t = format!("{}{}", INSIDE_PREFIX, slot_name);
-        let expected_tags = vec![t; 3];
-        assert_eq!(tags, expected_tags);
-    }
-
-    #[test]
-    fn test_positive_tagging_with_bio() {
-        // Given
-        let tagging_scheme = TaggingScheme::BIO;
-        let slot_name = "animal";
-        let slot_size = 3;
-
-        // When
-        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
-
-        // Then
-        let expected_tags = vec![
-            format!("{}{}", BEGINNING_PREFIX, slot_name),
-            format!("{}{}", INSIDE_PREFIX, slot_name),
-            format!("{}{}", INSIDE_PREFIX, slot_name),
-        ];
-        assert_eq!(tags, expected_tags);
-    }
-
-    #[test]
-    fn test_positive_tagging_with_bilou() {
-        // Given
-        let tagging_scheme = TaggingScheme::BILOU;
-        let slot_name = "animal";
-        let slot_size = 3;
-
-        // When
-        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
-
-        // Then
-        let expected_tags = vec![
-            format!("{}{}", BEGINNING_PREFIX, slot_name),
-            format!("{}{}", INSIDE_PREFIX, slot_name),
-            format!("{}{}", LAST_PREFIX, slot_name),
-        ];
-        assert_eq!(tags, expected_tags);
-    }
-
-    #[test]
-    fn test_positive_tagging_with_bilou_unit() {
-        // Given
-        let tagging_scheme = TaggingScheme::BILOU;
-        let slot_name = "animal";
-        let slot_size = 1;
-
-        // When
-        let tags = positive_tagging(tagging_scheme, slot_name, slot_size);
-
-        // Then
-        let expected_tags = vec![format!("{}{}", UNIT_PREFIX, slot_name)];
-        assert_eq!(tags, expected_tags);
-    }
-
-    #[test]
-    fn test_should_generate_slots_permutations() {
-        // Given
-        fn mock_builtin_entity(entity_kind: BuiltinEntityKind) -> BuiltinEntity {
-            BuiltinEntity {
-                value: "0".to_string(),
-                range: 0..1,
-                entity: SlotValue::Number(NumberValue { value: 0.0 }),
-                entity_kind,
-            }
-        }
-        let slot_name_mapping = hashmap! {
-            "start_date".to_string() => "snips/datetime".to_string(),
-            "end_date".to_string() => "snips/datetime".to_string(),
-            "temperature".to_string() => "snips/temperature".to_string()
-        };
-        let grouped_entities = &[
-            vec![
-                mock_builtin_entity(BuiltinEntityKind::Time),
-                mock_builtin_entity(BuiltinEntityKind::Temperature),
-            ],
-            vec![mock_builtin_entity(BuiltinEntityKind::Temperature)],
-        ];
-
-        // When
-        let slots_permutations = generate_slots_permutations(grouped_entities, &slot_name_mapping)
-            .into_iter()
-            .sorted_by_key(|permutation| permutation.iter().join("||"));
-
-        // Then
-        let expected_permutations = vec![
-            vec!["O".to_string(), "O".to_string()],
-            vec!["O".to_string(), "temperature".to_string()],
-            vec!["end_date".to_string(), "O".to_string()],
-            vec!["end_date".to_string(), "temperature".to_string()],
-            vec!["start_date".to_string(), "O".to_string()],
-            vec!["start_date".to_string(), "temperature".to_string()],
-            vec!["temperature".to_string(), "O".to_string()],
-            vec!["temperature".to_string(), "temperature".to_string()],
-        ];
-        assert_eq!(expected_permutations, slots_permutations);
     }
 }
