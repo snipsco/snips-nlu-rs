@@ -18,29 +18,6 @@ pub type IntentName = String;
 pub type SlotName = String;
 pub type EntityName = String;
 
-fn partial_cartesian<'b, T>(acc: Vec<Vec<&'b T>>, a: &'b [T]) -> Vec<Vec<&'b T>> {
-    acc.into_iter()
-        .flat_map(|xs| {
-            a.iter()
-                .map(|y| {
-                    let mut vec = xs.clone();
-                    vec.push(y);
-                    vec
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect()
-}
-
-pub fn product<'a, T>(v: &'a [&'a [T]]) -> Vec<Vec<&'a T>> {
-    v.split_first().map_or(vec![], |(head, tail)| {
-        let init: Vec<Vec<&T>> = head.iter().map(|n| vec![n]).collect();
-        tail.iter()
-            .cloned()
-            .fold(init, |vec, list| partial_cartesian(vec, list))
-    })
-}
-
 pub fn deduplicate_overlapping_items<I, O, S, K>(
     items: Vec<I>,
     overlap: O,
@@ -184,39 +161,8 @@ fn deduplicate_overlapping_entities(entities: Vec<MatchedEntity>) -> Vec<Matched
 #[cfg(test)]
 mod tests {
     use super::*;
-    use itertools::repeat_n;
-    use maplit::hashset;
     use snips_nlu_utils::range::ranges_overlap;
-    use std::collections::HashSet;
     use std::ops::Range;
-
-    #[test]
-    fn test_product() {
-        // Given
-        let pool: Vec<Vec<i32>> = repeat_n(0..2, 3).map(|range| range.collect()).collect();
-
-        let ref_pool: Vec<&[i32]> = pool.iter().map(|v| &v[..]).collect();
-
-        // When
-        let prod: Vec<Vec<&i32>> = product(&ref_pool[..]);
-
-        // Then
-        let expected_output: HashSet<Vec<&i32>> = hashset!(
-            vec![&0, &0, &0],
-            vec![&0, &0, &1],
-            vec![&0, &1, &0],
-            vec![&0, &1, &1],
-            vec![&1, &0, &0],
-            vec![&1, &0, &1],
-            vec![&1, &1, &0],
-            vec![&1, &1, &1],
-        );
-
-        assert_eq!(expected_output.len(), prod.len());
-        for p in prod {
-            assert!(expected_output.contains(&p));
-        }
-    }
 
     #[test]
     fn test_deduplicate_items_works() {

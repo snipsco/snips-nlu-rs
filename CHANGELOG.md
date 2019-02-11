@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.63.1] - 2019-02-11
+### Fixed
+- Fix an issue regarding the way builtin entities were handled by the `CRFSlotFiller`
+
 ## [0.63.0] - 2019-02-04
 ### Added
 - `get_intents` API: get the probabilities of all intents (including the null intent) with respect to an input text
@@ -165,7 +169,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
-[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.0...HEAD
+[0.63.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.0...0.63.1
 [0.63.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.62.0...0.63.0
 [0.61.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.1...0.61.2
 [0.61.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.0...0.61.1
