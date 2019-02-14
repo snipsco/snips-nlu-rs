@@ -24,7 +24,7 @@ snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", ta
 snips-nlu-parsers = { git = "https://github.com/snipsco/snips-nlu-parsers", tag = "0.1.2" }
 snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.7.1" }
 failure = "0.1"
-base64 = "0.9"
+base64 = "0.10"
 itertools = { version = "0.7", default-features = false }
 log = "0.4"
 lru-cache = "0.1"
@@ -32,7 +32,7 @@ serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
 tempfile = "3"
-ndarray = "0.11"
+ndarray = "0.12"
 regex = "1.0"
 csv = "1.0"
 zip = { version = "0.3", features=["deflate"] }
@@ -40,7 +40,7 @@ zip = { version = "0.3", features=["deflate"] }
 [dev-dependencies]
 bencher = { git = "https://github.com/snipsco/bencher", rev = "63910ace" }
 clap = "2.32"
-dinghy-test = "0.3"
+dinghy-test = "0.4"
 maplit = "1.0"
 fs_extra = "1.1"
 
