@@ -209,7 +209,8 @@ impl SnipsNluEngine {
         Ok(results
             .into_iter()
             .map(|(_, res)| res)
-            .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap()))
+            .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap())
+            .collect())
     }
 
     pub fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<Slot>> {

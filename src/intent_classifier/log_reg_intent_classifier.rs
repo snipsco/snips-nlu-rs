@@ -108,7 +108,8 @@ impl LogRegIntentClassifier {
                     intent_name: intent_name.clone(),
                     probability: if intent_name.is_none() { 1.0 } else { 0.0 },
                 })
-                .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap()));
+                .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap())
+                .collect());
         }
 
         let opt_intents_set: Option<HashSet<&str>> =
@@ -140,7 +141,8 @@ impl LogRegIntentClassifier {
                     true
                 }
             })
-            .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap()))
+            .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap())
+            .collect())
     }
 }
 
