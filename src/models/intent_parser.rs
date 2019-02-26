@@ -14,7 +14,22 @@ pub struct DeterministicParserModel {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct LookupParserModel {
+    pub language_code: String,
+    pub slots_names: Vec<SlotName>,
+    pub intents_names: Vec<IntentName>,
+    pub map: HashMap<String, (i32, Vec<i32>)>,
+    pub config: LookupParserConfig,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct DeterministicParserConfig {
+    #[serde(default)]
+    pub ignore_stop_words: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LookupParserConfig {
     #[serde(default)]
     pub ignore_stop_words: bool,
 }

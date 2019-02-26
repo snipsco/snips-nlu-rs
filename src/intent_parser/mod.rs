@@ -1,4 +1,5 @@
 pub mod deterministic_intent_parser;
+pub mod lookup_intent_parser;
 pub mod probabilistic_intent_parser;
 
 use std::path::Path;
@@ -8,6 +9,7 @@ use failure::format_err;
 use snips_nlu_ontology::IntentClassifierResult;
 
 pub use self::deterministic_intent_parser::DeterministicIntentParser;
+pub use self::lookup_intent_parser::LookupIntentParser;
 pub use self::probabilistic_intent_parser::ProbabilisticIntentParser;
 use crate::errors::*;
 use crate::models::ProcessingUnitMetadata;
@@ -15,6 +17,7 @@ use crate::resources::SharedResources;
 pub use crate::slot_utils::InternalSlot;
 use crate::utils::IntentName;
 
+#[derive(Debug)]
 pub struct InternalParsingResult {
     pub intent: IntentClassifierResult,
     pub slots: Vec<InternalSlot>,

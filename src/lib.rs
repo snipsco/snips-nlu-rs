@@ -25,7 +25,7 @@ pub extern crate snips_nlu_ontology as ontology;
 pub use crate::errors::*;
 pub use crate::intent_classifier::{IntentClassifier, LogRegIntentClassifier};
 pub use crate::intent_parser::{
-    DeterministicIntentParser, IntentParser, ProbabilisticIntentParser,
+    DeterministicIntentParser, IntentParser, LookupIntentParser, ProbabilisticIntentParser,
 };
 pub use crate::models::*;
 pub use crate::nlu_engine::SnipsNluEngine;
