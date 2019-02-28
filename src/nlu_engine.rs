@@ -152,7 +152,7 @@ impl SnipsNluEngine {
         let intents_whitelist = intents_whitelist_owned
             .as_ref()
             .map(|whitelist| whitelist.as_ref());
-        let mut none_proba: f32 = 0.0;
+        let mut none_score: f32 = 0.0;
         for parser in &self.intent_parsers {
             let internal_parsing_result = parser.parse(input, intents_whitelist)?;
             if internal_parsing_result.intent.intent_name.is_some() {
@@ -166,17 +166,17 @@ impl SnipsNluEngine {
                     slots: resolved_slots,
                 });
             } else {
-                none_proba = internal_parsing_result.intent.probability;
+                none_score = internal_parsing_result.intent.confidence_score;
             }
         }
 
-        // If all parsers failed to extract an intent, we use the probability returned by the last
+        // If all parsers failed to extract an intent, we use the confidence score returned by the last
         // parser
         Ok(IntentParserResult {
             input: input.to_string(),
             intent: IntentClassifierResult {
                 intent_name: None,
-                probability: none_proba,
+                confidence_score: none_score,
             },
             slots: vec![],
         })
@@ -194,14 +194,14 @@ impl SnipsNluEngine {
                 continue;
             }
             for res in parser_results.into_iter() {
-                let existing_proba = results
+                let existing_score = results
                     .get(&res.intent_name)
-                    .map(|r| r.probability)
+                    .map(|r| r.confidence_score)
                     .unwrap_or(0.0);
-                if res.probability > existing_proba {
+                if res.confidence_score > existing_score {
                     results
                         .entry(res.intent_name.clone())
-                        .and_modify(|e| e.probability = res.probability)
+                        .and_modify(|e| e.confidence_score = res.confidence_score)
                         .or_insert_with(|| res);
                 }
             }
@@ -209,7 +209,7 @@ impl SnipsNluEngine {
         Ok(results
             .into_iter()
             .map(|(_, res)| res)
-            .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap())
+            .sorted_by(|a, b| b.confidence_score.partial_cmp(&a.confidence_score).unwrap())
             .collect())
     }
 

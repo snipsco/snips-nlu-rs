@@ -28,7 +28,7 @@ pub fn internal_parsing_result(
     InternalParsingResult {
         intent: IntentClassifierResult {
             intent_name,
-            probability: intent_proba,
+            confidence_score: intent_proba,
         },
         slots,
     }
