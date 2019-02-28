@@ -188,7 +188,8 @@ impl TfidfVectorizer {
         let builtin_entities_features: Vec<String> = builtin_entities
             .iter()
             .map(|ent| get_builtin_entity_feature_name(ent.entity_kind, self.language))
-            .sorted();
+            .sorted()
+            .collect();
 
         // Extract custom entities on the normalized utterance
         let custom_entities = self
@@ -399,6 +400,7 @@ fn get_word_clusters(query_tokens: &[String], word_clusterer: Arc<WordClusterer>
         .into_iter()
         .filter_map(|ngram| word_clusterer.get_cluster(&ngram.0.to_lowercase()))
         .sorted()
+        .collect()
 }
 
 fn normalize_stem(tokens: &[String], opt_stemmer: Option<Arc<Stemmer>>) -> Vec<String> {

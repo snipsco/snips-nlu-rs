@@ -75,7 +75,7 @@ impl IntentClassifier for LogRegIntentClassifier {
         Ok(if intents_results.is_empty() {
             IntentClassifierResult {
                 intent_name: None,
-                probability: 1.0,
+                confidence_score: 1.0,
             }
         } else {
             intents_results.into_iter().next().unwrap()
@@ -96,7 +96,7 @@ impl LogRegIntentClassifier {
         if self.intent_list.len() <= 1 {
             return Ok(vec![IntentClassifierResult {
                 intent_name: self.intent_list.first().cloned().unwrap_or(None),
-                probability: 1.0,
+                confidence_score: 1.0,
             }]);
         }
 
@@ -106,9 +106,10 @@ impl LogRegIntentClassifier {
                 .iter()
                 .map(|intent_name| IntentClassifierResult {
                     intent_name: intent_name.clone(),
-                    probability: if intent_name.is_none() { 1.0 } else { 0.0 },
+                    confidence_score: if intent_name.is_none() { 1.0 } else { 0.0 },
                 })
-                .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap()));
+                .sorted_by(|a, b| b.confidence_score.partial_cmp(&a.confidence_score).unwrap())
+                .collect());
         }
 
         let opt_intents_set: Option<HashSet<&str>> =
@@ -120,15 +121,15 @@ impl LogRegIntentClassifier {
         let features = featurizer.transform(input)?;
         let filtered_out_indexes =
             get_filtered_out_intents_indexes(&self.intent_list, opt_intents_set.as_ref());
-        let probabilities = logreg.run(&features.view(), filtered_out_indexes)?;
+        let scores = logreg.run(&features.view(), filtered_out_indexes)?;
 
         Ok(self
             .intent_list
             .iter()
-            .zip(probabilities.into_iter())
-            .map(|(intent_name, probability)| IntentClassifierResult {
+            .zip(scores.into_iter())
+            .map(|(intent_name, score)| IntentClassifierResult {
                 intent_name: intent_name.clone(),
-                probability: *probability,
+                confidence_score: *score,
             })
             .filter(|res| {
                 if let Some(intent) = res.intent_name.as_ref() {
@@ -140,7 +141,8 @@ impl LogRegIntentClassifier {
                     true
                 }
             })
-            .sorted_by(|a, b| b.probability.partial_cmp(&a.probability).unwrap()))
+            .sorted_by(|a, b| b.confidence_score.partial_cmp(&a.confidence_score).unwrap())
+            .collect())
     }
 }
 
@@ -372,7 +374,7 @@ mod tests {
         let actual_result = classification_result.unwrap();
         let expected_result = IntentClassifierResult {
             intent_name: Some("MakeTea".to_string()),
-            probability: 0.9088109819597295,
+            confidence_score: 0.9088109819597295,
         };
 
         // Then
