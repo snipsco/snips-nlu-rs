@@ -1,6 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.64.0] - 2019-02-28
+### Changed
+- Bumped `snips-nlu-ontology` to 0.64.4
+- Bumped `crf-suite` to 0.3.1 and cbindgen to
+
 ## [0.63.1] - 2019-02-11
 ### Fixed
 - Fix an issue regarding the way builtin entities were handled by the `CRFSlotFiller`
@@ -169,6 +174,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.64.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.1...0.64.0
 [0.63.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.0...0.63.1
 [0.63.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.62.0...0.63.0
 [0.61.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.61.1...0.61.2
