@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use failure::bail;
+use itertools::Itertools;
 use snips_nlu_utils::token::Token;
 
 use crate::errors::*;
@@ -39,7 +40,7 @@ impl ProbabilisticFeatureProcessor {
         for offsetter in self.features_offsetters.iter() {
             for i in 0..input.len() {
                 if let Some(value) = offsetter.feature.compute(input, i)? {
-                    offsetter.offsets_with_name().iter().for_each(|&(offset, ref key)| {
+                    offsetter.offsets_with_name().iter().foreach(|&(offset, ref key)| {
                         if i as i32 - offset >= 0 && i as i32 - offset < input.len() as i32 {
                             features[(i as i32 - offset) as usize].push(
                                 (key.clone(), value.clone())
