@@ -118,11 +118,11 @@
         "args": {
           "entity_labels": [
             "snips/amountOfMoney",
+            "snips/percentage",
             "snips/ordinal",
+            "snips/temperature",
             "snips/number",
             "snips/duration",
-            "snips/percentage",
-            "snips/temperature",
             "snips/datetime"
           ],
           "language_code": "en",
@@ -134,13 +134,26 @@
           -1,
           0
         ]
+      },
+      {
+        "args": {
+          "cluster_name": "brown_clusters",
+          "use_stemming": false
+        },
+        "factory_name": "word_cluster",
+        "offsets": [
+          -2,
+          -1,
+          0,
+          1
+        ]
       }
     ],
     "random_seed": null,
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "model32pNoy.crfsuite",
+  "crf_model_file": "modelcbe1i_k3.crfsuite",
   "intent": "MakeTea",
   "language_code": "en",
   "slot_name_mapping": {
