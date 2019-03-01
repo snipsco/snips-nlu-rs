@@ -134,26 +134,13 @@
           -1,
           0
         ]
-      },
-      {
-        "args": {
-          "cluster_name": "brown_clusters",
-          "use_stemming": false
-        },
-        "factory_name": "word_cluster",
-        "offsets": [
-          -2,
-          -1,
-          0,
-          1
-        ]
       }
     ],
     "random_seed": null,
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "modelqISjlH.crfsuite",
+  "crf_model_file": "model32pNoy.crfsuite",
   "intent": "MakeTea",
   "language_code": "en",
   "slot_name_mapping": {

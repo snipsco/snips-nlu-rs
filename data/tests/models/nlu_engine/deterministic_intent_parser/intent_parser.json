@@ -2,7 +2,7 @@
   "config": {
     "ignore_stop_words": true,
     "max_pattern_length": 1000,
-    "max_queries": 500,
+    "max_queries": 100,
     "unit_name": "deterministic_intent_parser"
   },
   "group_names_to_slot_names": {
