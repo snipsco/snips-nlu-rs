@@ -147,7 +147,7 @@ impl IntentParser for LookupIntentParser {
         intents_whitelist: Option<&[&str]>,
     ) -> Result<InternalParsingResult> {
         let mut entities = self.get_all_entities(input)?;
-        let formatted_input = LookupIntentParser::replace_entities(input, &mut entities);
+        let formatted_input = replace_entities_with_placeholders(input, &mut entities);
         let cleaned_input = self.preprocess_text(input);
         let key = self.preprocess_text(&*formatted_input);
         let val = self.map.get(&key).or_else(|| {
@@ -213,27 +213,6 @@ impl LookupIntentParser {
 
         tokens.join(" ").to_lowercase()
     }
-
-    fn replace_entities(text: &str, entities: &mut Vec<MatchedEntity>) -> String {
-        if entities.is_empty() {
-            text.to_string()
-        } else {
-            entities.sort_by_key(|entity| entity.range.start);
-            let mut processed_text = String::new();
-            let mut cur_idx = 0;
-            for entity in entities {
-                let start = entity.range.start as usize;
-                let end = entity.range.end as usize;
-                let prefix_txt = substring_with_char_range(text.to_string(), &(cur_idx..start));
-                let place_holder = get_entity_placeholder(&*entity.entity_name);
-                processed_text.push_str(&prefix_txt);
-                processed_text.push_str(&place_holder);
-                cur_idx = end
-            }
-            processed_text.push_str(&suffix_from_char_index(text.to_string(), cur_idx));
-            processed_text
-        }
-    }
 }
 
 impl fmt::Debug for LookupIntentParser {
@@ -258,6 +237,27 @@ fn get_entity_placeholder(entity_label: &str) -> String {
         .join("")
         .to_uppercase();
     format!("%{}%", normalized_entity_label)
+}
+
+fn replace_entities_with_placeholders(text: &str, entities: &mut Vec<MatchedEntity>) -> String {
+    if entities.is_empty() {
+        text.to_string()
+    } else {
+        entities.sort_by_key(|entity| entity.range.start);
+        let mut processed_text = String::new();
+        let mut cur_idx = 0;
+        for entity in entities {
+            let start = entity.range.start as usize;
+            let end = entity.range.end as usize;
+            let prefix_txt = substring_with_char_range(text.to_string(), &(cur_idx..start));
+            let place_holder = get_entity_placeholder(&*entity.entity_name);
+            processed_text.push_str(&prefix_txt);
+            processed_text.push_str(&place_holder);
+            cur_idx = end
+        }
+        processed_text.push_str(&suffix_from_char_index(text.to_string(), cur_idx));
+        processed_text
+    }
 }
 
 #[cfg(test)]
@@ -761,7 +761,7 @@ mod tests {
     }
 
     #[test]
-    fn test_replace_entities() {
+    fn test_replace_entities_with_placeholders() {
         // Given
         let text = "the third album of Blink 182 is great";
         let mut entities = vec![
@@ -776,7 +776,7 @@ mod tests {
         ];
 
         // When
-        let formatted_text = LookupIntentParser::replace_entities(text, &mut entities);
+        let formatted_text = replace_entities_with_placeholders(text, &mut entities);
 
         // Then
         let expected_text = "%SNIPSORDINAL% album of %SNIPSMUSICARTIST% is great";
