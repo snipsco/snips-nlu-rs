@@ -255,6 +255,7 @@ impl DeterministicIntentParser {
                     }
                 })
                 .map(|(a_match, group_name)| {
+                    let group_name = group_name.split('_').collect::<Vec<&str>>()[0];
                     let slot_name = self.group_names_to_slot_names[group_name].to_string();
                     let entity = self.slot_names_to_entities[intent][&slot_name].to_string();
                     let byte_range = a_match.start()..a_match.end();
@@ -368,29 +369,33 @@ mod tests {
             language_code: "en".to_string(),
             patterns: hashmap![
                 "dummy_intent_1".to_string() => vec![
-                    r"^\s*This\s*is\s*a\s*(?P<group_1>%DUMMY_ENTITY_1%)\s*query\s*with\s*another\s*(?P<group_2>%DUMMY_ENTITY_2%)\s*$".to_string(),
-                    r"^\s*(?P<group_5>%DUMMY_ENTITY_1%)\s*$".to_string(),
-                    r"^\s*This\s*is\s*another\s*(?P<group_3>%DUMMY_ENTITY_2%)\s*query\s*$".to_string(),
-                    r"^\s*This\s*is\s*another\s*über\s*(?P<group_3>%DUMMY_ENTITY_2%)\s*query.\s*$".to_string(),
-                    r"^\s*This\s*is\s*another\s*(?P<group_4>%DUMMY_ENTITY_2%)?\s*$*".to_string(),
+                    r"^\s*This\s*is\s*a\s*(?P<group1>%DUMMY_ENTITY_1%)\s*query\s*with\s*another\s*(?P<group2>%DUMMY_ENTITY_2%)\s*$".to_string(),
+                    r"^\s*(?P<group5>%DUMMY_ENTITY_1%)\s*$".to_string(),
+                    r"^\s*This\s*is\s*another\s*(?P<group3>%DUMMY_ENTITY_2%)\s*query\s*$".to_string(),
+                    r"^\s*This\s*is\s*another\s*über\s*(?P<group3>%DUMMY_ENTITY_2%)\s*query.\s*$".to_string(),
+                    r"^\s*This\s*is\s*another\s*(?P<group4>%DUMMY_ENTITY_2%)?\s*$*".to_string(),
                 ],
                 "dummy_intent_2".to_string() => vec![
-                    r"^\s*This\s*is\s*a\s*(?P<group_0>%DUMMY_ENTITY_1%)\s*query\s*from\s*another\s*intent\s*$".to_string()
+                    r"^\s*This\s*is\s*a\s*(?P<group0>%DUMMY_ENTITY_1%)\s*query\s*from\s*another\s*intent\s*$".to_string()
                 ],
                 "dummy_intent_3".to_string() => vec![
-                    r"^\s*Send\s*(?P<group_6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*$".to_string(),
-                    r"^\s*Send\s*(?P<group_6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*at\s*(?P<group_7>%DUMMY_ENTITY_2%)\s*$".to_string()
+                    r"^\s*Send\s*(?P<group6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*$".to_string(),
+                    r"^\s*Send\s*(?P<group6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*at\s*(?P<group7>%DUMMY_ENTITY_2%)\s*$".to_string()
+                ],
+                "dummy_intent_4".to_string() => vec![
+                    r"^\s*what\s*is\s*(?P<group8>%SNIPSNUMBER%)\s*plus\s*(?P<group8_2>%SNIPSNUMBER%)\s*$".to_string()
                 ],
             ],
             group_names_to_slot_names: hashmap![
-                "group_0".to_string() => "dummy_slot_name".to_string(),
-                "group_1".to_string() => "dummy_slot_name".to_string(),
-                "group_2".to_string() => "dummy_slot_name2".to_string(),
-                "group_3".to_string() => "dummy_slot_name2".to_string(),
-                "group_4".to_string() => "dummy_slot_name3".to_string(),
-                "group_5".to_string() => "dummy_slot_name".to_string(),
-                "group_6".to_string() => "dummy_slot_name4".to_string(),
-                "group_7".to_string() => "dummy_slot_name2".to_string(),
+                "group0".to_string() => "dummy_slot_name".to_string(),
+                "group1".to_string() => "dummy_slot_name".to_string(),
+                "group2".to_string() => "dummy_slot_name2".to_string(),
+                "group3".to_string() => "dummy_slot_name2".to_string(),
+                "group4".to_string() => "dummy_slot_name3".to_string(),
+                "group5".to_string() => "dummy_slot_name".to_string(),
+                "group6".to_string() => "dummy_slot_name4".to_string(),
+                "group7".to_string() => "dummy_slot_name2".to_string(),
+                "group8".to_string() => "dummy_slot_name5".to_string(),
             ],
             slot_names_to_entities: hashmap![
                 "dummy_intent_1".to_string() => hashmap![
@@ -404,6 +409,9 @@ mod tests {
                 "dummy_intent_3".to_string() => hashmap![
                     "dummy_slot_name2".to_string() => "dummy_entity_2".to_string(),
                     "dummy_slot_name4".to_string() => "snips/amountOfMoney".to_string(),
+                ],
+                "dummy_intent_4".to_string() => hashmap![
+                    "dummy_slot_name5".to_string() => "snips/number".to_string(),
                 ],
             ],
             config: DeterministicParserConfig {
@@ -560,7 +568,7 @@ mod tests {
             intent_name: Some("dummy_intent_1".to_string()),
             confidence_score: 1.0,
         };
-        assert_eq!(4, intents.len());
+        assert_eq!(5, intents.len());
         assert_eq!(&first_intent, &intents[0]);
         assert_eq!(0.0, intents[1].confidence_score);
         assert_eq!(0.0, intents[2].confidence_score);
@@ -601,6 +609,63 @@ mod tests {
         };
 
         assert_eq!(intent, expected_intent);
+    }
+
+    #[test]
+    fn test_parse_utterance_with_duplicated_slot_name() {
+        // Given
+        let text = "what is one plus one";
+        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![
+                BuiltinEntity {
+                    value: "one".to_string(),
+                    range: 8..11,
+                    entity: SlotValue::Number(NumberValue { value: 1. }),
+                    entity_kind: BuiltinEntityKind::Number,
+                },
+                BuiltinEntity {
+                    value: "one".to_string(),
+                    range: 17..20,
+                    entity: SlotValue::Number(NumberValue { value: 1. }),
+                    entity_kind: BuiltinEntityKind::Number,
+                },
+            ],
+        )]);
+        let shared_resources = SharedResourcesBuilder::default()
+            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .build();
+        let parser =
+            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
+                .unwrap();
+
+        // When
+        let parsing_result = parser.parse(text, None).unwrap();
+        let intent = parsing_result.intent;
+        let slots = parsing_result.slots;
+
+        // Then
+        let expected_intent = IntentClassifierResult {
+            intent_name: Some("dummy_intent_4".to_string()),
+            confidence_score: 1.0,
+        };
+        let expected_slots = vec![
+            InternalSlot {
+                value: "one".to_string(),
+                char_range: 8..11,
+                entity: "snips/number".to_string(),
+                slot_name: "dummy_slot_name5".to_string(),
+            },
+            InternalSlot {
+                value: "one".to_string(),
+                char_range: 17..20,
+                entity: "snips/number".to_string(),
+                slot_name: "dummy_slot_name5".to_string(),
+            },
+        ];
+
+        assert_eq!(expected_intent, intent);
+        assert_eq!(expected_slots, slots);
     }
 
     #[test]
