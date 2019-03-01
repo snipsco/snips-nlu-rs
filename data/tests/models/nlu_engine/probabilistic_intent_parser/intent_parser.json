@@ -2,11 +2,11 @@
   "config": {
     "intent_classifier_config": {
       "data_augmentation_config": {
-        "add_builtin_entities_examples": true,
+        "add_builtin_entities_examples": false,
         "max_unknown_words": null,
         "min_utterances": 20,
         "noise_factor": 5,
-        "unknown_word_prob": 0,
+        "unknown_word_prob": 0.0,
         "unknown_words_replacement_string": null
       },
       "featurizer_config": {

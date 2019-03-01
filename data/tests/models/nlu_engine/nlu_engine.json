@@ -4,18 +4,22 @@
     "intent_parsers_configs": [
       {
         "ignore_stop_words": true,
+        "unit_name": "lookup_intent_parser"
+      },
+      {
+        "ignore_stop_words": true,
         "max_pattern_length": 1000,
-        "max_queries": 100,
+        "max_queries": 500,
         "unit_name": "deterministic_intent_parser"
       },
       {
         "intent_classifier_config": {
           "data_augmentation_config": {
-            "add_builtin_entities_examples": true,
+            "add_builtin_entities_examples": false,
             "max_unknown_words": null,
             "min_utterances": 20,
             "noise_factor": 5,
-            "unknown_word_prob": 0,
+            "unknown_word_prob": 0.0,
             "unknown_words_replacement_string": null
           },
           "featurizer_config": {
@@ -198,10 +202,11 @@
     }
   },
   "intent_parsers": [
+    "lookup_intent_parser",
     "deterministic_intent_parser",
     "probabilistic_intent_parser"
   ],
   "model_version": "0.19.0",
-  "training_package_version": "0.18.0",
+  "training_package_version": "0.19.2",
   "unit_name": "nlu_engine"
 }

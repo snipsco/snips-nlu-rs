@@ -15,22 +15,36 @@
         0
       ]
     ],
-    "i want % snipsnumber % cups of tea": [
+    "i want % snipsnumber % cups of % temperature % tea": [
       1,
       [
-        0
+        0,
+        1
       ]
     ],
-    "make % snipsnumber % cup of tea": [
-      1,
-      [
-        0
-      ]
-    ],
-    "make % snipsnumber % cups of coffee": [
+    "make % snipsnumber % cup of coffee": [
       0,
       [
         0
+      ]
+    ],
+    "make % snipsnumber % tea cups": [
+      1,
+      [
+        0
+      ]
+    ],
+    "make % temperature % cup of tea": [
+      1,
+      [
+        1
+      ]
+    ],
+    "prepare % snipsnumber % cup of % temperature % tea": [
+      1,
+      [
+        0,
+        1
       ]
     ],
     "prepare % snipsnumber % cup of coffee": [
@@ -38,15 +52,10 @@
       [
         0
       ]
-    ],
-    "prepare % snipsnumber % cup of tea": [
-      1,
-      [
-        0
-      ]
     ]
   },
   "slots_names": [
-    "number_of_cups"
+    "number_of_cups",
+    "beverage_temperature"
   ]
 }

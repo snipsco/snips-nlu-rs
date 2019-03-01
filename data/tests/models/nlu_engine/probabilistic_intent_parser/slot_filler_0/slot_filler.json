@@ -151,7 +151,7 @@
     "tagging_scheme": 1,
     "unit_name": "crf_slot_filler"
   },
-  "crf_model_file": "modelX0zNzD.crfsuite",
+  "crf_model_file": "modeldawO2U.crfsuite",
   "intent": "MakeCoffee",
   "language_code": "en",
   "slot_name_mapping": {

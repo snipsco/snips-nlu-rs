@@ -6,7 +6,7 @@ protest,protested,protests,protesting
 sleep,sleeps,slept,sleeping
 unemploy,unemployment
 hate,hated,hates,hating
-forget,forgetting,forgotten,forgets,forgot
+forget,forgot,forgetting,forgotten,forgets
 accus,accusing,accuses,accused,accuse
 educ,educating,educate,educational,education,educated,educates,educators
 stationeri,stationery
@@ -109,6 +109,7 @@ mitchel,mitchell
 avenu,avenue
 invas,invasion
 attitud,attitude,attitudes
+colleg,colleges,college
 sterl,sterling
 enclosur,enclosure
 total,totally,totals
@@ -177,7 +178,7 @@ end,ends,ended,ending
 thing,things
 polic,police
 cylind,cylinder
-travel,travelling,traveller,travelled,traveler,travels,traveling,travelers
+travel,travelling,traveller,travelled,travels,traveler,traveling,travelers
 acut,acute
 classifi,classifieds,classify,classifying,classified,classifies
 ceremoni,ceremony
@@ -201,7 +202,7 @@ beauti,beauty,beautiful,beautifully
 endang,endangered
 law,laws
 lesbian,lesbians
-demonstr,demonstrating,demonstrates,demonstration,demonstrated,demonstrate
+demonstr,demonstrating,demonstration,demonstrates,demonstrated,demonstrate
 belli,belly
 util,utils,utilize,utility,utilities,utilization
 principl,principles,principle
@@ -210,7 +211,7 @@ minim,minimal,minimize
 spous,spouse
 greet,greetings,greeting,greeted,greets
 think,thinks,thinking,thought
-perform,performances,performing,performance,performer,performed,performs
+receiv,receive,received,receives,receiver,receiving,receivers
 maintain,maintaining,maintained,maintains
 green,greene
 incorpor,incorporates,incorporated,incorporating,incorporate
@@ -231,7 +232,7 @@ becaus,because
 addit,addition,additions,additional,additionally
 myrtl,myrtle
 privileg,privilege,privileges
-incid,incident,incidents,incidence
+incid,incidence,incidents,incident
 affect,affected,affecting,affects
 flexibl,flexible,flexibility
 vari,vary,varied,varying,varies
@@ -322,7 +323,7 @@ confus,confusing,confused,confuses,confuse,confusion
 hire,hires,hired,hiring
 stripe,stripes
 edward,edwards
-rang,ranging,ranged,ranges,range
+malpractic,malpractice
 shopper,shoppers
 enterpris,enterprise,enterprises
 grade,grades
@@ -347,9 +348,9 @@ speci,species
 sometim,sometimes
 mercuri,mercury
 timothi,timothy
-underlin,underlines,underline,underlined,underlining
+underlin,underline,underlines,underlined,underlining
 ton,tons
-draft,drafts,banking,banked
+cassett,cassette
 euro,euros
 hundr,hundred,hundreds
 listen,listens,listened,listening
@@ -373,8 +374,8 @@ keyword,keywords
 provid,provided,provide,providence,providers,providing,provides,provider
 hike,hiking
 tree,trees
-rate,rated,rates,ratings,rating
-project,projection,projecting,projects,projected
+rate,rated,ratings,rating,rates
+project,projection,projects,projected,projecting
 matter,mattered,matters,mattering
 upset,upsetting,upsets
 minut,minute,minutes
@@ -394,6 +395,7 @@ seminar,seminars
 dozen,dozens
 strength,strengths
 recreat,recreational,recreation
+widen,widening,widened,widens
 that,thats
 thorough,thoroughly
 contact,contacts,contacted,contacting
@@ -401,7 +403,7 @@ travi,travis
 transmit,transmitting,transmitted,transmits
 rider,riders
 anatomi,anatomy
-dian,diane
+simplifi,simplified
 forestri,forestry
 germani,germany
 withdraw,withdrawal,withdrawing,withdrew,withdraws,withdrawn
@@ -422,7 +424,7 @@ everyth,everything
 tradit,traditions,tradition,traditional
 webcam,webcams
 excus,excusing,excuse,excused,excuses
-maritim,maritime
+microphon,microphone
 doc,docs
 camp,camps,camping
 metal,metallic,metals
@@ -435,7 +437,7 @@ logist,logistics
 freewar,freeware
 scream,screaming,screamed,screams
 treati,treaty
-opposit,opposite,opposition
+visitor,visitors
 queen,queens
 advisori,advisory
 radio,radios
@@ -452,7 +454,6 @@ explain,explained,explaining,explains
 configur,configuration,configured,configurations,configure,configuring
 apach,apache
 restaur,restaurants,restaurant
-fund,funded,funding,funds
 gregori,gregory
 theme,themes
 busi,busy,business,businesses
@@ -486,15 +487,15 @@ bad,badly
 troop,troops
 ban,banned,bans,banning
 movement,movements
-steal,stole,stealing,steals,stolen
-respond,responding,responded,respondent,respondents,responds
+steal,stole,steals,stealing,stolen
+respond,respondents,responding,responded,respondent,responds
 telecharg,telecharger
 vampir,vampire
 human,humans,humanities,humanity
 fair,fairly
 ongo,ongoing
 nut,nuts
-beg,begged,begs,begging
+beg,begged,begging,begs
 resist,resisting,resistant,resisted,resistance,resists
 mandatori,mandatory
 result,resulted,results,resulting
@@ -541,7 +542,7 @@ uncertainti,uncertainty
 con,cons
 compromis,compromise
 assur,assured,assures,assuring,assurance,assure
-widen,widening,widened,widens
+tone,tones
 spear,spears
 toni,tony
 excess,excessive
@@ -560,7 +561,7 @@ union,unions
 patch,patches
 erect,erects,erected,erecting
 legend,legends
-accumul,accumulates,accumulated,accumulating,accumulate
+revenu,revenues,revenue
 unsubscrib,unsubscribe
 interest,interests,interested,interesting
 basic,basics,basically
@@ -613,10 +614,10 @@ disappear,disappears,disappearing,disappeared
 precis,precisely,precise,precision
 harmoni,harmony
 credit,credits
-receiv,receive,received,receives,receiver,receiving,receivers
+perform,performed,performances,performing,performance,performer,performs
 suggest,suggesting,suggestions,suggested,suggestion,suggests
 make,makes,making,made
-format,formatting,formats,formation
+transpar,transparent,transparency
 bunni,bunny
 learner,learners
 split,splitting,splits
@@ -782,7 +783,7 @@ closur,closure
 transform,transforming,transformed,transformation,transforms
 happi,happy,happiness
 avail,availability,available
-reli,rely,relies,relied,relying
+reli,relies,rely,relied,relying
 seeker,seekers
 editor,editors
 way,ways
@@ -810,7 +811,6 @@ dead,deadly
 refriger,refrigerator
 analyst,analysts
 counsel,counseling
-ami,amy
 pragu,prague
 revel,revelation
 inquir,inquire
@@ -885,7 +885,7 @@ anywher,anywhere
 essenc,essence
 hungri,hungry
 jacket,jackets
-ignor,ignore,ignoring,ignored,ignores
+ignor,ignoring,ignore,ignored,ignores
 inexpens,inexpensive
 time,timely,times,timed,timing
 push,pushes,pushed,pushing
@@ -927,7 +927,7 @@ dodg,dodge
 brows,browse,browsing
 cool,cooling,cooled,cools
 valuabl,valuable
-administr,administration,administrators,administrative,administrator
+administr,administrators,administrative,administration,administrator
 level,levels
 tear,tore,torn,tears,tearing
 novelti,novelty
@@ -981,7 +981,7 @@ muslim,muslims
 genet,genetic,genetics
 onli,only
 agreement,agreements
-satisfi,satisfied,satisfies,satisfy,satisfying
+water,waters
 entertain,entertains,entertainment,entertained,entertaining
 juri,jury
 address,addrest,addressing,addresses,addressed
@@ -989,11 +989,11 @@ drainag,drainage
 coincid,coincide,coinciding,coincides,coincided
 teacher,teachers
 wait,waits,waited,waiting
-box,boxed,boxes,boxing
+box,boxing,boxed,boxes
 buck,bucks
 upskirt,upskirts
 boast,boasting,boasted,boasts
-invit,invited,invites,invitation,inviting,invite,invitations
+invit,invite,invited,invites,invitation,inviting,invitations
 shift,shifting,shifted,shifts
 worldwid,worldwide
 bow,bowing,bowed,bows
@@ -1001,7 +1001,7 @@ trial,trials
 behav,behave,behaves,behaved,behaving
 thirti,thirty
 healthi,healthy
-colleg,colleges,college
+extrem,extreme,extremely
 guilti,guilty
 ourselv,ourselves
 orient,orientation,oriental,oriented
@@ -1015,7 +1015,6 @@ seattl,seattle
 visibl,visibility,visible
 marker,markers
 instal,installations,installing,installed,installation,instals,install
-crime,crimes
 mobil,mobiles,mobile,mobility
 market,marketing,marketed,markets
 bloodi,bloody
@@ -1076,8 +1075,8 @@ reynold,reynolds
 fuck,fucks,fucked,fucking
 agent,agents
 topic,topics
-spi,spy,spies
-critic,criticism,criticizing,criticize,critics,critical,criticizes,criticized
+spi,spies,spy
+transexu,transexual
 abort,abortion
 immunolog,immunology
 council,councils
@@ -1119,7 +1118,7 @@ accessori,accessory,accessories
 stress,stresses,stressing,stressed
 practic,practices,practical,practice
 brussel,brussels
-secur,secure,securities,security,securely,secured,securing,secures
+secur,secure,securities,security,securely,secured,secures,securing
 favorit,favorite,favorites
 offens,offense,offensive
 tale,tales
@@ -1135,7 +1134,7 @@ talk,talked,talks,talking
 vike,viking
 fairi,fairy
 anticip,anticipating,anticipates,anticipated,anticipate
-gradual,gradually
+hugh,hughes
 approv,approving,approve,approves,approved,approval
 graduat,graduate,graduates,graduated,graduation
 lyric,lyrics
@@ -1179,7 +1178,7 @@ lewi,lewis
 clutch,clutches,clutched,clutching
 revers,reversing,reverse,reverses,reversed
 oliv,oliver,olive
-separ,separates,separating,separated,separate,separately,separation
+separ,separated,separates,separating,separate,separately,separation
 magazin,magazines,magazine
 jimmi,jimmy
 massachusett,massachusetts
@@ -1252,7 +1251,7 @@ nicknam,nickname
 neglect,neglected,neglects,neglecting
 frequent,frequently
 geolog,geological,geology
-oper,operation,operator,operated,operate,operations,operates,operating,operators,operational
+oper,operation,operating,operator,operated,operate,operations,operates,operators,operational
 suspend,suspending,suspends,suspended
 oppon,opponents,opponent
 carri,carrying,carry,carried,carries
@@ -1282,7 +1281,7 @@ defer,deferred
 citi,city,cities
 silenc,silence
 cumul,cumulative
-cassett,cassette
+draft,drafts,banking,banked
 averag,average
 escort,escorts
 proposit,proposition
@@ -1309,11 +1308,11 @@ wide,widely
 orgi,orgy
 crack,cracks,cracked,cracking
 cornel,cornell
-recruit,recruiting,recruitment,recruits,recruited
+recruit,recruitment,recruits,recruited,recruiting
 section,sections
 balanc,balance,balances,balanced,balancing
 coat,coating,coated
-posit,positive,positioning,positioned,positions,position
+posit,positive,positioning,positioned,position,positions
 worcest,worcester
 seri,series
 prospect,prospects,prospective
@@ -1325,12 +1324,12 @@ ann,anne
 premier,premiere
 argument,arguments
 alleg,alleging,alleged,alleges,allege
-say,saying,said,says
+say,saying,says,said
 slam,slams,slammed,slamming
 rent,rents,renting,rented
 deliv,delivering,delivers,delivered,deliver
 portrait,portraits
-exclud,exclude,excludes,excluded,excluding
+exclud,exclude,excluding,excludes,excluded
 coach,coaching,coaches
 engin,engineering,engines,engineer,engine,engineers
 squar,square
@@ -1381,7 +1380,7 @@ senior,seniors
 axi,axis
 steadi,steady
 boundari,boundaries,boundary
-recipi,recipient,recipients
+recipi,recipients,recipient
 shot,shots
 show,showed,shown,shows,showing
 cheat,cheats
@@ -1402,7 +1401,7 @@ transact,transactions,transaction
 dick,dicke,dicks
 activ,activating,activated,activates,actively,activation,active,activate,activities,activity
 estat,estates,estate
-lean,leaning,leant,leans
+crime,crimes
 former,formerly
 wood,woods
 black,blacks
@@ -1414,9 +1413,8 @@ voluntari,voluntary
 get,gotten,got,gets,getting
 nobl,noble
 outlet,outlets
-progress,progressed,progresses,progressing,progressive
-trade,trading,trades,traded
-requir,requiring,required,requires,requirements,requirement,require
+progress,progressed,progressing,progresses,progressive
+requir,requiring,required,requires,requirements,require,requirement
 truli,truly
 reveal,revealed,reveals,revealing
 artist,artistic,artists
@@ -1429,7 +1427,7 @@ roger,rogers
 aris,arises,arisen,arising,arose,arise
 limousin,limousines
 telecommun,telecommunications
-summari,summaries,summary
+summari,summary,summaries
 lafayett,lafayette
 lectur,lectures,lecture
 concert,concerts
@@ -1463,7 +1461,7 @@ parent,parents,parenting,parental
 screen,screening,screens
 blame,blames,blamed,blaming
 cycl,cycling,cycles,cycle
-spare,spared,sparing,spares
+spare,sparing,spares,spared
 come,came,comes,coming
 reaction,reactions
 christin,christine
@@ -1519,7 +1517,7 @@ delici,delicious
 berri,berry
 sound,sounded,sounding,sounds
 thesi,thesis
-amend,amending,amendment,amends,amended,amendments
+amend,amending,amendment,amends,amendments,amended
 mount,mounting,mounted,mounts
 imperi,imperial
 trick,tricks
@@ -1547,7 +1545,7 @@ author,authorized,authorization,authors,authorities,authority
 pay,pays,payed,paying
 medic,medication,medications,medical
 bowl,bowling
-mont,monte
+econom,economics,economic
 dealer,dealers
 binari,binary
 columnist,columnists
@@ -1563,7 +1561,7 @@ finish,finishing,finishes,finished
 screenshot,screenshots
 statut,statutes,statute
 nest,nested
-assist,assistant,assistance,assists,assisting,assisted
+assist,assistant,assisted,assistance,assists,assisting
 driver,drivers
 someon,someone
 webshot,webshots
@@ -1579,6 +1577,7 @@ reliev,relieving,relieve,relieved,relieves
 cambridg,cambridge
 charger,chargers
 denni,dennis
+commission,commissioner,commissioners
 justifi,justifies,justified,justifying,justify
 tit,tits
 identif,identification
@@ -1590,7 +1589,7 @@ scholarship,scholarships
 venu,venues,venue
 outdoor,outdoors
 violenc,violence
-execut,executives,execution,executive,executed,executes,execute,executing
+execut,execution,executives,executive,executed,executes,execute,executing
 handmad,handmade
 rest,resting,rested,rests
 custodi,custody
@@ -1612,9 +1611,9 @@ lender,lenders
 instrument,instruments,instrumental,instrumentation
 treatment,treatments
 aerospac,aerospace
-vulner,vulnerability,vulnerable
+vulner,vulnerable,vulnerability
 pill,pills
-earli,early
+ami,amy
 frown,frowned,frowns,frowning
 oop,oops
 read,readings,reads,reading
@@ -1642,7 +1641,7 @@ benefit,benefiting,benefited,benefits
 updat,update,updating,updated,updates
 kennedi,kennedy
 output,outputs
-tower,towers
+envisag,envisage,envisaging,envisaged,envisages
 manag,managers,manage,management,managed,manager,manages,managing
 fulfil,fulfils,fulfilled,fulfilling
 cabl,cable,cables
@@ -1669,9 +1668,9 @@ inject,injection
 missil,missile
 squirt,squirting
 complic,complications,complicated
-refer,reference,referred,referring,refers,references
+rocki,rocky
 immun,immune
-compris,comprise,comprising,comprised,comprises
+undertak,undertook,undertaking,undertake,undertakes,undertaken
 power,powered,powerful,powers
 quit,quite
 garbag,garbage
@@ -1681,7 +1680,7 @@ found,founded,find
 wyom,wyoming
 referr,referrals,referral
 throw,throwing,threw,thrown,throws
-comparison,comparisons
+on,ons
 stone,stones
 patent,patents
 testimoni,testimonials,testimony
@@ -1703,9 +1702,9 @@ allianc,alliance
 road,roads
 accredit,accreditation,accredited
 tribe,tribes
-effici,efficiently,efficiency,efficient
+effici,efficiently,efficient,efficiency
 anybodi,anybody
-prohibit,prohibited
+lean,leaning,leant,leans
 elementari,elementary
 terminolog,terminology
 surviv,survival,survives,survived,survive,surviving
@@ -1728,7 +1727,7 @@ interfac,interface,interfaces
 low,lows
 lot,lots
 laboratori,laboratory,laboratories
-submiss,submissions,submission
+besid,besides,beside
 premis,premises
 unfortun,unfortunately
 bottl,bottles,bottle
@@ -1759,7 +1758,7 @@ frighten,frightening,frightened,frightens
 stabl,stable
 general,generally
 deem,deemed,deems,deeming
-decreas,decreases,decreased,decrease,decreasing
+decreas,decreasing,decreases,decreased,decrease
 johnni,johnny
 generat,generator,generating,generates,generators,generation,generate,generated,generations
 mover,movers
@@ -1820,7 +1819,7 @@ abil,abilities,ability
 dish,dishes
 follow,followed,following,follows
 merchandis,merchandise
-allergi,allergy
+princ,prince
 children,childrens
 airfar,airfare
 dairi,dairy
@@ -1861,11 +1860,11 @@ subscript,subscriptions,subscription
 bahama,bahamas
 dimens,dimension,dimensions
 apprais,appraisal
-extraordinari,extraordinary
+difficulti,difficulties,difficulty
 past,paste
 biolog,biology,biological
 pressur,pressure
-design,designing,designation,designs,designer,designed,designated,designers
+design,designing,designation,designs,designers,designer,designed,designated
 lawyer,lawyers
 pass,passing,passes,passed
 link,links,linking,linked
@@ -1876,7 +1875,7 @@ excit,excitement,excited,exciting
 lone,lonely
 sue,suing,sued,sues
 barrier,barriers
-microphon,microphone
+richard,richards
 clock,clocks
 sum,summed,sums,summing
 abl,able
@@ -1938,7 +1937,6 @@ select,selecting,selections,selective,selects,selection,selected
 aggress,aggressive
 acryl,acrylic
 proceed,proceeded,proceedings,proceeds,proceeding
-simpli,simply
 distinct,distinction
 liber,liberal
 injuri,injury,injuries
@@ -1999,7 +1997,7 @@ goal,goals
 divid,divide,divided,divides,dividing
 anoth,another
 comfort,comfortable
-hugh,hughes
+disclaim,disclaimers,disclaimer
 divin,divine
 mapl,maple
 divis,division,divisions
@@ -2038,8 +2036,8 @@ embassi,embassy
 rotat,rotation
 cartridg,cartridges,cartridge
 fantasi,fantasy
-malpractic,malpractice
-econom,economic,economics
+rang,ranging,ranged,ranges,range
+trade,trading,trades,traded
 octob,october
 scientist,scientists
 ferri,ferry
@@ -2048,7 +2046,7 @@ suffer,suffering,suffered,suffers
 paramet,parameter,parameters
 style,styles
 biographi,biography,biographies
-render,rendering,rendered,renders
+render,rendering,renders,rendered
 statewid,statewide
 pray,praying,prays,prayed
 exact,exactly
@@ -2087,7 +2085,7 @@ pregnanc,pregnancy
 easili,easily
 achiev,achievements,achieve,achieving,achievement,achieved,achieves
 alreadi,already
-undertak,undertook,undertaking,undertake,undertakes,undertaken
+compris,comprise,comprising,comprised,comprises
 die,dying,dies,died
 ceas,ceasing,ceases,ceased,cease
 fulli,fully
@@ -2132,21 +2130,21 @@ occurr,occurrence
 polyphon,polyphonic
 highway,highways
 textil,textiles,textile
-difficulti,difficulty,difficulties
+extraordinari,extraordinary
 qualifi,qualify,qualifying,qualifies,qualified
 confidenti,confidentiality,confidential
 proxi,proxy
 advanc,advancement,advancing,advance,advances,advanced
 differ,differed,differently,differing,differs,different,difference,differences
 pub,pubs
-rocki,rocky
+lobbi,lobby
 lifestyl,lifestyle
 quick,quickly
 reason,reasoning,reasonably,reasonable,reasons
 base,based,bases,basing
 housew,housewives
 murmur,murmurs,murmured,murmuring
-ask,asked,asking,asks
+ask,asked,asks,asking
 teach,teaches,teaching,taught
 marri,marry,marrying,married,marries
 basi,basis
@@ -2170,7 +2168,7 @@ dine,dining
 notifi,notified,notify
 wilder,wilderness
 feel,feeling,feels,feelings,felt
-exchang,exchanges,exchanged,exchange,exchanging
+exchang,exchanges,exchanging,exchanged,exchange
 number,numbers
 evolut,evolution
 celeb,celebs
@@ -2187,8 +2185,9 @@ guest,guests
 jet,jets
 script,scripting,scripts
 interact,interactions,interactive,interaction
+mont,monte
 construct,construction,constructs,constructing,constructed
-donat,donate,donated,donation,donations
+player,players
 paint,painting,paints,paintings,painted
 stori,stories,story
 station,stations
@@ -2232,7 +2231,7 @@ toward,towards
 danc,dance,dancing,danced,dances
 builder,builders
 cleaner,cleaners
-comput,computational,compute,computed,computers,computation,computer,computing
+comput,computational,compute,computed,computer,computers,computation,computing
 atmospher,atmosphere,atmospheric
 exert,exerted,exerts,exerting
 strengthen,strengthens,strengthening,strengthened
@@ -2292,7 +2291,7 @@ session,sessions
 palestin,palestine
 hairi,hairy
 fireplac,fireplace
-reput,reputation
+font,fonts
 fine,fined,fines,fining
 find,findings,found,finding,finds
 powersel,powerseller
@@ -2304,7 +2303,7 @@ copyright,copyrighted,copyrights
 equiti,equity
 writer,writers
 solut,solution,solutions
-experiment,experimental
+indian,indians
 factor,factors
 remedi,remedy,remedies
 workforc,workforce
@@ -2338,18 +2337,18 @@ bare,barely
 knive,knives
 sea,seas
 close,closely,closing,closes,closed
-arm,arms,armed,arming
+arm,arming,arms,armed
 barn,barnes
 shower,showers
 spiritu,spiritual,spirituality
 expert,experts
 merci,mercy
 deleg,delegation
-user,users
+someth,something
 particip,participate,participation,participates,participated,participants,participating,participant
 debat,debating,debates,debated,debate
 restructur,restructuring
-hold,holdings,holds,holding,held
+hold,holdings,holding,held,holds
 experi,experiments,experience,experiencing,experienced,experiences,experiment
 piss,pissing
 altern,alternatively,alternative,alternate,alternatives
@@ -2370,7 +2369,7 @@ condo,condos
 purpl,purple
 tion,tions
 popul,populations,population
-disclaim,disclaimers,disclaimer
+satisfi,satisfied,satisfies,satisfy,satisfying
 last,lasted,lasts,lasting
 advers,adverse
 retent,retention
@@ -2404,7 +2403,7 @@ blog,blogs,blogging
 forgiv,forgave,forgives,forgiven,forgiving,forgive
 surnam,surname
 stamp,stamps
-help,helps,helped,helping,helpful
+help,helped,helps,helping,helpful
 territori,territories,territory
 devic,devices,device
 empti,empty
@@ -2424,7 +2423,7 @@ fire,fires,fired,firing
 infect,infections,infected,infection
 imag,image,imaging,images
 exempt,exemption
-convert,convertible,converting,converter,converts,converted
+convert,convertible,converted,converting,converter,converts
 mine,mining,mines
 kathi,kathy
 coordin,coordinate,coordination,coordinates,coordinated,coordinator
@@ -2453,7 +2452,7 @@ subsect,subsection
 grip,grips,gript,gripping
 pound,pounds
 readi,ready
-centr,centred,centres,centring,centre
+genr,genre,genres
 rip,ripping,rips,ripped
 virtu,virtue
 rid,ridding,rids,ridded
@@ -2464,6 +2463,7 @@ decor,decorating,decorates,decorated,decorative,decorate
 shirt,shirts
 grant,granting,grants,granted
 belong,belongs,belonged,belonging
+allergi,allergy
 funni,funny
 itali,italy
 pharmaceut,pharmaceutical,pharmaceuticals
@@ -2471,6 +2471,7 @@ grand,grande
 salvat,salvation
 memphi,memphis
 development,developmental
+tower,towers
 optic,optics,optical
 lie,lied,lies,lying
 optim,optimal,optimization,optimize
@@ -2480,9 +2481,8 @@ alert,alerts,alerting,alerted
 moment,moments
 temporari,temporary
 fatti,fatty
-extrem,extremely,extreme
 wherev,wherever
-implement,implements,implementation,implemented,implementing
+implement,implementation,implemented,implementing,implements
 luxuri,luxury
 postag,postage
 lower,lowered,lowering,lowers
@@ -2533,15 +2533,15 @@ app,apps
 bio,bios
 complaint,complaints
 march,marching,marches,marched
-transpar,transparent,transparency
+format,formats,formatting,formation
 foundat,foundation,foundations
 bid,bidden,bidding,bids
 molecul,molecules
 sapphir,sapphire
-injur,injuring,injure,injures,injured
+injur,injuring,injure,injured,injures
 thoma,thomas
 blowjob,blowjobs
-tabl,table,tables
+tabl,tables,table
 bit,bits
 characterist,characteristics,characteristic
 peripher,peripheral,peripherals
@@ -2562,7 +2562,6 @@ cruis,cruises,cruise
 encount,encountering,encounters,encountered,encounter
 scare,scared
 mighti,mighty
-simplifi,simplified
 spring,sprung,springs,springing
 creation,creations
 play,played,plays,playing
@@ -2646,6 +2645,7 @@ agricultur,agriculture,agricultural
 percept,perception
 long,longs,longed,longing
 custom,customized,customer,customs,customize,customers
+dian,diane
 adjac,adjacent
 camera,cameras
 includ,including,includes,included,include
@@ -2690,6 +2690,7 @@ prevail,prevailed,prevailing,prevails
 crisi,crisis
 pronounc,pronouncing,pronounce,pronounced,pronounces
 titl,title,titled,titles
+user,users
 westminst,westminster
 offlin,offline
 club,clubs
@@ -2708,7 +2709,7 @@ enzym,enzyme
 deserv,deserved,deserves,deserving,deserve
 night,nights
 lane,lanes
-land,landing,lands,landed
+land,landing,landed,lands
 fighter,fighters
 wendi,wendy
 algorithm,algorithms
@@ -2741,7 +2742,7 @@ sensit,sensitivity,sensitive
 elsewher,elsewhere
 send,sent,sends,sending
 moor,moore
-hungari,hungary
+opposit,opposite,opposition
 reuter,reuters
 sens,sense,senses,sensed,sensing
 airplan,airplane
@@ -2775,6 +2776,7 @@ race,raced,races,racing
 kit,kits
 second,seconds
 headquart,headquarters
+refer,referring,referred,reference,refers,references
 rack,racks
 pleas,pleased,pleasing,pleases,please
 vehicl,vehicle,vehicles
@@ -2797,13 +2799,13 @@ folk,folks
 kinas,kinase
 compat,compatible,compatibility
 index,indexes,indexed
-font,fonts
+reput,reputation
 compar,compared,compares,comparative,comparable,comparing,compare
 resembl,resemble,resembled,resembles,resembling
 han,hans
 twink,twinks
 access,accessing,accesses,accessed,accessibility,accessible
-indian,indians
+experiment,experimental
 bird,birds
 whatev,whatever
 impact,impacts
@@ -2833,12 +2835,12 @@ artifici,artificial
 conceiv,conceiving,conceive,conceived,conceives
 casino,casinos
 technolog,technology,technologies,technological
-revenu,revenues,revenue
 scatter,scatters,scattered,scattering
 converg,convergence
 survey,surveys
 chequ,cheque
 defeat,defeating,defeats,defeated
+earli,early
 opinion,opinions
 climb,climbed,climbs,climbing
 gene,genes
@@ -2878,7 +2880,7 @@ chip,chips
 remaind,remainder
 sort,sorted,sorting,sorts
 babe,babes
-on,ons
+comparison,comparisons
 babi,babies,baby
 musician,musicians
 impress,impression,impressing,impressive,impressed,impresses
@@ -2900,13 +2902,14 @@ ridg,ridge
 alia,alias
 ride,rode,riding,ridden,rides
 alic,alice
-transexu,transexual
+critic,criticism,criticizing,criticize,critics,critical,criticizes,criticized
 pour,poured,pouring,pours
 justic,justice
 obvious,obviously
 drill,drilling
 franchis,franchise
 meet,meetings,meets,met,meeting
+donat,donated,donation,donations,donate
 nightlif,nightlife
 fetch,fetching,fetched,fetches
 aliv,alive
@@ -2920,7 +2923,7 @@ lock,locked,locks,locking
 carrol,carroll
 tax,taxes,taxed,taxing
 acn,acne
-high,highs,highly
+high,highly,highs
 luggag,luggage
 tag,tagged,tags
 kenni,kenny
@@ -2971,7 +2974,6 @@ element,elements
 issu,issue,issuing,issued,issues
 allow,allowed,allowance,allows,allowing
 cattl,cattle
-lobbi,lobby
 furnish,furnishings,furnished
 elig,eligible,eligibility
 movi,movie,movies
@@ -2989,6 +2991,7 @@ brook,brooks
 coupon,coupons
 ecommerc,ecommerce
 infrastructur,infrastructure
+prohibit,prohibited
 decad,decades,decade
 therefor,therefore
 pixel,pixels
@@ -3072,7 +3075,7 @@ turtl,turtle
 spill,spilling,spilt,spills
 pictur,picturing,pictures,pictured,picture
 put,puts,putting
-keep,keeps,kept,keeping
+keep,keeps,keeping,kept
 scari,scary
 enforc,enforcement,enforce,enforced,enforces,enforcing
 organis,organisations,organises,organise,organisation,organised,organising
@@ -3096,7 +3099,6 @@ sharewar,shareware
 sacr,sacred
 owner,owners
 facil,facility,facilities
-princ,prince
 bicycl,bicycle
 prioriti,priorities,priority
 booti,booty
@@ -3115,7 +3117,7 @@ privaci,privacy
 termin,terminal,terminals,termination
 licenc,licence
 final,finally,finals
-boil,boiled,boiling,boils
+boil,boiled,boils,boiling
 evanesc,evanescence
 punish,punishes,punished,punishing,punishment
 methodolog,methodology
@@ -3123,6 +3125,7 @@ arbitrari,arbitrary
 karaok,karaoke
 accompani,accompanies,accompany,accompanied,accompanying
 tissu,tissue
+submiss,submissions,submission
 diminish,diminishing,diminished,diminishes
 nobodi,nobody
 photograph,photographers,photographer,photographic,photographs
@@ -3188,7 +3191,7 @@ judici,judicial
 payment,payments
 divorc,divorce
 realtor,realtors
-urg,urged,urge,urging,urges
+urg,urge,urged,urging,urges
 url,urls
 gather,gathered,gathers,gathering
 request,requests,requesting,requested
@@ -3199,7 +3202,6 @@ determin,determines,determined,determination,determining,determine
 occasion,occasional,occasionally
 hardcor,hardcore
 indi,indie
-someth,something
 fact,facts
 affair,affairs
 nutrit,nutrition,nutritional
@@ -3224,6 +3226,7 @@ manufactur,manufacturing,manufacturers,manufacture,manufactured,manufactures,man
 score,scored,scores,scoring
 tape,tapes
 conclus,conclusions,conclusion
+gradual,gradually
 local,locally,locale
 hope,hoping,hoped,hopes,hopefully
 insight,insights
@@ -3276,6 +3279,7 @@ destini,destiny
 joyc,joyce
 biblic,biblical
 thumbnail,thumbnails
+centr,centred,centres,centring,centre
 criticis,criticise,criticised,criticises,criticising
 bed,bedding,beds
 merri,merry
@@ -3287,7 +3291,7 @@ entir,entirely,entire
 spoil,spoilt,spoiling,spoils
 disput,dispute,disputes
 eclips,eclipse
-thank,thanking,thanks,thanked
+thank,thanking,thanked,thanks
 instant,instantly
 plugin,plugins
 career,careers
@@ -3301,9 +3305,10 @@ admir,admired,admiring,admire,admires
 equat,equations,equation
 committe,committees,committee
 hobbi,hobby,hobbies
-swim,swims,swam,swimming,swum
+swim,swimming,swims,swam,swum
 freeli,freely
 swallow,swallows,swallowing,swallowed
+maritim,maritime
 comment,commented,comments,commenting
 wale,wales
 wall,walls
@@ -3314,7 +3319,7 @@ moistur,moisture
 walk,walking,walked,walks
 solv,solves,solved,solving,solve
 laugh,laughs,laughing,laughed
-commenc,commence,commences,commenced,commencing
+commenc,commences,commenced,commencing,commence
 respect,respective,respectively,respecting,respected,respects
 beach,beaches
 hispan,hispanic
@@ -3330,7 +3335,7 @@ compos,composing,compose,composed,composer,composes
 triniti,trinity
 compon,component,components
 gaze,gazed,gazing,gazes
-besid,besides,beside
+hungari,hungary
 treat,treated,treats,treating
 electr,electricity,electrical,electric
 bronz,bronze
@@ -3341,7 +3346,6 @@ upcom,upcoming
 adob,adobe
 presenc,presence
 assert,asserts,asserted,asserting
-player,players
 planner,planners
 togeth,together
 furnitur,furniture
@@ -3354,10 +3358,9 @@ plain,plains
 align,alignment
 will,willing
 defin,defined,defines,define,defining
-genr,genre,genres
 rochest,rochester
 glossari,glossary
-observ,observe,observations,observer,observes,observed,observing,observation
+observ,observations,observer,observes,observed,observing,observe,observation
 layer,layers
 purchas,purchasing,purchase,purchases,purchased
 engag,engagement,engages,engage,engaged,engaging
@@ -3383,7 +3386,7 @@ hurrican,hurricane
 speaker,speakers
 inch,inches
 competit,competition,competitions,competitive
-tighten,tightening,tightened,tightens
+tighten,tightened,tightening,tightens
 ball,balls
 absorb,absorbed,absorbs,absorbing
 drink,drunk,drank,drinks,drinking
@@ -3419,7 +3422,7 @@ gun,guns
 clinic,clinics,clinical
 heavili,heavily
 shuttl,shuttle
-tone,tones
+simpli,simply
 skill,skills,skilled
 simultan,simultaneously
 systemat,systematic
@@ -3546,13 +3549,12 @@ browser,browsers
 mere,merely
 merg,merge,merges,merged,merging
 processor,processors
-commission,commissioners,commissioner
+accumul,accumulates,accumulated,accumulating,accumulate
 transfer,transferred,transfers,transferring
 museum,museums
 support,supporters,supporting,supported,supports
 oasi,oasis
 appl,apple
-visitor,visitors
 ed,eds
 deliveri,delivery
 buy,buying,bought,buys
@@ -3574,6 +3576,7 @@ count,counting,counted,counts
 veget,vegetable,vegetables,vegetation
 seiz,seize,seizing,seized,seizes
 murphi,murphy
+scientif,scientific
 municip,municipal,municipality
 listpric,listprice
 record,records,recordings,recorders,recorded,recorder,recording
@@ -3585,13 +3588,11 @@ otherwis,otherwise
 problem,problems
 display,displays,displayed,displaying
 anthoni,anthony
-envisag,envisaging,envisaged,envisages,envisage
 evalu,evaluating,evaluate,evaluations,evaluation,evaluated,evaluates
 whisper,whispering,whispers,whispered
 dure,during
 pic,pics
 beatl,beatles
-water,waters
 twist,twists,twisted,twisting
 novemb,november
 inn,inns
@@ -3627,7 +3628,7 @@ gap,gaps
 basketbal,basketball
 appoint,appointment,appointments,appoints,appointed,appointing
 outsourc,outsourcing
-scientif,scientific
+fund,funded,funding,funds
 reliabl,reliability,reliable
 rule,rules,ruled,ruling
 portion,portions
@@ -3638,4 +3639,3 @@ perhap,perhaps
 decemb,december
 confess,confessing,confessed,confesses
 simpson,simpsons
-richard,richards
