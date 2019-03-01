@@ -28,7 +28,7 @@ impl InternalParsingResult {
         InternalParsingResult {
             intent: IntentClassifierResult {
                 intent_name: None,
-                probability: 1.0,
+                confidence_score: 1.0,
             },
             slots: vec![],
         }

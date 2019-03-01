@@ -110,7 +110,7 @@ impl LookupIntentParser {
             {
                 let intent = IntentClassifierResult {
                     intent_name: Some(intent_name.to_string()),
-                    probability: 1.0,
+                    confidence_score: 1.0,
                 };
                 // get slots and return result
                 // we assume entities are sorted by their ranges
@@ -177,12 +177,12 @@ impl IntentParser for LookupIntentParser {
         for name in names {
             intents.push(IntentClassifierResult {
                 intent_name: Some(name),
-                probability: 0.0,
+                confidence_score: 0.0,
             })
         }
         intents.push(IntentClassifierResult {
             intent_name: None,
-            probability: 0.0,
+            confidence_score: 0.0,
         });
 
         Ok(intents)
@@ -372,7 +372,7 @@ mod tests {
         // Then
         let expected_intent = IntentClassifierResult {
             intent_name: Some("dummy_intent_1".to_string()),
-            probability: 1.0,
+            confidence_score: 1.0,
         };
 
         assert_eq!(expected_intent, intent);
@@ -414,7 +414,7 @@ mod tests {
         // Then
         let expected_intent = IntentClassifierResult {
             intent_name: None,
-            probability: 1.0,
+            confidence_score: 1.0,
         };
 
         assert_eq!(intent, expected_intent);
@@ -453,13 +453,13 @@ mod tests {
         // Then
         let first_intent = IntentClassifierResult {
             intent_name: Some("dummy_intent_1".to_string()),
-            probability: 1.0,
+            confidence_score: 1.0,
         };
         assert_eq!(4, intents.len());
         assert_eq!(&first_intent, &intents[0]);
-        assert_eq!(0.0, intents[1].probability);
-        assert_eq!(0.0, intents[2].probability);
-        assert_eq!(0.0, intents[3].probability);
+        assert_eq!(0.0, intents[1].confidence_score);
+        assert_eq!(0.0, intents[2].confidence_score);
+        assert_eq!(0.0, intents[3].confidence_score);
     }
 
     #[test]
@@ -491,7 +491,7 @@ mod tests {
         // Then
         let expected_intent = IntentClassifierResult {
             intent_name: Some("dummy_intent_3".to_string()),
-            probability: 1.0,
+            confidence_score: 1.0,
         };
 
         assert_eq!(intent, expected_intent);
@@ -534,7 +534,7 @@ mod tests {
         // Then
         let expected_intent = IntentClassifierResult {
             intent_name: Some("dummy_intent_1".to_string()),
-            probability: 1.0,
+            confidence_score: 1.0,
         };
 
         assert_eq!(intent, expected_intent);
