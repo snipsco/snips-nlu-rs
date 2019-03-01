@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define SNIPS_NLU_VERSION "0.64.0"
+#define SNIPS_NLU_VERSION "0.64.1"
 
 /*
  * Enum representing the grain of a resolved date related value
