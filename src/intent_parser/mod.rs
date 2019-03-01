@@ -67,6 +67,9 @@ pub fn build_intent_parser<P: AsRef<Path>>(
     shared_resources: Arc<SharedResources>,
 ) -> Result<Box<IntentParser>> {
     match metadata {
+        ProcessingUnitMetadata::LookupIntentParser => {
+            Ok(Box::new(LookupIntentParser::from_path(path, shared_resources)?) as _)
+        }
         ProcessingUnitMetadata::DeterministicIntentParser => Ok(Box::new(
             DeterministicIntentParser::from_path(path, shared_resources)?,
         ) as _),

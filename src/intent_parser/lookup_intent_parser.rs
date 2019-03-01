@@ -8,6 +8,7 @@ use std::sync::Arc;
 use failure::ResultExt;
 use snips_nlu_ontology::{IntentClassifierResult, Language};
 use snips_nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_utils::string::normalize;
 use snips_nlu_utils::string::{substring_with_char_range, suffix_from_char_index};
 use snips_nlu_utils::token::tokenize_light;
 
@@ -149,14 +150,12 @@ impl IntentParser for LookupIntentParser {
         let formatted_input = LookupIntentParser::replace_entities(input, &mut entities);
         let cleaned_input = self.preprocess_text(input);
         let key = self.preprocess_text(&*formatted_input);
-        let val = if let Some(v) = self.map.get(&key) {
-            Some(v)
-        } else {
+        let val = self.map.get(&key).or_else(|| {
             // since the entities based key failed, clear the entities list
             // to avoid slot mismatch
             entities.clear();
             self.map.get(&cleaned_input)
-        };
+        });
 
         Ok(self.parse_map_output(input, val, entities, intents_whitelist))
     }
@@ -208,7 +207,7 @@ impl LookupIntentParser {
         };
         let tokens = tokenize_light(string, NluUtilsLanguage::from_language(self.language))
             .iter()
-            .filter(|tkn| !is_stop_word(tkn))
+            .filter(|tkn| !is_stop_word(&normalize(tkn)))
             .cloned()
             .collect::<Vec<String>>();
 
@@ -323,9 +322,7 @@ mod tests {
         let intent_parser = LookupIntentParser::from_path(parser_path, shared_resources).unwrap();
 
         // When
-        let parsing_result = intent_parser
-            .parse("make two cups of coffee", None)
-            .unwrap();
+        let parsing_result = intent_parser.parse("make two cup of coffee", None).unwrap();
 
         // Then
         let expected_intent = Some("MakeCoffee".to_string());

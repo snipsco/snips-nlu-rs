@@ -5,6 +5,7 @@ use serde_derive::Deserialize;
 #[serde(rename_all = "snake_case")]
 pub enum ProcessingUnitMetadata {
     DeterministicIntentParser,
+    LookupIntentParser,
     ProbabilisticIntentParser,
     CrfSlotFiller,
     LogRegIntentClassifier,
