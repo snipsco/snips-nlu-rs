@@ -23,6 +23,18 @@ pub struct InternalParsingResult {
     pub slots: Vec<InternalSlot>,
 }
 
+impl InternalParsingResult {
+    pub fn empty() -> InternalParsingResult {
+        InternalParsingResult {
+            intent: IntentClassifierResult {
+                intent_name: None,
+                probability: 1.0,
+            },
+            slots: vec![],
+        }
+    }
+}
+
 pub fn internal_parsing_result(
     intent_name: Option<IntentName>,
     intent_proba: f32,

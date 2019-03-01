@@ -9,37 +9,37 @@
   ],
   "language_code": "en",
   "map": {
-    "brew%snipsnumber%cupsofcoffee": [
+    "brew % snipsnumber % cups of coffee": [
       0,
       [
         0
       ]
     ],
-    "iwant%snipsnumber%cupsoftea": [
+    "i want % snipsnumber % cups of tea": [
       1,
       [
         0
       ]
     ],
-    "make%snipsnumber%cupoftea": [
+    "make % snipsnumber % cup of tea": [
       1,
       [
         0
       ]
     ],
-    "make%snipsnumber%cupsofcoffee": [
+    "make % snipsnumber % cups of coffee": [
       0,
       [
         0
       ]
     ],
-    "prepare%snipsnumber%cupofcoffee": [
+    "prepare % snipsnumber % cup of coffee": [
       0,
       [
         0
       ]
     ],
-    "prepare%snipsnumber%cupoftea": [
+    "prepare % snipsnumber % cup of tea": [
       1,
       [
         0

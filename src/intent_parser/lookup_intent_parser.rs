@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
 use std::path::Path;
@@ -8,17 +8,15 @@ use std::sync::Arc;
 use failure::ResultExt;
 use snips_nlu_ontology::{IntentClassifierResult, Language};
 use snips_nlu_utils::language::Language as NluUtilsLanguage;
-use snips_nlu_utils::string::substring_with_char_range;
-use snips_nlu_utils::token::{tokenize, tokenize_light};
+use snips_nlu_utils::string::{substring_with_char_range, suffix_from_char_index};
+use snips_nlu_utils::token::tokenize_light;
 
 use crate::errors::*;
 use crate::language::FromLanguage;
 use crate::models::LookupParserModel;
 use crate::resources::SharedResources;
 use crate::slot_utils::*;
-use crate::utils::{
-    deduplicate_overlapping_entities, replace_entities, IntentName, MatchedEntity, SlotName,
-};
+use crate::utils::{deduplicate_overlapping_entities, IntentName, MatchedEntity, SlotName};
 
 use super::{IntentParser, InternalParsingResult};
 
@@ -26,7 +24,7 @@ use super::{IntentParser, InternalParsingResult};
 /// serves as the key and the value is tuple of (intent_id, [vec_of_slots_ids])
 ///
 /// Once a lookup is done at inference, the intent and slots are retrieved by matching
-/// their ids to a vecof intent names and a vec of slot names respectively.
+/// their ids to a vec of intent names and a vec of slot names respectively.
 pub struct LookupIntentParser {
     language: Language,
     slots_names: Vec<SlotName>,
@@ -71,24 +69,6 @@ impl LookupIntentParser {
 }
 
 impl LookupIntentParser {
-    fn generate_key(&self, input: &str) -> String {
-        let lang = NluUtilsLanguage::from_language(self.language);
-        let empty_set = HashSet::new();
-        let stop_words = if self.ignore_stop_words {
-            &self.shared_resources.stop_words
-        } else {
-            &empty_set
-        };
-        let key = tokenize_light(input, lang)
-            .iter()
-            .filter(|tkn| !stop_words.contains(tkn.as_str()))
-            .fold(String::new(), |mut acc, tkn| {
-                acc.push_str(tkn);
-                acc
-            });
-        key.to_lowercase()
-    }
-
     fn get_all_entities(&self, input: &str) -> Result<Vec<MatchedEntity>> {
         // get builtin entities
         let b = self
@@ -111,16 +91,6 @@ impl LookupIntentParser {
         all_entities.extend(c);
 
         Ok(deduplicate_overlapping_entities(all_entities))
-    }
-
-    fn empty_parsing_result(&self) -> InternalParsingResult {
-        InternalParsingResult {
-            intent: IntentClassifierResult {
-                intent_name: None,
-                probability: 1.0,
-            },
-            slots: vec![],
-        }
     }
 
     fn parse_map_output(
@@ -160,11 +130,11 @@ impl LookupIntentParser {
                 InternalParsingResult { intent, slots }
             } else {
                 // if intent name not in intents, return empty result
-                self.empty_parsing_result()
+                InternalParsingResult::empty()
             }
         } else {
             // if lookup value was none return empty result
-            self.empty_parsing_result()
+            InternalParsingResult::empty()
         }
     }
 }
@@ -175,16 +145,14 @@ impl IntentParser for LookupIntentParser {
         input: &str,
         intents_whitelist: Option<&[&str]>,
     ) -> Result<InternalParsingResult> {
-        let entities = self.get_all_entities(input)?;
-        let (_, formatted_input) =
-            replace_entities(input, entities.clone(), get_entity_placeholder);
+        let mut entities = self.get_all_entities(input)?;
+        let formatted_input = LookupIntentParser::replace_entities(input, &mut entities);
         let cleaned_input = self.preprocess_text(input);
-        let cleaned_formatted_input = self.preprocess_text(&*formatted_input);
-        let key = self.generate_key(&cleaned_formatted_input);
+        let key = self.preprocess_text(&*formatted_input);
         let val = if let Some(v) = self.map.get(&key) {
             Some(v)
         } else {
-            self.map.get(&cleaned_input.to_lowercase())
+            self.map.get(&cleaned_input)
         };
 
         Ok(self.parse_map_output(input, val, entities, intents_whitelist))
@@ -228,27 +196,41 @@ impl IntentParser for LookupIntentParser {
 
 impl LookupIntentParser {
     fn preprocess_text(&self, string: &str) -> String {
-        let tokens = tokenize(string, NluUtilsLanguage::from_language(self.language));
-        let mut current_idx = 0;
-        let mut cleaned_string = "".to_string();
-        for mut token in tokens {
-            if self.ignore_stop_words
-                && self
-                    .shared_resources
-                    .stop_words
-                    .contains(&token.normalized_value())
-            {
-                token.value = (0..token.value.chars().count()).map(|_| " ").collect();
+        let is_stop_word = |s: &String| -> bool {
+            if self.ignore_stop_words && self.shared_resources.stop_words.contains(s) {
+                true
+            } else {
+                false
             }
-            let prefix_length = token.char_range.start - current_idx;
-            let prefix: String = (0..prefix_length).map(|_| " ").collect();
-            cleaned_string = format!("{}{}{}", cleaned_string, prefix, token.value);
-            current_idx = token.char_range.end;
+        };
+        let tokens = tokenize_light(string, NluUtilsLanguage::from_language(self.language))
+            .iter()
+            .filter(|tkn| !is_stop_word(tkn))
+            .cloned()
+            .collect::<Vec<String>>();
+
+        tokens.join(" ").to_lowercase()
+    }
+
+    fn replace_entities(text: &str, entities: &mut Vec<MatchedEntity>) -> String {
+        if entities.is_empty() {
+            text.to_string()
+        } else {
+            entities.sort_by_key(|entity| entity.range.start);
+            let mut processed_text = String::new();
+            let mut cur_idx = 0;
+            for entity in entities {
+                let start = entity.range.start as usize;
+                let end = entity.range.end as usize;
+                let prefix_txt = substring_with_char_range(text.to_string(), &(cur_idx..start));
+                let place_holder = get_entity_placeholder(&*entity.entity_name);
+                processed_text.push_str(&prefix_txt);
+                processed_text.push_str(&place_holder);
+                cur_idx = end
+            }
+            processed_text.push_str(&suffix_from_char_index(text.to_string(), cur_idx));
+            processed_text
         }
-        let suffix_length = string.chars().count() - current_idx;
-        let suffix: String = (0..suffix_length).map(|_| " ").collect();
-        cleaned_string = format!("{}{}", cleaned_string, suffix);
-        cleaned_string
     }
 }
 
@@ -258,7 +240,8 @@ impl fmt::Debug for LookupIntentParser {
             "{{\tlanguage: {:?}\n\t\
              slots_names: {:?}\n\t\
              intents_names: {:?}\n\t\
-             map: {:#?}\n\tignore_stop_words: {:?}\n\t\
+             map: {:#?}\n\t\
+             ignore_stop_words: {:?}\n\t\
              shared_resources: Arc<..>\n}}",
             self.language, self.slots_names, self.intents_names, self.map, self.ignore_stop_words
         );
@@ -279,7 +262,6 @@ fn get_entity_placeholder(entity_label: &str) -> String {
 mod tests {
     #![allow(clippy::float_cmp)]
 
-    use std::collections::HashMap;
     use std::iter::FromIterator;
     use std::sync::Arc;
 
@@ -309,14 +291,14 @@ mod tests {
                 "dummy_intent_3".to_string(),
             ],
             map: hashmap![
-                "%snipsdatetime%thereisa%dummy_entity_1%".to_string() => (0, vec![2, 0]),
-                "thisisa%dummy_entity_1%".to_string() => (0, vec![0]),
-                "thisisa%dummy_entity_1%querywithanother%dummy_entity_2%".to_string() => (0, vec![0, 1]),
-                "thisisanother%dummy_entity_2%".to_string() => (0, vec![2]),
-                "thisisanotherüber%dummy_entity_2%query!".to_string() => (0, vec![1]),
-                "thisisa%dummy_entity_1%querywithanother%dummy_entity_2%%snipsdatetime%or%snipsdatetime%".to_string() => (0, vec![0,1,2,2]),
-                "send%snipsamountofmoney%tojohn".to_string() => (2, vec![3]),
-                "send%snipsamountofmoney%tojohnat%dummy_entity_2%".to_string() => (2, vec![3,1]),
+                "% snipsdatetime % there is a % dummy_entity_1 %".to_string() => (0, vec![2, 0]),
+                "this is a % dummy_entity_1 %".to_string() => (0, vec![0]),
+                "this is a % dummy_entity_1 % query with another % dummy_entity_2 %".to_string() => (0, vec![0, 1]),
+                "this is another % dummy_entity_2 %".to_string() => (0, vec![2]),
+                "this is another über % dummy_entity_2 % query !".to_string() => (0, vec![1]),
+                "this is a % dummy_entity_1 % query with another % dummy_entity_2 % % snipsdatetime % or % snipsdatetime %".to_string() => (0, vec![0,1,2,2]),
+                "send % snipsamountofmoney % to john".to_string() => (2, vec![3]),
+                "send % snipsamountofmoney % to john at % dummy_entity_2 %".to_string() => (2, vec![3,1]),
             ],
             config: LookupParserConfig {
                 ignore_stop_words: true,
@@ -782,14 +764,10 @@ mod tests {
     fn test_replace_entities() {
         // Given
         let text = "the third album of Blink 182 is great";
-        let entities = vec![
+        let mut entities = vec![
             MatchedEntity {
                 range: 0..9,
                 entity_name: BuiltinEntityKind::Ordinal.identifier().to_string(),
-            },
-            MatchedEntity {
-                range: 25..28,
-                entity_name: BuiltinEntityKind::Number.identifier().to_string(),
             },
             MatchedEntity {
                 range: 19..28,
@@ -798,14 +776,10 @@ mod tests {
         ];
 
         // When
-        let (range_mapping, formatted_text) =
-            replace_entities(text, entities, get_entity_placeholder);
+        let formatted_text = LookupIntentParser::replace_entities(text, &mut entities);
 
         // Then
-        let expected_mapping = HashMap::from_iter(vec![(0..14, 0..9), (24..42, 19..28)]);
-
         let expected_text = "%SNIPSORDINAL% album of %SNIPSMUSICARTIST% is great";
-        assert_eq!(expected_mapping, range_mapping);
         assert_eq!(expected_text, &formatted_text);
     }
 
