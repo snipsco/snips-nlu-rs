@@ -152,6 +152,9 @@ impl IntentParser for LookupIntentParser {
         let val = if let Some(v) = self.map.get(&key) {
             Some(v)
         } else {
+            // since the entities based key failed, clear the entities list
+            // to avoid slot mismatch
+            entities.clear();
             self.map.get(&cleaned_input)
         };
 
