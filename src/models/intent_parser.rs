@@ -18,7 +18,7 @@ pub struct LookupParserModel {
     pub language_code: String,
     pub slots_names: Vec<SlotName>,
     pub intents_names: Vec<IntentName>,
-    pub map: HashMap<String, (i32, Vec<i32>)>,
+    pub map: HashMap<i32, (i32, Vec<i32>)>,
     pub config: LookupParserConfig,
 }
 

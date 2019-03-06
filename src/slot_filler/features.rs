@@ -601,7 +601,7 @@ mod tests {
         let feature = ShapeNgramFeature { ngram_size: 2 };
 
         // When
-        let results: Vec<Option<String>> = (0..4)
+        let results: Vec<Option<String>> = (0..6)
             .map(|i| feature.compute(&tokens, i).unwrap())
             .collect();
 
@@ -610,6 +610,8 @@ mod tests {
             Some("Xxx XXX".to_string()),
             Some("XXX xxx".to_string()),
             Some("xxx xX".to_string()),
+            Some("xX xX".to_string()),
+            Some("xX xX".to_string()),
             None,
         ];
         assert_eq!(expected_result, results);
