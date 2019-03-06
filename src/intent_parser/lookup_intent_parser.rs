@@ -9,7 +9,7 @@ use failure::ResultExt;
 use snips_nlu_ontology::{IntentClassifierResult, Language};
 use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_utils::string::normalize;
-use snips_nlu_utils::string::{substring_with_char_range, suffix_from_char_index};
+use snips_nlu_utils::string::{hash_str_to_i32, substring_with_char_range, suffix_from_char_index};
 use snips_nlu_utils::token::tokenize_light;
 
 use crate::errors::*;
@@ -30,7 +30,7 @@ pub struct LookupIntentParser {
     language: Language,
     slots_names: Vec<SlotName>,
     intents_names: Vec<IntentName>,
-    map: HashMap<String, (i32, Vec<i32>)>,
+    map: HashMap<i32, (i32, Vec<i32>)>,
     ignore_stop_words: bool,
     shared_resources: Arc<SharedResources>,
 }
@@ -148,13 +148,13 @@ impl IntentParser for LookupIntentParser {
     ) -> Result<InternalParsingResult> {
         let mut entities = self.get_all_entities(input)?;
         let formatted_input = replace_entities_with_placeholders(input, &mut entities);
-        let cleaned_input = self.preprocess_text(input);
-        let key = self.preprocess_text(&*formatted_input);
-        let val = self.map.get(&key).or_else(|| {
+        let unnormalized_key = hash_str_to_i32(&self.preprocess_text(input));
+        let normalized_key = hash_str_to_i32(&self.preprocess_text(&*formatted_input));
+        let val = self.map.get(&normalized_key).or_else(|| {
             // since the entities based key failed, clear the entities list
             // to avoid slot mismatch
             entities.clear();
-            self.map.get(&cleaned_input)
+            self.map.get(&unnormalized_key)
         });
 
         Ok(self.parse_map_output(input, val, entities, intents_whitelist))
@@ -293,14 +293,14 @@ mod tests {
                 "dummy_intent_3".to_string(),
             ],
             map: hashmap![
-                "% snipsdatetime % there is a % dummy_entity_1 %".to_string() => (0, vec![2, 0]),
-                "this is a % dummy_entity_1 %".to_string() => (0, vec![0]),
-                "this is a % dummy_entity_1 % query with another % dummy_entity_2 %".to_string() => (0, vec![0, 1]),
-                "this is another % dummy_entity_2 %".to_string() => (0, vec![2]),
-                "this is another über % dummy_entity_2 % query !".to_string() => (0, vec![1]),
-                "this is a % dummy_entity_1 % query with another % dummy_entity_2 % % snipsdatetime % or % snipsdatetime %".to_string() => (0, vec![0,1,2,2]),
-                "send % snipsamountofmoney % to john".to_string() => (2, vec![3]),
-                "send % snipsamountofmoney % to john at % dummy_entity_2 %".to_string() => (2, vec![3,1]),
+                -217578748 => (0, vec![2, 0]),
+                -489454728 => (0, vec![0]),
+                931951708 => (0, vec![0, 1]),
+                -1718340863 => (0, vec![2]),
+                1907144282 => (0, vec![1]),
+                -1559854899 => (0, vec![0,1,2,2]),
+                -1782784983 => (2, vec![3]),
+                -2089487313 => (2, vec![3,1]),
             ],
             config: LookupParserConfig {
                 ignore_stop_words: true,

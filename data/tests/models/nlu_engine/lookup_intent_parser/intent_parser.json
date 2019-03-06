@@ -9,48 +9,48 @@
   ],
   "language_code": "en",
   "map": {
-    "brew % snipsnumber % cups of coffee": [
+    "-1658454006": [
+      1,
+      [
+        0
+      ]
+    ],
+    "-1533083481": [
       0,
       [
         0
       ]
     ],
-    "i want % snipsnumber % cups of % temperature % tea": [
+    "-1416877420": [
+      0,
+      [
+        0
+      ]
+    ],
+    "-1362288387": [
       1,
       [
         0,
         1
       ]
     ],
-    "make % snipsnumber % cup of coffee": [
+    "-687749971": [
       0,
       [
         0
       ]
     ],
-    "make % snipsnumber % tea cups": [
-      1,
-      [
-        0
-      ]
-    ],
-    "make % temperature % cup of tea": [
+    "1085718744": [
       1,
       [
         1
       ]
     ],
-    "prepare % snipsnumber % cup of % temperature % tea": [
+    "1413162768": [
       1,
       [
         0,
         1
-      ]
-    ],
-    "prepare % snipsnumber % cup of coffee": [
-      0,
-      [
-        0
       ]
     ]
   },
