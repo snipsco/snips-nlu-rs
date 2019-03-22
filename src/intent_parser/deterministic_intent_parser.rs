@@ -6,6 +6,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use failure::{format_err, ResultExt};
+use log::{debug, info};
 use regex::{Regex, RegexBuilder};
 use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language};
 use snips_nlu_utils::language::Language as NluUtilsLanguage;
@@ -41,6 +42,7 @@ impl DeterministicIntentParser {
         path: P,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
+        info!("Loading deterministic intent parser ({:?}) ...", path.as_ref());
         let parser_model_path = path.as_ref().join("intent_parser.json");
         let model_file = File::open(&parser_model_path).with_context(|_| {
             format!(
@@ -50,7 +52,9 @@ impl DeterministicIntentParser {
         })?;
         let model: DeterministicParserModel = serde_json::from_reader(model_file)
             .with_context(|_| "Cannot deserialize DeterministicIntentParser json data")?;
-        Self::new(model, shared_resources)
+        let parser = Self::new(model, shared_resources);
+        info!("Deterministic intent parser loaded");
+        parser
     }
 }
 
@@ -101,7 +105,8 @@ impl IntentParser for DeterministicIntentParser {
         input: &str,
         intents_whitelist: Option<&[&str]>,
     ) -> Result<InternalParsingResult> {
-        Ok(self
+        debug!("Extracting intents and slots with deterministic intent parser...");
+        let result = self
             .parse_top_intents(input, 1, intents_whitelist)?
             .into_iter()
             .next()
@@ -111,7 +116,10 @@ impl IntentParser for DeterministicIntentParser {
                     confidence_score: 1.0,
                 },
                 slots: vec![],
-            }))
+            });
+        debug!("Intent found: '{:?}'", result.intent.intent_name);
+        debug!("{} slots extracted", result.slots.len());
+        Ok(result)
     }
 
     fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
