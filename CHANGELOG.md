@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Fixed
+- Fix handling of ambiguous utterances in `DeterministicIntentParser`
+
 ## [0.64.1] - 2019-03-01
 ### Fixed
 - Fix bug with regex patterns containing duplicated slot names
