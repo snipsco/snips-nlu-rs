@@ -7,6 +7,7 @@ use std::sync::{Arc, Mutex};
 use crfsuite::Tagger as CRFSuiteTagger;
 use failure::{format_err, ResultExt};
 use itertools::Itertools;
+use log::{debug, info};
 use snips_nlu_ontology::Language;
 use snips_nlu_utils::language::Language as NluUtilsLanguage;
 use snips_nlu_utils::token::{tokenize, Token};
@@ -34,6 +35,7 @@ impl CRFSlotFiller {
         path: P,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
+        info!("Loading CRF slot filler ({:?}) ...", path.as_ref());
         let slot_filler_model_path = path.as_ref().join("slot_filler.json");
         let model_file = fs::File::open(&slot_filler_model_path).with_context(|_| {
             format!(
@@ -62,6 +64,8 @@ impl CRFSlotFiller {
             };
         let language = Language::from_str(&model.language_code)?;
 
+        info!("CRF slot filler loaded");
+
         Ok(Self {
             language,
             tagging_scheme,
@@ -78,7 +82,8 @@ impl SlotFiller for CRFSlotFiller {
     }
 
     fn get_slots(&self, text: &str) -> Result<Vec<InternalSlot>> {
-        if let (Some(ref tagger), Some(ref feature_processor)) =
+        debug!("Extracting slots...");
+        let slots = if let (Some(ref tagger), Some(ref feature_processor)) =
             (self.tagger.as_ref(), self.feature_processor.as_ref())
         {
             let tokens = tokenize(text, NluUtilsLanguage::from_language(self.language));
@@ -100,10 +105,12 @@ impl SlotFiller for CRFSlotFiller {
                 &tags,
                 self.tagging_scheme,
                 &self.slot_name_mapping,
-            )
+            )?
         } else {
-            Ok(vec![])
-        }
+            vec![]
+        };
+        debug!("{} slots extracted", slots.len());
+        Ok(slots)
     }
 
     fn get_sequence_probability(&self, tokens: &[Token], tags: Vec<String>) -> Result<f64> {

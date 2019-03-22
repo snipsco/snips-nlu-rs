@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use failure::ResultExt;
 use itertools::Itertools;
+use log::{debug, info};
 use ndarray::prelude::*;
 use snips_nlu_ontology::IntentClassifierResult;
 
@@ -28,6 +29,7 @@ impl LogRegIntentClassifier {
         path: P,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
+        info!("Loading log reg intent classifier ({:?}) ...", path.as_ref());
         let classifier_model_path = path.as_ref().join("intent_classifier.json");
         let model_file = File::open(&classifier_model_path).with_context(|_| {
             format!(
@@ -57,6 +59,8 @@ impl LogRegIntentClassifier {
             Ok(None)
         }?;
 
+        info!("Log reg intent classifier loaded");
+
         Ok(Self {
             intent_list: model.intent_list,
             featurizer,
@@ -71,15 +75,18 @@ impl IntentClassifier for LogRegIntentClassifier {
         input: &str,
         intents_whitelist: Option<&[&str]>,
     ) -> Result<IntentClassifierResult> {
+        debug!("Classifying intent...");
         let intents_results = self.get_intents_with_whitelist(input, intents_whitelist)?;
-        Ok(if intents_results.is_empty() {
+        let intent_result = if intents_results.is_empty() {
             IntentClassifierResult {
                 intent_name: None,
                 confidence_score: 1.0,
             }
         } else {
             intents_results.into_iter().next().unwrap()
-        })
+        };
+        debug!("Intent found: '{:?}'", intent_result.intent_name);
+        Ok(intent_result)
     }
 
     fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {

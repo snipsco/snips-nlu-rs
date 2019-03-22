@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::sync::Mutex;
 
+use log::info;
 use snips_nlu_ontology::{BuiltinEntity, BuiltinEntityKind};
 use snips_nlu_parsers::BuiltinEntityParser as _BuiltinEntityParser;
 
@@ -59,8 +60,10 @@ impl BuiltinEntityParser for CachingBuiltinEntityParser {
 
 impl CachingBuiltinEntityParser {
     pub fn from_path<P: AsRef<Path>>(path: P, cache_capacity: usize) -> Result<Self> {
+        info!("Loading builtin entity parser ({:?}) ...", path.as_ref());
         let parser = _BuiltinEntityParser::from_path(path)?;
         let cache = Mutex::new(Cache::new(cache_capacity));
+        info!("Builtin entity parser loaded");
         Ok(Self { parser, cache })
     }
 }
