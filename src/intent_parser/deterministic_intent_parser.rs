@@ -42,7 +42,10 @@ impl DeterministicIntentParser {
         path: P,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
-        info!("Loading deterministic intent parser ({:?}) ...", path.as_ref());
+        info!(
+            "Loading deterministic intent parser ({:?}) ...",
+            path.as_ref()
+        );
         let parser_model_path = path.as_ref().join("intent_parser.json");
         let model_file = File::open(&parser_model_path).with_context(|_| {
             format!(
@@ -110,6 +113,14 @@ impl IntentParser for DeterministicIntentParser {
             .parse_top_intents(input, 1, intents_whitelist)?
             .into_iter()
             .next()
+            .and_then(|res| {
+                // return None in case of ambiguity
+                if res.intent.confidence_score < 1.0 {
+                    None
+                } else {
+                    Some(res)
+                }
+            })
             .unwrap_or_else(|| InternalParsingResult {
                 intent: IntentClassifierResult {
                     intent_name: None,
@@ -183,10 +194,6 @@ impl DeterministicIntentParser {
             .filter(|(intent, _)| intents_set.contains(&***intent));
 
         for (intent, (builtin_scope, custom_scope)) in filtered_entity_scopes {
-            if results.len() == top_n {
-                break;
-            }
-
             let builtin_entities = self
                 .shared_resources
                 .builtin_entity_parser
@@ -226,7 +233,21 @@ impl DeterministicIntentParser {
                 })
                 .map(|matching_result_formatted| results.push(matching_result_formatted));
         }
-        Ok(results)
+
+        let confidence_score = if results.is_empty() {
+            1.0
+        } else {
+            1.0 / (results.len() as f32)
+        };
+
+        Ok(results
+            .into_iter()
+            .take(top_n)
+            .map(|mut res| {
+                res.intent.confidence_score = confidence_score;
+                res
+            })
+            .collect())
     }
 
     fn preprocess_text(&self, string: &str) -> String {
@@ -414,6 +435,9 @@ mod tests {
                 "dummy_intent_4".to_string() => vec![
                     r"^\s*what\s*is\s*(?P<group8>%SNIPSNUMBER%)\s*plus\s*(?P<group8_2>%SNIPSNUMBER%)\s*$".to_string()
                 ],
+                "dummy_intent_5".to_string() => vec![
+                    r"^\s*Send\s*5\s*dollars\s*to\s*john\s*$".to_string(),
+                ],
             ],
             group_names_to_slot_names: hashmap![
                 "group0".to_string() => "dummy_slot_name".to_string(),
@@ -442,6 +466,7 @@ mod tests {
                 "dummy_intent_4".to_string() => hashmap![
                     "dummy_slot_name5".to_string() => "snips/number".to_string(),
                 ],
+                "dummy_intent_5".to_string() => hashmap![],
             ],
             config: DeterministicParserConfig {
                 ignore_stop_words: true,
@@ -519,6 +544,42 @@ mod tests {
     }
 
     #[test]
+    fn test_ambiguous_intent_should_not_be_parsed() {
+        // Given
+        let text = "Send 5 dollars to john";
+        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![BuiltinEntity {
+                value: "5 dollars".to_string(),
+                range: 5..14,
+                entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                    value: 5.,
+                    precision: Precision::Exact,
+                    unit: Some("dollars".to_string()),
+                }),
+                entity_kind: BuiltinEntityKind::AmountOfMoney,
+            }],
+        )]);
+        let shared_resources = SharedResourcesBuilder::default()
+            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .build();
+        let parser =
+            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
+                .unwrap();
+
+        // When
+        let intent = parser.parse(text, None).unwrap().intent;
+
+        // Then
+        let expected_intent = IntentClassifierResult {
+            intent_name: None,
+            confidence_score: 1.0,
+        };
+
+        assert_eq!(intent, expected_intent);
+    }
+
+    #[test]
     fn test_parse_intent_with_whitelist() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
@@ -564,26 +625,22 @@ mod tests {
     #[test]
     fn test_get_intents() {
         // Given
-        let text = "this is a dummy_a query with another dummy_c";
-        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+        let text = "Send 5 dollars to john";
+        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
             text.to_string(),
-            vec![
-                CustomEntity {
-                    value: "dummy_a".to_string(),
-                    resolved_value: "dummy_a".to_string(),
-                    range: 10..17,
-                    entity_identifier: "dummy_entity_1".to_string(),
-                },
-                CustomEntity {
-                    value: "dummy_c".to_string(),
-                    resolved_value: "dummy_c".to_string(),
-                    range: 37..44,
-                    entity_identifier: "dummy_entity_2".to_string(),
-                },
-            ],
+            vec![BuiltinEntity {
+                value: "5 dollars".to_string(),
+                range: 5..14,
+                entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                    value: 5.,
+                    precision: Precision::Exact,
+                    unit: Some("dollars".to_string()),
+                }),
+                entity_kind: BuiltinEntityKind::AmountOfMoney,
+            }],
         )]);
         let shared_resources = SharedResourcesBuilder::default()
-            .custom_entity_parser(mocked_custom_entity_parser)
+            .builtin_entity_parser(mocked_builtin_entity_parser)
             .build();
         let parser =
             DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
@@ -593,15 +650,25 @@ mod tests {
         let intents = parser.get_intents(text).unwrap();
 
         // Then
-        let first_intent = IntentClassifierResult {
-            intent_name: Some("dummy_intent_1".to_string()),
-            confidence_score: 1.0,
-        };
-        assert_eq!(5, intents.len());
-        assert_eq!(&first_intent, &intents[0]);
-        assert_eq!(0.0, intents[1].confidence_score);
-        assert_eq!(0.0, intents[2].confidence_score);
-        assert_eq!(0.0, intents[3].confidence_score);
+        let scores = intents
+            .iter()
+            .map(|res| res.confidence_score)
+            .collect::<Vec<_>>();
+        let expected_scores = vec![0.5, 0.5, 0.0, 0.0, 0.0, 0.0];
+        let intent_names = intents
+            .into_iter()
+            .skip(2)
+            .map(|res| res.intent_name.unwrap_or("null".to_string()).to_string())
+            .sorted()
+            .collect::<Vec<_>>();
+        let expected_intent_names = vec![
+            "dummy_intent_1".to_string(),
+            "dummy_intent_2".to_string(),
+            "dummy_intent_4".to_string(),
+            "null".to_string(),
+        ];
+        assert_eq!(expected_scores, scores);
+        assert_eq!(expected_intent_names, intent_names);
     }
 
     #[test]
