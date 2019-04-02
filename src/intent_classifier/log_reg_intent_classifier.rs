@@ -126,9 +126,7 @@ impl LogRegIntentClassifier {
         let logreg = self.logreg.as_ref().unwrap(); // Checked above
 
         let features = featurizer.transform(input)?;
-        let filtered_out_indexes =
-            get_filtered_out_intents_indexes(&self.intent_list, opt_intents_set.as_ref());
-        let scores = logreg.run(&features.view(), filtered_out_indexes)?;
+        let scores = logreg.run(&features.view())?;
 
         Ok(self
             .intent_list
@@ -162,34 +160,11 @@ impl LogRegIntentClassifier {
     }
 }
 
-fn get_filtered_out_intents_indexes(
-    intents_list: &[Option<IntentName>],
-    intents_filter: Option<&HashSet<&str>>,
-) -> Option<Vec<usize>> {
-    intents_filter.map(|filter| {
-        intents_list
-            .iter()
-            .enumerate()
-            .filter_map(|(i, opt_intent)| {
-                if let Some(intent) = opt_intent {
-                    if !filter.contains(&**intent) {
-                        Some(i)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use maplit::{hashmap, hashset};
+    use maplit::hashmap;
     use ndarray::array;
 
     use crate::intent_classifier::TfidfVectorizer;
@@ -436,25 +411,5 @@ mod tests {
         assert_eq!(Some("MakeTea".to_string()), result1.intent_name);
         assert_eq!(Some("MakeCoffee".to_string()), result2.intent_name);
         assert_eq!(None, result3.intent_name);
-    }
-
-    #[test]
-    fn test_get_filtered_out_intents_indexes() {
-        // Given
-        let intents_list = vec![
-            Some("intent1".to_string()),
-            Some("intent2".to_string()),
-            Some("intent3".to_string()),
-            None,
-        ];
-        let intents_filter = hashset!["intent1", "intent3"];
-
-        // When
-        let filtered_indexes =
-            get_filtered_out_intents_indexes(&intents_list, Some(&intents_filter));
-
-        // Then
-        let expected_indexes = Some(vec![1]);
-        assert_eq!(expected_indexes, filtered_indexes);
     }
 }
