@@ -37,6 +37,26 @@ class NluEngineTest {
     }
 
     @Test
+    fun parseWithWhitelistWorks() {
+        NluEngine(File("../../data/tests/models/nlu_engine")).use {
+            it.parse("make me two cups of hot tea", listOf("MakeCoffee"), null).apply {
+                assertThat(input).isEqualTo("make me two cups of hot tea")
+                assertThat(intent.intentName!!).isEqualTo("MakeCoffee")
+            }
+        }
+    }
+
+    @Test
+    fun parseWithBlacklistWorks() {
+        NluEngine(File("../../data/tests/models/nlu_engine")).use {
+            it.parse("make me two cups of hot tea", null, listOf("MakeTea")).apply {
+                assertThat(input).isEqualTo("make me two cups of hot tea")
+                assertThat(intent.intentName!!).isEqualTo("MakeCoffee")
+            }
+        }
+    }
+
+    @Test
     fun parseIntoJsonWorks() {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
             it.parseIntoJson("make me two cups of hot tea").apply {
@@ -45,6 +65,28 @@ class NluEngineTest {
                 assertThat(this).contains("MakeTea")
                 assertThat(this).contains("beverage_temperature")
                 assertThat(this).contains("number_of_cups")
+            }
+        }
+    }
+
+    @Test
+    fun parseIntoJsonWithWhitelistWorks() {
+        NluEngine(File("../../data/tests/models/nlu_engine")).use {
+            it.parseIntoJson("make me two cups of hot tea", listOf("MakeCoffee"), null).apply {
+                assertThat(this).isNotNull()
+                assertThat(this).contains("make me two cups of hot tea")
+                assertThat(this).contains("MakeCoffee")
+            }
+        }
+    }
+
+    @Test
+    fun parseIntoJsonWithBlakclistWorks() {
+        NluEngine(File("../../data/tests/models/nlu_engine")).use {
+            it.parseIntoJson("make me two cups of hot tea", null, listOf("MakeTea")).apply {
+                assertThat(this).isNotNull()
+                assertThat(this).contains("make me two cups of hot tea")
+                assertThat(this).contains("MakeCoffee")
             }
         }
     }

@@ -28,3 +28,23 @@ class TestNLUEngineWrapper(unittest.TestCase):
 
         # Then
         self.assertEqual("MakeCoffee", res["intent"]["intentName"])
+
+    def test_should_parse_with_whitelist(self):
+        # Given
+        engine = NLUEngine(engine_bytes=SAMPLE_ENGINE_ZIP_BYTES)
+
+        # Then
+        res = engine.parse("Make me two cups of coffee please", intents_whitelist=["MakeTea"])
+
+        # Then
+        self.assertEqual("MakeTea", res["intent"]["intentName"])
+
+    def test_should_parse_with_blacklist(self):
+        # Given
+        engine = NLUEngine(engine_bytes=SAMPLE_ENGINE_ZIP_BYTES)
+
+        # Then
+        res = engine.parse("Make me two cups of coffee please", intents_blacklist=["MakeCoffee"])
+
+        # Then
+        self.assertEqual("MakeTea", res["intent"]["intentName"])

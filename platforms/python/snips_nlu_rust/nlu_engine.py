@@ -4,15 +4,15 @@ from __future__ import (absolute_import, division, print_function,
 
 import json
 from builtins import object, str
-from ctypes import byref, c_char_p, c_void_p, pointer, string_at, c_char
+from ctypes import byref, c_char_p, c_void_p, pointer, string_at, c_char, c_int
 from pathlib import Path
 
-from snips_nlu_rust.utils import lib, string_pointer
+from snips_nlu_rust.utils import lib, string_pointer, CStringArray
 
 
 class NLUEngine(object):
     def __init__(self, engine_dir=None, engine_bytes=None):
-        exit_code=1
+        exit_code = 1
         self._engine = None
 
         if engine_dir is None and engine_bytes is None:
@@ -37,14 +37,33 @@ class NLUEngine(object):
             raise ImportError('Something wrong happened while creating the '
                               'intent parser. See stderr.')
 
-    def __del__(self):
-        if self._engine is not None and lib is not None:
-            lib.ffi_snips_nlu_engine_destroy_client(self._engine)
-
-    def parse(self, query):
+    def parse(self, query, intents_whitelist=None, intents_blacklist=None):
+        if intents_whitelist is not None:
+            if not all(isinstance(intent, str) for intent in intents_whitelist):
+                raise TypeError(
+                    "Expected 'intents_whitelist' to contain objects of type 'str'")
+            intents = [intent.encode("utf8") for intent in intents_whitelist]
+            arr = CStringArray()
+            arr.size = c_int(len(intents))
+            arr.data = (c_char_p * len(intents))(*intents)
+            intents_whitelist = byref(arr)
+        if intents_blacklist is not None:
+            if not all(isinstance(intent, str) for intent in intents_blacklist):
+                raise TypeError(
+                    "Expected 'intents_blacklist' to contain objects of type 'str'")
+            intents = [intent.encode("utf8") for intent in intents_blacklist]
+            arr = CStringArray()
+            arr.size = c_int(len(intents))
+            arr.data = (c_char_p * len(intents))(*intents)
+            intents_blacklist = byref(arr)
         with string_pointer(c_char_p()) as ptr:
             lib.ffi_snips_nlu_engine_run_parse_into_json(
-                self._engine, query.encode("utf-8"), byref(ptr))
+                self._engine, query.encode("utf-8"), intents_whitelist, intents_blacklist,
+                byref(ptr))
             result = string_at(ptr)
 
         return json.loads(result.decode("utf-8"))
+
+    def __del__(self):
+        if self._engine is not None and lib is not None:
+            lib.ffi_snips_nlu_engine_destroy_client(self._engine)

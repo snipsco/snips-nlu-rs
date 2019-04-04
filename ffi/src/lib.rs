@@ -1,15 +1,17 @@
 #![allow(non_camel_case_types)]
 
-use std::ffi::CString;
+extern crate ffi_utils;
+extern crate snips_nlu_ontology_ffi_macros;
+
+use std::ffi::{CStr, CString};
 use std::io::Cursor;
 use std::slice;
 use std::sync::Mutex;
 
 use failure::{format_err, ResultExt};
+use ffi_utils::*;
 use snips_nlu_lib::SnipsNluEngine;
 use snips_nlu_ontology_ffi_macros::CIntentParserResult;
-
-use ffi_utils::*;
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -47,18 +49,34 @@ pub extern "C" fn snips_nlu_engine_create_from_zip(
 pub extern "C" fn snips_nlu_engine_run_parse(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
+    intents_whitelist: *const CStringArray,
+    intents_blacklist: *const CStringArray,
     result: *mut *const CIntentParserResult,
 ) -> SNIPS_RESULT {
-    wrap!(run_parse(client, input, result))
+    wrap!(run_parse(
+        client,
+        input,
+        intents_whitelist,
+        intents_blacklist,
+        result
+    ))
 }
 
 #[no_mangle]
 pub extern "C" fn snips_nlu_engine_run_parse_into_json(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
+    intents_whitelist: *const CStringArray,
+    intents_blacklist: *const CStringArray,
     result_json: *mut *const libc::c_char,
 ) -> SNIPS_RESULT {
-    wrap!(run_parse_into_json(client, input, result_json))
+    wrap!(run_parse_into_json(
+        client,
+        input,
+        intents_whitelist,
+        intents_blacklist,
+        result_json
+    ))
 }
 
 #[no_mangle]
@@ -116,12 +134,25 @@ fn create_from_zip(
 fn run_parse(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
+    intents_whitelist: *const CStringArray,
+    intents_blacklist: *const CStringArray,
     result: *mut *const CIntentParserResult,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
     let nlu_engine = get_nlu_engine!(client);
 
-    let results = nlu_engine.parse(&input, None, None)?;
+    let opt_whitelist: Option<Vec<_>> = if !intents_whitelist.is_null() {
+        Some(unsafe { convert_to_rust_vec(intents_whitelist)? })
+    } else {
+        None
+    };
+    let opt_blacklist: Option<Vec<_>> = if !intents_blacklist.is_null() {
+        Some(unsafe { convert_to_rust_vec(intents_blacklist)? })
+    } else {
+        None
+    };
+
+    let results = nlu_engine.parse(&input, opt_whitelist, opt_blacklist)?;
     let raw_pointer = CIntentParserResult::from(results).into_raw_pointer();
 
     unsafe { *result = raw_pointer };
@@ -132,16 +163,36 @@ fn run_parse(
 fn run_parse_into_json(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
+    intents_whitelist: *const CStringArray,
+    intents_blacklist: *const CStringArray,
     result_json: *mut *const libc::c_char,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
     let nlu_engine = get_nlu_engine!(client);
 
-    let results = nlu_engine.parse(&input, None, None)?;
+    let opt_whitelist: Option<Vec<_>> = if !intents_whitelist.is_null() {
+        Some(unsafe { convert_to_rust_vec(intents_whitelist)? })
+    } else {
+        None
+    };
+    let opt_blacklist: Option<Vec<_>> = if !intents_blacklist.is_null() {
+        Some(unsafe { convert_to_rust_vec(intents_blacklist)? })
+    } else {
+        None
+    };
+    let results = nlu_engine.parse(&input, opt_whitelist, opt_blacklist)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
 
 fn get_model_version(version: *mut *const libc::c_char) -> Result<()> {
     point_to_string(version, snips_nlu_lib::MODEL_VERSION.to_string())
+}
+
+unsafe fn convert_to_rust_vec<'a>(c_array: *const CStringArray) -> Result<Vec<&'a str>> {
+    let array = &*c_array;
+    slice::from_raw_parts(array.data, array.size as usize)
+        .into_iter()
+        .map(|&ptr| Ok(CStr::from_ptr(ptr).to_str().map_err(failure::Error::from)?))
+        .collect::<Result<Vec<_>>>()
 }
