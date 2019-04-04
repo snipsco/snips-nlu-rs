@@ -59,4 +59,25 @@ class NluEngineTests: XCTestCase {
         XCTAssertEqual("MakeTea", result.intent.intentName)
         XCTAssertEqual([expectedSlot], result.slots)
     }
+    
+    func testGetSlots() {
+        let directoryURL = Bundle(for: type(of: self)).url(forResource: "nlu_engine", withExtension: nil)!
+        
+        let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
+        
+        let slots = try! nluEngine.getSlots(string: "Make me two cups of coffee please", intent: "MakeCoffee")
+        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
+        XCTAssertEqual([expectedSlot], slots)
+    }
+    
+    func testGetIntents() {
+        let directoryURL = Bundle(for: type(of: self)).url(forResource: "nlu_engine", withExtension: nil)!
+        
+        let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
+        
+        let intentsResults = try! nluEngine.getIntents(string: "Make me two cups of coffee please")
+        let intents = intentsResults.map { $0.intentName }
+        let expectedIntents = ["MakeCoffee", "MakeTea", nil]
+        XCTAssertEqual(expectedIntents, intents)
+    }
 }

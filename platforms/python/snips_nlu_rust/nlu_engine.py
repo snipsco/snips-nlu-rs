@@ -25,7 +25,7 @@ class NLUEngine(object):
                               % str(engine_dir))
             self._engine = pointer(c_void_p())
             exit_code = lib.ffi_snips_nlu_engine_create_from_dir(
-                str(engine_dir).encode("utf-8"), byref(self._engine))
+                str(engine_dir).encode("utf8"), byref(self._engine))
         elif engine_bytes is not None:
             self._engine = pointer(c_void_p())
             bytearray_type = c_char * len(engine_bytes)
@@ -58,11 +58,25 @@ class NLUEngine(object):
             intents_blacklist = byref(arr)
         with string_pointer(c_char_p()) as ptr:
             lib.ffi_snips_nlu_engine_run_parse_into_json(
-                self._engine, query.encode("utf-8"), intents_whitelist, intents_blacklist,
+                self._engine, query.encode("utf8"), intents_whitelist, intents_blacklist,
                 byref(ptr))
             result = string_at(ptr)
 
-        return json.loads(result.decode("utf-8"))
+        return json.loads(result.decode("utf8"))
+
+    def get_slots(self, query, intent):
+        with string_pointer(c_char_p()) as ptr:
+            lib.ffi_snips_nlu_engine_run_get_slots_into_json(
+                self._engine, query.encode("utf8"), intent.encode("utf8"), byref(ptr))
+            result = string_at(ptr)
+        return json.loads(result.decode("utf8"))
+
+    def get_intents(self, query):
+        with string_pointer(c_char_p()) as ptr:
+            lib.ffi_snips_nlu_engine_run_get_intents_into_json(
+                self._engine, query.encode("utf8"), byref(ptr))
+            result = string_at(ptr)
+        return json.loads(result.decode("utf8"))
 
     def __del__(self):
         if self._engine is not None and lib is not None:

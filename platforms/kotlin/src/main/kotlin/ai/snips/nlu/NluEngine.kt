@@ -1,7 +1,11 @@
 package ai.snips.nlu
 
 import ai.snips.nlu.ontology.IntentParserResult
+import ai.snips.nlu.ontology.IntentClassifierResult
+import ai.snips.nlu.ontology.Slot
 import ai.snips.nlu.ontology.ffi.CIntentParserResult
+import ai.snips.nlu.ontology.ffi.CIntentClassifierResultList
+import ai.snips.nlu.ontology.ffi.CSlots
 import ai.snips.nlu.ontology.ffi.readString
 import ai.snips.nlu.ontology.ffi.toPointer
 import com.sun.jna.Library
@@ -130,6 +134,62 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 }
             }
 
+    fun getSlots(input: String, intent: String): List<Slot> =
+            CSlots(PointerByReference().apply {
+                parseError(LIB.snips_nlu_engine_run_get_slots(
+                        client,
+                        input.toPointer(),
+                        intent.toPointer(),
+                        this
+                ))
+            }.value).let {
+                it.toSlotList().apply {
+                    // we don't want jna to try and sync this struct after the call as we're destroying it
+                    // /!\ removing that will make the app crash semi randomly...
+                    it.autoRead = false
+                    LIB.snips_nlu_engine_destroy_slots(it)
+                }
+            }
+
+    fun getSlotsIntoJson(input: String, intent: String): String =
+            PointerByReference().apply {
+                parseError(LIB.snips_nlu_engine_run_get_slots_into_json(
+                        client,
+                        input.toPointer(),
+                        intent.toPointer(),
+                        this
+                ))
+            }.value.let {
+                it.readString().apply {
+                    LIB.snips_nlu_engine_destroy_string(it)
+                }
+            }
+
+    fun getIntents(input: String): List<IntentClassifierResult> =
+            CIntentClassifierResultList(PointerByReference().apply {
+                parseError(LIB.snips_nlu_engine_run_get_intents(client, input.toPointer(), this))
+            }.value).let {
+                it.toIntentClassifierResultList().apply {
+                    // we don't want jna to try and sync this struct after the call as we're destroying it
+                    // /!\ removing that will make the app crash semi randomly...
+                    it.autoRead = false
+                    LIB.snips_nlu_engine_destroy_intent_classifier_results(it)
+                }
+            }
+
+    fun getIntentsIntoJson(input: String): String =
+            PointerByReference().apply {
+                parseError(LIB.snips_nlu_engine_run_get_intents_into_json(
+                        client,
+                        input.toPointer(),
+                        this
+                ))
+            }.value.let {
+                it.readString().apply {
+                    LIB.snips_nlu_engine_destroy_string(it)
+                }
+            }
+
     internal interface SnipsNluClientLibrary : Library {
         companion object {
             val INSTANCE: SnipsNluClientLibrary = Native.loadLibrary("snips_nlu_ffi", SnipsNluClientLibrary::class.java)
@@ -149,9 +209,29 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 intents_whitelist: CStringArray?,
                 intents_blacklist: CStringArray?,
                 result: PointerByReference): Int
+        fun snips_nlu_engine_run_get_slots(
+                client: Pointer,
+                input: Pointer,
+                intent: Pointer,
+                result: PointerByReference): Int
+        fun snips_nlu_engine_run_get_slots_into_json(
+                client: Pointer,
+                input: Pointer,
+                intent: Pointer,
+                result: PointerByReference): Int
+        fun snips_nlu_engine_run_get_intents(
+                client: Pointer,
+                input: Pointer,
+                result: PointerByReference): Int
+        fun snips_nlu_engine_run_get_intents_into_json(
+                client: Pointer,
+                input: Pointer,
+                result: PointerByReference): Int
         fun snips_nlu_engine_get_last_error(error: PointerByReference): Int
         fun snips_nlu_engine_destroy_client(client: Pointer): Int
         fun snips_nlu_engine_destroy_result(result: CIntentParserResult): Int
+        fun snips_nlu_engine_destroy_slots(result: CSlots): Int
+        fun snips_nlu_engine_destroy_intent_classifier_results(result: CIntentClassifierResultList): Int
         fun snips_nlu_engine_destroy_string(string: Pointer): Int
     }
 }

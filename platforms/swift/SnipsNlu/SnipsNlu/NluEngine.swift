@@ -13,7 +13,7 @@ public struct NluEngineError: Error {
     public let message: String
 
     static var getLast: NluEngineError {
-        let buffer = UnsafeMutablePointer<UnsafeMutablePointer<Int8>?>.allocate(capacity: 1024)
+        let buffer = UnsafeMutablePointer<UnsafePointer<Int8>?>.allocate(capacity: 1024)
         snips_nlu_engine_get_last_error(buffer)
         return NluEngineError(message: String(cString: buffer.pointee!))
     }
@@ -420,5 +420,43 @@ public class NluEngine {
 
         guard let result = cResult?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
         return try IntentParserResult(cResult: result)
+    }
+    
+    /**
+     
+     Extracts slots from the input when the intent is known
+     
+     - Parameter string: input to process
+     - Parameter intent: intent which the input corresponds to
+     */
+    public func getSlots(string: String, intent: String) throws -> [Slot] {
+        var cSlots: UnsafePointer<CSlotList>? = nil;
+        defer {
+            snips_nlu_engine_destroy_slots(UnsafeMutablePointer(mutating: cSlots))
+        }
+        
+        guard snips_nlu_engine_run_get_slots(self.client, string, intent, &cSlots) == SNIPS_RESULT_OK else {
+            throw NluEngineError.getLast
+        }
+        
+        guard let cSlotList = cSlots?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
+        return try UnsafeBufferPointer(start: cSlotList.slots, count: Int(cSlotList.size)).map(Slot.init)
+    }
+    
+    /**
+     Extract the list of intents ranked by their confidence score
+     */
+    public func getIntents(string: String) throws -> [IntentClassifierResult] {
+        var cResults: UnsafePointer<CIntentClassifierResultList>? = nil;
+        defer {
+            snips_nlu_engine_destroy_intent_classifier_results(UnsafeMutablePointer(mutating: cResults))
+        }
+        
+        guard snips_nlu_engine_run_get_intents(self.client, string, &cResults) == SNIPS_RESULT_OK else {
+            throw NluEngineError.getLast
+        }
+        
+        guard let cResultList = cResults?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
+        return UnsafeBufferPointer(start: cResultList.intent_classifier_results, count: Int(cResultList.size)).map(IntentClassifierResult.init)
     }
 }

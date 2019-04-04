@@ -145,6 +145,20 @@ typedef struct {
 } CIntentClassifierResult;
 
 /**
+ * Wrapper around a list of IntentClassifierResult
+ */
+typedef struct {
+  /**
+   * Pointer to the first result of the list
+   */
+  const CIntentClassifierResult *intent_classifier_results;
+  /**
+   * Number of results in the list
+   */
+  int32_t size;
+} CIntentClassifierResultList;
+
+/**
  * A slot value
  */
 typedef struct {
@@ -369,11 +383,39 @@ SNIPS_RESULT snips_nlu_engine_create_from_zip(const unsigned char *zip,
 
 SNIPS_RESULT snips_nlu_engine_destroy_client(CSnipsNluEngine *client);
 
+SNIPS_RESULT snips_nlu_engine_destroy_intent_classifier_results(CIntentClassifierResultList *result);
+
 SNIPS_RESULT snips_nlu_engine_destroy_result(CIntentParserResult *result);
+
+SNIPS_RESULT snips_nlu_engine_destroy_slots(CSlotList *result);
 
 SNIPS_RESULT snips_nlu_engine_destroy_string(char *string);
 
+/**
+ * Used to retrieve the last error that happened in this thread. A function encountered an
+ * error if its return type is of type SNIPS_RESULT and it returned SNIPS_RESULT_KO
+ */
+SNIPS_RESULT snips_nlu_engine_get_last_error(const char **error);
+
 SNIPS_RESULT snips_nlu_engine_get_model_version(const char **version);
+
+SNIPS_RESULT snips_nlu_engine_run_get_intents(const CSnipsNluEngine *client,
+                                              const char *input,
+                                              const CIntentClassifierResultList **result);
+
+SNIPS_RESULT snips_nlu_engine_run_get_intents_into_json(const CSnipsNluEngine *client,
+                                                        const char *input,
+                                                        const char **result_json);
+
+SNIPS_RESULT snips_nlu_engine_run_get_slots(const CSnipsNluEngine *client,
+                                            const char *input,
+                                            const char *intent,
+                                            const CSlotList **result);
+
+SNIPS_RESULT snips_nlu_engine_run_get_slots_into_json(const CSnipsNluEngine *client,
+                                                      const char *input,
+                                                      const char *intent,
+                                                      const char **result_json);
 
 SNIPS_RESULT snips_nlu_engine_run_parse(const CSnipsNluEngine *client,
                                         const char *input,
@@ -386,7 +428,5 @@ SNIPS_RESULT snips_nlu_engine_run_parse_into_json(const CSnipsNluEngine *client,
                                                   const CStringArray *intents_whitelist,
                                                   const CStringArray *intents_blacklist,
                                                   const char **result_json);
-
-SNIPS_RESULT snips_nlu_engine_get_last_error(char **error);
 
 #endif /* LIBSNIPS_NLU_H_ */

@@ -11,7 +11,7 @@ use std::sync::Mutex;
 use failure::{format_err, ResultExt};
 use ffi_utils::*;
 use snips_nlu_lib::SnipsNluEngine;
-use snips_nlu_ontology_ffi_macros::CIntentParserResult;
+use snips_nlu_ontology_ffi_macros::{CIntentClassifierResultList, CIntentParserResult, CSlotList};
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -63,6 +63,25 @@ pub extern "C" fn snips_nlu_engine_run_parse(
 }
 
 #[no_mangle]
+pub extern "C" fn snips_nlu_engine_run_get_slots(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    intent: *const libc::c_char,
+    result: *mut *const CSlotList,
+) -> SNIPS_RESULT {
+    wrap!(run_get_slots(client, input, intent, result))
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_run_get_intents(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    result: *mut *const CIntentClassifierResultList,
+) -> SNIPS_RESULT {
+    wrap!(run_get_intents(client, input, result))
+}
+
+#[no_mangle]
 pub extern "C" fn snips_nlu_engine_run_parse_into_json(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
@@ -80,6 +99,25 @@ pub extern "C" fn snips_nlu_engine_run_parse_into_json(
 }
 
 #[no_mangle]
+pub extern "C" fn snips_nlu_engine_run_get_slots_into_json(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    intent: *const libc::c_char,
+    result_json: *mut *const libc::c_char,
+) -> SNIPS_RESULT {
+    wrap!(run_get_slots_into_json(client, input, intent, result_json))
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_run_get_intents_into_json(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    result_json: *mut *const libc::c_char,
+) -> SNIPS_RESULT {
+    wrap!(run_get_intents_into_json(client, input, result_json))
+}
+
+#[no_mangle]
 pub extern "C" fn snips_nlu_engine_destroy_string(string: *mut libc::c_char) -> SNIPS_RESULT {
     wrap!(unsafe { CString::from_raw_pointer(string) })
 }
@@ -94,6 +132,18 @@ pub extern "C" fn snips_nlu_engine_destroy_result(
     result: *mut CIntentParserResult,
 ) -> SNIPS_RESULT {
     wrap!(unsafe { CIntentParserResult::from_raw_pointer(result) })
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_destroy_slots(result: *mut CSlotList) -> SNIPS_RESULT {
+    wrap!(unsafe { CSlotList::from_raw_pointer(result) })
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_destroy_intent_classifier_results(
+    result: *mut CIntentClassifierResultList,
+) -> SNIPS_RESULT {
+    wrap!(unsafe { CIntentClassifierResultList::from_raw_pointer(result) })
 }
 
 #[no_mangle]
@@ -160,6 +210,40 @@ fn run_parse(
     Ok(())
 }
 
+fn run_get_slots(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    intent: *const libc::c_char,
+    result: *mut *const CSlotList,
+) -> Result<()> {
+    let input = create_rust_string_from!(input);
+    let intent = create_rust_string_from!(intent);
+    let nlu_engine = get_nlu_engine!(client);
+
+    let slots = nlu_engine.get_slots(&input, &intent)?;
+    let raw_pointer = CSlotList::from(slots).into_raw_pointer();
+
+    unsafe { *result = raw_pointer };
+
+    Ok(())
+}
+
+fn run_get_intents(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    result: *mut *const CIntentClassifierResultList,
+) -> Result<()> {
+    let input = create_rust_string_from!(input);
+    let nlu_engine = get_nlu_engine!(client);
+
+    let intents = nlu_engine.get_intents(&input)?;
+    let raw_pointer = CIntentClassifierResultList::from(intents).into_raw_pointer();
+
+    unsafe { *result = raw_pointer };
+
+    Ok(())
+}
+
 fn run_parse_into_json(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
@@ -183,6 +267,33 @@ fn run_parse_into_json(
     let results = nlu_engine.parse(&input, opt_whitelist, opt_blacklist)?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
+}
+
+fn run_get_slots_into_json(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    intent: *const libc::c_char,
+    result_json: *mut *const libc::c_char,
+) -> Result<()> {
+    let input = create_rust_string_from!(input);
+    let intent = create_rust_string_from!(intent);
+    let nlu_engine = get_nlu_engine!(client);
+
+    let slots = nlu_engine.get_slots(&input, &intent)?;
+    point_to_string(result_json, serde_json::to_string(&slots)?)
+}
+
+fn run_get_intents_into_json(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    result_json: *mut *const libc::c_char,
+) -> Result<()> {
+    let input = create_rust_string_from!(input);
+    let nlu_engine = get_nlu_engine!(client);
+
+    let intents = nlu_engine.get_intents(&input)?;
+
+    point_to_string(result_json, serde_json::to_string(&intents)?)
 }
 
 fn get_model_version(version: *mut *const libc::c_char) -> Result<()> {
