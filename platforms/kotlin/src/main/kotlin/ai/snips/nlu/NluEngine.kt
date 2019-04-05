@@ -93,11 +93,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         LIB.snips_nlu_engine_destroy_client(client)
     }
 
-    fun parse(input: String): IntentParserResult = parse(input, null, null)
-
     fun parse(input: String,
-              intentsWhitelist: List<String>?,
-              intentsBlacklist: List<String>?): IntentParserResult =
+              intentsWhitelist: List<String>? = null,
+              intentsBlacklist: List<String>? = null): IntentParserResult =
             CIntentParserResult(PointerByReference().apply {
                 parseError(LIB.snips_nlu_engine_run_parse(
                         client,
@@ -115,11 +113,9 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 }
             }
 
-    fun parseIntoJson(input: String): String = parseIntoJson(input, null, null)
-
     fun parseIntoJson(input: String,
-                      intentsWhitelist: List<String>?,
-                      intentsBlacklist: List<String>?): String =
+                      intentsWhitelist: List<String>? = null,
+                      intentsBlacklist: List<String>? = null): String =
             PointerByReference().apply {
                 parseError(LIB.snips_nlu_engine_run_parse_into_json(
                         client,
