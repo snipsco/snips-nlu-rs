@@ -11,6 +11,27 @@ from snips_nlu_rust.utils import lib, string_pointer, CStringArray
 
 
 class NLUEngine(object):
+    """Python wrapper of the Rust NLU engine
+
+    This wrapper is similar, and can be used in conjunction with the NLU
+    engine defined in the snips-nlu python library
+    (https://github.com/snipsco/snips-nlu), except that it only provides
+    APIs for inference and not for training.
+
+    Examples:
+
+        >>> import io
+        >>> import json
+        >>> from snips_nlu import SnipsNLUEngine as TrainingEngine
+        >>> from snips_nlu_rust import NLUEngine as InferenceEngine
+        >>> with io.open("/path/to/dataset.json") as f:
+        ...     dataset = json.load(f)
+        >>> engine = TrainingEngine().fit(dataset)
+        >>> engine.persist("/path/to/nlu_engine")
+        >>> inference_engine = InferenceEngine(
+        ...     engine_dir="/path/to/nlu_engine")
+        >>> inference_engine.parse("Turn on the lights in the kitchen")
+    """
     def __init__(self, engine_dir=None, engine_bytes=None):
         exit_code = 1
         self._engine = None
@@ -38,6 +59,20 @@ class NLUEngine(object):
                               'intent parser. See stderr.')
 
     def parse(self, query, intents_whitelist=None, intents_blacklist=None):
+        """Extracts intent and slots from an input query
+
+        Args:
+            query (str): input to process
+            intents_whitelist (list of str, optional): if defined, this will restrict the scope of
+                intent parsing to the provided intents
+            intents_blacklist (list of str, optional): if defined, these intents will be excluded
+                from the scope of intent parsing
+
+        Returns:
+            A python dict containing data about intent and slots. See
+            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing for details about the
+            format.
+        """
         if intents_whitelist is not None:
             if not all(isinstance(intent, str) for intent in intents_whitelist):
                 raise TypeError(
@@ -65,6 +100,17 @@ class NLUEngine(object):
         return json.loads(result.decode("utf8"))
 
     def get_slots(self, query, intent):
+        """Extracts slots from the input when the intent is known
+
+        Args:
+            query (str): input to process
+            intent (str): intent which the input corresponds to
+
+        Returns:
+            A list of slots. See
+            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing for details about the
+            format.
+        """
         with string_pointer(c_char_p()) as ptr:
             lib.ffi_snips_nlu_engine_run_get_slots_into_json(
                 self._engine, query.encode("utf8"), intent.encode("utf8"), byref(ptr))
@@ -72,6 +118,16 @@ class NLUEngine(object):
         return json.loads(result.decode("utf8"))
 
     def get_intents(self, query):
+        """Returns all intents sorted by decreasing confidence scores
+
+        Args:
+            query (str): input to process
+
+        Returns:
+            A list of intents along with their probability. See
+            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing for details about the
+            format.
+        """
         with string_pointer(c_char_p()) as ptr:
             lib.ffi_snips_nlu_engine_run_get_intents_into_json(
                 self._engine, query.encode("utf8"), byref(ptr))

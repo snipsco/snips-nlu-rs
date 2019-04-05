@@ -126,7 +126,7 @@ public enum SlotValue {
             let x = cSlotValue.value.assumingMemoryBound(to: CChar.self)
             self = .musicTrack(String(cString: x))
 
-        default: throw NluEngineError(message: "Internal error: Bad type conversion")
+        default: throw NluEngineError(message: "Internal error: \(cSlotValue.value_type) is not a valid slot value type")
         }
     }
 }
@@ -287,7 +287,7 @@ public enum Grain {
         case SNIPS_GRAIN_HOUR: self = .hour
         case SNIPS_GRAIN_MINUTE: self = .minute
         case SNIPS_GRAIN_SECOND: self = .second
-        default: throw NluEngineError(message: "Internal error: Bad type conversion")
+        default: throw NluEngineError(message: "Internal error: \(cValue) is not a valid datetime grain value")
         }
     }
 }
@@ -300,7 +300,7 @@ public enum Precision {
         switch cValue {
         case SNIPS_PRECISION_APPROXIMATE: self = .approximate
         case SNIPS_PRECISION_EXACT: self = .exact
-        default: throw NluEngineError(message: "Internal error: Bad type conversion")
+        default: throw NluEngineError(message: "Internal error: \(cValue) is not a valid datetime precision value")
         }
     }
 }
@@ -418,12 +418,11 @@ public class NluEngine {
             throw NluEngineError.getLast
         }
 
-        guard let result = cResult?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
+        guard let result = cResult?.pointee else { throw NluEngineError(message: "Can't retrieve parsing result")}
         return try IntentParserResult(cResult: result)
     }
     
     /**
-     
      Extracts slots from the input when the intent is known
      
      - Parameter string: input to process
@@ -439,12 +438,12 @@ public class NluEngine {
             throw NluEngineError.getLast
         }
         
-        guard let cSlotList = cSlots?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
+        guard let cSlotList = cSlots?.pointee else { throw NluEngineError(message: "Can't retrieve slots result")}
         return try UnsafeBufferPointer(start: cSlotList.slots, count: Int(cSlotList.size)).map(Slot.init)
     }
     
     /**
-     Extract the list of intents ranked by their confidence score
+     Extracts the list of intents ranked by their confidence score
      */
     public func getIntents(string: String) throws -> [IntentClassifierResult] {
         var cResults: UnsafePointer<CIntentClassifierResultList>? = nil;
@@ -456,7 +455,7 @@ public class NluEngine {
             throw NluEngineError.getLast
         }
         
-        guard let cResultList = cResults?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
+        guard let cResultList = cResults?.pointee else { throw NluEngineError(message: "Can't retrieve intents result")}
         return UnsafeBufferPointer(start: cResultList.intent_classifier_results, count: Int(cResultList.size)).map(IntentClassifierResult.init)
     }
 }
