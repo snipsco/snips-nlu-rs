@@ -1,13 +1,16 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.64.2] - 2019-04-09
 ### Fixed
 - Fix handling of ambiguous utterances in `DeterministicIntentParser` [#129](https://github.com/snipsco/snips-nlu-rs/pull/129)
 - Stop normalizing confidence scores when there is an intents filter [#130](https://github.com/snipsco/snips-nlu-rs/pull/130)
 
 ### Added
 - Add new APIs in ffi and bindings (python, kotlin, swift) [#131](https://github.com/snipsco/snips-nlu-rs/pull/131)
+
+### Changed
+- Leverage entity scopes of each intent in deterministic intent parser [#126](https://github.com/snipsco/snips-nlu-rs/pull/126)
 
 ## [0.64.1] - 2019-03-01
 ### Fixed
@@ -186,7 +189,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
-[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.1...HEAD
+[0.64.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.1...0.64.2
 [0.64.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.0...0.64.1
 [0.64.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.1...0.64.0
 [0.63.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.0...0.63.1
