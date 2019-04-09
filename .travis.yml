@@ -9,6 +9,7 @@ jobs:
       os: osx
       osx_image: xcode10.2
       language: generic
+      sudo: true
       env:
         - TOXENV=py27
         - PYTHON_TESTS=true
@@ -16,6 +17,7 @@ jobs:
       os: osx
       osx_image: xcode10.2
       language: generic
+      sudo: true
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
@@ -23,6 +25,7 @@ jobs:
       os: osx
       osx_image: xcode10.2
       language: generic
+      sudo: true
       env:
         - MACOS_SWIFT_TESTS=true
         - IOS_SWIFT_TESTS=true
