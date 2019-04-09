@@ -4,7 +4,7 @@ import ai.snips.nlu.ontology.IntentParserResult
 import ai.snips.nlu.ontology.IntentClassifierResult
 import ai.snips.nlu.ontology.Slot
 import ai.snips.nlu.ontology.ffi.CIntentParserResult
-import ai.snips.nlu.ontology.ffi.CIntentClassifierResultList
+import ai.snips.nlu.ontology.ffi.CIntentClassifierResultArray
 import ai.snips.nlu.ontology.ffi.CSlots
 import ai.snips.nlu.ontology.ffi.readString
 import ai.snips.nlu.ontology.ffi.toPointer
@@ -162,7 +162,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
             }
 
     fun getIntents(input: String): List<IntentClassifierResult> =
-            CIntentClassifierResultList(PointerByReference().apply {
+            CIntentClassifierResultArray(PointerByReference().apply {
                 parseError(LIB.snips_nlu_engine_run_get_intents(client, input.toPointer(), this))
             }.value).let {
                 it.toIntentClassifierResultList().apply {
@@ -227,7 +227,7 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         fun snips_nlu_engine_destroy_client(client: Pointer): Int
         fun snips_nlu_engine_destroy_result(result: CIntentParserResult): Int
         fun snips_nlu_engine_destroy_slots(result: CSlots): Int
-        fun snips_nlu_engine_destroy_intent_classifier_results(result: CIntentClassifierResultList): Int
+        fun snips_nlu_engine_destroy_intent_classifier_results(result: CIntentClassifierResultArray): Int
         fun snips_nlu_engine_destroy_string(string: Pointer): Int
     }
 }
