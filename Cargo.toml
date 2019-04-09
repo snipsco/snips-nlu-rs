@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-lib"
-version = "0.64.2"
+version = "0.65.0-SNAPSHOT"
 authors = [
     "Adrien Ball <adrien.ball@snips.ai>",
     "Clement Doumouro <clement.doumouro@snips.ai>",
