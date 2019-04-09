@@ -7,21 +7,21 @@ jobs:
   include:
     - if: branch = master or head_branch =~ /^release\/.+$/
       os: osx
-      osx_image: xcode10.1
+      osx_image: xcode10.2
       language: generic
       env:
         - TOXENV=py27
         - PYTHON_TESTS=true
     - if: branch = master or head_branch =~ /^release\/.+$/
       os: osx
-      osx_image: xcode10.1
+      osx_image: xcode10.2
       language: generic
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
     - if: branch = master or head_branch =~ /^release\/.+$/
       os: osx
-      osx_image: xcode10.1
+      osx_image: xcode10.2
       language: generic
       env:
         - MACOS_SWIFT_TESTS=true
