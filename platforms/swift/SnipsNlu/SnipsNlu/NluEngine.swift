@@ -13,7 +13,7 @@ public struct NluEngineError: Error {
     public let message: String
 
     static var getLast: NluEngineError {
-        let buffer = UnsafeMutablePointer<UnsafeMutablePointer<Int8>?>.allocate(capacity: 1024)
+        let buffer = UnsafeMutablePointer<UnsafePointer<Int8>?>.allocate(capacity: 1024)
         snips_nlu_engine_get_last_error(buffer)
         return NluEngineError(message: String(cString: buffer.pointee!))
     }
@@ -31,11 +31,19 @@ public struct IntentParserResult {
         let cSlotList = cResult.slots.pointee
         self.slots = try UnsafeBufferPointer(start: cSlotList.slots, count: Int(cSlotList.size)).map(Slot.init)
     }
+    
+    init(input: String, intent: IntentClassifierResult, slots: [Slot]) {
+        self.input = input
+        self.intent = intent
+        self.slots = slots
+    }
 }
+
+extension IntentParserResult: Equatable {}
 
 public struct IntentClassifierResult {
     public let intentName: String?
-    public let probability: Float
+    public let confidenceScore: Float
 
     init(cResult: CIntentClassifierResult) {
         if let cIntentName = cResult.intent_name {
@@ -43,9 +51,16 @@ public struct IntentClassifierResult {
         } else {
             self.intentName = nil
         }
-        self.probability = cResult.probability
+        self.confidenceScore = cResult.confidence_score
+    }
+    
+    init(intentName: String?, confidenceScore: Float) {
+        self.intentName = intentName
+        self.confidenceScore = confidenceScore
     }
 }
+
+extension IntentClassifierResult: Equatable {}
 
 public enum SlotValue {
     case custom(String)
@@ -111,10 +126,12 @@ public enum SlotValue {
             let x = cSlotValue.value.assumingMemoryBound(to: CChar.self)
             self = .musicTrack(String(cString: x))
 
-        default: throw NluEngineError(message: "Internal error: Bad type conversion")
+        default: throw NluEngineError(message: "Internal error: \(cSlotValue.value_type) is not a valid slot value type")
         }
     }
 }
+
+extension SlotValue: Equatable {}
 
 public typealias NumberValue = Double
 
@@ -132,7 +149,15 @@ public struct InstantTimeValue {
         self.grain = try Grain(cValue: cValue.grain)
         self.precision = try Precision(cValue: cValue.precision)
     }
+    
+    init(value: String, grain: Grain, precision: Precision) {
+        self.value = value
+        self.grain = grain
+        self.precision = precision
+    }
 }
+
+extension InstantTimeValue: Equatable {}
 
 public struct TimeIntervalValue {
     public let from: String?
@@ -150,7 +175,14 @@ public struct TimeIntervalValue {
             self.to = nil
         }
     }
+    
+    init(from: String?, to: String?) {
+        self.from = from
+        self.to = to
+    }
 }
+
+extension TimeIntervalValue: Equatable {}
 
 public struct AmountOfMoneyValue {
      public let value: Float
@@ -166,7 +198,15 @@ public struct AmountOfMoneyValue {
             self.unit = nil
         }
     }
+    
+    init(value: Float, precision: Precision, unit: String?) {
+        self.value = value
+        self.precision = precision
+        self.unit = unit
+    }
 }
+
+extension AmountOfMoneyValue: Equatable {}
 
 public struct TemperatureValue {
      public let value: Float
@@ -180,7 +220,14 @@ public struct TemperatureValue {
             self.unit = nil
         }
     }
+    
+    init(value: Float, unit: String?) {
+        self.value = value
+        self.unit = unit
+    }
 }
+
+extension TemperatureValue: Equatable {}
 
 public struct DurationValue {
      public let years: Int
@@ -204,7 +251,21 @@ public struct DurationValue {
         self.seconds = Int(truncatingIfNeeded: cValue.seconds)
         self.precision = try Precision(cValue: cValue.precision)
     }
+    
+    init(years: Int, quarters: Int, months: Int, weeks: Int, days: Int, hours: Int, minutes: Int, seconds: Int, precision: Precision) {
+        self.years = years
+        self.quarters = quarters
+        self.months = months
+        self.weeks = weeks
+        self.days = days
+        self.hours = hours
+        self.minutes = minutes
+        self.seconds = seconds
+        self.precision = precision
+    }
 }
+
+extension DurationValue: Equatable {}
 
 public enum Grain {
     case year
@@ -226,7 +287,7 @@ public enum Grain {
         case SNIPS_GRAIN_HOUR: self = .hour
         case SNIPS_GRAIN_MINUTE: self = .minute
         case SNIPS_GRAIN_SECOND: self = .second
-        default: throw NluEngineError(message: "Internal error: Bad type conversion")
+        default: throw NluEngineError(message: "Internal error: \(cValue) is not a valid datetime grain value")
         }
     }
 }
@@ -239,12 +300,12 @@ public enum Precision {
         switch cValue {
         case SNIPS_PRECISION_APPROXIMATE: self = .approximate
         case SNIPS_PRECISION_EXACT: self = .exact
-        default: throw NluEngineError(message: "Internal error: Bad type conversion")
+        default: throw NluEngineError(message: "Internal error: \(cValue) is not a valid datetime precision value")
         }
     }
 }
 
-public struct Slot {
+public struct Slot: Equatable {
     public let rawValue: String
     public let value: SlotValue
     public let range: Range<Int>
@@ -260,18 +321,60 @@ public struct Slot {
         self.slotName = String(cString: cSlot.slot_name)
         self.confidenceScore = cSlot.confidence_score >= 0 ? cSlot.confidence_score : nil
     }
+    
+    init(rawValue: String, value: SlotValue, range: Range<Int>, entity: String, slotName: String, confidenceScore: Float? = nil) {
+        self.rawValue = rawValue
+        self.value = value
+        self.range = range
+        self.entity = entity
+        self.slotName = slotName
+        self.confidenceScore = confidenceScore
+    }
+}
+
+extension CStringArray {
+    init(array: [String]) {
+        let data = UnsafeMutablePointer<UnsafePointer<Int8>?>.allocate(capacity: array.count)
+        array.enumerated().forEach {
+            data.advanced(by: $0).pointee = UnsafePointer(strdup($1))
+        }
+        
+        self.init()
+        self.data = UnsafePointer(data)
+        self.size = Int32(array.count)
+    }
+    
+    func destroy() {
+        let mutating = UnsafeMutablePointer(mutating: data)
+        for idx in 0..<size {
+            free(UnsafeMutableRawPointer(mutating: data.advanced(by: Int(idx)).pointee))
+        }
+        mutating?.deallocate()
+    }
 }
 
 public class NluEngine {
     private var client: OpaquePointer? = nil
 
+    /**
+     Loads an NluEngine from a directory
+     */
     public init(nluEngineDirectoryURL: URL) throws {
-        guard snips_nlu_engine_create_from_dir(nluEngineDirectoryURL.path, &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
+        guard snips_nlu_engine_create_from_dir(nluEngineDirectoryURL.path, &client) == SNIPS_RESULT_OK else {
+            throw NluEngineError.getLast
+        }
     }
 
+    /**
+     Loads an NluEngine from zipped data
+     
+     - Parameter nluEngineZipData: Binary data corresponding to a zipped NluEngine instance
+     */
     public init(nluEngineZipData: Data) throws {
-        try nluEngineZipData.withUnsafeBytes { (bytes: UnsafePointer<UInt8>) in
-            guard snips_nlu_engine_create_from_zip(bytes, UInt32(nluEngineZipData.count), &client) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
+        try nluEngineZipData.withUnsafeBytes { (bytes: UnsafeRawBufferPointer) in
+            guard snips_nlu_engine_create_from_zip(bytes.baseAddress?.assumingMemoryBound(to: UInt8.self), UInt32(nluEngineZipData.count), &client) == SNIPS_RESULT_OK else {
+                throw NluEngineError.getLast
+            }
         }
     }
 
@@ -282,13 +385,77 @@ public class NluEngine {
         }
     }
 
-    public func parse(string: String) throws -> IntentParserResult {
+    /**
+     Extracts intent and slots from the input
+     
+     - Parameter string: input to process
+     - Parameter intentsWhitelist: optional list of intents used to restrict the parsing scope
+     - Parameter intentsBlacklist: optional list of intents to exclude during parsing
+     */
+    public func parse(string: String, intentsWhitelist: [String]? = nil, intentsBlacklist: [String]? = nil) throws -> IntentParserResult {
         var cResult: UnsafePointer<CIntentParserResult>? = nil;
-        guard snips_nlu_engine_run_parse(self.client, string, &cResult) == SNIPS_RESULT_OK else { throw NluEngineError.getLast }
+        var whiteListArray: CStringArray?
+        var blackListArray: CStringArray?
         defer {
             snips_nlu_engine_destroy_result(UnsafeMutablePointer(mutating: cResult))
+            whiteListArray?.destroy()
+            blackListArray?.destroy()
         }
-        guard let result = cResult?.pointee else { throw NluEngineError(message: "Can't retrieve result")}
+        var whitelist: UnsafePointer<CStringArray>?
+        var blacklist: UnsafePointer<CStringArray>?
+        
+        if let unwrappedIntentsWhitelist = intentsWhitelist {
+            whiteListArray = CStringArray(array: unwrappedIntentsWhitelist)
+            whitelist = withUnsafePointer(to: &whiteListArray!) { $0 }
+        }
+        
+        if let unwrappedIntentsBlacklist = intentsBlacklist {
+            blackListArray = CStringArray(array: unwrappedIntentsBlacklist)
+            blacklist = withUnsafePointer(to: &blackListArray!) { $0 }
+        }
+        
+        guard snips_nlu_engine_run_parse(self.client, string, whitelist, blacklist, &cResult) == SNIPS_RESULT_OK else {
+            throw NluEngineError.getLast
+        }
+
+        guard let result = cResult?.pointee else { throw NluEngineError(message: "Can't retrieve parsing result")}
         return try IntentParserResult(cResult: result)
+    }
+    
+    /**
+     Extracts slots from the input when the intent is known
+     
+     - Parameter string: input to process
+     - Parameter intent: intent which the input corresponds to
+     */
+    public func getSlots(string: String, intent: String) throws -> [Slot] {
+        var cSlots: UnsafePointer<CSlotList>? = nil;
+        defer {
+            snips_nlu_engine_destroy_slots(UnsafeMutablePointer(mutating: cSlots))
+        }
+        
+        guard snips_nlu_engine_run_get_slots(self.client, string, intent, &cSlots) == SNIPS_RESULT_OK else {
+            throw NluEngineError.getLast
+        }
+        
+        guard let cSlotList = cSlots?.pointee else { throw NluEngineError(message: "Can't retrieve slots result")}
+        return try UnsafeBufferPointer(start: cSlotList.slots, count: Int(cSlotList.size)).map(Slot.init)
+    }
+    
+    /**
+     Extracts the list of intents ranked by their confidence score
+     */
+    public func getIntents(string: String) throws -> [IntentClassifierResult] {
+        var cResults: UnsafePointer<CIntentClassifierResultList>? = nil;
+        defer {
+            snips_nlu_engine_destroy_intent_classifier_results(UnsafeMutablePointer(mutating: cResults))
+        }
+        
+        guard snips_nlu_engine_run_get_intents(self.client, string, &cResults) == SNIPS_RESULT_OK else {
+            throw NluEngineError.getLast
+        }
+        
+        guard let cResultList = cResults?.pointee else { throw NluEngineError(message: "Can't retrieve intents result")}
+        return UnsafeBufferPointer(start: cResultList.intent_classifier_results, count: Int(cResultList.size)).map(IntentClassifierResult.init)
     }
 }

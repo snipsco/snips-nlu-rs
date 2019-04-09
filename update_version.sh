@@ -4,6 +4,7 @@ NEW_VERSION=${1?"usage $0 <new version>"}
 
 echo "Updating versions to version ${NEW_VERSION}"
 find . -name "Cargo.toml" -exec perl -p -i -e "s/^version = \".*\"$/version = \"$NEW_VERSION\"/g" {} \;
+find . -name "cbindgen.toml" -exec perl -p -i -e "s/^header = \"#define SNIPS_NLU_VERSION.*\"$/header = \"#define SNIPS_NLU_VERSION \\\\\"${NEW_VERSION}\\\\\"\"/g" {} \;
 perl -p -i -e "s/^version = \".*\"\$/version = \"$NEW_VERSION\"/g" */**/build.gradle
 perl -p -i -e "s/^VERSION=\".*\"\$/VERSION=\"$NEW_VERSION\"/g" */**/**/**/build.sh
 perl -p -i -e "s/SNIPS_NLU_VERSION \".*\"/SNIPS_NLU_VERSION \"$NEW_VERSION\"/g" platforms/c/libsnips_nlu.h
