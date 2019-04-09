@@ -11,7 +11,7 @@ use std::sync::Mutex;
 use failure::{format_err, ResultExt};
 use ffi_utils::*;
 use snips_nlu_lib::SnipsNluEngine;
-use snips_nlu_ontology_ffi_macros::{CIntentClassifierResultList, CIntentParserResult, CSlotList};
+use snips_nlu_ontology_ffi_macros::{CIntentClassifierResultArray, CIntentParserResult, CSlotList};
 
 type Result<T> = std::result::Result<T, failure::Error>;
 
@@ -76,7 +76,7 @@ pub extern "C" fn snips_nlu_engine_run_get_slots(
 pub extern "C" fn snips_nlu_engine_run_get_intents(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
-    result: *mut *const CIntentClassifierResultList,
+    result: *mut *const CIntentClassifierResultArray,
 ) -> SNIPS_RESULT {
     wrap!(run_get_intents(client, input, result))
 }
@@ -141,9 +141,9 @@ pub extern "C" fn snips_nlu_engine_destroy_slots(result: *mut CSlotList) -> SNIP
 
 #[no_mangle]
 pub extern "C" fn snips_nlu_engine_destroy_intent_classifier_results(
-    result: *mut CIntentClassifierResultList,
+    result: *mut CIntentClassifierResultArray,
 ) -> SNIPS_RESULT {
-    wrap!(unsafe { CIntentClassifierResultList::from_raw_pointer(result) })
+    wrap!(unsafe { CIntentClassifierResultArray::from_raw_pointer(result) })
 }
 
 #[no_mangle]
@@ -231,13 +231,13 @@ fn run_get_slots(
 fn run_get_intents(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
-    result: *mut *const CIntentClassifierResultList,
+    result: *mut *const CIntentClassifierResultArray,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
     let nlu_engine = get_nlu_engine!(client);
 
     let intents = nlu_engine.get_intents(&input)?;
-    let raw_pointer = CIntentClassifierResultList::from(intents).into_raw_pointer();
+    let raw_pointer = CIntentClassifierResultArray::from(intents).into_raw_pointer();
 
     unsafe { *result = raw_pointer };
 
