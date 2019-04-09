@@ -1,5 +1,6 @@
+from _ctypes import Structure, POINTER
 from contextlib import contextmanager
-from ctypes import cdll
+from ctypes import cdll, c_char_p, c_int32
 from pathlib import Path
 
 dylib_dir = Path(__file__).parent / "dylib"
@@ -13,3 +14,10 @@ def string_pointer(ptr):
         yield ptr
     finally:
         lib.ffi_snips_nlu_engine_destroy_string(ptr)
+
+
+class CStringArray(Structure):
+    _fields_ = [
+        ("data", POINTER(c_char_p)),
+        ("size", c_int32)
+    ]

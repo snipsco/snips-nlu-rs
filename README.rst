@@ -67,7 +67,7 @@ the `Snips NLU python library <https://github.com/snipsco/snips-nlu>`_.
 Example and API Usage
 ---------------------
 
-The `interactive parsing CLI <snips-nlu-lib/examples/interactive_parsing_cli>`_  is a good example
+The `interactive parsing CLI <examples/interactive_parsing_cli>`_  is a good example
 of to how to use ``snips-nlu-rs``.
 
 Here is how you can run the CLI example:
@@ -75,7 +75,8 @@ Here is how you can run the CLI example:
 .. code-block:: bash
 
    $ git clone https://github.com/snipsco/snips-nlu-rs
-   $ cargo run -p snips-nlu-lib --example interactive_parsing_cli data/tests/models/nlu_engine
+   $ cd snips-nlu-rs
+   $ cargo run --example interactive_parsing_cli data/tests/models/nlu_engine
 
 Here we used a sample trained engine, which consists in two intents: ``MakeCoffee`` and ``MakeTea``.
 Thus, it will be able to parse queries like ``"Make me two cups of coffee please"`` or ``"I'd like a hot tea"``.

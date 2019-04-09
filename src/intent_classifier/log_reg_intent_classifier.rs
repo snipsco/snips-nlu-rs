@@ -6,6 +6,7 @@ use std::sync::Arc;
 
 use failure::ResultExt;
 use itertools::Itertools;
+use log::{debug, info};
 use ndarray::prelude::*;
 use snips_nlu_ontology::IntentClassifierResult;
 
@@ -28,6 +29,7 @@ impl LogRegIntentClassifier {
         path: P,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
+        info!("Loading log reg intent classifier ({:?}) ...", path.as_ref());
         let classifier_model_path = path.as_ref().join("intent_classifier.json");
         let model_file = File::open(&classifier_model_path).with_context(|_| {
             format!(
@@ -57,6 +59,8 @@ impl LogRegIntentClassifier {
             Ok(None)
         }?;
 
+        info!("Log reg intent classifier loaded");
+
         Ok(Self {
             intent_list: model.intent_list,
             featurizer,
@@ -71,15 +75,18 @@ impl IntentClassifier for LogRegIntentClassifier {
         input: &str,
         intents_whitelist: Option<&[&str]>,
     ) -> Result<IntentClassifierResult> {
+        debug!("Classifying intent...");
         let intents_results = self.get_intents_with_whitelist(input, intents_whitelist)?;
-        Ok(if intents_results.is_empty() {
+        let intent_result = if intents_results.is_empty() {
             IntentClassifierResult {
                 intent_name: None,
                 confidence_score: 1.0,
             }
         } else {
             intents_results.into_iter().next().unwrap()
-        })
+        };
+        debug!("Intent found: '{:?}'", intent_result.intent_name);
+        Ok(intent_result)
     }
 
     fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
@@ -119,9 +126,7 @@ impl LogRegIntentClassifier {
         let logreg = self.logreg.as_ref().unwrap(); // Checked above
 
         let features = featurizer.transform(input)?;
-        let filtered_out_indexes =
-            get_filtered_out_intents_indexes(&self.intent_list, opt_intents_set.as_ref());
-        let scores = logreg.run(&features.view(), filtered_out_indexes)?;
+        let scores = logreg.run(&features.view())?;
 
         Ok(self
             .intent_list
@@ -155,34 +160,11 @@ impl LogRegIntentClassifier {
     }
 }
 
-fn get_filtered_out_intents_indexes(
-    intents_list: &[Option<IntentName>],
-    intents_filter: Option<&HashSet<&str>>,
-) -> Option<Vec<usize>> {
-    intents_filter.map(|filter| {
-        intents_list
-            .iter()
-            .enumerate()
-            .filter_map(|(i, opt_intent)| {
-                if let Some(intent) = opt_intent {
-                    if !filter.contains(&**intent) {
-                        Some(i)
-                    } else {
-                        None
-                    }
-                } else {
-                    None
-                }
-            })
-            .collect()
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use maplit::{hashmap, hashset};
+    use maplit::hashmap;
     use ndarray::array;
 
     use crate::intent_classifier::TfidfVectorizer;
@@ -429,25 +411,5 @@ mod tests {
         assert_eq!(Some("MakeTea".to_string()), result1.intent_name);
         assert_eq!(Some("MakeCoffee".to_string()), result2.intent_name);
         assert_eq!(None, result3.intent_name);
-    }
-
-    #[test]
-    fn test_get_filtered_out_intents_indexes() {
-        // Given
-        let intents_list = vec![
-            Some("intent1".to_string()),
-            Some("intent2".to_string()),
-            Some("intent3".to_string()),
-            None,
-        ];
-        let intents_filter = hashset!["intent1", "intent3"];
-
-        // When
-        let filtered_indexes =
-            get_filtered_out_intents_indexes(&intents_list, Some(&intents_filter));
-
-        // Then
-        let expected_indexes = Some(vec![1]);
-        assert_eq!(expected_indexes, filtered_indexes);
     }
 }

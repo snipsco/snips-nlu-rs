@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-ffi"
-version = "0.64.1"
+version = "0.64.2"
 edition = "2018"
 authors = [
     "Adrien Ball <adrien.ball@snips.ai>",
@@ -12,7 +12,7 @@ authors = [
 [dependencies]
 ffi-utils = { git = "https://github.com/snipsco/snips-utils-rs", rev = "4292ad9" }
 snips-nlu-lib = { path = ".." }
-snips-nlu-ontology-ffi-macros = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.64.4" }
+snips-nlu-ontology-ffi-macros = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.64.6" }
 failure = "0.1"
 lazy_static = "1.0"
 libc = "0.2"

@@ -1,9 +1,20 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.64.2] - 2019-04-09
+### Fixed
+- Fix handling of ambiguous utterances in `DeterministicIntentParser` [#129](https://github.com/snipsco/snips-nlu-rs/pull/129)
+- Stop normalizing confidence scores when there is an intents filter [#130](https://github.com/snipsco/snips-nlu-rs/pull/130)
+
+### Added
+- Add new APIs in ffi and bindings (python, kotlin, swift) [#131](https://github.com/snipsco/snips-nlu-rs/pull/131)
+
+### Changed
+- Leverage entity scopes of each intent in deterministic intent parser [#126](https://github.com/snipsco/snips-nlu-rs/pull/126)
+
 ## [0.64.1] - 2019-03-01
 ### Fixed
-- Fix bug with regex patterns containing duplicated slot names
+- Fix bug with regex patterns containing duplicated slot names [#124](https://github.com/snipsco/snips-nlu-rs/pull/124)
 
 ## [0.64.0] - 2019-02-28
 ### Changed
@@ -12,7 +23,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.63.1] - 2019-02-11
 ### Fixed
-- Fix an issue regarding the way builtin entities were handled by the `CRFSlotFiller`
+- Fix an issue regarding the way builtin entities were handled by the `CRFSlotFiller` [#116](https://github.com/snipsco/snips-nlu-rs/pull/116)
 
 ## [0.63.0] - 2019-02-04
 ### Added
@@ -178,6 +189,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.64.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.1...0.64.2
 [0.64.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.0...0.64.1
 [0.64.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.1...0.64.0
 [0.63.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.0...0.63.1

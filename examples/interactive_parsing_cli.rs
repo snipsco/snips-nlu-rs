@@ -1,4 +1,5 @@
 extern crate clap;
+extern crate env_logger;
 extern crate serde_json;
 extern crate snips_nlu_lib;
 
@@ -8,6 +9,10 @@ use std::io;
 use std::io::Write;
 
 fn main() {
+    env_logger::Builder::from_default_env()
+        .default_format_timestamp_nanos(true)
+        .init();
+
     let matches = App::new("snips-nlu-parse")
         .about("Snips NLU interactive CLI for parsing intents")
         .arg(

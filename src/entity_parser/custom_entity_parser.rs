@@ -6,6 +6,7 @@ use std::sync::Mutex;
 
 use failure::ResultExt;
 use itertools::Itertools;
+use log::info;
 use serde::de::{Error as SerdeError, Unexpected};
 use serde::{Deserialize, Deserializer};
 use serde_derive::Deserialize;
@@ -150,6 +151,7 @@ pub struct CustomEntityParserMetadata {
 
 impl CachingCustomEntityParser {
     pub fn from_path<P: AsRef<Path>>(path: P, cache_capacity: usize) -> Result<Self> {
+        info!("Loading custom entity parser ({:?}) ...", path.as_ref());
         let metadata_path = path.as_ref().join("metadata.json");
         let metadata_file = File::open(&metadata_path).with_context(|_| {
             format!(
@@ -163,6 +165,7 @@ impl CachingCustomEntityParser {
         let gazetteer_parser_path = path.as_ref().join(&metadata.parser_directory);
         let parser = GazetteerParser::from_path(gazetteer_parser_path)?;
         let cache = Mutex::new(Cache::new(cache_capacity));
+        info!("Custom entity parser loaded");
         Ok(Self {
             language,
             parser,

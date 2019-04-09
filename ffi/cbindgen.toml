@@ -2,15 +2,20 @@ language = "c"
 
 include_guard = "LIBSNIPS_NLU_H_"
 
-header = "#define SNIPS_NLU_VERSION \"0.62.0-SNAPSHOT\""
+header = "#define SNIPS_NLU_VERSION \"0.64.2\""
 
 [parse]
-parse_deps=true
+parse_deps = true
 include = [
     "snips_nlu_ffi",
     "ffi_utils",
     "snips_nlu_ontology_ffi",
     "snips_nlu_ontology_ffi_macros",
+]
+
+[parse.expand]
+crates = [
+    "snips-nlu-ffi",
 ]
 
 [export]
