@@ -98,9 +98,9 @@ class NLUEngine(object):
             exit_code = lib.ffi_snips_nlu_engine_run_parse_into_json(
                 self._engine, query.encode("utf8"), intents_whitelist,
                 intents_blacklist, byref(ptr))
-            result = string_at(ptr)
             msg = "Something went wrong when parsing query '%s'" % query
             check_ffi_error(exit_code, msg)
+            result = string_at(ptr)
 
         return json.loads(result.decode("utf8"))
 

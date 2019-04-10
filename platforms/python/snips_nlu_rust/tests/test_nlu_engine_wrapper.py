@@ -105,3 +105,10 @@ class TestNLUEngineWrapper(unittest.TestCase):
         # Then
         expected_intents = ["MakeCoffee", "MakeTea", None]
         self.assertEqual(expected_intents, intents)
+
+    def test_engine_should_destroy_itself(self):
+        # Given
+        engine = NLUEngine(engine_bytes=SAMPLE_ENGINE_ZIP_BYTES)
+
+        # When / Then
+        del engine
