@@ -106,7 +106,10 @@ fn load_gazetteers<P: AsRef<Path>>(
             let gazetteer_path = gazetteers_directory
                 .join(gazetteer_name.clone())
                 .with_extension("txt");
-            info!("Loading gazetteer '{}' ({:?}) ...", gazetteer_name, gazetteer_path);
+            info!(
+                "Loading gazetteer '{}' ({:?}) ...",
+                gazetteer_name, gazetteer_path
+            );
             let file = File::open(&gazetteer_path)
                 .with_context(|_| format!("Cannot open gazetteer file {:?}", gazetteer_path))?;
             let gazetteer = HashSetGazetteer::from_reader(file)
@@ -130,7 +133,10 @@ fn load_word_clusterers<P: AsRef<Path>>(
                 .join(clusters_name.clone())
                 .with_extension("txt");
             ;
-            info!("Loading word clusters '{}' ({:?}) ...", clusters_name, clusters_path);
+            info!(
+                "Loading word clusters '{}' ({:?}) ...",
+                clusters_name, clusters_path
+            );
             let word_clusters_reader = File::open(&clusters_path)
                 .with_context(|_| format!("Cannot open word clusters file {:?}", clusters_path))?;
             let word_clusterer = HashMapWordClusterer::from_reader(word_clusters_reader)

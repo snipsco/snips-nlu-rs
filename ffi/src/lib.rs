@@ -3,7 +3,7 @@
 extern crate ffi_utils;
 extern crate snips_nlu_ontology_ffi_macros;
 
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::io::Cursor;
 use std::slice;
 use std::sync::Mutex;
@@ -119,11 +119,15 @@ pub extern "C" fn snips_nlu_engine_run_get_intents_into_json(
 
 #[no_mangle]
 pub extern "C" fn snips_nlu_engine_destroy_string(string: *mut libc::c_char) -> SNIPS_RESULT {
-    wrap!(unsafe { CString::from_raw_pointer(string) })
+    take_back_nullable_c_string!(string);
+    SNIPS_RESULT::SNIPS_RESULT_OK
 }
 
 #[no_mangle]
 pub extern "C" fn snips_nlu_engine_destroy_client(client: *mut CSnipsNluEngine) -> SNIPS_RESULT {
+    if client.is_null() {
+        return SNIPS_RESULT::SNIPS_RESULT_OK
+    }
     wrap!(unsafe { CSnipsNluEngine::from_raw_pointer(client) })
 }
 
@@ -131,11 +135,17 @@ pub extern "C" fn snips_nlu_engine_destroy_client(client: *mut CSnipsNluEngine) 
 pub extern "C" fn snips_nlu_engine_destroy_result(
     result: *mut CIntentParserResult,
 ) -> SNIPS_RESULT {
+    if result.is_null() {
+        return SNIPS_RESULT::SNIPS_RESULT_OK
+    }
     wrap!(unsafe { CIntentParserResult::from_raw_pointer(result) })
 }
 
 #[no_mangle]
 pub extern "C" fn snips_nlu_engine_destroy_slots(result: *mut CSlotList) -> SNIPS_RESULT {
+    if result.is_null() {
+        return SNIPS_RESULT::SNIPS_RESULT_OK
+    }
     wrap!(unsafe { CSlotList::from_raw_pointer(result) })
 }
 
@@ -143,6 +153,9 @@ pub extern "C" fn snips_nlu_engine_destroy_slots(result: *mut CSlotList) -> SNIP
 pub extern "C" fn snips_nlu_engine_destroy_intent_classifier_results(
     result: *mut CIntentClassifierResultArray,
 ) -> SNIPS_RESULT {
+    if result.is_null() {
+        return SNIPS_RESULT::SNIPS_RESULT_OK
+    }
     wrap!(unsafe { CIntentClassifierResultArray::from_raw_pointer(result) })
 }
 
