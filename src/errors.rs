@@ -4,8 +4,8 @@ use failure::Fail;
 pub enum SnipsNluError {
     #[fail(display = "Unable to read file '{}'", _0)]
     ModelLoad(String),
-    #[fail(display = "Expected model version {} but found {}", _1, _0)]
-    WrongModelVersion(String, &'static str),
+    #[fail(display = "Mismatched model version: model is {} but runner is {}", model, runner)]
+    WrongModelVersion{ model: String, runner: &'static str},
     #[fail(display = "Unknown intent: '{}'", _0)]
     UnknownIntent(String),
     #[fail(display = "Internal error: {}", _0)]

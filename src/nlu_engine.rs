@@ -56,10 +56,10 @@ impl SnipsNluEngine {
 
         let model_version: ModelVersion = serde_json::from_reader(model_file)?;
         if model_version.model_version != crate::MODEL_VERSION {
-            bail!(SnipsNluError::WrongModelVersion(
-                model_version.model_version,
-                crate::MODEL_VERSION
-            ));
+            bail!(SnipsNluError::WrongModelVersion {
+                model: model_version.model_version,
+                runner: crate::MODEL_VERSION
+            });
         }
         Ok(())
     }
