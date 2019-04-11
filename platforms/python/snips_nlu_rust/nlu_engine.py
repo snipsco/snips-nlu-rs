@@ -4,10 +4,11 @@ from __future__ import (absolute_import, division, print_function,
 
 import json
 from builtins import object, str
-from ctypes import byref, c_char_p, c_void_p, pointer, string_at, c_char, c_int
+from ctypes import byref, c_char_p, c_void_p, string_at, c_char, c_int
 from pathlib import Path
 
-from snips_nlu_rust.utils import lib, string_pointer, CStringArray
+from snips_nlu_rust.utils import (
+    lib, string_pointer, CStringArray, check_ffi_error)
 
 
 class NLUEngine(object):
@@ -32,8 +33,8 @@ class NLUEngine(object):
         ...     engine_dir="/path/to/nlu_engine")
         >>> inference_engine.parse("Turn on the lights in the kitchen")
     """
+
     def __init__(self, engine_dir=None, engine_bytes=None):
-        exit_code = 1
         self._engine = None
 
         if engine_dir is None and engine_bytes is None:
@@ -41,60 +42,64 @@ class NLUEngine(object):
 
         if engine_dir is not None:
             engine_dir = Path(engine_dir)
-            if not engine_dir.is_dir():
-                raise OSError("NLU engine directory not found: %s"
-                              % str(engine_dir))
-            self._engine = pointer(c_void_p())
+            self._engine = c_void_p()
             exit_code = lib.ffi_snips_nlu_engine_create_from_dir(
                 str(engine_dir).encode("utf8"), byref(self._engine))
-        elif engine_bytes is not None:
-            self._engine = pointer(c_void_p())
+            err_msg = "Something went wrong when creating the engine from " \
+                      "directory"
+
+        else:
+            self._engine = c_void_p()
             bytearray_type = c_char * len(engine_bytes)
             exit_code = lib.ffi_snips_nlu_engine_create_from_zip(
                 bytearray_type.from_buffer(engine_bytes), len(engine_bytes),
                 byref(self._engine))
+            err_msg = "Something went wrong when creating the engine from " \
+                      "bytes"
 
-        if exit_code:
-            raise ImportError('Something wrong happened while creating the '
-                              'intent parser. See stderr.')
+        check_ffi_error(exit_code, err_msg)
 
     def parse(self, query, intents_whitelist=None, intents_blacklist=None):
         """Extracts intent and slots from an input query
 
         Args:
             query (str): input to process
-            intents_whitelist (list of str, optional): if defined, this will restrict the scope of
-                intent parsing to the provided intents
-            intents_blacklist (list of str, optional): if defined, these intents will be excluded
-                from the scope of intent parsing
+            intents_whitelist (list of str, optional): if defined, this will
+                restrict the scope of intent parsing to the provided intents
+            intents_blacklist (list of str, optional): if defined, these
+                intents will be excluded from the scope of intent parsing
 
         Returns:
             A python dict containing data about intent and slots. See
-            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing for details about the
-            format.
+            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing
+            for details about the format.
         """
         if intents_whitelist is not None:
-            if not all(isinstance(intent, str) for intent in intents_whitelist):
-                raise TypeError(
-                    "Expected 'intents_whitelist' to contain objects of type 'str'")
+            if not all(
+                    isinstance(intent, str) for intent in intents_whitelist):
+                raise TypeError("Expected 'intents_whitelist' to contain "
+                                "objects of type 'str'")
             intents = [intent.encode("utf8") for intent in intents_whitelist]
             arr = CStringArray()
             arr.size = c_int(len(intents))
             arr.data = (c_char_p * len(intents))(*intents)
             intents_whitelist = byref(arr)
         if intents_blacklist is not None:
-            if not all(isinstance(intent, str) for intent in intents_blacklist):
-                raise TypeError(
-                    "Expected 'intents_blacklist' to contain objects of type 'str'")
+            if not all(
+                    isinstance(intent, str) for intent in intents_blacklist):
+                raise TypeError("Expected 'intents_blacklist' to contain "
+                                "objects of type 'str'")
             intents = [intent.encode("utf8") for intent in intents_blacklist]
             arr = CStringArray()
             arr.size = c_int(len(intents))
             arr.data = (c_char_p * len(intents))(*intents)
             intents_blacklist = byref(arr)
         with string_pointer(c_char_p()) as ptr:
-            lib.ffi_snips_nlu_engine_run_parse_into_json(
-                self._engine, query.encode("utf8"), intents_whitelist, intents_blacklist,
-                byref(ptr))
+            exit_code = lib.ffi_snips_nlu_engine_run_parse_into_json(
+                self._engine, query.encode("utf8"), intents_whitelist,
+                intents_blacklist, byref(ptr))
+            msg = "Something went wrong when parsing query '%s'" % query
+            check_ffi_error(exit_code, msg)
             result = string_at(ptr)
 
         return json.loads(result.decode("utf8"))
@@ -108,13 +113,18 @@ class NLUEngine(object):
 
         Returns:
             A list of slots. See
-            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing for details about the
-            format.
+            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing
+            for details about the format.
         """
         with string_pointer(c_char_p()) as ptr:
-            lib.ffi_snips_nlu_engine_run_get_slots_into_json(
-                self._engine, query.encode("utf8"), intent.encode("utf8"), byref(ptr))
+            exit_code = lib.ffi_snips_nlu_engine_run_get_slots_into_json(
+                self._engine, query.encode("utf8"), intent.encode("utf8"),
+                byref(ptr))
+            msg = "Something went wrong when extracting slots from query " \
+                  "'%s' with intent '%s'" % (query, intent)
+            check_ffi_error(exit_code, msg)
             result = string_at(ptr)
+
         return json.loads(result.decode("utf8"))
 
     def get_intents(self, query):
@@ -125,12 +135,15 @@ class NLUEngine(object):
 
         Returns:
             A list of intents along with their probability. See
-            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing for details about the
-            format.
+            https://snips-nlu.readthedocs.io/en/latest/tutorial.html#parsing
+            for details about the format.
         """
         with string_pointer(c_char_p()) as ptr:
-            lib.ffi_snips_nlu_engine_run_get_intents_into_json(
+            exit_code = lib.ffi_snips_nlu_engine_run_get_intents_into_json(
                 self._engine, query.encode("utf8"), byref(ptr))
+            msg = "Something went wrong when extracting intents from query " \
+                  "'%s'" % query
+            check_ffi_error(exit_code, msg)
             result = string_at(ptr)
         return json.loads(result.decode("utf8"))
 
