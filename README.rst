@@ -67,7 +67,7 @@ the `Snips NLU python library <https://github.com/snipsco/snips-nlu>`_.
 Example and API Usage
 ---------------------
 
-The `interactive parsing CLI <examples/interactive_parsing_cli>`_  is a good example
+The `interactive parsing CLI <examples/interactive_parsing_cli.rs>`_  is a good example
 of to how to use ``snips-nlu-rs``.
 
 Here is how you can run the CLI example:
