@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Make the `WrongModelVersion` error message intelligible [#133](https://github.com/snipsco/snips-nlu-rs/pull/133)
 - Fix error handling in Python wrapper [#134](https://github.com/snipsco/snips-nlu-rs/pull/134)
+- Return an error when using unknown intents in whitelist or blacklist [#136](https://github.com/snipsco/snips-nlu-rs/pull/136)
 
 ## [0.64.2] - 2019-04-09
 ### Fixed
