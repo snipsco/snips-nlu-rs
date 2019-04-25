@@ -177,6 +177,7 @@ impl IntentParser for DeterministicIntentParser {
 }
 
 impl DeterministicIntentParser {
+    #[allow(clippy::map_clone)]
     fn parse_top_intents(
         &self,
         input: &str,
@@ -221,7 +222,8 @@ impl DeterministicIntentParser {
                 replace_entities(input, matched_entities, get_entity_placeholder);
             let cleaned_input = self.preprocess_text(input, &**intent);
             let cleaned_formatted_input = self.preprocess_text(&*formatted_input, &**intent);
-            self.regexes_per_intent
+            if let Some(matching_result_formatted) = self
+                .regexes_per_intent
                 .get(intent)
                 .ok_or_else(|| format_err!("No associated regexes for intent '{}'", intent))?
                 .iter()
@@ -237,7 +239,9 @@ impl DeterministicIntentParser {
                         self.get_matching_result(input, &*cleaned_input, regex, intent, None)
                     })
                 })
-                .map(|matching_result_formatted| results.push(matching_result_formatted));
+            {
+                results.push(matching_result_formatted);
+            }
         }
 
         let confidence_score = if results.is_empty() {
@@ -677,7 +681,11 @@ mod tests {
         let intent_names = intents
             .into_iter()
             .skip(2)
-            .map(|res| res.intent_name.unwrap_or("null".to_string()).to_string())
+            .map(|res| {
+                res.intent_name
+                    .unwrap_or_else(|| "null".to_string())
+                    .to_string()
+            })
             .sorted()
             .collect::<Vec<_>>();
         let expected_intent_names = vec![
