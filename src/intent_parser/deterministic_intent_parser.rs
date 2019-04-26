@@ -677,7 +677,7 @@ mod tests {
             .iter()
             .map(|res| res.confidence_score)
             .collect::<Vec<_>>();
-        let expected_scores = vec![0.5, 0.5, 0.0, 0.0, 0.0, 0.0];
+        let expected_scores = vec![0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0];
         let intent_names = intents
             .into_iter()
             .skip(2)
@@ -692,6 +692,7 @@ mod tests {
             "dummy_intent_1".to_string(),
             "dummy_intent_2".to_string(),
             "dummy_intent_4".to_string(),
+            "dummy_intent_6".to_string(),
             "null".to_string(),
         ];
         assert_eq!(expected_scores, scores);
