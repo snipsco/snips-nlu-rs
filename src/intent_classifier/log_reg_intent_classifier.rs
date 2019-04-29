@@ -29,7 +29,10 @@ impl LogRegIntentClassifier {
         path: P,
         shared_resources: Arc<SharedResources>,
     ) -> Result<Self> {
-        info!("Loading log reg intent classifier ({:?}) ...", path.as_ref());
+        info!(
+            "Loading log reg intent classifier ({:?}) ...",
+            path.as_ref()
+        );
         let classifier_model_path = path.as_ref().join("intent_classifier.json");
         let model_file = File::open(&classifier_model_path).with_context(|_| {
             format!(

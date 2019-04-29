@@ -61,7 +61,7 @@ pub struct CachingCustomEntityParser {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct CacheKey {
     input: String,
-    kinds: Vec<EntityName>,
+    kinds: Option<Vec<EntityName>>,
 }
 
 impl CustomEntityParser for CachingCustomEntityParser {
@@ -73,9 +73,7 @@ impl CustomEntityParser for CachingCustomEntityParser {
         let lowercased_sentence = sentence.to_lowercase();
         let cache_key = CacheKey {
             input: lowercased_sentence,
-            kinds: filter_entity_kinds
-                .map(|entity_kinds| entity_kinds.to_vec())
-                .unwrap_or_else(|| vec![]),
+            kinds: filter_entity_kinds.map(|entity_kinds| entity_kinds.to_vec()),
         };
 
         self.cache
@@ -218,5 +216,33 @@ mod tests {
         }];
 
         assert_eq!(expected_entities, entities);
+    }
+
+    #[test]
+    fn test_custom_entity_parser_caches_properly() {
+        // Given
+        let parser_path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine")
+            .join("custom_entity_parser");
+
+        let custom_entity_parser = CachingCustomEntityParser::from_path(parser_path, 1000).unwrap();
+        let input = "Make me a hot tea";
+
+        // When
+        let entities_empty_scope = custom_entity_parser.extract_entities(input, Some(&[])).unwrap();
+        let entities_no_scope = custom_entity_parser.extract_entities(input, None).unwrap();
+
+        // Then
+        let expected_entities_no_scope = vec![CustomEntity {
+            value: "hot".to_string(),
+            resolved_value: "hot".to_string(),
+            range: 10..13,
+            entity_identifier: "Temperature".to_string(),
+        }];
+        let expected_entities_empty_scope: Vec<CustomEntity> = vec![];
+        assert_eq!(expected_entities_no_scope, entities_no_scope);
+        assert_eq!(expected_entities_empty_scope, entities_empty_scope);
     }
 }

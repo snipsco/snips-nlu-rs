@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io;
 use std::path::Path;
@@ -21,7 +21,7 @@ use crate::models::{
 use crate::resources::loading::load_shared_resources;
 use crate::resources::SharedResources;
 use crate::slot_utils::*;
-use crate::utils::{extract_nlu_engine_zip_archive, EntityName, SlotName};
+use crate::utils::{EntityName, extract_nlu_engine_zip_archive, IterOps, SlotName};
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -56,10 +56,10 @@ impl SnipsNluEngine {
 
         let model_version: ModelVersion = serde_json::from_reader(model_file)?;
         if model_version.model_version != crate::MODEL_VERSION {
-            bail!(SnipsNluError::WrongModelVersion(
-                model_version.model_version,
-                crate::MODEL_VERSION
-            ));
+            bail!(SnipsNluError::WrongModelVersion {
+                model: model_version.model_version,
+                runner: crate::MODEL_VERSION
+            });
         }
         Ok(())
     }
@@ -140,15 +140,8 @@ impl SnipsNluEngine {
         W: Into<Option<Vec<&'a str>>>,
         B: Into<Option<Vec<&'b str>>>,
     {
-        let reverted_whitelist: Option<Vec<&str>> = intents_blacklist.into().map(|blacklist| {
-            self.dataset_metadata
-                .slot_name_mappings
-                .keys()
-                .map(|intent| &**intent)
-                .filter(|intent_name| !blacklist.contains(intent_name))
-                .collect()
-        });
-        let intents_whitelist_owned = intents_whitelist.into().or_else(|| reverted_whitelist);
+        let intents_whitelist_owned =
+            self.get_intents_whitelist(intents_whitelist, intents_blacklist)?;
         let intents_whitelist = intents_whitelist_owned
             .as_ref()
             .map(|whitelist| whitelist.as_ref());
@@ -180,6 +173,51 @@ impl SnipsNluEngine {
             },
             slots: vec![],
         })
+    }
+
+    fn get_intents_whitelist<'a: 'c, 'b: 'c, 'c, W, B>(
+        &'c self,
+        intents_whitelist: W,
+        intents_blacklist: B,
+    ) -> Result<Option<Vec<&'c str>>>
+    where
+        W: Into<Option<Vec<&'a str>>>,
+        B: Into<Option<Vec<&'b str>>>,
+    {
+        let all_intents: HashSet<&str> = self
+            .dataset_metadata
+            .slot_name_mappings
+            .keys()
+            .map(|intent| &**intent)
+            .collect();
+        let intents_whitelist = intents_whitelist.into();
+        let intents_blacklist = intents_blacklist.into();
+        if let Some(unknown_intent) = vec![intents_whitelist.as_ref(), intents_blacklist.as_ref()]
+            .into_iter()
+            .flatten()
+            .flatten()
+            .find(|intent| !all_intents.contains(*intent))
+        {
+            return Err(format_err!(
+                "Cannot use unknown intent '{}' in intents filter",
+                unknown_intent
+            ));
+        };
+        let reverted_whitelist: Option<Vec<&str>> = intents_blacklist.map(|blacklist| {
+            all_intents
+                .iter()
+                .filter(|intent_name| !blacklist.contains(intent_name))
+                .cloned()
+                .collect()
+        });
+        Ok(intents_whitelist
+            .map(|whitelist| {
+                reverted_whitelist
+                    .clone()
+                    .map(|rev_whitelist| rev_whitelist.intersect(whitelist.clone()))
+                    .unwrap_or_else(|| whitelist)
+            })
+            .or_else(|| reverted_whitelist))
     }
 
     pub fn get_intents(&self, input: &str) -> Result<Vec<IntentClassifierResult>> {
@@ -363,11 +401,14 @@ fn extract_builtin_slot(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::iter::FromIterator;
+
+    use snips_nlu_ontology::{NumberValue, StringValue};
+
     use crate::entity_parser::custom_entity_parser::CustomEntity;
     use crate::testutils::*;
-    use snips_nlu_ontology::{NumberValue, StringValue};
-    use std::iter::FromIterator;
+
+    use super::*;
 
     #[test]
     fn test_load_from_zip() {
@@ -457,6 +498,25 @@ mod tests {
             )
             .unwrap();
 
+        let combined_result = nlu_engine
+            .parse(
+                "Make me two cups of coffee please",
+                vec!["MakeCoffee", "MakeTea"],
+                vec!["MakeCoffee"],
+            )
+            .unwrap();
+
+        let failed_result = nlu_engine.parse(
+            "Make me two cups of coffee please",
+            vec!["MakeCoffee"],
+            vec!["MakeChocolate"],
+        );
+        let failed_result_2 = nlu_engine.parse(
+            "Make me two cups of coffee please",
+            vec!["MakeChocolate"],
+            vec!["MakeCoffee"],
+        );
+
         // Then
         assert_eq!(
             Some("MakeTea".to_string()),
@@ -466,6 +526,12 @@ mod tests {
             Some("MakeTea".to_string()),
             blacklist_result.intent.intent_name
         );
+        assert_eq!(
+            Some("MakeTea".to_string()),
+            combined_result.intent.intent_name
+        );
+        assert!(failed_result.is_err());
+        assert!(failed_result_2.is_err());
     }
 
     #[test]

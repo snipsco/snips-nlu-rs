@@ -35,6 +35,7 @@ pub struct DeterministicIntentParser {
     entity_scopes: HashMap<IntentName, (Vec<BuiltinEntityKind>, Vec<EntityName>)>,
     ignore_stop_words: bool,
     shared_resources: Arc<SharedResources>,
+    stop_words_whitelist: HashMap<IntentName, HashSet<String>>,
 }
 
 impl DeterministicIntentParser {
@@ -97,6 +98,11 @@ impl DeterministicIntentParser {
             slot_names_to_entities: model.slot_names_to_entities,
             entity_scopes,
             ignore_stop_words: model.config.ignore_stop_words,
+            stop_words_whitelist: model
+                .stop_words_whitelist
+                .into_iter()
+                .map(|(intent, whitelist)| (intent, whitelist.into_iter().collect()))
+                .collect(),
             shared_resources,
         })
     }
@@ -171,13 +177,13 @@ impl IntentParser for DeterministicIntentParser {
 }
 
 impl DeterministicIntentParser {
+    #[allow(clippy::map_clone)]
     fn parse_top_intents(
         &self,
         input: &str,
         top_n: usize,
         intents: Option<&[&str]>,
     ) -> Result<Vec<InternalParsingResult>> {
-        let cleaned_input = self.preprocess_text(input);
         let mut results = vec![];
 
         let intents_set: HashSet<&str> = intents
@@ -214,8 +220,10 @@ impl DeterministicIntentParser {
 
             let (ranges_mapping, formatted_input) =
                 replace_entities(input, matched_entities, get_entity_placeholder);
-            let cleaned_formatted_input = self.preprocess_text(&*formatted_input);
-            self.regexes_per_intent
+            let cleaned_input = self.preprocess_text(input, &**intent);
+            let cleaned_formatted_input = self.preprocess_text(&*formatted_input, &**intent);
+            if let Some(matching_result_formatted) = self
+                .regexes_per_intent
                 .get(intent)
                 .ok_or_else(|| format_err!("No associated regexes for intent '{}'", intent))?
                 .iter()
@@ -231,36 +239,43 @@ impl DeterministicIntentParser {
                         self.get_matching_result(input, &*cleaned_input, regex, intent, None)
                     })
                 })
-                .map(|matching_result_formatted| results.push(matching_result_formatted));
+            {
+                results.push(matching_result_formatted);
+            }
         }
 
-        let confidence_score = if results.is_empty() {
-            1.0
-        } else {
-            1.0 / (results.len() as f32)
-        };
+        // In some rare cases there can be multiple ambiguous intents
+        // In such cases, priority is given to results containing fewer slots
+        let weights = results
+            .iter()
+            .map(|res| 1. / (1. + res.slots.len() as f32))
+            .collect::<Vec<_>>();
+        let total_weight: f32 = weights.iter().sum();
 
         Ok(results
             .into_iter()
-            .take(top_n)
-            .map(|mut res| {
-                res.intent.confidence_score = confidence_score;
+            .enumerate()
+            .map(|(idx, mut res)| {
+                res.intent.confidence_score = weights[idx] / total_weight;
                 res
             })
+            .sorted_by(|res1, res2| {
+                res2.intent
+                    .confidence_score
+                    .partial_cmp(&res1.intent.confidence_score)
+                    .unwrap()
+            })
+            .take(top_n)
             .collect())
     }
 
-    fn preprocess_text(&self, string: &str) -> String {
+    fn preprocess_text(&self, string: &str, intent: &str) -> String {
+        let stop_words = self.get_intent_stop_words(intent);
         let tokens = tokenize(string, NluUtilsLanguage::from_language(self.language));
         let mut current_idx = 0;
         let mut cleaned_string = "".to_string();
         for mut token in tokens {
-            if self.ignore_stop_words
-                && self
-                    .shared_resources
-                    .stop_words
-                    .contains(&token.normalized_value())
-            {
+            if self.ignore_stop_words && stop_words.contains(&token.normalized_value()) {
                 token.value = (0..token.value.chars().count()).map(|_| " ").collect();
             }
             let prefix_length = token.char_range.start - current_idx;
@@ -272,6 +287,18 @@ impl DeterministicIntentParser {
         let suffix: String = (0..suffix_length).map(|_| " ").collect();
         cleaned_string = format!("{}{}", cleaned_string, suffix);
         cleaned_string
+    }
+
+    fn get_intent_stop_words(&self, intent: &str) -> HashSet<&String> {
+        self.stop_words_whitelist
+            .get(intent)
+            .map(|whitelist| {
+                self.shared_resources
+                    .stop_words
+                    .difference(whitelist)
+                    .collect()
+            })
+            .unwrap_or_else(|| self.shared_resources.stop_words.iter().collect())
     }
 
     fn get_matching_result(
@@ -414,7 +441,7 @@ mod tests {
     use crate::entity_parser::builtin_entity_parser::BuiltinEntityParser;
     use crate::entity_parser::custom_entity_parser::CustomEntityParser;
 
-    fn test_configuration() -> DeterministicParserModel {
+    fn sample_model() -> DeterministicParserModel {
         DeterministicParserModel {
             language_code: "en".to_string(),
             patterns: hashmap![
@@ -438,6 +465,10 @@ mod tests {
                 "dummy_intent_5".to_string() => vec![
                     r"^\s*Send\s*5\s*dollars\s*to\s*john\s*$".to_string(),
                 ],
+                "dummy_intent_6".to_string() => vec![
+                    r"^\s*search\s*$".to_string(),
+                    r"^\s*search\s*(?P<group9>%SEARCH_OBJECT%)\s*$".to_string(),
+                ],
             ],
             group_names_to_slot_names: hashmap![
                 "group0".to_string() => "dummy_slot_name".to_string(),
@@ -449,6 +480,7 @@ mod tests {
                 "group6".to_string() => "dummy_slot_name4".to_string(),
                 "group7".to_string() => "dummy_slot_name2".to_string(),
                 "group8".to_string() => "dummy_slot_name5".to_string(),
+                "group9".to_string() => "dummy_slot_name6".to_string(),
             ],
             slot_names_to_entities: hashmap![
                 "dummy_intent_1".to_string() => hashmap![
@@ -467,10 +499,43 @@ mod tests {
                     "dummy_slot_name5".to_string() => "snips/number".to_string(),
                 ],
                 "dummy_intent_5".to_string() => hashmap![],
+                "dummy_intent_6".to_string() => hashmap![
+                    "dummy_slot_name6".to_string() => "search_object".to_string(),
+                ],
             ],
             config: DeterministicParserConfig {
                 ignore_stop_words: true,
             },
+            stop_words_whitelist: HashMap::new(),
+        }
+    }
+
+    fn ambiguous_model() -> DeterministicParserModel {
+        DeterministicParserModel {
+            language_code: "en".to_string(),
+            patterns: hashmap![
+                "intent_1".to_string() => vec![
+                    r"^\s*(?P<group0>%EVENT_TYPE%)\s*(?P<group1>%CLIENT_NAME%)\s*$".to_string(),
+                ],
+                "intent_2".to_string() => vec![
+                    r"^\s*meeting\s*snips\s*$".to_string(),
+                ],
+            ],
+            group_names_to_slot_names: hashmap![
+                "group0".to_string() => "event_type".to_string(),
+                "group1".to_string() => "client_name".to_string(),
+            ],
+            slot_names_to_entities: hashmap![
+                "intent_1".to_string() => hashmap![
+                    "event_type".to_string() => "event_type".to_string(),
+                    "client_name".to_string() => "client_name".to_string(),
+                ],
+                "intent_2".to_string() => hashmap![],
+            ],
+            config: DeterministicParserConfig {
+                ignore_stop_words: true,
+            },
+            stop_words_whitelist: HashMap::new(),
         }
     }
 
@@ -528,8 +593,7 @@ mod tests {
             .custom_entity_parser(mocked_custom_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let intent = parser.parse(text, None).unwrap().intent;
@@ -564,8 +628,7 @@ mod tests {
             .builtin_entity_parser(mocked_builtin_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let intent = parser.parse(text, None).unwrap().intent;
@@ -580,7 +643,59 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_intent_with_whitelist() {
+    fn test_should_disambiguate_intents() {
+        // Given
+        let text = "meeting snips";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![
+                CustomEntity {
+                    value: "meeting".to_string(),
+                    resolved_value: "meeting".to_string(),
+                    range: 0..7,
+                    entity_identifier: "event_type".to_string(),
+                },
+                CustomEntity {
+                    value: "snips".to_string(),
+                    resolved_value: "snips".to_string(),
+                    range: 8..13,
+                    entity_identifier: "client_name".to_string(),
+                },
+            ],
+        )]);
+        let shared_resources = SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser)
+            .build();
+        let parser =
+            DeterministicIntentParser::new(ambiguous_model(), Arc::new(shared_resources)).unwrap();
+
+        // When
+        let intents = parser.get_intents(text).unwrap();
+
+        // Then
+        let weight_intent_1 = 1. / 3.;
+        let weight_intent_2 = 1.;
+        let total_weight = weight_intent_1 + weight_intent_2;
+        let expected_intents = vec![
+            IntentClassifierResult {
+                intent_name: Some("intent_2".to_string()),
+                confidence_score: weight_intent_2 / total_weight,
+            },
+            IntentClassifierResult {
+                intent_name: Some("intent_1".to_string()),
+                confidence_score: weight_intent_1 / total_weight,
+            },
+            IntentClassifierResult {
+                intent_name: None,
+                confidence_score: 0.0,
+            },
+        ];
+
+        assert_eq!(expected_intents, intents);
+    }
+
+    #[test]
+    fn test_parse_intent_with_intents_whitelist() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
         let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
@@ -604,8 +719,7 @@ mod tests {
             .custom_entity_parser(mocked_custom_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let intent = parser
@@ -643,32 +757,34 @@ mod tests {
             .builtin_entity_parser(mocked_builtin_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
-        let intents = parser.get_intents(text).unwrap();
+        let results = parser
+            .get_intents(text)
+            .unwrap()
+            .into_iter()
+            .map(|res| {
+                let intent_alias = if res.confidence_score > 0. {
+                    res.intent_name.unwrap_or_else(|| "null".to_string())
+                } else {
+                    "unmatched_intent".to_string()
+                };
+                (intent_alias, res.confidence_score)
+            })
+            .collect::<Vec<_>>();
 
         // Then
-        let scores = intents
-            .iter()
-            .map(|res| res.confidence_score)
-            .collect::<Vec<_>>();
-        let expected_scores = vec![0.5, 0.5, 0.0, 0.0, 0.0, 0.0];
-        let intent_names = intents
-            .into_iter()
-            .skip(2)
-            .map(|res| res.intent_name.unwrap_or("null".to_string()).to_string())
-            .sorted()
-            .collect::<Vec<_>>();
-        let expected_intent_names = vec![
-            "dummy_intent_1".to_string(),
-            "dummy_intent_2".to_string(),
-            "dummy_intent_4".to_string(),
-            "null".to_string(),
+        let expected_results = vec![
+            ("dummy_intent_5".to_string(), 2. / 3.),
+            ("dummy_intent_3".to_string(), 1. / 3.),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
         ];
-        assert_eq!(expected_scores, scores);
-        assert_eq!(expected_intent_names, intent_names);
+        assert_eq!(expected_results, results);
     }
 
     #[test]
@@ -692,8 +808,7 @@ mod tests {
             .builtin_entity_parser(mocked_builtin_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let intent = parser.parse(text, None).unwrap().intent;
@@ -805,8 +920,7 @@ mod tests {
             .custom_entity_parser(my_mocked_custom_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let intent = parser.parse(text, None).unwrap().intent;
@@ -845,8 +959,7 @@ mod tests {
             .builtin_entity_parser(mocked_builtin_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let parsing_result = parser.parse(text, None).unwrap();
@@ -906,8 +1019,7 @@ mod tests {
             .stop_words(stop_words)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let intent = parser.parse(text, None).unwrap().intent;
@@ -947,8 +1059,7 @@ mod tests {
                 .custom_entity_parser(mocked_custom_entity_parser)
                 .build(),
         );
-        let parser =
-            DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
+        let parser = DeterministicIntentParser::new(sample_model(), shared_resources).unwrap();
 
         // When
         let slots = parser.parse(text, None).unwrap().slots;
@@ -989,8 +1100,7 @@ mod tests {
                 .custom_entity_parser(mocked_custom_entity_parser)
                 .build(),
         );
-        let parser =
-            DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
+        let parser = DeterministicIntentParser::new(sample_model(), shared_resources).unwrap();
 
         // When
         let slots = parser.parse(text, None).unwrap().slots;
@@ -1036,8 +1146,7 @@ mod tests {
             .custom_entity_parser(mocked_custom_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let slots = parser.parse(text, None).unwrap().slots;
@@ -1078,8 +1187,7 @@ mod tests {
                 .custom_entity_parser(mocked_custom_entity_parser)
                 .build(),
         );
-        let parser =
-            DeterministicIntentParser::new(test_configuration(), shared_resources).unwrap();
+        let parser = DeterministicIntentParser::new(sample_model(), shared_resources).unwrap();
 
         // When
         let slots = parser.parse(text, None).unwrap().slots;
@@ -1092,6 +1200,49 @@ mod tests {
             slot_name: "dummy_slot_name3".to_string(),
         }];
         assert_eq!(slots, expected_slots);
+    }
+
+    #[test]
+    fn test_parse_slots_with_stop_word_entity_value() {
+        // Given
+        let text = "search this please";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![CustomEntity {
+                value: "this".to_string(),
+                resolved_value: "this".to_string(),
+                range: 7..11,
+                entity_identifier: "search_object".to_string(),
+            }],
+        )]);
+        let stop_words = vec!["this".to_string(), "that".to_string(), "please".to_string()]
+            .into_iter()
+            .collect();
+        let shared_resources = Arc::new(
+            SharedResourcesBuilder::default()
+                .custom_entity_parser(mocked_custom_entity_parser)
+                .stop_words(stop_words)
+                .build(),
+        );
+        let mut parser_model = sample_model();
+        parser_model.stop_words_whitelist = hashmap! {
+            "dummy_intent_6".to_string() => vec!["this".to_string()].into_iter().collect()
+        };
+        let parser = DeterministicIntentParser::new(parser_model, shared_resources).unwrap();
+
+        // When
+        let result = parser.parse(text, None).unwrap();
+
+        // Then
+        let expected_slots = vec![InternalSlot {
+            value: "this".to_string(),
+            char_range: 7..11,
+            entity: "search_object".to_string(),
+            slot_name: "dummy_slot_name6".to_string(),
+        }];
+        let expected_intent = Some("dummy_intent_6".to_string());
+        assert_eq!(expected_intent, result.intent.intent_name);
+        assert_eq!(expected_slots, result.slots);
     }
 
     #[test]
@@ -1125,8 +1276,7 @@ mod tests {
             .custom_entity_parser(mocked_custom_entity_parser)
             .build();
         let parser =
-            DeterministicIntentParser::new(test_configuration(), Arc::new(shared_resources))
-                .unwrap();
+            DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
         let slots = parser.get_slots(text, "dummy_intent_3").unwrap();
