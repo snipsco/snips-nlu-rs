@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.64.3] - 2019-04-29
 ### Fixed
 - Make the `WrongModelVersion` error message intelligible [#133](https://github.com/snipsco/snips-nlu-rs/pull/133)
 - Fix error handling in Python wrapper [#134](https://github.com/snipsco/snips-nlu-rs/pull/134)
@@ -200,7 +200,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
-[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.2...HEAD
+[0.64.3]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.2...0.64.3
 [0.64.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.1...0.64.2
 [0.64.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.0...0.64.1
 [0.64.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.1...0.64.0
