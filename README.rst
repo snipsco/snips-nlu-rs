@@ -39,7 +39,7 @@ Properly trained, the Snips NLU engine will be able to extract structured data s
    {
       "intent": {
          "intentName": "searchWeatherForecast",
-         "probability": 0.95
+         "confidenceScore": 0.95
       },
       "slots": [
          {
