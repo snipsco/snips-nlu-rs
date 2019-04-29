@@ -760,33 +760,31 @@ mod tests {
             DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
-        let intents = parser.get_intents(text).unwrap();
+        let results = parser
+            .get_intents(text)
+            .unwrap()
+            .into_iter()
+            .map(|res| {
+                let intent_alias = if res.confidence_score > 0. {
+                    res.intent_name.unwrap_or_else(|| "null".to_string())
+                } else {
+                    "unmatched_intent".to_string()
+                };
+                (intent_alias, res.confidence_score)
+            })
+            .collect::<Vec<_>>();
 
         // Then
-        let scores = intents
-            .iter()
-            .map(|res| res.confidence_score)
-            .collect::<Vec<_>>();
-        let expected_scores = vec![0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let intent_names = intents
-            .into_iter()
-            .skip(2)
-            .map(|res| {
-                res.intent_name
-                    .unwrap_or_else(|| "null".to_string())
-                    .to_string()
-            })
-            .sorted()
-            .collect::<Vec<_>>();
-        let expected_intent_names = vec![
-            "dummy_intent_1".to_string(),
-            "dummy_intent_2".to_string(),
-            "dummy_intent_4".to_string(),
-            "dummy_intent_6".to_string(),
-            "null".to_string(),
+        let expected_results = vec![
+            ("dummy_intent_5".to_string(), 2. / 3.),
+            ("dummy_intent_3".to_string(), 1. / 3.),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
         ];
-        assert_eq!(expected_scores, scores);
-        assert_eq!(expected_intent_names, intent_names);
+        assert_eq!(expected_results, results);
     }
 
     #[test]
