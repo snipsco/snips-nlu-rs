@@ -244,19 +244,28 @@ impl DeterministicIntentParser {
             }
         }
 
-        let confidence_score = if results.is_empty() {
-            1.0
-        } else {
-            1.0 / (results.len() as f32)
-        };
+        // In some rare cases there can be multiple ambiguous intents
+        // In such cases, priority is given to results containing fewer slots
+        let weights = results
+            .iter()
+            .map(|res| 1. / (1. + res.slots.len() as f32))
+            .collect::<Vec<_>>();
+        let total_weight: f32 = weights.iter().sum();
 
         Ok(results
             .into_iter()
-            .take(top_n)
-            .map(|mut res| {
-                res.intent.confidence_score = confidence_score;
+            .enumerate()
+            .map(|(idx, mut res)| {
+                res.intent.confidence_score = weights[idx] / total_weight;
                 res
             })
+            .sorted_by(|res1, res2| {
+                res2.intent
+                    .confidence_score
+                    .partial_cmp(&res1.intent.confidence_score)
+                    .unwrap()
+            })
+            .take(top_n)
             .collect())
     }
 
@@ -501,6 +510,35 @@ mod tests {
         }
     }
 
+    fn ambiguous_model() -> DeterministicParserModel {
+        DeterministicParserModel {
+            language_code: "en".to_string(),
+            patterns: hashmap![
+                "intent_1".to_string() => vec![
+                    r"^\s*(?P<group0>%EVENT_TYPE%)\s*(?P<group1>%CLIENT_NAME%)\s*$".to_string(),
+                ],
+                "intent_2".to_string() => vec![
+                    r"^\s*meeting\s*snips\s*$".to_string(),
+                ],
+            ],
+            group_names_to_slot_names: hashmap![
+                "group0".to_string() => "event_type".to_string(),
+                "group1".to_string() => "client_name".to_string(),
+            ],
+            slot_names_to_entities: hashmap![
+                "intent_1".to_string() => hashmap![
+                    "event_type".to_string() => "event_type".to_string(),
+                    "client_name".to_string() => "client_name".to_string(),
+                ],
+                "intent_2".to_string() => hashmap![],
+            ],
+            config: DeterministicParserConfig {
+                ignore_stop_words: true,
+            },
+            stop_words_whitelist: HashMap::new(),
+        }
+    }
+
     #[test]
     fn test_load_from_path() {
         // Given
@@ -605,6 +643,58 @@ mod tests {
     }
 
     #[test]
+    fn test_should_disambiguate_intents() {
+        // Given
+        let text = "meeting snips";
+        let mocked_custom_entity_parser = MockedCustomEntityParser::from_iter(vec![(
+            text.to_string(),
+            vec![
+                CustomEntity {
+                    value: "meeting".to_string(),
+                    resolved_value: "meeting".to_string(),
+                    range: 0..7,
+                    entity_identifier: "event_type".to_string(),
+                },
+                CustomEntity {
+                    value: "snips".to_string(),
+                    resolved_value: "snips".to_string(),
+                    range: 8..13,
+                    entity_identifier: "client_name".to_string(),
+                },
+            ],
+        )]);
+        let shared_resources = SharedResourcesBuilder::default()
+            .custom_entity_parser(mocked_custom_entity_parser)
+            .build();
+        let parser =
+            DeterministicIntentParser::new(ambiguous_model(), Arc::new(shared_resources)).unwrap();
+
+        // When
+        let intents = parser.get_intents(text).unwrap();
+
+        // Then
+        let weight_intent_1 = 1. / 3.;
+        let weight_intent_2 = 1.;
+        let total_weight = weight_intent_1 + weight_intent_2;
+        let expected_intents = vec![
+            IntentClassifierResult {
+                intent_name: Some("intent_2".to_string()),
+                confidence_score: weight_intent_2 / total_weight,
+            },
+            IntentClassifierResult {
+                intent_name: Some("intent_1".to_string()),
+                confidence_score: weight_intent_1 / total_weight,
+            },
+            IntentClassifierResult {
+                intent_name: None,
+                confidence_score: 0.0,
+            },
+        ];
+
+        assert_eq!(expected_intents, intents);
+    }
+
+    #[test]
     fn test_parse_intent_with_intents_whitelist() {
         // Given
         let text = "this is a dummy_a query with another dummy_c";
@@ -670,33 +760,31 @@ mod tests {
             DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
 
         // When
-        let intents = parser.get_intents(text).unwrap();
+        let results = parser
+            .get_intents(text)
+            .unwrap()
+            .into_iter()
+            .map(|res| {
+                let intent_alias = if res.confidence_score > 0. {
+                    res.intent_name.unwrap_or_else(|| "null".to_string())
+                } else {
+                    "unmatched_intent".to_string()
+                };
+                (intent_alias, res.confidence_score)
+            })
+            .collect::<Vec<_>>();
 
         // Then
-        let scores = intents
-            .iter()
-            .map(|res| res.confidence_score)
-            .collect::<Vec<_>>();
-        let expected_scores = vec![0.5, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0];
-        let intent_names = intents
-            .into_iter()
-            .skip(2)
-            .map(|res| {
-                res.intent_name
-                    .unwrap_or_else(|| "null".to_string())
-                    .to_string()
-            })
-            .sorted()
-            .collect::<Vec<_>>();
-        let expected_intent_names = vec![
-            "dummy_intent_1".to_string(),
-            "dummy_intent_2".to_string(),
-            "dummy_intent_4".to_string(),
-            "dummy_intent_6".to_string(),
-            "null".to_string(),
+        let expected_results = vec![
+            ("dummy_intent_5".to_string(), 2. / 3.),
+            ("dummy_intent_3".to_string(), 1. / 3.),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
+            ("unmatched_intent".to_string(), 0.0),
         ];
-        assert_eq!(expected_scores, scores);
-        assert_eq!(expected_intent_names, intent_names);
+        assert_eq!(expected_results, results);
     }
 
     #[test]

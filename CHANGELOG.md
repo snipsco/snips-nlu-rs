@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 - Fix issue with stop words in `DeterministicIntentParser` [#137](https://github.com/snipsco/snips-nlu-rs/pull/137)
 - Fix caching issue in `CustomEntityParser` [#138](https://github.com/snipsco/snips-nlu-rs/pull/138)
 
+### Changed
+- Re-score ambiguous `DeterministicIntentParser` results based on slots [#139](https://github.com/snipsco/snips-nlu-rs/pull/139)
+
 ## [0.64.2] - 2019-04-09
 ### Fixed
 - Fix handling of ambiguous utterances in `DeterministicIntentParser` [#129](https://github.com/snipsco/snips-nlu-rs/pull/129)
