@@ -456,6 +456,7 @@ mod tests {
                     r"^\s*This\s*is\s*a\s*(?P<group0>%DUMMY_ENTITY_1%)\s*query\s*from\s*another\s*intent\s*$".to_string()
                 ],
                 "dummy_intent_3".to_string() => vec![
+                    r"^\s*Send\s*(?P<group6>%SNIPSAMOUNTOFMONEY%)\s*$".to_string(),
                     r"^\s*Send\s*(?P<group6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*$".to_string(),
                     r"^\s*Send\s*(?P<group6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*at\s*(?P<group7>%DUMMY_ENTITY_2%)\s*$".to_string()
                 ],
@@ -463,6 +464,7 @@ mod tests {
                     r"^\s*what\s*is\s*(?P<group8>%SNIPSNUMBER%)\s*plus\s*(?P<group8_2>%SNIPSNUMBER%)\s*$".to_string()
                 ],
                 "dummy_intent_5".to_string() => vec![
+                    r"^\s*Send\s*5\s*dollars\s*$".to_string(),
                     r"^\s*Send\s*5\s*dollars\s*to\s*(?P<group10>%NAME%)\s*$".to_string(),
                 ],
                 "dummy_intent_6".to_string() => vec![
@@ -787,22 +789,40 @@ mod tests {
     #[test]
     fn test_get_intents() {
         // Given
-        let text = "Send 5 dollars to john";
-        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
-            text.to_string(),
-            vec![BuiltinEntity {
-                value: "5 dollars".to_string(),
-                range: 5..14,
-                entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
-                    value: 5.,
-                    precision: Precision::Exact,
-                    unit: Some("dollars".to_string()),
-                }),
-                entity_kind: BuiltinEntityKind::AmountOfMoney,
-            }],
-        )]);
+        let text = "Send 5 dollars";
+        struct TestBuiltinEntityParser {}
+
+        impl BuiltinEntityParser for TestBuiltinEntityParser {
+            fn extract_entities(
+                &self,
+                _sentence: &str,
+                filter_entity_kinds: Option<&[BuiltinEntityKind]>,
+                _use_cache: bool,
+            ) -> Result<Vec<BuiltinEntity>> {
+                Ok(
+                    if filter_entity_kinds
+                        .map(|kinds| kinds.contains(&BuiltinEntityKind::AmountOfMoney))
+                        .unwrap_or(true)
+                    {
+                        vec![BuiltinEntity {
+                            value: "5 dollars".to_string(),
+                            range: 5..14,
+                            entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                                value: 5.,
+                                precision: Precision::Exact,
+                                unit: Some("dollars".to_string()),
+                            }),
+                            entity_kind: BuiltinEntityKind::AmountOfMoney,
+                        }]
+                    } else {
+                        vec![]
+                    },
+                )
+            }
+        }
+
         let shared_resources = SharedResourcesBuilder::default()
-            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .builtin_entity_parser(TestBuiltinEntityParser {})
             .build();
         let parser =
             DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
