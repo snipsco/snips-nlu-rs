@@ -18,6 +18,24 @@ pub type IntentName = String;
 pub type SlotName = String;
 pub type EntityName = String;
 
+pub trait IterOps<T, I>: IntoIterator<Item = T>
+    where I: IntoIterator<Item = T>,
+          T: PartialEq {
+    fn intersect(self, other: I) -> Vec<T>;
+}
+
+impl<T, I> IterOps<T, I> for I
+    where I: IntoIterator<Item = T>,
+          T: PartialEq
+{
+    fn intersect(self, other: I) -> Vec<T> {
+        let v_other: Vec<_> = other.into_iter().collect();
+        self.into_iter()
+            .filter(|e1| v_other.iter().any(|e2| e1 == e2))
+            .collect()
+    }
+}
+
 pub fn deduplicate_overlapping_items<I, O, S, K>(
     items: Vec<I>,
     overlap: O,

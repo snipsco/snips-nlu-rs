@@ -7,6 +7,8 @@ if [[ -z ${TRAVIS_RUST_VERSION+w} ]]; then
 fi
 
 if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
+  sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
+
   if [[ ${PYTHON_TESTS} == true ]]; then
     # install pyenv
     git clone --depth 1 https://github.com/pyenv/pyenv ~/.pyenv

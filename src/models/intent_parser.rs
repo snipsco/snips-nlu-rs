@@ -10,6 +10,8 @@ pub struct DeterministicParserModel {
     pub patterns: HashMap<IntentName, Vec<String>>,
     pub group_names_to_slot_names: HashMap<String, SlotName>,
     pub slot_names_to_entities: HashMap<IntentName, HashMap<SlotName, EntityName>>,
+    #[serde(default)]
+    pub stop_words_whitelist: HashMap<IntentName, Vec<String>>,
     pub config: DeterministicParserConfig,
 }
 

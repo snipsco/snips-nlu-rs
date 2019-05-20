@@ -6,6 +6,7 @@ use std::sync::Mutex;
 
 use failure::ResultExt;
 use itertools::Itertools;
+use log::info;
 use serde::de::{Error as SerdeError, Unexpected};
 use serde::{Deserialize, Deserializer};
 use serde_derive::Deserialize;
@@ -60,7 +61,7 @@ pub struct CachingCustomEntityParser {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct CacheKey {
     input: String,
-    kinds: Vec<EntityName>,
+    kinds: Option<Vec<EntityName>>,
 }
 
 impl CustomEntityParser for CachingCustomEntityParser {
@@ -72,9 +73,7 @@ impl CustomEntityParser for CachingCustomEntityParser {
         let lowercased_sentence = sentence.to_lowercase();
         let cache_key = CacheKey {
             input: lowercased_sentence,
-            kinds: filter_entity_kinds
-                .map(|entity_kinds| entity_kinds.to_vec())
-                .unwrap_or_else(|| vec![]),
+            kinds: filter_entity_kinds.map(|entity_kinds| entity_kinds.to_vec()),
         };
 
         self.cache
@@ -150,6 +149,7 @@ pub struct CustomEntityParserMetadata {
 
 impl CachingCustomEntityParser {
     pub fn from_path<P: AsRef<Path>>(path: P, cache_capacity: usize) -> Result<Self> {
+        info!("Loading custom entity parser ({:?}) ...", path.as_ref());
         let metadata_path = path.as_ref().join("metadata.json");
         let metadata_file = File::open(&metadata_path).with_context(|_| {
             format!(
@@ -163,6 +163,7 @@ impl CachingCustomEntityParser {
         let gazetteer_parser_path = path.as_ref().join(&metadata.parser_directory);
         let parser = GazetteerParser::from_path(gazetteer_parser_path)?;
         let cache = Mutex::new(Cache::new(cache_capacity));
+        info!("Custom entity parser loaded");
         Ok(Self {
             language,
             parser,
@@ -215,5 +216,33 @@ mod tests {
         }];
 
         assert_eq!(expected_entities, entities);
+    }
+
+    #[test]
+    fn test_custom_entity_parser_caches_properly() {
+        // Given
+        let parser_path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine")
+            .join("custom_entity_parser");
+
+        let custom_entity_parser = CachingCustomEntityParser::from_path(parser_path, 1000).unwrap();
+        let input = "Make me a hot tea";
+
+        // When
+        let entities_empty_scope = custom_entity_parser.extract_entities(input, Some(&[])).unwrap();
+        let entities_no_scope = custom_entity_parser.extract_entities(input, None).unwrap();
+
+        // Then
+        let expected_entities_no_scope = vec![CustomEntity {
+            value: "hot".to_string(),
+            resolved_value: "hot".to_string(),
+            range: 10..13,
+            entity_identifier: "Temperature".to_string(),
+        }];
+        let expected_entities_empty_scope: Vec<CustomEntity> = vec![];
+        assert_eq!(expected_entities_no_scope, entities_no_scope);
+        assert_eq!(expected_entities_empty_scope, entities_empty_scope);
     }
 }

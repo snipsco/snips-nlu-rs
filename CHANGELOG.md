@@ -1,9 +1,35 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Changed
+- Accept ambiguous results from `DeterministicIntentParser` when confidence score is above 0.5 [#141](https://github.com/snipsco/snips-nlu-rs/pull/141)
+
+## [0.64.3] - 2019-04-29
+### Fixed
+- Make the `WrongModelVersion` error message intelligible [#133](https://github.com/snipsco/snips-nlu-rs/pull/133)
+- Fix error handling in Python wrapper [#134](https://github.com/snipsco/snips-nlu-rs/pull/134)
+- Return an error when using unknown intents in whitelist or blacklist [#136](https://github.com/snipsco/snips-nlu-rs/pull/136)
+- Fix issue with stop words in `DeterministicIntentParser` [#137](https://github.com/snipsco/snips-nlu-rs/pull/137)
+- Fix caching issue in `CustomEntityParser` [#138](https://github.com/snipsco/snips-nlu-rs/pull/138)
+
+### Changed
+- Re-score ambiguous `DeterministicIntentParser` results based on slots [#139](https://github.com/snipsco/snips-nlu-rs/pull/139)
+
+## [0.64.2] - 2019-04-09
+### Fixed
+- Fix handling of ambiguous utterances in `DeterministicIntentParser` [#129](https://github.com/snipsco/snips-nlu-rs/pull/129)
+- Stop normalizing confidence scores when there is an intents filter [#130](https://github.com/snipsco/snips-nlu-rs/pull/130)
+
+### Added
+- Add new APIs in ffi and bindings (python, kotlin, swift) [#131](https://github.com/snipsco/snips-nlu-rs/pull/131)
+
+### Changed
+- Leverage entity scopes of each intent in deterministic intent parser [#126](https://github.com/snipsco/snips-nlu-rs/pull/126)
+
 ## [0.64.1] - 2019-03-01
 ### Fixed
-- Fix bug with regex patterns containing duplicated slot names
+- Fix bug with regex patterns containing duplicated slot names [#124](https://github.com/snipsco/snips-nlu-rs/pull/124)
 
 ## [0.64.0] - 2019-02-28
 ### Changed
@@ -12,7 +38,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.63.1] - 2019-02-11
 ### Fixed
-- Fix an issue regarding the way builtin entities were handled by the `CRFSlotFiller`
+- Fix an issue regarding the way builtin entities were handled by the `CRFSlotFiller` [#116](https://github.com/snipsco/snips-nlu-rs/pull/116)
 
 ## [0.63.0] - 2019-02-04
 ### Added
@@ -178,6 +204,8 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.64.3]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.2...0.64.3
+[0.64.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.1...0.64.2
 [0.64.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.0...0.64.1
 [0.64.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.1...0.64.0
 [0.63.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.63.0...0.63.1
