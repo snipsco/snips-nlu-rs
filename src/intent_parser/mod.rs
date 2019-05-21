@@ -17,7 +17,7 @@ use crate::resources::SharedResources;
 pub use crate::slot_utils::InternalSlot;
 use crate::utils::IntentName;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct InternalParsingResult {
     pub intent: IntentClassifierResult,
     pub slots: Vec<InternalSlot>,

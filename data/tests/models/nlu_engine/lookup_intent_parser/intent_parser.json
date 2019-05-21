@@ -3,6 +3,32 @@
     "ignore_stop_words": true,
     "unit_name": "lookup_intent_parser"
   },
+  "entity_scopes": [
+    {
+      "entity_scope": {
+        "builtin": [
+          "snips/number"
+        ],
+        "custom": []
+      },
+      "intent_group": [
+        "MakeCoffee"
+      ]
+    },
+    {
+      "entity_scope": {
+        "builtin": [
+          "snips/number"
+        ],
+        "custom": [
+          "Temperature"
+        ]
+      },
+      "intent_group": [
+        "MakeTea"
+      ]
+    }
+  ],
   "intents_names": [
     "MakeCoffee",
     "MakeTea"
@@ -57,5 +83,6 @@
   "slots_names": [
     "number_of_cups",
     "beverage_temperature"
-  ]
+  ],
+  "stop_words_whitelist": {}
 }

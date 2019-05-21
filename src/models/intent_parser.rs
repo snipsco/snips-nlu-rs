@@ -21,7 +21,21 @@ pub struct LookupParserModel {
     pub slots_names: Vec<SlotName>,
     pub intents_names: Vec<IntentName>,
     pub map: HashMap<i32, (i32, Vec<i32>)>,
+    pub entity_scopes: Vec<GroupedEntityScope>,
+    pub stop_words_whitelist: HashMap<String, Vec<String>>,
     pub config: LookupParserConfig,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GroupedEntityScope {
+    pub intent_group: Vec<String>,
+    pub entity_scope: EntityScope,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct EntityScope {
+    pub builtin: Vec<String>,
+    pub custom: Vec<String>,
 }
 
 #[derive(Debug, Deserialize)]

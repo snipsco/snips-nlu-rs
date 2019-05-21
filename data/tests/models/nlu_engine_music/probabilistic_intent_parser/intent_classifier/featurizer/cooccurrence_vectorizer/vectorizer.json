@@ -18,7 +18,7 @@
     ],
     "1": [
       "ecouter",
-      "SNIPSMUSICARTIST"
+      "SNIPSMUSICALBUM"
     ],
     "2": [
       "je",
@@ -26,11 +26,11 @@
     ],
     "3": [
       "je",
-      "SNIPSMUSICARTIST"
+      "ecouter"
     ],
     "4": [
-      "je",
-      "ecouter"
+      "mets",
+      "SNIPSMUSICARTIST"
     ]
   }
 }
