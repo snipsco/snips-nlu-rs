@@ -19,7 +19,7 @@ use crate::models::LookupParserModel;
 use crate::resources::SharedResources;
 use crate::slot_utils::*;
 use crate::utils::{deduplicate_overlapping_entities, IntentName, MatchedEntity, SlotName};
-use crate::{EntityScope, GroupedEntityScope};
+use crate::{EntityScope, GroupedEntityScope, InputHash, IntentId, SlotId};
 
 use super::{IntentParser, InternalParsingResult};
 
@@ -32,7 +32,7 @@ pub struct LookupIntentParser {
     language: Language,
     slots_names: Vec<SlotName>,
     intents_names: Vec<IntentName>,
-    map: HashMap<i32, (i32, Vec<i32>)>,
+    map: HashMap<InputHash, (IntentId, Vec<SlotId>)>,
     stop_words: HashSet<String>,
     specific_stop_words: HashMap<IntentName, HashSet<String>>,
     entity_scopes: Vec<GroupedEntityScope>,
@@ -289,7 +289,7 @@ impl LookupIntentParser {
     fn parse_map_output(
         &self,
         input: &str,
-        output: &(i32, Vec<i32>),
+        output: &(IntentId, Vec<SlotId>),
         entities: Vec<MatchedEntity>,
         intents: Option<&[&str]>,
     ) -> Option<InternalParsingResult> {
@@ -406,7 +406,7 @@ mod tests {
     fn build_sample_model<T>(
         slots_names: Vec<T>,
         intents_names: Vec<T>,
-        map: HashMap<i32, (i32, Vec<i32>)>,
+        map: HashMap<InputHash, (IntentId, Vec<SlotId>)>,
         entity_scopes: Vec<GroupedEntityScope>,
         stop_words_whitelist: HashMap<String, Vec<String>>,
         ignore_stop_words: bool,

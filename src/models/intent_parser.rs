@@ -4,6 +4,10 @@ use serde_derive::Deserialize;
 
 use crate::utils::{EntityName, IntentName, SlotName};
 
+pub type InputHash = i32;
+pub type IntentId = i32;
+pub type SlotId = i32;
+
 #[derive(Debug, Deserialize)]
 pub struct DeterministicParserModel {
     pub language_code: String,
@@ -20,22 +24,22 @@ pub struct LookupParserModel {
     pub language_code: String,
     pub slots_names: Vec<SlotName>,
     pub intents_names: Vec<IntentName>,
-    pub map: HashMap<i32, (i32, Vec<i32>)>,
+    pub map: HashMap<InputHash, (IntentId, Vec<SlotId>)>,
     pub entity_scopes: Vec<GroupedEntityScope>,
-    pub stop_words_whitelist: HashMap<String, Vec<String>>,
+    pub stop_words_whitelist: HashMap<IntentName, Vec<String>>,
     pub config: LookupParserConfig,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct GroupedEntityScope {
-    pub intent_group: Vec<String>,
+    pub intent_group: Vec<IntentName>,
     pub entity_scope: EntityScope,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct EntityScope {
-    pub builtin: Vec<String>,
-    pub custom: Vec<String>,
+    pub builtin: Vec<EntityName>,
+    pub custom: Vec<EntityName>,
 }
 
 #[derive(Debug, Deserialize)]
