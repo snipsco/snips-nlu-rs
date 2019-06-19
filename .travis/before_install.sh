@@ -12,7 +12,7 @@ if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
   if [[ ${PYTHON_TESTS} == true ]]; then
     # install pyenv
     git clone https://github.com/pyenv/pyenv $HOME/.pyenv
-    git --git-dir=$HOME/.pyenv/.git checkout v1.2.11  # Fix for https://github.com/pyenv/pyenv/issues/1066
+    git --git-dir=$HOME/.pyenv/.git --work-tree=$HOME/.pyenv checkout v1.2.11  # Fix for https://github.com/pyenv/pyenv/issues/1066
     PYENV_ROOT="$HOME/.pyenv"
     PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init -)"
