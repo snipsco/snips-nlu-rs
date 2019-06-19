@@ -20,7 +20,7 @@ members = [
 [dependencies]
 crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", tag = "0.3.1" }
 snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.64.7" }
-snips-nlu-parsers = { git = "https://github.com/snipsco/snips-nlu-parsers", tag = "0.2.1" }
+snips-nlu-parsers = { git = "https://github.com/snipsco/snips-nlu-parsers", tag = "0.2.2" }
 snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.8.0" }
 failure = "0.1"
 base64 = "0.10"

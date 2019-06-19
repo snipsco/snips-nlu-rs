@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Accept ambiguous results from `DeterministicIntentParser` when confidence score is above 0.5 [#141](https://github.com/snipsco/snips-nlu-rs/pull/141)
 - Bumped ontology to `0.64.7` [#142](https://github.com/snipsco/snips-nlu-rs/pull/142)
+- Bumped parsers to `0.2.2` [#142](https://github.com/snipsco/snips-nlu-rs/pull/142)
 
 ## [0.64.3] - 2019-04-29
 ### Fixed
