@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-ffi"
-version = "0.65.0-SNAPSHOT"
+version = "0.64.4"
 edition = "2018"
 authors = [
     "Adrien Ball <adrien.ball@snips.ai>",
