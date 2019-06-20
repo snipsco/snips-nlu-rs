@@ -41,8 +41,10 @@ jobs:
       os: linux
       language: rust
       rust: stable
+      jdk: oraclejdk8
       env:
         - KOTLIN_TESTS=true
+        - JAVA_HOME=/usr/lib/jvm/java-8-oracle
     - os: linux
       language: rust
       rust: stable
