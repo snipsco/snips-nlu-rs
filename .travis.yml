@@ -39,12 +39,10 @@ jobs:
         - PYTHON_TESTS=true
     - if: branch = master or head_branch =~ /^release\/.+$/
       os: linux
-      language: rust
-      rust: stable
-      jdk: oraclejdk8
+      language: java
+      jdk: openjdk8
       env:
         - KOTLIN_TESTS=true
-        - JAVA_HOME=/usr/lib/jvm/java-8-oracle
     - os: linux
       language: rust
       rust: stable
