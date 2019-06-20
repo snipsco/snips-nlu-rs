@@ -8,7 +8,7 @@ It is recommended to install the package with a virtualenv:
 
 .. code-block:: bash
 
-    virtualenv venv
+    virtualenv -p python3.6 venv
     . venv/bin/activate
 
 The package is available on pypi, and can be installed with `pip`:

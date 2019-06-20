@@ -121,7 +121,7 @@ impl IntentParser for DeterministicIntentParser {
             .next()
             .and_then(|res| {
                 // return None in case of ambiguity
-                if res.intent.confidence_score < 1.0 {
+                if res.intent.confidence_score <= 0.5 {
                     None
                 } else {
                     Some(res)
@@ -456,6 +456,7 @@ mod tests {
                     r"^\s*This\s*is\s*a\s*(?P<group0>%DUMMY_ENTITY_1%)\s*query\s*from\s*another\s*intent\s*$".to_string()
                 ],
                 "dummy_intent_3".to_string() => vec![
+                    r"^\s*Send\s*(?P<group6>%SNIPSAMOUNTOFMONEY%)\s*$".to_string(),
                     r"^\s*Send\s*(?P<group6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*$".to_string(),
                     r"^\s*Send\s*(?P<group6>%SNIPSAMOUNTOFMONEY%)\s*to\s*john\s*at\s*(?P<group7>%DUMMY_ENTITY_2%)\s*$".to_string()
                 ],
@@ -463,7 +464,8 @@ mod tests {
                     r"^\s*what\s*is\s*(?P<group8>%SNIPSNUMBER%)\s*plus\s*(?P<group8_2>%SNIPSNUMBER%)\s*$".to_string()
                 ],
                 "dummy_intent_5".to_string() => vec![
-                    r"^\s*Send\s*5\s*dollars\s*to\s*john\s*$".to_string(),
+                    r"^\s*Send\s*5\s*dollars\s*$".to_string(),
+                    r"^\s*Send\s*5\s*dollars\s*to\s*(?P<group10>%NAME%)\s*$".to_string(),
                 ],
                 "dummy_intent_6".to_string() => vec![
                     r"^\s*search\s*$".to_string(),
@@ -481,6 +483,7 @@ mod tests {
                 "group7".to_string() => "dummy_slot_name2".to_string(),
                 "group8".to_string() => "dummy_slot_name5".to_string(),
                 "group9".to_string() => "dummy_slot_name6".to_string(),
+                "group10".to_string() => "name".to_string(),
             ],
             slot_names_to_entities: hashmap![
                 "dummy_intent_1".to_string() => hashmap![
@@ -498,7 +501,9 @@ mod tests {
                 "dummy_intent_4".to_string() => hashmap![
                     "dummy_slot_name5".to_string() => "snips/number".to_string(),
                 ],
-                "dummy_intent_5".to_string() => hashmap![],
+                "dummy_intent_5".to_string() => hashmap![
+                    "name".to_string() => "name".to_string(),
+                ],
                 "dummy_intent_6".to_string() => hashmap![
                     "dummy_slot_name6".to_string() => "search_object".to_string(),
                 ],
@@ -611,21 +616,66 @@ mod tests {
     fn test_ambiguous_intent_should_not_be_parsed() {
         // Given
         let text = "Send 5 dollars to john";
-        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
-            text.to_string(),
-            vec![BuiltinEntity {
-                value: "5 dollars".to_string(),
-                range: 5..14,
-                entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
-                    value: 5.,
-                    precision: Precision::Exact,
-                    unit: Some("dollars".to_string()),
-                }),
-                entity_kind: BuiltinEntityKind::AmountOfMoney,
-            }],
-        )]);
+        struct TestBuiltinEntityParser {}
+
+        impl BuiltinEntityParser for TestBuiltinEntityParser {
+            fn extract_entities(
+                &self,
+                _sentence: &str,
+                filter_entity_kinds: Option<&[BuiltinEntityKind]>,
+                _use_cache: bool,
+            ) -> Result<Vec<BuiltinEntity>> {
+                Ok(
+                    if filter_entity_kinds
+                        .map(|kinds| kinds.contains(&BuiltinEntityKind::AmountOfMoney))
+                        .unwrap_or(true)
+                    {
+                        vec![BuiltinEntity {
+                            value: "5 dollars".to_string(),
+                            range: 5..14,
+                            entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                                value: 5.,
+                                precision: Precision::Exact,
+                                unit: Some("dollars".to_string()),
+                            }),
+                            entity_kind: BuiltinEntityKind::AmountOfMoney,
+                        }]
+                    } else {
+                        vec![]
+                    },
+                )
+            }
+        }
+
+        struct TestCustomEntityParser {}
+
+        impl CustomEntityParser for TestCustomEntityParser {
+            fn extract_entities(
+                &self,
+                _sentence: &str,
+                filter_entity_kinds: Option<&[String]>,
+            ) -> Result<Vec<CustomEntity>> {
+                Ok(
+                    if filter_entity_kinds
+                        .map(|kinds| kinds.contains(&"name".to_string()))
+                        .unwrap_or(true)
+                    {
+                        vec![CustomEntity {
+                            value: "john".to_string(),
+                            range: 18..22,
+                            resolved_value: "john".to_string(),
+                            entity_identifier: "name".to_string(),
+                        }]
+                    } else {
+                        vec![]
+                    },
+                )
+            }
+        }
+
         let shared_resources = SharedResourcesBuilder::default()
-            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .builtin_entity_parser(TestBuiltinEntityParser {})
+            .custom_entity_parser(TestCustomEntityParser {})
             .build();
         let parser =
             DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();
@@ -739,22 +789,40 @@ mod tests {
     #[test]
     fn test_get_intents() {
         // Given
-        let text = "Send 5 dollars to john";
-        let mocked_builtin_entity_parser = MockedBuiltinEntityParser::from_iter(vec![(
-            text.to_string(),
-            vec![BuiltinEntity {
-                value: "5 dollars".to_string(),
-                range: 5..14,
-                entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
-                    value: 5.,
-                    precision: Precision::Exact,
-                    unit: Some("dollars".to_string()),
-                }),
-                entity_kind: BuiltinEntityKind::AmountOfMoney,
-            }],
-        )]);
+        let text = "Send 5 dollars";
+        struct TestBuiltinEntityParser {}
+
+        impl BuiltinEntityParser for TestBuiltinEntityParser {
+            fn extract_entities(
+                &self,
+                _sentence: &str,
+                filter_entity_kinds: Option<&[BuiltinEntityKind]>,
+                _use_cache: bool,
+            ) -> Result<Vec<BuiltinEntity>> {
+                Ok(
+                    if filter_entity_kinds
+                        .map(|kinds| kinds.contains(&BuiltinEntityKind::AmountOfMoney))
+                        .unwrap_or(true)
+                    {
+                        vec![BuiltinEntity {
+                            value: "5 dollars".to_string(),
+                            range: 5..14,
+                            entity: SlotValue::AmountOfMoney(AmountOfMoneyValue {
+                                value: 5.,
+                                precision: Precision::Exact,
+                                unit: Some("dollars".to_string()),
+                            }),
+                            entity_kind: BuiltinEntityKind::AmountOfMoney,
+                        }]
+                    } else {
+                        vec![]
+                    },
+                )
+            }
+        }
+
         let shared_resources = SharedResourcesBuilder::default()
-            .builtin_entity_parser(mocked_builtin_entity_parser)
+            .builtin_entity_parser(TestBuiltinEntityParser {})
             .build();
         let parser =
             DeterministicIntentParser::new(sample_model(), Arc::new(shared_resources)).unwrap();

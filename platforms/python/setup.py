@@ -43,8 +43,8 @@ setup(name=PACKAGE_NAME,
           "Programming Language :: Python :: 3.7",
       ],
       install_requires=[
-          "future==0.16.0",
-          "pathlib==1.0.1"
+          "future>=0.16,<0.18",
+          "pathlib>=1.0,<2.0; python_version < '3.4'",
       ],
       packages=packages,
       include_package_data=True,

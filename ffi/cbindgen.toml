@@ -2,7 +2,7 @@ language = "c"
 
 include_guard = "LIBSNIPS_NLU_H_"
 
-header = "#define SNIPS_NLU_VERSION \"0.64.3\""
+header = "#define SNIPS_NLU_VERSION \"0.64.4\""
 
 [parse]
 parse_deps = true
