@@ -101,7 +101,7 @@ pub fn extract_nlu_engine_zip_archive<R: io::Read + io::Seek>(
     Ok(dest_path.join(engine_dir_name))
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct MatchedEntity {
     pub range: Range<usize>,
     pub entity_name: String,
@@ -166,7 +166,7 @@ where
     (range_mapping, processed_text)
 }
 
-fn deduplicate_overlapping_entities(entities: Vec<MatchedEntity>) -> Vec<MatchedEntity> {
+pub fn deduplicate_overlapping_entities(entities: Vec<MatchedEntity>) -> Vec<MatchedEntity> {
     let entities_overlap = |lhs_entity: &MatchedEntity, rhs_entity: &MatchedEntity| {
         ranges_overlap(&lhs_entity.range, &rhs_entity.range)
     };

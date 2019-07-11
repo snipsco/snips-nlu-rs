@@ -1,0 +1,88 @@
+{
+  "config": {
+    "ignore_stop_words": true,
+    "unit_name": "lookup_intent_parser"
+  },
+  "entity_scopes": [
+    {
+      "entity_scope": {
+        "builtin": [
+          "snips/number"
+        ],
+        "custom": []
+      },
+      "intent_group": [
+        "MakeCoffee"
+      ]
+    },
+    {
+      "entity_scope": {
+        "builtin": [
+          "snips/number"
+        ],
+        "custom": [
+          "Temperature"
+        ]
+      },
+      "intent_group": [
+        "MakeTea"
+      ]
+    }
+  ],
+  "intents_names": [
+    "MakeCoffee",
+    "MakeTea"
+  ],
+  "language_code": "en",
+  "map": {
+    "-1658454006": [
+      1,
+      [
+        0
+      ]
+    ],
+    "-1533083481": [
+      0,
+      [
+        0
+      ]
+    ],
+    "-1416877420": [
+      0,
+      [
+        0
+      ]
+    ],
+    "-1362288387": [
+      1,
+      [
+        0,
+        1
+      ]
+    ],
+    "-687749971": [
+      0,
+      [
+        0
+      ]
+    ],
+    "1085718744": [
+      1,
+      [
+        1
+      ]
+    ],
+    "1413162768": [
+      1,
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  "slots_names": [
+    "number_of_cups",
+    "beverage_temperature"
+  ],
+  "stop_words_whitelist": {}
+}

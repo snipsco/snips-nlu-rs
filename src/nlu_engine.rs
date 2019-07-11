@@ -554,8 +554,8 @@ mod tests {
         // Then
         let expected_intents = vec![
             Some("MakeTea".to_string()),
-            Some("MakeCoffee".to_string()),
             None,
+            Some("MakeCoffee".to_string()),
         ];
         assert_eq!(expected_intents, intents);
     }

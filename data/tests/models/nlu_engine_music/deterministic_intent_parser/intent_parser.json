@@ -31,5 +31,6 @@
       "musicArtist": "snips/musicArtist",
       "playlist": "playlist"
     }
-  }
+  },
+  "stop_words_whitelist": {}
 }

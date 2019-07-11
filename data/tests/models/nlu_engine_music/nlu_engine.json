@@ -30,7 +30,7 @@
             "pvalue_threshold": 0.4,
             "tfidf_vectorizer_config": {
               "unit_name": "tfidf_vectorizer",
-              "use_stemming": true,
+              "use_stemming": false,
               "word_clusters_name": null
             },
             "unit_name": "featurizer"
@@ -187,6 +187,6 @@
     "probabilistic_intent_parser"
   ],
   "model_version": "0.19.0",
-  "training_package_version": "0.18.0",
+  "training_package_version": "0.19.6",
   "unit_name": "nlu_engine"
 }

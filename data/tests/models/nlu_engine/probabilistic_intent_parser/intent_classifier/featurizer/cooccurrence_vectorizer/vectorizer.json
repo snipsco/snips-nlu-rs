@@ -1,0 +1,35 @@
+{
+  "builtin_entity_scope": [
+    "snips/number"
+  ],
+  "config": {
+    "filter_stop_words": true,
+    "keep_order": true,
+    "unit_name": "cooccurrence_vectorizer",
+    "unknown_words_replacement_string": null,
+    "window_size": 5
+  },
+  "language_code": "en",
+  "word_pairs": {
+    "0": [
+      "SNIPSNUMBER",
+      "coffee"
+    ],
+    "1": [
+      "SNIPSNUMBER",
+      "tea"
+    ],
+    "2": [
+      "TEMPERATURE",
+      "tea"
+    ],
+    "3": [
+      "of",
+      "coffee"
+    ],
+    "4": [
+      "of",
+      "tea"
+    ]
+  }
+}

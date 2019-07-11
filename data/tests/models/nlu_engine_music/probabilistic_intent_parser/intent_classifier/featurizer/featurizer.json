@@ -11,7 +11,7 @@
     "pvalue_threshold": 0.4,
     "tfidf_vectorizer_config": {
       "unit_name": "tfidf_vectorizer",
-      "use_stemming": true,
+      "use_stemming": false,
       "word_clusters_name": null
     },
     "unit_name": "featurizer"
