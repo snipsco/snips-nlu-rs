@@ -1,9 +1,11 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.64.4] - 2019-06-19
 ### Changed
 - Accept ambiguous results from `DeterministicIntentParser` when confidence score is above 0.5 [#141](https://github.com/snipsco/snips-nlu-rs/pull/141)
+- Bumped ontology to `0.64.7` [#142](https://github.com/snipsco/snips-nlu-rs/pull/142)
+- Bumped parsers to `0.2.2` [#142](https://github.com/snipsco/snips-nlu-rs/pull/142)
 
 ## [0.64.3] - 2019-04-29
 ### Fixed
@@ -204,6 +206,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.64.4]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.3...0.64.4
 [0.64.3]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.2...0.64.3
 [0.64.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.1...0.64.2
 [0.64.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.0...0.64.1
