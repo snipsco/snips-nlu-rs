@@ -742,7 +742,7 @@ mod tests {
                 };
                 Ok(
                     if filter_entity_kinds
-                        .map(|kinds| kinds.contains(&BuiltinEntityKind::Time))
+                        .map(|kinds| kinds.contains(&BuiltinEntityKind::Datetime))
                         .unwrap_or(true)
                     {
                         vec![BuiltinEntity {
@@ -753,7 +753,7 @@ mod tests {
                                 precision: Precision::Exact,
                                 grain: Grain::Day,
                             }),
-                            entity_kind: BuiltinEntityKind::Time,
+                            entity_kind: BuiltinEntityKind::Datetime,
                         }]
                     } else {
                         vec![]
@@ -843,7 +843,7 @@ mod tests {
                 };
                 Ok(
                     if filter_entity_kinds
-                        .map(|kinds| kinds.contains(&BuiltinEntityKind::Time))
+                        .map(|kinds| kinds.contains(&BuiltinEntityKind::Datetime))
                         .unwrap_or(true)
                     {
                         vec![BuiltinEntity {
@@ -854,7 +854,7 @@ mod tests {
                                 precision: Precision::Exact,
                                 grain: Grain::Day,
                             }),
-                            entity_kind: BuiltinEntityKind::Time,
+                            entity_kind: BuiltinEntityKind::Datetime,
                         }]
                     } else {
                         vec![]
@@ -920,7 +920,7 @@ mod tests {
                         precision: Precision::Exact,
                         grain: Grain::Hour,
                     }),
-                    entity_kind: BuiltinEntityKind::Time,
+                    entity_kind: BuiltinEntityKind::Datetime,
                 },
                 BuiltinEntity {
                     value: "tomorrow".to_string(),
@@ -930,7 +930,7 @@ mod tests {
                         precision: Precision::Exact,
                         grain: Grain::Day,
                     }),
-                    entity_kind: BuiltinEntityKind::Time,
+                    entity_kind: BuiltinEntityKind::Datetime,
                 },
             ],
         )]);

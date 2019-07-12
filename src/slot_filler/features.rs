@@ -805,7 +805,7 @@ mod tests {
 
         let feature = BuiltinEntityMatchFeature {
             tagging_scheme,
-            builtin_entity_kind: BuiltinEntityKind::Time,
+            builtin_entity_kind: BuiltinEntityKind::Datetime,
             builtin_entity_parser: Arc::new(mocked_builtin_parser),
         };
 
