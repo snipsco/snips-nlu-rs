@@ -19,7 +19,7 @@ mod slot_utils;
 mod testutils;
 mod utils;
 
-pub const MODEL_VERSION: &str = "0.19.0";
+pub const MODEL_VERSION: &str = "0.20.0";
 
 pub extern crate snips_nlu_ontology as ontology;
 pub use crate::errors::*;

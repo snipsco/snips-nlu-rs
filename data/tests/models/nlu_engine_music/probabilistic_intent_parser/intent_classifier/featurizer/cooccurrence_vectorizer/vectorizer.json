@@ -1,7 +1,7 @@
 {
   "builtin_entity_scope": [
-    "snips/musicArtist",
-    "snips/musicAlbum"
+    "snips/musicAlbum",
+    "snips/musicArtist"
   ],
   "config": {
     "filter_stop_words": true,
@@ -21,14 +21,18 @@
       "SNIPSMUSICALBUM"
     ],
     "2": [
-      "je",
-      "SNIPSMUSICALBUM"
+      "ecouter",
+      "SNIPSMUSICARTIST"
     ],
     "3": [
       "je",
-      "ecouter"
+      "SNIPSMUSICALBUM"
     ],
     "4": [
+      "je",
+      "ecouter"
+    ],
+    "5": [
       "mets",
       "SNIPSMUSICARTIST"
     ]
