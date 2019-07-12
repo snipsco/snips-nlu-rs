@@ -8,6 +8,14 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Added a lookup intent parser [#121](https://github.com/snipsco/snips-nlu-rs/pull/121)
+- Introduce new builtin entities:
+    - `snips/time`
+    - `snips/timePeriod`
+    - `snips/date`
+    - `snips/datePeriod`
+    - `snips/city`
+    - `snips/country`
+    - `snips/region`
 
 ## [0.64.4] - 2019-06-19
 ### Changed
