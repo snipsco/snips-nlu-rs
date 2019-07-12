@@ -17,7 +17,7 @@ class NluEngineTest {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
             it.parse("make me two cups of hot tea").apply {
                 assertThat(input).isEqualTo("make me two cups of hot tea")
-                assertThat(intent.intentName!!).isEqualTo("MakeTea")
+                assertThat(intent.intentName).isEqualTo("MakeTea")
                 assertThat(slots).hasSize(2)
                 assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
             }
@@ -29,7 +29,7 @@ class NluEngineTest {
         NluEngine(File("../../data/tests/models/nlu_engine.zip").readBytes()).use {
             it.parse("make me two cups of hot tea").apply {
                 assertThat(input).isEqualTo("make me two cups of hot tea")
-                assertThat(intent.intentName!!).isEqualTo("MakeTea")
+                assertThat(intent.intentName).isEqualTo("MakeTea")
                 assertThat(slots).hasSize(2)
                 assertThat(slots.map { it.slotName }).containsAllOf("beverage_temperature", "number_of_cups")
             }
@@ -39,9 +39,9 @@ class NluEngineTest {
     @Test
     fun parseWithWhitelistWorks() {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
-            it.parse("make me two cups of hot tea", listOf("MakeCoffee"), null).apply {
-                assertThat(input).isEqualTo("make me two cups of hot tea")
-                assertThat(intent.intentName!!).isEqualTo("MakeCoffee")
+            it.parse("can you prepare one cup of tea or coffee", listOf("MakeTea"), null).apply {
+                assertThat(input).isEqualTo("can you prepare one cup of tea or coffee")
+                assertThat(intent.intentName).isEqualTo("MakeTea")
             }
         }
     }
@@ -49,9 +49,9 @@ class NluEngineTest {
     @Test
     fun parseWithBlacklistWorks() {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
-            it.parse("make me two cups of hot tea", null, listOf("MakeTea")).apply {
-                assertThat(input).isEqualTo("make me two cups of hot tea")
-                assertThat(intent.intentName!!).isEqualTo("MakeCoffee")
+            it.parse("can you prepare one cup of tea or coffee", null, listOf("MakeCoffee")).apply {
+                assertThat(input).isEqualTo("can you prepare one cup of tea or coffee")
+                assertThat(intent.intentName).isEqualTo("MakeTea")
             }
         }
     }
@@ -72,10 +72,10 @@ class NluEngineTest {
     @Test
     fun parseIntoJsonWithWhitelistWorks() {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
-            it.parseIntoJson("make me two cups of hot tea", listOf("MakeCoffee"), null).apply {
+            it.parseIntoJson("can you prepare one cup of tea or coffee", listOf("MakeTea"), null).apply {
                 assertThat(this).isNotNull()
-                assertThat(this).contains("make me two cups of hot tea")
-                assertThat(this).contains("MakeCoffee")
+                assertThat(this).contains("can you prepare one cup of tea or coffee")
+                assertThat(this).contains("MakeTea")
             }
         }
     }
@@ -83,10 +83,10 @@ class NluEngineTest {
     @Test
     fun parseIntoJsonWithBlakclistWorks() {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
-            it.parseIntoJson("make me two cups of hot tea", null, listOf("MakeTea")).apply {
+            it.parseIntoJson("can you prepare one cup of tea or coffee", null, listOf("MakeCoffee")).apply {
                 assertThat(this).isNotNull()
-                assertThat(this).contains("make me two cups of hot tea")
-                assertThat(this).contains("MakeCoffee")
+                assertThat(this).contains("can you prepare one cup of tea or coffee")
+                assertThat(this).contains("MakeTea")
             }
         }
     }
@@ -115,10 +115,10 @@ class NluEngineTest {
     @Test
     fun getIntentsWorks() {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
-            it.getIntents("make me two cups of hot tea").apply {
+            it.getIntents("can you prepare one cup of tea or coffee").apply {
                 assertThat(this).hasSize(3)
                 assertThat(this.map { it.intentName })
-                        .isEqualTo(listOf("MakeTea", "MakeCoffee", null))
+                        .isEqualTo(listOf("MakeCoffee", "MakeTea", null))
             }
         }
     }

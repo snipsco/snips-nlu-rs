@@ -26,7 +26,7 @@
         },
         "unit_name": "featurizer"
       },
-      "random_seed": null,
+      "noise_reweight_factor": 1.0,
       "unit_name": "log_reg_intent_classifier"
     },
     "slot_filler_config": {
@@ -148,7 +148,6 @@
           ]
         }
       ],
-      "random_seed": null,
       "tagging_scheme": 1,
       "unit_name": "crf_slot_filler"
     },

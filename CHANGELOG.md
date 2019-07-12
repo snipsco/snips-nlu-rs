@@ -1,6 +1,22 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.65.0] - 2019-07-11
+### Changed
+- Bumped ontology to `0.65.0` [#143](https://github.com/snipsco/snips-nlu-rs/pull/143)
+- Bumped parsers to `0.3.0` [#143](https://github.com/snipsco/snips-nlu-rs/pull/143)
+
+### Added
+- Added a lookup intent parser [#121](https://github.com/snipsco/snips-nlu-rs/pull/121)
+- Introduce new builtin entities:
+    - `snips/time`
+    - `snips/timePeriod`
+    - `snips/date`
+    - `snips/datePeriod`
+    - `snips/city`
+    - `snips/country`
+    - `snips/region`
+
 ## [0.64.4] - 2019-06-19
 ### Changed
 - Accept ambiguous results from `DeterministicIntentParser` when confidence score is above 0.5 [#141](https://github.com/snipsco/snips-nlu-rs/pull/141)
@@ -206,6 +222,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.65.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.4...0.65.0
 [0.64.4]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.3...0.64.4
 [0.64.3]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.2...0.64.3
 [0.64.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.1...0.64.2

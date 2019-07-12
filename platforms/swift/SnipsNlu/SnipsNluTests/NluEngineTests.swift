@@ -32,7 +32,7 @@ class NluEngineTests: XCTestCase {
 
         let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
 
-        let result = try! nluEngine.parse(string: "Make me two coffees please")
+        let result = try! nluEngine.parse(string: "Make me two cups of coffee please")
         let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
         XCTAssertEqual("MakeCoffee", result.intent.intentName)
         XCTAssertEqual([expectedSlot], result.slots)
