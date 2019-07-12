@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [0.65.0] - 2019-07-11
 ### Changed
 - Bumped ontology to `0.65.0` [#143](https://github.com/snipsco/snips-nlu-rs/pull/143)
+- Bumped parsers to `0.3.0` [#143](https://github.com/snipsco/snips-nlu-rs/pull/143)
 
 ### Added
 - Added a lookup intent parser [#121](https://github.com/snipsco/snips-nlu-rs/pull/121)
