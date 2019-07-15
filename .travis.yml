@@ -1,6 +1,6 @@
 jobs:
   include:
-    - if: branch = master or head_branch =~ /^release\/.+$/
+    - if: head_branch =~ /^release\/.+$/ or head_branch =~ /^main\/.+$/
       os: osx
       osx_image: xcode10.2
       language: generic
@@ -8,7 +8,7 @@ jobs:
       env:
         - TOXENV=py27
         - PYTHON_TESTS=true
-    - if: branch = master or head_branch =~ /^release\/.+$/
+    - if: head_branch =~ /^release\/.+$/ or head_branch =~ /^main\/.+$/
       os: osx
       osx_image: xcode10.2
       language: generic
@@ -16,7 +16,7 @@ jobs:
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
-    - if: branch = master or head_branch =~ /^release\/.+$/
+    - if: head_branch =~ /^release\/.+$/ or head_branch =~ /^main\/.+$/
       os: osx
       osx_image: xcode10.2
       language: generic
@@ -24,7 +24,7 @@ jobs:
       env:
         - MACOS_SWIFT_TESTS=true
         - IOS_SWIFT_TESTS=true
-    - if: branch = master or head_branch =~ /^release\/.+$/
+    - if: head_branch =~ /^release\/.+$/ or head_branch =~ /^main\/.+$/
       os: linux
       language: python
       python: 2.7
@@ -37,7 +37,7 @@ jobs:
       env:
         - TOXENV=py36
         - PYTHON_TESTS=true
-    - if: branch = master or head_branch =~ /^release\/.+$/
+    - if: head_branch =~ /^release\/.+$/ or head_branch =~ /^main\/.+$/
       os: linux
       language: java
       jdk: openjdk8
