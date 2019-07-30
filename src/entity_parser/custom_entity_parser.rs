@@ -9,7 +9,6 @@ use itertools::Itertools;
 use log::info;
 use serde::de::{Error as SerdeError, Unexpected};
 use serde::{Deserialize, Deserializer};
-use serde_derive::Deserialize;
 use snips_nlu_ontology::Language;
 use snips_nlu_parsers::{GazetteerEntityMatch, GazetteerParser};
 use snips_nlu_utils::language::Language as NluUtilsLanguage;
