@@ -58,13 +58,23 @@ class NluEngineTest {
     }
 
     @Test
-    fun parseWithAlternativesWorks() {
+    fun parseWithIntentsAlternativesWorks() {
         NluEngine(File("../../data/tests/models/nlu_engine")).use {
             it.parse("Make me two cups of coffee please", null, null, 1).apply {
                 assertThat(input).isEqualTo("Make me two cups of coffee please")
                 assertThat(intent.intentName).isEqualTo("MakeCoffee")
                 assertThat(alternatives).hasSize(1)
                 assertThat(alternatives[0].intent.intentName).isEqualTo("MakeTea")
+            }
+        }
+    }
+
+    @Test
+    fun parseWithSlotsAlternativesWorks() {
+        NluEngine(File("../../data/tests/models/nlu_engine")).use {
+            it.parse("Make me two cups of coffee please", null, null, 1).apply {
+                assertThat(input).isEqualTo("Make me two cups of coffee please")
+                assertThat(slots.flatMap { it.alternatives }).isEmpty()
             }
         }
     }

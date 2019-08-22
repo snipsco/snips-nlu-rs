@@ -331,6 +331,7 @@ public enum Precision {
 public struct Slot: Equatable {
     public let rawValue: String
     public let value: SlotValue
+    public let alternatives: [SlotValue]
     public let range: Range<Int>
     public let entity: String
     public let slotName: String
@@ -338,16 +339,19 @@ public struct Slot: Equatable {
 
     init(cSlot: CSlot) throws {
         self.rawValue = String(cString: cSlot.raw_value)
-        self.value = try SlotValue(cSlotValue: cSlot.value)
+        self.value = try SlotValue(cSlotValue: cSlot.value.pointee)
+        let cSlotValueArray = cSlot.alternatives.pointee
+        self.alternatives = try UnsafeBufferPointer(start: cSlotValueArray.slot_values, count: Int(cSlotValueArray.size)).map(SlotValue.init)
         self.range = Range(uncheckedBounds: (Int(cSlot.range_start), Int(cSlot.range_end)))
         self.entity = String(cString: cSlot.entity)
         self.slotName = String(cString: cSlot.slot_name)
         self.confidenceScore = cSlot.confidence_score >= 0 ? cSlot.confidence_score : nil
     }
     
-    init(rawValue: String, value: SlotValue, range: Range<Int>, entity: String, slotName: String, confidenceScore: Float? = nil) {
+    init(rawValue: String, value: SlotValue, alternatives: [SlotValue], range: Range<Int>, entity: String, slotName: String, confidenceScore: Float? = nil) {
         self.rawValue = rawValue
         self.value = value
+        self.alternatives = alternatives
         self.range = range
         self.entity = entity
         self.slotName = slotName

@@ -187,13 +187,31 @@ typedef struct {
 } CSlotValue;
 
 /**
+ * Wrapper around a list of SlotValue
+ */
+typedef struct {
+  /**
+   * Pointer to the first slot value of the list
+   */
+  const CSlotValue *slot_values;
+  /**
+   * Number of slot values in the list
+   */
+  int32_t size;
+} CSlotValueArray;
+
+/**
  * Struct describing a Slot
  */
 typedef struct {
   /**
    * The resolved value of the slot
    */
-  CSlotValue value;
+  const CSlotValue *value;
+  /**
+   * The alternative slot values
+   */
+  const CSlotValueArray *alternatives;
   /**
    * The raw value as it appears in the input text
    */

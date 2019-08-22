@@ -410,6 +410,7 @@ fn extract_custom_slot(
         Some(Slot {
             raw_value: matched_entity.value,
             value: SlotValue::Custom(matched_entity.resolved_value.into()),
+            alternatives: vec![], // TODO: add alternatives found by custom_entity_parser
             range: matched_entity.range,
             entity: entity_name.clone(),
             slot_name: slot_name.clone(),
@@ -420,6 +421,7 @@ fn extract_custom_slot(
         Some(Slot {
             raw_value: input.clone(),
             value: SlotValue::Custom(input.into()),
+            alternatives: vec![],
             range,
             entity: entity_name,
             slot_name,
@@ -444,6 +446,7 @@ fn extract_builtin_slot(
         .map(|builtin_entity| Slot {
             raw_value: substring_with_char_range(input, &builtin_entity.range),
             value: builtin_entity.entity,
+            alternatives: vec![],
             range: builtin_entity.range,
             entity: entity_name,
             slot_name,
@@ -487,6 +490,7 @@ mod tests {
         let expected_slots = vec![Slot {
             raw_value: "two".to_string(),
             value: expected_entity_value,
+            alternatives: vec![],
             range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
@@ -517,6 +521,7 @@ mod tests {
         let expected_slots = vec![Slot {
             raw_value: "two".to_string(),
             value: expected_entity_value,
+            alternatives: vec![],
             range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
@@ -611,6 +616,7 @@ mod tests {
         let expected_slots = vec![Slot {
             raw_value: "two".to_string(),
             value: expected_entity_value,
+            alternatives: vec![],
             range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
@@ -624,6 +630,7 @@ mod tests {
             slots: vec![Slot {
                 raw_value: "two".to_string(),
                 value: SlotValue::Number(NumberValue { value: 2.0 }),
+                alternatives: vec![],
                 range: 8..11,
                 entity: "snips/number".to_string(),
                 slot_name: "number_of_cups".to_string(),
@@ -673,6 +680,7 @@ mod tests {
         let expected_slots = vec![Slot {
             raw_value: "two".to_string(),
             value: expected_entity_value,
+            alternatives: vec![],
             range: 8..11,
             entity: "snips/number".to_string(),
             slot_name: "number_of_cups".to_string(),
@@ -744,6 +752,7 @@ mod tests {
             Slot {
                 raw_value: "two".to_string(),
                 value: expected_entity_value,
+                alternatives: vec![],
                 range: 8..11,
                 entity: "snips/number".to_string(),
                 slot_name: "number_of_cups".to_string(),
@@ -754,6 +763,7 @@ mod tests {
                 value: SlotValue::Custom(StringValue {
                     value: "hot".to_string(),
                 }),
+                alternatives: vec![],
                 range: 12..15,
                 entity: "Temperature".to_string(),
                 slot_name: "beverage_temperature".to_string(),
@@ -805,6 +815,7 @@ mod tests {
         let expected_slot = Some(Slot {
             raw_value: "b c d".to_string(),
             value: SlotValue::Custom("value2".to_string().into()),
+            alternatives: vec![],
             range: 8..13,
             entity: "entity".to_string(),
             slot_name: "slot".to_string(),
@@ -839,6 +850,7 @@ mod tests {
         let expected_slot = Some(Slot {
             raw_value: "hello world".to_string(),
             value: SlotValue::Custom("hello world".to_string().into()),
+            alternatives: vec![],
             range: 0..11,
             entity: "entity".to_string(),
             slot_name: "slot".to_string(),

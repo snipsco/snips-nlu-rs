@@ -33,7 +33,7 @@ class NluEngineTests: XCTestCase {
         let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
 
         let result = try! nluEngine.parse(string: "Make me two cups of coffee please")
-        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
+        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), alternatives: [], range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
         XCTAssertEqual("MakeCoffee", result.intent.intentName)
         XCTAssertEqual([expectedSlot], result.slots)
     }
@@ -44,7 +44,7 @@ class NluEngineTests: XCTestCase {
         let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
 
         let result = try! nluEngine.parse(string: "Make me two cups of coffee please", intentsWhitelist: ["MakeTea"])
-        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
+        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), alternatives: [], range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
         XCTAssertEqual("MakeTea", result.intent.intentName)
         XCTAssertEqual([expectedSlot], result.slots)
     }
@@ -55,7 +55,7 @@ class NluEngineTests: XCTestCase {
         let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
         
         let result = try! nluEngine.parse(string: "Make me two cups of coffee please", intentsBlacklist: ["MakeCoffee"])
-        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
+        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), alternatives: [], range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
         XCTAssertEqual("MakeTea", result.intent.intentName)
         XCTAssertEqual([expectedSlot], result.slots)
     }
@@ -66,7 +66,7 @@ class NluEngineTests: XCTestCase {
             let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
 
             let result = try! nluEngine.parse(string: "Make me two cups of coffee please", intentsAlternatives: 1)
-            let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
+            let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), alternatives: [], range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
             XCTAssertEqual("MakeCoffee", result.intent.intentName)
             XCTAssertEqual([expectedSlot], result.slots)
             XCTAssertEqual(1, result.alternatives.count)
@@ -79,7 +79,7 @@ class NluEngineTests: XCTestCase {
         let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
         
         let slots = try! nluEngine.getSlots(string: "Make me two cups of coffee please", intent: "MakeCoffee")
-        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
+        let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), alternatives: [], range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
         XCTAssertEqual([expectedSlot], slots)
     }
     

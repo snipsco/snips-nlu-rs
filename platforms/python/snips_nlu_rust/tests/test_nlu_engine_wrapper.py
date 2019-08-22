@@ -93,7 +93,8 @@ class TestNLUEngineWrapper(unittest.TestCase):
                 "range": {"end": 11, "start": 8},
                 "rawValue": "two",
                 "slotName": "number_of_cups",
-                "value": {"kind": "Number", "value": 2.0}
+                "value": {"kind": "Number", "value": 2.0},
+                "alternatives": []
             }
         ]
         self.assertEqual(expected_slots, slots)
