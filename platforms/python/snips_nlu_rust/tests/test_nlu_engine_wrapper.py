@@ -34,6 +34,7 @@ class TestNLUEngineWrapper(unittest.TestCase):
 
         # Then
         self.assertEqual("MakeCoffee", res["intent"]["intentName"])
+        self.assertEqual(0, len(res["alternatives"]))
 
     def test_load_from_zip_should_fail_with_invalid_data(self):
         with self.assertRaises(ValueError) as cm:
@@ -62,6 +63,20 @@ class TestNLUEngineWrapper(unittest.TestCase):
 
         # Then
         self.assertEqual("MakeTea", res["intent"]["intentName"])
+
+    def test_should_parse_with_intents_alternatives(self):
+        # Given
+        engine = NLUEngine(engine_bytes=SAMPLE_ENGINE_ZIP_BYTES)
+
+        # Then
+        res = engine.parse("Make me two cups of coffee please",
+                           intents_alternatives=1)
+
+        # Then
+        self.assertEqual("MakeCoffee", res["intent"]["intentName"])
+        self.assertEqual(1, len(res["alternatives"]))
+        self.assertEqual("MakeTea",
+                         res["alternatives"][0]["intent"]["intentName"])
 
     def test_should_get_slots(self):
         # Given

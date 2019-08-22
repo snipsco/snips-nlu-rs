@@ -23,6 +23,7 @@ public struct IntentParserResult {
     public let input: String
     public let intent: IntentClassifierResult
     public let slots: [Slot]
+    public let alternatives: [IntentParserAlternative]
 
     init(cResult: CIntentParserResult) throws {
         self.input = String(cString: cResult.input)
@@ -30,12 +31,16 @@ public struct IntentParserResult {
 
         let cSlotList = cResult.slots.pointee
         self.slots = try UnsafeBufferPointer(start: cSlotList.slots, count: Int(cSlotList.size)).map(Slot.init)
+
+        let cAlternatives = cResult.alternatives.pointee
+        self.alternatives = try UnsafeBufferPointer(start: cAlternatives.intent_parser_alternatives, count: Int(cAlternatives.size)).map(IntentParserAlternative.init)
     }
     
-    init(input: String, intent: IntentClassifierResult, slots: [Slot]) {
+    init(input: String, intent: IntentClassifierResult, slots: [Slot], alternatives: [IntentParserAlternative] = []) {
         self.input = input
         self.intent = intent
         self.slots = slots
+        self.alternatives = alternatives
     }
 }
 
@@ -61,6 +66,24 @@ public struct IntentClassifierResult {
 }
 
 extension IntentClassifierResult: Equatable {}
+
+public struct IntentParserAlternative {
+    public let intent: IntentClassifierResult
+    public let slots: [Slot]
+
+    init(cResult: CIntentParserAlternative) throws {
+        self.intent = IntentClassifierResult(cResult: cResult.intent.pointee)
+        let cSlotList = cResult.slots.pointee
+        self.slots = try UnsafeBufferPointer(start: cSlotList.slots, count: Int(cSlotList.size)).map(Slot.init)
+    }
+
+    init(intent: IntentClassifierResult, slots: [Slot]) {
+        self.intent = intent
+        self.slots = slots
+    }
+}
+
+extension IntentParserAlternative: Equatable {}
 
 public enum SlotValue {
     case custom(String)
@@ -391,8 +414,9 @@ public class NluEngine {
      - Parameter string: input to process
      - Parameter intentsWhitelist: optional list of intents used to restrict the parsing scope
      - Parameter intentsBlacklist: optional list of intents to exclude during parsing
+     - Parameter intentsAlternatives: number of alternative parsing results to include in the output
      */
-    public func parse(string: String, intentsWhitelist: [String]? = nil, intentsBlacklist: [String]? = nil) throws -> IntentParserResult {
+    public func parse(string: String, intentsWhitelist: [String]? = nil, intentsBlacklist: [String]? = nil, intentsAlternatives: Int = 0) throws -> IntentParserResult {
         var cResult: UnsafePointer<CIntentParserResult>? = nil;
         var whiteListArray: CStringArray?
         var blackListArray: CStringArray?
@@ -414,7 +438,7 @@ public class NluEngine {
             blacklist = withUnsafePointer(to: &blackListArray!) { $0 }
         }
         
-        guard snips_nlu_engine_run_parse(self.client, string, whitelist, blacklist, &cResult) == SNIPS_RESULT_OK else {
+        guard snips_nlu_engine_run_parse_with_alternatives(self.client, string, whitelist, blacklist, UInt32(intentsAlternatives), &cResult) == SNIPS_RESULT_OK else {
             throw NluEngineError.getLast
         }
 
@@ -446,7 +470,7 @@ public class NluEngine {
      Extracts the list of intents ranked by their confidence score
      */
     public func getIntents(string: String) throws -> [IntentClassifierResult] {
-        var cResults: UnsafePointer<CIntentClassifierResultList>? = nil;
+        var cResults: UnsafePointer<CIntentClassifierResultArray>? = nil;
         defer {
             snips_nlu_engine_destroy_intent_classifier_results(UnsafeMutablePointer(mutating: cResults))
         }

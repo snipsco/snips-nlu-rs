@@ -59,7 +59,8 @@ class NLUEngine(object):
 
         check_ffi_error(exit_code, err_msg)
 
-    def parse(self, query, intents_whitelist=None, intents_blacklist=None):
+    def parse(self, query, intents_whitelist=None, intents_blacklist=None,
+              intents_alternatives=0):
         """Extracts intent and slots from an input query
 
         Args:
@@ -68,6 +69,8 @@ class NLUEngine(object):
                 restrict the scope of intent parsing to the provided intents
             intents_blacklist (list of str, optional): if defined, these
                 intents will be excluded from the scope of intent parsing
+            intents_alternatives (int, optional): number of alternative parsing
+                results to include in the output
 
         Returns:
             A python dict containing data about intent and slots. See
@@ -95,9 +98,10 @@ class NLUEngine(object):
             arr.data = (c_char_p * len(intents))(*intents)
             intents_blacklist = byref(arr)
         with string_pointer(c_char_p()) as ptr:
-            exit_code = lib.ffi_snips_nlu_engine_run_parse_into_json(
-                self._engine, query.encode("utf8"), intents_whitelist,
-                intents_blacklist, byref(ptr))
+            exit_code = \
+                lib.ffi_snips_nlu_engine_run_parse_with_alternatives_into_json(
+                    self._engine, query.encode("utf8"), intents_whitelist,
+                    intents_blacklist, intents_alternatives, byref(ptr))
             msg = "Something went wrong when parsing query '%s'" % query
             check_ffi_error(exit_code, msg)
             result = string_at(ptr)

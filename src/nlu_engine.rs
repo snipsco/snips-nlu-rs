@@ -18,10 +18,11 @@ use crate::intent_parser::*;
 use crate::models::{
     DatasetMetadata, Entity, ModelVersion, NluEngineModel, ProcessingUnitMetadata,
 };
+use crate::ontology::IntentParserAlternative;
 use crate::resources::loading::load_shared_resources;
 use crate::resources::SharedResources;
 use crate::slot_utils::*;
-use crate::utils::{EntityName, extract_nlu_engine_zip_archive, IterOps, SlotName};
+use crate::utils::{extract_nlu_engine_zip_archive, EntityName, IterOps, SlotName};
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
@@ -157,6 +158,7 @@ impl SnipsNluEngine {
                     input: input.to_string(),
                     intent: internal_parsing_result.intent,
                     slots: resolved_slots,
+                    alternatives: vec![],
                 });
             } else {
                 none_score = internal_parsing_result.intent.confidence_score;
@@ -172,7 +174,57 @@ impl SnipsNluEngine {
                 confidence_score: none_score,
             },
             slots: vec![],
+            alternatives: vec![],
         })
+    }
+
+    pub fn parse_with_alternatives<'a, 'b, W, B>(
+        &self,
+        input: &str,
+        intents_whitelist: W,
+        intents_blacklist: B,
+        intents_alternatives: usize,
+    ) -> Result<IntentParserResult>
+    where
+        W: Into<Option<Vec<&'a str>>>,
+        B: Into<Option<Vec<&'b str>>>,
+    {
+        let intents_whitelist_owned =
+            self.get_intents_whitelist(intents_whitelist, intents_blacklist)?;
+        let mut intent_results = self.parse(input, intents_whitelist_owned.clone(), None)?;
+        if intents_alternatives == 0 {
+            return Ok(intent_results);
+        }
+        let intents_whitelist = intents_whitelist_owned
+            .as_ref()
+            .map(|whitelist| whitelist.as_ref());
+
+        let alternative_results: Vec<IntentParserAlternative> = self
+            .get_intents(input)?
+            .into_iter()
+            .filter(|res| {
+                res.intent_name
+                    .as_ref()
+                    .map(|name| {
+                        intents_whitelist
+                            .map(|whitelist: &[&str]| whitelist.contains(&&**name))
+                            .unwrap_or(true)
+                    })
+                    .unwrap_or(true)
+            })
+            .skip(1) // We do not duplicate the top result in the list of alternatives
+            .take(intents_alternatives)
+            .map(|res| {
+                res.intent_name
+                    .as_ref()
+                    .map(|intent_name| Ok(self.get_slots(input, intent_name)?))
+                    .unwrap_or_else(|| Ok(vec![]))
+                    .map(|slots| IntentParserAlternative { intent: res, slots })
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        intent_results.alternatives = alternative_results;
+        Ok(intent_results)
     }
 
     fn get_intents_whitelist<'a: 'c, 'b: 'c, 'c, W, B>(
@@ -532,6 +584,118 @@ mod tests {
         );
         assert!(failed_result.is_err());
         assert!(failed_result_2.is_err());
+    }
+
+    #[test]
+    fn test_parse_with_alternatives() {
+        // Given
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
+
+        // When
+        let mut result = nlu_engine
+            .parse_with_alternatives("Make me two cups of coffee please", None, None, 1)
+            .unwrap();
+
+        // set the confidence scores to 0.5 for testability
+        result.intent.confidence_score = 0.8;
+        for alternative in result.alternatives.iter_mut() {
+            alternative.intent.confidence_score = 0.5;
+        }
+
+        // Then
+        let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
+        let expected_slots = vec![Slot {
+            raw_value: "two".to_string(),
+            value: expected_entity_value,
+            range: 8..11,
+            entity: "snips/number".to_string(),
+            slot_name: "number_of_cups".to_string(),
+            confidence_score: None,
+        }];
+        let expected_alternatives: Vec<IntentParserAlternative> = vec![IntentParserAlternative {
+            intent: IntentClassifierResult {
+                intent_name: Some("MakeTea".to_string()),
+                confidence_score: 0.5,
+            },
+            slots: vec![Slot {
+                raw_value: "two".to_string(),
+                value: SlotValue::Number(NumberValue { value: 2.0 }),
+                range: 8..11,
+                entity: "snips/number".to_string(),
+                slot_name: "number_of_cups".to_string(),
+                confidence_score: None,
+            }],
+        }];
+
+        let expected_result = IntentParserResult {
+            input: "Make me two cups of coffee please".to_string(),
+            intent: IntentClassifierResult {
+                intent_name: Some("MakeCoffee".to_string()),
+                confidence_score: 0.8,
+            },
+            slots: expected_slots,
+            alternatives: expected_alternatives,
+        };
+        assert_eq!(expected_result, result);
+    }
+
+    #[test]
+    fn test_parse_with_whitelist_and_alternatives() {
+        // Given
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
+
+        // When
+        let mut result = nlu_engine
+            .parse_with_alternatives(
+                "Make me two cups of coffee please",
+                vec!["MakeCoffee"],
+                None,
+                1,
+            )
+            .unwrap();
+
+        // set the confidence scores to 0.5 for testability
+        result.intent.confidence_score = 0.8;
+        for alternative in result.alternatives.iter_mut() {
+            alternative.intent.confidence_score = 0.5;
+        }
+
+        // Then
+        let expected_entity_value = SlotValue::Number(NumberValue { value: 2.0 });
+        let expected_slots = vec![Slot {
+            raw_value: "two".to_string(),
+            value: expected_entity_value,
+            range: 8..11,
+            entity: "snips/number".to_string(),
+            slot_name: "number_of_cups".to_string(),
+            confidence_score: None,
+        }];
+        let expected_alternatives: Vec<IntentParserAlternative> = vec![IntentParserAlternative {
+            intent: IntentClassifierResult {
+                intent_name: None,
+                confidence_score: 0.5,
+            },
+            slots: vec![],
+        }];
+
+        let expected_result = IntentParserResult {
+            input: "Make me two cups of coffee please".to_string(),
+            intent: IntentClassifierResult {
+                intent_name: Some("MakeCoffee".to_string()),
+                confidence_score: 0.8,
+            },
+            slots: expected_slots,
+            alternatives: expected_alternatives,
+        };
+        assert_eq!(expected_result, result);
     }
 
     #[test]

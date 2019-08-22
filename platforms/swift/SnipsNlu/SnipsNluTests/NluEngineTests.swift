@@ -59,6 +59,19 @@ class NluEngineTests: XCTestCase {
         XCTAssertEqual("MakeTea", result.intent.intentName)
         XCTAssertEqual([expectedSlot], result.slots)
     }
+
+    func testParseWithAlternatives() {
+            let directoryURL = Bundle(for: type(of: self)).url(forResource: "nlu_engine", withExtension: nil)!
+
+            let nluEngine = try! NluEngine(nluEngineDirectoryURL: directoryURL)
+
+            let result = try! nluEngine.parse(string: "Make me two cups of coffee please", intentsAlternatives: 1)
+            let expectedSlot = Slot(rawValue: "two", value: SlotValue.number(2.0), range: 8..<11, entity: "snips/number", slotName: "number_of_cups")
+            XCTAssertEqual("MakeCoffee", result.intent.intentName)
+            XCTAssertEqual([expectedSlot], result.slots)
+            XCTAssertEqual(1, result.alternatives.count)
+            XCTAssertEqual("MakeTea", result.alternatives[0].intent.intentName)
+        }
     
     func testGetSlots() {
         let directoryURL = Bundle(for: type(of: self)).url(forResource: "nlu_engine", withExtension: nil)!

@@ -95,13 +95,15 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     fun parse(input: String,
               intentsWhitelist: List<String>? = null,
-              intentsBlacklist: List<String>? = null): IntentParserResult =
+              intentsBlacklist: List<String>? = null,
+              intentsAlternatives: Int = 0): IntentParserResult =
             CIntentParserResult(PointerByReference().apply {
-                parseError(LIB.snips_nlu_engine_run_parse(
+                parseError(LIB.snips_nlu_engine_run_parse_with_alternatives(
                         client,
                         input.toPointer(),
                         intentsWhitelist?.let { CStringArray.fromStringList(it) },
                         intentsBlacklist?.let { CStringArray.fromStringList(it) },
+                        intentsAlternatives,
                         this
                 ))
             }.value).let {
@@ -115,13 +117,15 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     fun parseIntoJson(input: String,
                       intentsWhitelist: List<String>? = null,
-                      intentsBlacklist: List<String>? = null): String =
+                      intentsBlacklist: List<String>? = null,
+                      intentsAlternatives: Int = 0): String =
             PointerByReference().apply {
-                parseError(LIB.snips_nlu_engine_run_parse_into_json(
+                parseError(LIB.snips_nlu_engine_run_parse_with_alternatives_into_json(
                         client,
                         input.toPointer(),
                         intentsWhitelist?.let { CStringArray.fromStringList(it) },
                         intentsBlacklist?.let { CStringArray.fromStringList(it) },
+                        intentsAlternatives,
                         this
                 ))
             }.value.let {
@@ -199,11 +203,24 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 intents_whitelist: CStringArray?,
                 intents_blacklist: CStringArray?,
                 result: PointerByReference): Int
+        fun snips_nlu_engine_run_parse_with_alternatives(
+                client: Pointer, input: Pointer,
+                intents_whitelist: CStringArray?,
+                intents_blacklist: CStringArray?,
+                intents_alternatives: Int,
+                result: PointerByReference): Int
         fun snips_nlu_engine_run_parse_into_json(
                 client: Pointer,
                 input: Pointer,
                 intents_whitelist: CStringArray?,
                 intents_blacklist: CStringArray?,
+                result: PointerByReference): Int
+        fun snips_nlu_engine_run_parse_with_alternatives_into_json(
+                client: Pointer,
+                input: Pointer,
+                intents_whitelist: CStringArray?,
+                intents_blacklist: CStringArray?,
+                intents_alternatives: Int,
                 result: PointerByReference): Int
         fun snips_nlu_engine_run_get_slots(
                 client: Pointer,

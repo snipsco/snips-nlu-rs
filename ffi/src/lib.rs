@@ -53,11 +53,31 @@ pub extern "C" fn snips_nlu_engine_run_parse(
     intents_blacklist: *const CStringArray,
     result: *mut *const CIntentParserResult,
 ) -> SNIPS_RESULT {
-    wrap!(run_parse(
+    wrap!(run_parse_with_alternatives(
         client,
         input,
         intents_whitelist,
         intents_blacklist,
+        0 as libc::c_uint,
+        result
+    ))
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_run_parse_with_alternatives(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    intents_whitelist: *const CStringArray,
+    intents_blacklist: *const CStringArray,
+    intents_alternatives: libc::c_uint,
+    result: *mut *const CIntentParserResult,
+) -> SNIPS_RESULT {
+    wrap!(run_parse_with_alternatives(
+        client,
+        input,
+        intents_whitelist,
+        intents_blacklist,
+        intents_alternatives,
         result
     ))
 }
@@ -89,11 +109,31 @@ pub extern "C" fn snips_nlu_engine_run_parse_into_json(
     intents_blacklist: *const CStringArray,
     result_json: *mut *const libc::c_char,
 ) -> SNIPS_RESULT {
-    wrap!(run_parse_into_json(
+    wrap!(run_parse_with_alternatives_into_json(
         client,
         input,
         intents_whitelist,
         intents_blacklist,
+        0 as libc::c_uint,
+        result_json
+    ))
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_run_parse_with_alternatives_into_json(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    intents_whitelist: *const CStringArray,
+    intents_blacklist: *const CStringArray,
+    intents_alternatives: libc::c_uint,
+    result_json: *mut *const libc::c_char,
+) -> SNIPS_RESULT {
+    wrap!(run_parse_with_alternatives_into_json(
+        client,
+        input,
+        intents_whitelist,
+        intents_blacklist,
+        intents_alternatives,
         result_json
     ))
 }
@@ -181,11 +221,12 @@ fn create_from_zip(
     Ok(())
 }
 
-fn run_parse(
+fn run_parse_with_alternatives(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
     intents_whitelist: *const CStringArray,
     intents_blacklist: *const CStringArray,
+    intents_alternatives: libc::c_uint,
     result: *mut *const CIntentParserResult,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
@@ -202,7 +243,12 @@ fn run_parse(
         None
     };
 
-    let results = nlu_engine.parse(&input, opt_whitelist, opt_blacklist)?;
+    let results = nlu_engine.parse_with_alternatives(
+        &input,
+        opt_whitelist,
+        opt_blacklist,
+        intents_alternatives as usize,
+    )?;
     let raw_pointer = CIntentParserResult::from(results).into_raw_pointer();
 
     unsafe { *result = raw_pointer };
@@ -244,11 +290,12 @@ fn run_get_intents(
     Ok(())
 }
 
-fn run_parse_into_json(
+fn run_parse_with_alternatives_into_json(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
     intents_whitelist: *const CStringArray,
     intents_blacklist: *const CStringArray,
+    intents_alternatives: libc::c_uint,
     result_json: *mut *const libc::c_char,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
@@ -264,7 +311,12 @@ fn run_parse_into_json(
     } else {
         None
     };
-    let results = nlu_engine.parse(&input, opt_whitelist, opt_blacklist)?;
+    let results = nlu_engine.parse_with_alternatives(
+        &input,
+        opt_whitelist,
+        opt_blacklist,
+        intents_alternatives as usize,
+    )?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
 }
