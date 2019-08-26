@@ -410,7 +410,11 @@ fn extract_custom_slot(
         Some(Slot {
             raw_value: matched_entity.value,
             value: SlotValue::Custom(matched_entity.resolved_value.into()),
-            alternatives: vec![], // TODO: add alternatives found by custom_entity_parser
+            alternatives: matched_entity
+                .alternative_resolved_values
+                .into_iter()
+                .map(|resolved| SlotValue::Custom(resolved.into()))
+                .collect(),
             range: matched_entity.range,
             entity: entity_name.clone(),
             slot_name: slot_name.clone(),
@@ -446,7 +450,7 @@ fn extract_builtin_slot(
         .map(|builtin_entity| Slot {
             raw_value: substring_with_char_range(input, &builtin_entity.range),
             value: builtin_entity.entity,
-            alternatives: vec![],
+            alternatives: builtin_entity.alternatives,
             range: builtin_entity.range,
             entity: entity_name,
             slot_name,
@@ -592,7 +596,7 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_with_alternatives() {
+    fn test_parse_with_intents_alternatives() {
         // Given
         let path = Path::new("data")
             .join("tests")
@@ -789,12 +793,14 @@ mod tests {
                 CustomEntity {
                     value: "a b".to_string(),
                     resolved_value: "value1".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 6..9,
                     entity_identifier: entity_name.to_string(),
                 },
                 CustomEntity {
                     value: "b c d".to_string(),
                     resolved_value: "value2".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 8..13,
                     entity_identifier: entity_name.to_string(),
                 },
@@ -883,6 +889,52 @@ mod tests {
 
         // Then
         let expected_slot = None;
+        assert_eq!(expected_slot, extracted_slot);
+    }
+
+    #[test]
+    fn test_extract_custom_slot_with_alternative() {
+        // Given
+        let input = "I want to play to invader".to_string();
+        let entity_name = "game".to_string();
+        let slot_name = "game".to_string();
+        let custom_entity = Entity {
+            automatically_extensible: false,
+        };
+
+        let mocked_custom_parser = Arc::new(MockedCustomEntityParser::from_iter(vec![(
+            "I want to play to invader".to_string(),
+            vec![
+                CustomEntity {
+                    value: "invader".to_string(),
+                    resolved_value: "Space Invader".to_string(),
+                    alternative_resolved_values: vec!["Invader Attack".to_string()],
+                    range: 18..25,
+                    entity_identifier: entity_name.to_string(),
+                },
+            ],
+        )]));
+
+        // When
+        let extracted_slot = extract_custom_slot(
+            input,
+            entity_name,
+            slot_name,
+            &custom_entity,
+            mocked_custom_parser,
+        )
+            .unwrap();
+
+        // Then
+        let expected_slot = Some(Slot {
+            raw_value: "invader".to_string(),
+            value: SlotValue::Custom("Space Invader".into()),
+            alternatives: vec![SlotValue::Custom("Invader Attack".into()),],
+            range: 18..25,
+            entity: "game".to_string(),
+            slot_name: "game".to_string(),
+            confidence_score: None,
+        });
         assert_eq!(expected_slot, extracted_slot);
     }
 }

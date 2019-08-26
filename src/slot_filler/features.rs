@@ -712,6 +712,7 @@ mod tests {
             vec![CustomEntity {
                 value: "beautiful blue bird".to_string(),
                 resolved_value: "beautiful blue bird".to_string(),
+                alternative_resolved_values: vec![],
                 range: 12..31,
                 entity_identifier: entity_name.to_string(),
             }],
@@ -753,6 +754,7 @@ mod tests {
             vec![CustomEntity {
                 value: "blue bird".to_string(),
                 resolved_value: "blue bird".to_string(),
+                alternative_resolved_values: vec![],
                 range: 7..16,
                 entity_identifier: "bird_type".to_string(),
             }],
@@ -799,6 +801,7 @@ mod tests {
                     value: 21.0,
                     unit: None,
                 }),
+                alternatives: vec![],
                 entity_kind: BuiltinEntityKind::Temperature,
             }],
         )]);

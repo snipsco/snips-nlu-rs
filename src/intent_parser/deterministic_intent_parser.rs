@@ -666,12 +666,14 @@ mod tests {
                     value: "one".to_string(),
                     range: 8..11,
                     entity: SlotValue::Number(NumberValue { value: 1. }),
+                    alternatives: vec![],
                     entity_kind: BuiltinEntityKind::Number,
                 },
                 BuiltinEntity {
                     value: "one".to_string(),
                     range: 17..20,
                     entity: SlotValue::Number(NumberValue { value: 1. }),
+                    alternatives: vec![],
                     entity_kind: BuiltinEntityKind::Number,
                 },
             ],
@@ -753,6 +755,7 @@ mod tests {
                                 precision: Precision::Exact,
                                 grain: Grain::Day,
                             }),
+                            alternatives: vec![],
                             entity_kind: BuiltinEntityKind::Datetime,
                         }]
                     } else {
@@ -780,6 +783,7 @@ mod tests {
                     {
                         vec![CustomEntity {
                             value: "call".to_string(),
+                            alternative_resolved_values: vec![],
                             range: 0..4,
                             resolved_value: "call".to_string(),
                             entity_identifier: "event".to_string(),
@@ -848,6 +852,7 @@ mod tests {
                     {
                         vec![BuiltinEntity {
                             value: "tomorrow".to_string(),
+                            alternatives: vec![],
                             range: 5..13,
                             entity: SlotValue::InstantTime(InstantTimeValue {
                                 value: "tomorrow".to_string(),
@@ -914,6 +919,7 @@ mod tests {
             vec![
                 BuiltinEntity {
                     value: "this afternoon".to_string(),
+                    alternatives: vec![],
                     range: 34..48,
                     entity: SlotValue::InstantTime(InstantTimeValue {
                         value: "this afternoon".to_string(),
@@ -924,6 +930,7 @@ mod tests {
                 },
                 BuiltinEntity {
                     value: "tomorrow".to_string(),
+                    alternatives: vec![],
                     range: 52..60,
                     entity: SlotValue::InstantTime(InstantTimeValue {
                         value: "tomorrow".to_string(),
@@ -941,12 +948,14 @@ mod tests {
                 CustomEntity {
                     value: "john".to_string(),
                     resolved_value: "John".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 13..17,
                     entity_identifier: "name".to_string(),
                 },
                 CustomEntity {
                     value: "snips".to_string(),
                     resolved_value: "Snips".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 21..26,
                     entity_identifier: "location".to_string(),
                 },
@@ -1022,6 +1031,7 @@ mod tests {
                 vec![CustomEntity {
                     value: "this".to_string(),
                     resolved_value: "this".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 7..11,
                     entity_identifier: "object".to_string(),
                 }],
@@ -1031,6 +1041,7 @@ mod tests {
                 vec![CustomEntity {
                     value: "that".to_string(),
                     resolved_value: "that".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 7..11,
                     entity_identifier: "object".to_string(),
                 }],
@@ -1113,6 +1124,7 @@ mod tests {
                         value: "Hello".to_string(),
                         range: 0..5,
                         resolved_value: "Hello".to_string(),
+                        alternative_resolved_values: vec![],
                         entity_identifier: "greeting".to_string(),
                     });
                 };
@@ -1124,6 +1136,7 @@ mod tests {
                         value: "John".to_string(),
                         range: 6..10,
                         resolved_value: "John".to_string(),
+                        alternative_resolved_values: vec![],
                         entity_identifier: "name".to_string(),
                     });
                 };
@@ -1182,6 +1195,7 @@ mod tests {
             vec![CustomEntity {
                 value: "John".to_string(),
                 resolved_value: "John".to_string(),
+                alternative_resolved_values: vec![],
                 range: 11..15,
                 entity_identifier: "name".to_string(),
             }],
@@ -1223,6 +1237,7 @@ mod tests {
             vec![CustomEntity {
                 value: "John O’reilly".to_string(),
                 resolved_value: "John O’reilly".to_string(),
+                alternative_resolved_values: vec![],
                 range: 13..26,
                 entity_identifier: "name".to_string(),
             }],
@@ -1278,6 +1293,7 @@ mod tests {
             vec![CustomEntity {
                 value: "John".to_string(),
                 resolved_value: "John".to_string(),
+                alternative_resolved_values: vec![],
                 range: 6..10,
                 entity_identifier: "name".to_string(),
             }],

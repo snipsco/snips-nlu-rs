@@ -210,6 +210,7 @@ mod tests {
         let expected_entities = vec![CustomEntity {
             value: "hot".to_string(),
             resolved_value: "hot".to_string(),
+            alternative_resolved_values: vec![],
             range: 12..15,
             entity_identifier: "Temperature".to_string(),
         }];
@@ -237,6 +238,7 @@ mod tests {
         let expected_entities_no_scope = vec![CustomEntity {
             value: "hot".to_string(),
             resolved_value: "hot".to_string(),
+            alternative_resolved_values: vec![],
             range: 10..13,
             entity_identifier: "Temperature".to_string(),
         }];
