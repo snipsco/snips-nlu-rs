@@ -60,7 +60,7 @@ class NLUEngine(object):
         check_ffi_error(exit_code, err_msg)
 
     def parse(self, query, intents_whitelist=None, intents_blacklist=None,
-              intents_alternatives=0):
+              intents_alternatives=0, slots_alternatives=5):
         """Extracts intent and slots from an input query
 
         Args:
@@ -70,7 +70,9 @@ class NLUEngine(object):
             intents_blacklist (list of str, optional): if defined, these
                 intents will be excluded from the scope of intent parsing
             intents_alternatives (int, optional): number of alternative parsing
-                results to include in the output
+                results to include in the output.
+            slots_alternatives (int, optional): number of alternative slot
+                values to include along with each extracted slot.
 
         Returns:
             A python dict containing data about intent and slots. See
@@ -101,19 +103,22 @@ class NLUEngine(object):
             exit_code = \
                 lib.ffi_snips_nlu_engine_run_parse_with_alternatives_into_json(
                     self._engine, query.encode("utf8"), intents_whitelist,
-                    intents_blacklist, intents_alternatives, byref(ptr))
+                    intents_blacklist, intents_alternatives,
+                    slots_alternatives, byref(ptr))
             msg = "Something went wrong when parsing query '%s'" % query
             check_ffi_error(exit_code, msg)
             result = string_at(ptr)
 
         return json.loads(result.decode("utf8"))
 
-    def get_slots(self, query, intent):
+    def get_slots(self, query, intent, slots_alternatives=5):
         """Extracts slots from the input when the intent is known
 
         Args:
             query (str): input to process
             intent (str): intent which the input corresponds to
+            slots_alternatives (int, optional): number of alternative slot
+                values to include along with each extracted slot.
 
         Returns:
             A list of slots. See
@@ -121,9 +126,10 @@ class NLUEngine(object):
             for details about the format.
         """
         with string_pointer(c_char_p()) as ptr:
-            exit_code = lib.ffi_snips_nlu_engine_run_get_slots_into_json(
-                self._engine, query.encode("utf8"), intent.encode("utf8"),
-                byref(ptr))
+            exit_code = lib.\
+                ffi_snips_nlu_engine_run_get_slots_with_alternatives_into_json(
+                    self._engine, query.encode("utf8"), intent.encode("utf8"),
+                    slots_alternatives, byref(ptr))
             msg = "Something went wrong when extracting slots from query " \
                   "'%s' with intent '%s'" % (query, intent)
             check_ffi_error(exit_code, msg)

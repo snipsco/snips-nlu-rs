@@ -180,7 +180,7 @@ mod tests {
         let trained_engine_dir = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
 
         let resources = load_engine_shared_resources(trained_engine_dir).unwrap();
         let language_code = "en".to_string();
@@ -328,7 +328,7 @@ mod tests {
         let trained_engine_dir = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
 
         let classifier_path = trained_engine_dir
             .join("probabilistic_intent_parser")

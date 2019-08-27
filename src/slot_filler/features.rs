@@ -310,7 +310,7 @@ impl Feature for CustomEntityMatchFeature {
 
         Ok(self
             .custom_entity_parser
-            .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]))?
+            .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]), 0)?
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &normalized_tokens[token_index].char_range))
             .map(|e| {
@@ -363,7 +363,7 @@ impl Feature for BuiltinEntityMatchFeature {
         let text = initial_string_from_tokens(tokens);
         Ok(self
             .builtin_entity_parser
-            .extract_entities(&text, Some(&[self.builtin_entity_kind]), true)?
+            .extract_entities(&text, Some(&[self.builtin_entity_kind]), true, 0)?
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
             .map(|e| {

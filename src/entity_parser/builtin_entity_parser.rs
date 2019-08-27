@@ -14,6 +14,7 @@ pub trait BuiltinEntityParser: Send + Sync {
         sentence: &str,
         filter_entity_kinds: Option<&[BuiltinEntityKind]>,
         use_cache: bool,
+        max_alternative_resolved_values: usize,
     ) -> Result<Vec<BuiltinEntity>>;
 }
 
@@ -25,7 +26,8 @@ pub struct CachingBuiltinEntityParser {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct CacheKey {
     input: String,
-    kinds: Vec<BuiltinEntityKind>,
+    kinds: Option<Vec<BuiltinEntityKind>>,
+    max_alternative_resolved_values: usize,
 }
 
 impl BuiltinEntityParser for CachingBuiltinEntityParser {
@@ -34,26 +36,31 @@ impl BuiltinEntityParser for CachingBuiltinEntityParser {
         sentence: &str,
         filter_entity_kinds: Option<&[BuiltinEntityKind]>,
         use_cache: bool,
+        max_alternative_resolved_values: usize,
     ) -> Result<Vec<BuiltinEntity>> {
         let lowercased_sentence = sentence.to_lowercase();
         if !use_cache {
-            return self
-                .parser
-                .extract_entities(&lowercased_sentence, filter_entity_kinds);
+            return self.parser.extract_entities(
+                &lowercased_sentence,
+                filter_entity_kinds,
+                max_alternative_resolved_values,
+            );
         }
         let cache_key = CacheKey {
             input: lowercased_sentence,
-            kinds: filter_entity_kinds
-                .map(|entity_kinds| entity_kinds.to_vec())
-                .unwrap_or_else(|| vec![]),
+            kinds: filter_entity_kinds.map(|entity_kinds| entity_kinds.to_vec()),
+            max_alternative_resolved_values,
         };
 
         self.cache
             .lock()
             .unwrap()
             .try_cache(&cache_key, |cache_key| {
-                self.parser
-                    .extract_entities(&cache_key.input, filter_entity_kinds)
+                self.parser.extract_entities(
+                    &cache_key.input,
+                    filter_entity_kinds,
+                    max_alternative_resolved_values,
+                )
             })
     }
 }

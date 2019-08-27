@@ -419,8 +419,9 @@ public class NluEngine {
      - Parameter intentsWhitelist: optional list of intents used to restrict the parsing scope
      - Parameter intentsBlacklist: optional list of intents to exclude during parsing
      - Parameter intentsAlternatives: number of alternative parsing results to include in the output
+     - Parameter slotsAlternatives: max number of alternative slot values to include along with each extracted slot
      */
-    public func parse(string: String, intentsWhitelist: [String]? = nil, intentsBlacklist: [String]? = nil, intentsAlternatives: Int = 0) throws -> IntentParserResult {
+    public func parse(string: String, intentsWhitelist: [String]? = nil, intentsBlacklist: [String]? = nil, intentsAlternatives: Int = 0, slotsAlternatives: Int = 0) throws -> IntentParserResult {
         var cResult: UnsafePointer<CIntentParserResult>? = nil;
         var whiteListArray: CStringArray?
         var blackListArray: CStringArray?
@@ -442,7 +443,7 @@ public class NluEngine {
             blacklist = withUnsafePointer(to: &blackListArray!) { $0 }
         }
         
-        guard snips_nlu_engine_run_parse_with_alternatives(self.client, string, whitelist, blacklist, UInt32(intentsAlternatives), &cResult) == SNIPS_RESULT_OK else {
+        guard snips_nlu_engine_run_parse_with_alternatives(self.client, string, whitelist, blacklist, UInt32(intentsAlternatives), UInt32(slotsAlternatives), &cResult) == SNIPS_RESULT_OK else {
             throw NluEngineError.getLast
         }
 
@@ -455,14 +456,15 @@ public class NluEngine {
      
      - Parameter string: input to process
      - Parameter intent: intent which the input corresponds to
+     - Parameter slotsAlternatives: max number of alternative slot values to include along with each extracted slot
      */
-    public func getSlots(string: String, intent: String) throws -> [Slot] {
+    public func getSlots(string: String, intent: String, slotsAlternatives: Int = 0) throws -> [Slot] {
         var cSlots: UnsafePointer<CSlotList>? = nil;
         defer {
             snips_nlu_engine_destroy_slots(UnsafeMutablePointer(mutating: cSlots))
         }
         
-        guard snips_nlu_engine_run_get_slots(self.client, string, intent, &cSlots) == SNIPS_RESULT_OK else {
+        guard snips_nlu_engine_run_get_slots_with_alternatives(self.client, string, intent, UInt32(slotsAlternatives), &cSlots) == SNIPS_RESULT_OK else {
             throw NluEngineError.getLast
         }
         

@@ -217,14 +217,14 @@ impl DeterministicIntentParser {
             let builtin_entities = self
                 .shared_resources
                 .builtin_entity_parser
-                .extract_entities(input, Some(builtin_scope.as_ref()), true)?
+                .extract_entities(input, Some(builtin_scope.as_ref()), true, 0)?
                 .into_iter()
                 .map(|entity| entity.into());
 
             let custom_entities = self
                 .shared_resources
                 .custom_entity_parser
-                .extract_entities(input, Some(custom_scope.as_ref()))?
+                .extract_entities(input, Some(custom_scope.as_ref()), 0)?
                 .into_iter()
                 .map(|entity| entity.into());
 
@@ -509,7 +509,7 @@ mod tests {
         let trained_engine_path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
 
         let parser_path = trained_engine_path.join("deterministic_intent_parser");
 
@@ -738,6 +738,7 @@ mod tests {
                 sentence: &str,
                 filter_entity_kinds: Option<&[BuiltinEntityKind]>,
                 _use_cache: bool,
+                _max_alternative_resolved_values: usize,
             ) -> Result<Vec<BuiltinEntity>> {
                 if sentence != "call tomorrow" {
                     return Ok(vec![]);
@@ -772,6 +773,7 @@ mod tests {
                 &self,
                 sentence: &str,
                 filter_entity_kinds: Option<&[String]>,
+                _max_alternative_resolved_values: usize,
             ) -> Result<Vec<CustomEntity>> {
                 if sentence != "call tomorrow" {
                     return Ok(vec![]);
@@ -841,6 +843,7 @@ mod tests {
                 sentence: &str,
                 filter_entity_kinds: Option<&[BuiltinEntityKind]>,
                 _use_cache: bool,
+                _max_alternative_resolved_values: usize,
             ) -> Result<Vec<BuiltinEntity>> {
                 if sentence != "call tomorrow" {
                     return Ok(vec![]);
@@ -1110,6 +1113,7 @@ mod tests {
                 &self,
                 sentence: &str,
                 filter_entity_kinds: Option<&[String]>,
+                _max_alternative_resolved_values: usize,
             ) -> Result<Vec<CustomEntity>> {
                 if sentence != "Hello John" {
                     return Ok(vec![]);

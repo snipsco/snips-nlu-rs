@@ -479,6 +479,18 @@ SNIPS_RESULT snips_nlu_engine_run_get_slots_into_json(const CSnipsNluEngine *cli
                                                       const char *intent,
                                                       const char **result_json);
 
+SNIPS_RESULT snips_nlu_engine_run_get_slots_with_alternatives(const CSnipsNluEngine *client,
+                                                              const char *input,
+                                                              const char *intent,
+                                                              unsigned int slots_alternatives,
+                                                              const CSlotList **result);
+
+SNIPS_RESULT snips_nlu_engine_run_get_slots_with_alternatives_into_json(const CSnipsNluEngine *client,
+                                                                        const char *input,
+                                                                        const char *intent,
+                                                                        unsigned int slots_alternatives,
+                                                                        const char **result_json);
+
 SNIPS_RESULT snips_nlu_engine_run_parse(const CSnipsNluEngine *client,
                                         const char *input,
                                         const CStringArray *intents_whitelist,
@@ -496,6 +508,7 @@ SNIPS_RESULT snips_nlu_engine_run_parse_with_alternatives(const CSnipsNluEngine 
                                                           const CStringArray *intents_whitelist,
                                                           const CStringArray *intents_blacklist,
                                                           unsigned int intents_alternatives,
+                                                          unsigned int slots_alternatives,
                                                           const CIntentParserResult **result);
 
 SNIPS_RESULT snips_nlu_engine_run_parse_with_alternatives_into_json(const CSnipsNluEngine *client,
@@ -503,6 +516,7 @@ SNIPS_RESULT snips_nlu_engine_run_parse_with_alternatives_into_json(const CSnips
                                                                     const CStringArray *intents_whitelist,
                                                                     const CStringArray *intents_blacklist,
                                                                     unsigned int intents_alternatives,
+                                                                    unsigned int slots_alternatives,
                                                                     const char **result_json);
 
 #endif /* LIBSNIPS_NLU_H_ */

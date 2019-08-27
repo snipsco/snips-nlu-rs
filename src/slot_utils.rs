@@ -20,6 +20,7 @@ pub fn resolve_builtin_slot(
     internal_slot: InternalSlot,
     builtin_entities: &[BuiltinEntity],
     builtin_entity_parser: Arc<BuiltinEntityParser>,
+    slots_alternatives: usize,
 ) -> Result<Option<Slot>> {
     let entity_kind = BuiltinEntityKind::from_identifier(&internal_slot.entity)?;
     let opt_matching_entity = match builtin_entities.iter().find(|entity| {
@@ -27,7 +28,12 @@ pub fn resolve_builtin_slot(
     }) {
         Some(matching_entity) => Some(matching_entity.clone()),
         None => builtin_entity_parser
-            .extract_entities(&internal_slot.value, Some(&[entity_kind]), false)?
+            .extract_entities(
+                &internal_slot.value,
+                Some(&[entity_kind]),
+                false,
+                slots_alternatives,
+            )?
             .pop(),
     };
     Ok(opt_matching_entity.map(|entity| convert_to_builtin_slot(internal_slot, entity)))
@@ -38,6 +44,7 @@ pub fn resolve_custom_slot(
     entity: &Entity,
     custom_entities: &[CustomEntity],
     custom_entity_parser: Arc<CustomEntityParser>,
+    slots_alternatives: usize,
 ) -> Result<Option<Slot>> {
     let opt_matching_entity = match custom_entities.iter().find(|custom_entity| {
         custom_entity.entity_identifier == internal_slot.entity
@@ -45,7 +52,11 @@ pub fn resolve_custom_slot(
     }) {
         Some(matching_entity) => Some(matching_entity.clone()),
         None => custom_entity_parser
-            .extract_entities(&internal_slot.value, Some(&[internal_slot.entity.clone()]))?
+            .extract_entities(
+                &internal_slot.value,
+                Some(&[internal_slot.entity.clone()]),
+                slots_alternatives,
+            )?
             .pop()
             .and_then(|entity| {
                 if entity.value.chars().count() == internal_slot.value.chars().count() {
@@ -110,14 +121,13 @@ fn convert_to_builtin_slot(slot: InternalSlot, builtin_entity: BuiltinEntity) ->
 
 #[cfg(test)]
 mod tests {
-    use std::iter::FromIterator;
-
-    use snips_nlu_ontology::*;
-
+    use super::*;
+    use crate::entity_parser::CachingCustomEntityParser;
     use crate::models::nlu_engine::Entity;
     use crate::testutils::*;
-
-    use super::*;
+    use snips_nlu_ontology::*;
+    use std::iter::FromIterator;
+    use std::path::Path;
 
     #[test]
     fn test_resolve_builtin_slot() {
@@ -156,7 +166,8 @@ mod tests {
 
         // When
         let resolved_slot =
-            resolve_builtin_slot(internal_slot, &builtin_entities, mocked_entity_parser).unwrap();
+            resolve_builtin_slot(internal_slot, &builtin_entities, mocked_entity_parser, 0)
+                .unwrap();
 
         // Then
         let expected_result = Some(Slot {
@@ -202,7 +213,8 @@ mod tests {
 
         // When
         let resolved_slot =
-            resolve_builtin_slot(internal_slot, &builtin_entities, mocked_entity_parser).unwrap();
+            resolve_builtin_slot(internal_slot, &builtin_entities, mocked_entity_parser, 0)
+                .unwrap();
 
         // Then
         let expected_result = Some(Slot {
@@ -241,7 +253,8 @@ mod tests {
 
         // When
         let resolved_slot =
-            resolve_builtin_slot(internal_slot, &builtin_entities, mocked_entity_parser).unwrap();
+            resolve_builtin_slot(internal_slot, &builtin_entities, mocked_entity_parser, 5)
+                .unwrap();
 
         // Then
         let expected_result = Some(Slot {
@@ -292,6 +305,7 @@ mod tests {
             &entity,
             &custom_entities,
             mocked_entity_parser,
+            0,
         )
         .unwrap();
 
@@ -338,6 +352,7 @@ mod tests {
             &entity,
             &custom_entities,
             mocked_entity_parser,
+            0,
         )
         .unwrap();
 
@@ -375,6 +390,7 @@ mod tests {
             &entity,
             &custom_entities,
             mocked_entity_parser,
+            0,
         )
         .unwrap();
 
@@ -412,6 +428,7 @@ mod tests {
             &entity,
             &custom_entities,
             mocked_entity_parser,
+            0,
         )
         .unwrap();
 
@@ -456,6 +473,7 @@ mod tests {
             &entity,
             &custom_entities,
             mocked_entity_parser,
+            5,
         )
         .unwrap();
 
@@ -467,6 +485,53 @@ mod tests {
             range: 27..37,
             entity: "userType".to_string(),
             slot_name: "userType".to_string(),
+            confidence_score: None,
+        });
+        assert_eq!(expected_result, resolved_slot);
+    }
+
+    #[test]
+    fn test_resolve_custom_slot_with_alternatives_when_no_entities_found_on_whole_input() {
+        // Given
+        let entity = Entity {
+            automatically_extensible: false,
+        };
+        let internal_slot = InternalSlot {
+            value: "invader".to_string(),
+            char_range: 10..17,
+            entity: "game".to_string(),
+            slot_name: "game".to_string(),
+        };
+        let custom_entities = vec![];
+        let parser_path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine_game")
+            .join("custom_entity_parser");
+
+        let custom_entity_parser = CachingCustomEntityParser::from_path(parser_path, 1000).unwrap();
+
+        // When
+        let resolved_slot = resolve_custom_slot(
+            internal_slot,
+            &entity,
+            &custom_entities,
+            Arc::new(custom_entity_parser),
+            2,
+        )
+        .unwrap();
+
+        // Then
+        let expected_result = Some(Slot {
+            raw_value: "invader".to_string(),
+            value: SlotValue::Custom("Invader Attack 3".into()),
+            alternatives: vec![
+                SlotValue::Custom("Invader War Demo".into()),
+                SlotValue::Custom("Space Invader Limited Edition".into()),
+            ],
+            range: 10..17,
+            entity: "game".to_string(),
+            slot_name: "game".to_string(),
             confidence_score: None,
         });
         assert_eq!(expected_result, resolved_slot);

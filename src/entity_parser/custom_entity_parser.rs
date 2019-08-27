@@ -26,6 +26,7 @@ pub trait CustomEntityParser: Send + Sync {
         &self,
         sentence: &str,
         filter_entity_kinds: Option<&[String]>,
+        max_alternative_resolved_values: usize,
     ) -> Result<Vec<CustomEntity>>;
 }
 
@@ -61,6 +62,7 @@ pub struct CachingCustomEntityParser {
 struct CacheKey {
     input: String,
     kinds: Option<Vec<EntityName>>,
+    max_alternative_resolved_values: usize,
 }
 
 impl CustomEntityParser for CachingCustomEntityParser {
@@ -68,18 +70,24 @@ impl CustomEntityParser for CachingCustomEntityParser {
         &self,
         sentence: &str,
         filter_entity_kinds: Option<&[String]>,
+        max_alternative_resolved_values: usize,
     ) -> Result<Vec<CustomEntity>> {
         let lowercased_sentence = sentence.to_lowercase();
         let cache_key = CacheKey {
             input: lowercased_sentence,
             kinds: filter_entity_kinds.map(|entity_kinds| entity_kinds.to_vec()),
+            max_alternative_resolved_values,
         };
 
         self.cache
             .lock()
             .unwrap()
             .try_cache(&cache_key, |cache_key| {
-                self._extract_entities(&cache_key.input, filter_entity_kinds)
+                self._extract_entities(
+                    &cache_key.input,
+                    filter_entity_kinds,
+                    max_alternative_resolved_values,
+                )
             })
     }
 }
@@ -89,13 +97,18 @@ impl CachingCustomEntityParser {
         &self,
         sentence: &str,
         filter_entity_kinds: Option<&[String]>,
+        max_alternative_resolved_values: usize,
     ) -> Result<Vec<CustomEntity>> {
         let tokens = tokenize(sentence, self.language);
         let shifts = compute_char_shifts(&tokens);
         let cleaned_input = tokens.into_iter().map(|token| token.value).join(" ");
         Ok(self
             .parser
-            .extract_entities(&cleaned_input, filter_entity_kinds)?
+            .extract_entities(
+                &cleaned_input,
+                filter_entity_kinds,
+                max_alternative_resolved_values,
+            )?
             .into_iter()
             .map(|mut entity_match| {
                 let range_start = entity_match.range.start;
@@ -197,14 +210,16 @@ mod tests {
         let parser_path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine")
+            .join("nlu_engine_beverage")
             .join("custom_entity_parser");
 
         let custom_entity_parser = CachingCustomEntityParser::from_path(parser_path, 1000).unwrap();
         let input = "Make me a  ?hot tea";
 
         // When
-        let entities = custom_entity_parser.extract_entities(input, None).unwrap();
+        let entities = custom_entity_parser
+            .extract_entities(input, None, 0)
+            .unwrap();
 
         // Then
         let expected_entities = vec![CustomEntity {
@@ -224,26 +239,40 @@ mod tests {
         let parser_path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine")
+            .join("nlu_engine_game")
             .join("custom_entity_parser");
 
         let custom_entity_parser = CachingCustomEntityParser::from_path(parser_path, 1000).unwrap();
-        let input = "Make me a hot tea";
+        let input = "I want to play invader";
 
         // When
-        let entities_empty_scope = custom_entity_parser.extract_entities(input, Some(&[])).unwrap();
-        let entities_no_scope = custom_entity_parser.extract_entities(input, None).unwrap();
+        let entities_empty_scope = custom_entity_parser
+            .extract_entities(input, Some(&[]), 0)
+            .unwrap();
+        let entities_no_scope = custom_entity_parser
+            .extract_entities(input, None, 0)
+            .unwrap();
+        let entities_with_alternatives = custom_entity_parser
+            .extract_entities(input, None, 1)
+            .unwrap();
 
         // Then
         let expected_entities_no_scope = vec![CustomEntity {
-            value: "hot".to_string(),
-            resolved_value: "hot".to_string(),
+            value: "invader".to_string(),
+            resolved_value: "Invader Attack 3".to_string(),
             alternative_resolved_values: vec![],
-            range: 10..13,
-            entity_identifier: "Temperature".to_string(),
+            range: 15..22,
+            entity_identifier: "game".to_string(),
         }];
-        let expected_entities_empty_scope: Vec<CustomEntity> = vec![];
+        let expected_entities_with_alternatives = vec![CustomEntity {
+            value: "invader".to_string(),
+            resolved_value: "Invader Attack 3".to_string(),
+            alternative_resolved_values: vec!["Invader War Demo".to_string()],
+            range: 15..22,
+            entity_identifier: "game".to_string(),
+        }];
+        assert_eq!(Vec::<CustomEntity>::new(), entities_empty_scope);
         assert_eq!(expected_entities_no_scope, entities_no_scope);
-        assert_eq!(expected_entities_empty_scope, entities_empty_scope);
+        assert_eq!(expected_entities_with_alternatives, entities_with_alternatives);
     }
 }

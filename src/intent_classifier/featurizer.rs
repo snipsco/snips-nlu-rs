@@ -183,7 +183,7 @@ impl TfidfVectorizer {
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
-            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true)?;
+            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true, 0)?;
 
         let builtin_entities_features: Vec<String> = builtin_entities
             .iter()
@@ -195,7 +195,7 @@ impl TfidfVectorizer {
         let custom_entities = self
             .shared_resources
             .custom_entity_parser
-            .extract_entities(&*normalized_tokens.join(" "), None)?;
+            .extract_entities(&*normalized_tokens.join(" "), None, 0)?;
 
         let custom_entities_features: Vec<String> = custom_entities
             .into_iter()
@@ -315,13 +315,13 @@ impl CooccurrenceVectorizer {
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
-            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true)?;
+            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true, 0)?;
 
         // Extract custom entities on the raw utterance
         let custom_entities = self
             .shared_resources
             .custom_entity_parser
-            .extract_entities(utterance, None)?;
+            .extract_entities(utterance, None, 0)?;
 
         let matched_builtins = builtin_entities.into_iter().map(|entity| entity.into());
 

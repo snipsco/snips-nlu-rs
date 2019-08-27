@@ -141,41 +141,7 @@ impl SnipsNluEngine {
         W: Into<Option<Vec<&'a str>>>,
         B: Into<Option<Vec<&'b str>>>,
     {
-        let intents_whitelist_owned =
-            self.get_intents_whitelist(intents_whitelist, intents_blacklist)?;
-        let intents_whitelist = intents_whitelist_owned
-            .as_ref()
-            .map(|whitelist| whitelist.as_ref());
-        let mut none_score: f32 = 0.0;
-        for parser in &self.intent_parsers {
-            let internal_parsing_result = parser.parse(input, intents_whitelist)?;
-            if internal_parsing_result.intent.intent_name.is_some() {
-                let resolved_slots = self
-                    .resolve_slots(input, internal_parsing_result.slots)
-                    .with_context(|_| "Cannot resolve slots".to_string())?;
-
-                return Ok(IntentParserResult {
-                    input: input.to_string(),
-                    intent: internal_parsing_result.intent,
-                    slots: resolved_slots,
-                    alternatives: vec![],
-                });
-            } else {
-                none_score = internal_parsing_result.intent.confidence_score;
-            }
-        }
-
-        // If all parsers failed to extract an intent, we use the confidence score returned by the last
-        // parser
-        Ok(IntentParserResult {
-            input: input.to_string(),
-            intent: IntentClassifierResult {
-                intent_name: None,
-                confidence_score: none_score,
-            },
-            slots: vec![],
-            alternatives: vec![],
-        })
+        self.parse_with_alternatives(input, intents_whitelist, intents_blacklist, 0, 0)
     }
 
     pub fn parse_with_alternatives<'a, 'b, W, B>(
@@ -184,6 +150,7 @@ impl SnipsNluEngine {
         intents_whitelist: W,
         intents_blacklist: B,
         intents_alternatives: usize,
+        slots_alternatives: usize,
     ) -> Result<IntentParserResult>
     where
         W: Into<Option<Vec<&'a str>>>,
@@ -191,13 +158,46 @@ impl SnipsNluEngine {
     {
         let intents_whitelist_owned =
             self.get_intents_whitelist(intents_whitelist, intents_blacklist)?;
-        let mut intent_results = self.parse(input, intents_whitelist_owned.clone(), None)?;
-        if intents_alternatives == 0 {
-            return Ok(intent_results);
-        }
         let intents_whitelist = intents_whitelist_owned
             .as_ref()
             .map(|whitelist| whitelist.as_ref());
+        let mut parsing_result: Option<IntentParserResult> = None;
+        let mut none_score: f32 = 0.0;
+        for parser in &self.intent_parsers {
+            let internal_parsing_result = parser.parse(input, intents_whitelist)?;
+            if internal_parsing_result.intent.intent_name.is_some() {
+                let resolved_slots = self
+                    .resolve_slots(input, internal_parsing_result.slots, slots_alternatives)
+                    .with_context(|_| "Cannot resolve slots".to_string())?;
+
+                parsing_result = Some(IntentParserResult {
+                    input: input.to_string(),
+                    intent: internal_parsing_result.intent,
+                    slots: resolved_slots,
+                    alternatives: vec![],
+                });
+                break;
+            } else {
+                none_score = internal_parsing_result.intent.confidence_score;
+            }
+        }
+        let mut parsing_result = parsing_result.unwrap_or_else(|| {
+            // If all parsers failed to extract an intent, we use the confidence score
+            // returned by the last parser
+            IntentParserResult {
+                input: input.to_string(),
+                intent: IntentClassifierResult {
+                    intent_name: None,
+                    confidence_score: none_score,
+                },
+                slots: vec![],
+                alternatives: vec![],
+            }
+        });
+
+        if intents_alternatives == 0 {
+            return Ok(parsing_result);
+        }
 
         let alternative_results: Vec<IntentParserAlternative> = self
             .get_intents(input)?
@@ -217,14 +217,20 @@ impl SnipsNluEngine {
             .map(|res| {
                 res.intent_name
                     .as_ref()
-                    .map(|intent_name| Ok(self.get_slots(input, intent_name)?))
+                    .map(|intent_name| {
+                        Ok(self.get_slots_with_alternatives(
+                            input,
+                            intent_name,
+                            slots_alternatives,
+                        )?)
+                    })
                     .unwrap_or_else(|| Ok(vec![]))
                     .map(|slots| IntentParserAlternative { intent: res, slots })
             })
             .collect::<Result<Vec<_>>>()?;
 
-        intent_results.alternatives = alternative_results;
-        Ok(intent_results)
+        parsing_result.alternatives = alternative_results;
+        Ok(parsing_result)
     }
 
     fn get_intents_whitelist<'a: 'c, 'b: 'c, 'c, W, B>(
@@ -304,16 +310,33 @@ impl SnipsNluEngine {
     }
 
     pub fn get_slots(&self, input: &str, intent: &str) -> Result<Vec<Slot>> {
+        self.get_slots_with_alternatives(input, intent, 0)
+    }
+
+    pub fn get_slots_with_alternatives(
+        &self,
+        input: &str,
+        intent: &str,
+        slots_alternatives: usize,
+    ) -> Result<Vec<Slot>> {
         for parser in &self.intent_parsers {
             let slots = parser.get_slots(input, intent)?;
             if !slots.is_empty() {
-                return self.resolve_slots(input, slots);
+                return self.resolve_slots(input, slots, slots_alternatives);
             }
         }
         Ok(vec![])
     }
 
-    fn resolve_slots(&self, text: &str, slots: Vec<InternalSlot>) -> Result<Vec<Slot>> {
+    fn resolve_slots(
+        &self,
+        text: &str,
+        slots: Vec<InternalSlot>,
+        slots_alternatives: usize,
+    ) -> Result<Vec<Slot>> {
+        if slots.is_empty() {
+            return Ok(vec![]);
+        }
         let builtin_entity_scope: Vec<BuiltinEntityKind> = slots
             .iter()
             .filter_map(|slot| BuiltinEntityKind::from_str(&slot.entity).ok())
@@ -331,11 +354,16 @@ impl SnipsNluEngine {
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
-            .extract_entities(text, Some(&*builtin_entity_scope), false)?;
+            .extract_entities(
+                text,
+                Some(&*builtin_entity_scope),
+                false,
+                slots_alternatives,
+            )?;
         let custom_entities = self
             .shared_resources
             .custom_entity_parser
-            .extract_entities(text, Some(&*custom_entity_scope))?;
+            .extract_entities(text, Some(&*custom_entity_scope), slots_alternatives)?;
 
         let mut resolved_slots = Vec::with_capacity(slots.len());
         for slot in slots.into_iter() {
@@ -346,12 +374,14 @@ impl SnipsNluEngine {
                         &entity,
                         &custom_entities,
                         self.shared_resources.custom_entity_parser.clone(),
+                        slots_alternatives,
                     )?
                 } else {
                     resolve_builtin_slot(
                         slot,
                         &builtin_entities,
                         self.shared_resources.builtin_entity_parser.clone(),
+                        slots_alternatives,
                     )?
                 };
             if let Some(resolved_slot) = opt_resolved_slot {
@@ -369,6 +399,16 @@ impl SnipsNluEngine {
         intent_name: &str,
         slot_name: &str,
     ) -> Result<Option<Slot>> {
+        self.extract_slot_with_alternatives(input, intent_name, slot_name, 0)
+    }
+
+    pub fn extract_slot_with_alternatives(
+        &self,
+        input: String,
+        intent_name: &str,
+        slot_name: &str,
+        slot_alternatives: usize,
+    ) -> Result<Option<Slot>> {
         let entity_name = self
             .dataset_metadata
             .slot_name_mappings
@@ -384,6 +424,7 @@ impl SnipsNluEngine {
                 slot_name.to_string(),
                 custom_entity,
                 self.shared_resources.custom_entity_parser.clone(),
+                slot_alternatives,
             )?
         } else {
             extract_builtin_slot(
@@ -391,6 +432,7 @@ impl SnipsNluEngine {
                 entity_name.to_string(),
                 slot_name.to_string(),
                 self.shared_resources.builtin_entity_parser.clone(),
+                slot_alternatives,
             )?
         };
         Ok(slot)
@@ -403,9 +445,13 @@ fn extract_custom_slot(
     slot_name: SlotName,
     custom_entity: &Entity,
     custom_entity_parser: Arc<CustomEntityParser>,
+    slot_alternatives: usize,
 ) -> Result<Option<Slot>> {
-    let mut custom_entities =
-        custom_entity_parser.extract_entities(&input, Some(&[entity_name.clone()]))?;
+    let mut custom_entities = custom_entity_parser.extract_entities(
+        &input,
+        Some(&[entity_name.clone()]),
+        slot_alternatives,
+    )?;
     Ok(if let Some(matched_entity) = custom_entities.pop() {
         Some(Slot {
             raw_value: matched_entity.value,
@@ -441,10 +487,16 @@ fn extract_builtin_slot(
     entity_name: EntityName,
     slot_name: SlotName,
     builtin_entity_parser: Arc<BuiltinEntityParser>,
+    slot_alternatives: usize,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;
     Ok(builtin_entity_parser
-        .extract_entities(&input, Some(&[builtin_entity_kind]), false)?
+        .extract_entities(
+            &input,
+            Some(&[builtin_entity_kind]),
+            false,
+            slot_alternatives,
+        )?
         .into_iter()
         .next()
         .map(|builtin_entity| Slot {
@@ -475,7 +527,7 @@ mod tests {
         let path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine.zip");
+            .join("nlu_engine_beverage.zip");
 
         let file = fs::File::open(path).unwrap();
 
@@ -512,7 +564,7 @@ mod tests {
         let path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
@@ -543,7 +595,7 @@ mod tests {
         let path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
@@ -601,12 +653,12 @@ mod tests {
         let path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
         let mut result = nlu_engine
-            .parse_with_alternatives("Make me two cups of coffee please", None, None, 1)
+            .parse_with_alternatives("Make me two cups of coffee please", None, None, 1, 0)
             .unwrap();
 
         // set the confidence scores to 0.5 for testability
@@ -655,12 +707,12 @@ mod tests {
     }
 
     #[test]
-    fn test_parse_with_whitelist_and_alternatives() {
+    fn test_parse_with_whitelist_and_intents_alternatives() {
         // Given
         let path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
@@ -670,6 +722,7 @@ mod tests {
                 vec!["MakeCoffee"],
                 None,
                 1,
+                0,
             )
             .unwrap();
 
@@ -711,12 +764,55 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_with_slots_alternatives() {
+        // Given
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine_game");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
+
+        // When
+        let mut result = nlu_engine
+            .parse_with_alternatives("I want to play to invader", None, None, 0, 2)
+            .unwrap();
+
+        // set the confidence scores to 0.5 for testability
+        result.intent.confidence_score = 0.8;
+
+        // Then
+        let expected_slots = vec![Slot {
+            raw_value: "invader".to_string(),
+            value: SlotValue::Custom("Invader Attack 3".into()),
+            alternatives: vec![
+                SlotValue::Custom("Invader War Demo".into()),
+                SlotValue::Custom("Space Invader Limited Edition".into()),
+            ],
+            range: 18..25,
+            entity: "game".to_string(),
+            slot_name: "game".to_string(),
+            confidence_score: None,
+        }];
+
+        let expected_result = IntentParserResult {
+            input: "I want to play to invader".to_string(),
+            intent: IntentClassifierResult {
+                intent_name: Some("PlayGame".to_string()),
+                confidence_score: 0.8,
+            },
+            slots: expected_slots,
+            alternatives: vec![],
+        };
+        assert_eq!(expected_result, result);
+    }
+
+    #[test]
     fn test_get_intents() {
         // Given
         let path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
@@ -742,7 +838,7 @@ mod tests {
         let path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
         let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
 
         // When
@@ -774,6 +870,37 @@ mod tests {
                 confidence_score: None,
             },
         ];
+        assert_eq!(expected_slots, slots);
+    }
+
+    #[test]
+    fn test_get_slots_with_alternatives() {
+        // Given
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine_game");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
+
+        // When
+        let slots = nlu_engine
+            .get_slots_with_alternatives("I want to play to invader", "PlayGame", 2)
+            .unwrap();
+
+        // Then
+        let expected_slots = vec![Slot {
+            raw_value: "invader".to_string(),
+            value: SlotValue::Custom("Invader Attack 3".into()),
+            alternatives: vec![
+                SlotValue::Custom("Invader War Demo".into()),
+                SlotValue::Custom("Space Invader Limited Edition".into()),
+            ],
+            range: 18..25,
+            entity: "game".to_string(),
+            slot_name: "game".to_string(),
+            confidence_score: None,
+        }];
+
         assert_eq!(expected_slots, slots);
     }
 
@@ -814,6 +941,7 @@ mod tests {
             slot_name,
             &custom_entity,
             mocked_custom_parser,
+            0,
         )
         .unwrap();
 
@@ -849,6 +977,7 @@ mod tests {
             slot_name,
             &custom_entity,
             mocked_custom_parser,
+            0,
         )
         .unwrap();
 
@@ -884,6 +1013,7 @@ mod tests {
             slot_name,
             &custom_entity,
             mocked_custom_parser,
+            0,
         )
         .unwrap();
 
@@ -904,15 +1034,13 @@ mod tests {
 
         let mocked_custom_parser = Arc::new(MockedCustomEntityParser::from_iter(vec![(
             "I want to play to invader".to_string(),
-            vec![
-                CustomEntity {
-                    value: "invader".to_string(),
-                    resolved_value: "Space Invader".to_string(),
-                    alternative_resolved_values: vec!["Invader Attack".to_string()],
-                    range: 18..25,
-                    entity_identifier: entity_name.to_string(),
-                },
-            ],
+            vec![CustomEntity {
+                value: "invader".to_string(),
+                resolved_value: "Space Invader".to_string(),
+                alternative_resolved_values: vec!["Invader Attack".to_string()],
+                range: 18..25,
+                entity_identifier: entity_name.to_string(),
+            }],
         )]));
 
         // When
@@ -922,19 +1050,56 @@ mod tests {
             slot_name,
             &custom_entity,
             mocked_custom_parser,
+            0,
         )
-            .unwrap();
+        .unwrap();
 
         // Then
         let expected_slot = Some(Slot {
             raw_value: "invader".to_string(),
             value: SlotValue::Custom("Space Invader".into()),
-            alternatives: vec![SlotValue::Custom("Invader Attack".into()),],
+            alternatives: vec![SlotValue::Custom("Invader Attack".into())],
             range: 18..25,
             entity: "game".to_string(),
             slot_name: "game".to_string(),
             confidence_score: None,
         });
         assert_eq!(expected_slot, extracted_slot);
+    }
+
+    #[test]
+    fn test_extract_slot_with_alternatives() {
+        // Given
+        let path = Path::new("data")
+            .join("tests")
+            .join("models")
+            .join("nlu_engine_game");
+        let nlu_engine = SnipsNluEngine::from_path(path).unwrap();
+
+        // When
+        let slot = nlu_engine
+            .extract_slot_with_alternatives(
+                "I want to play to invader".to_string(),
+                "PlayGame",
+                "game",
+                2,
+            )
+            .unwrap();
+
+        // Then
+        let expected_slot = Some(Slot {
+            raw_value: "invader".to_string(),
+            value: SlotValue::Custom("Invader Attack 3".into()),
+            alternatives: vec![
+                SlotValue::Custom("Invader War Demo".into()),
+                SlotValue::Custom("Space Invader Limited Edition".into()),
+            ],
+            range: 18..25,
+            entity: "game".to_string(),
+            slot_name: "game".to_string(),
+            confidence_score: None,
+        });
+
+        assert_eq!(expected_slot, slot);
     }
 }

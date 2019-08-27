@@ -59,6 +59,7 @@ pub extern "C" fn snips_nlu_engine_run_parse(
         intents_whitelist,
         intents_blacklist,
         0 as libc::c_uint,
+        0 as libc::c_uint,
         result
     ))
 }
@@ -70,6 +71,7 @@ pub extern "C" fn snips_nlu_engine_run_parse_with_alternatives(
     intents_whitelist: *const CStringArray,
     intents_blacklist: *const CStringArray,
     intents_alternatives: libc::c_uint,
+    slots_alternatives: libc::c_uint,
     result: *mut *const CIntentParserResult,
 ) -> SNIPS_RESULT {
     wrap!(run_parse_with_alternatives(
@@ -78,6 +80,7 @@ pub extern "C" fn snips_nlu_engine_run_parse_with_alternatives(
         intents_whitelist,
         intents_blacklist,
         intents_alternatives,
+        slots_alternatives,
         result
     ))
 }
@@ -89,7 +92,24 @@ pub extern "C" fn snips_nlu_engine_run_get_slots(
     intent: *const libc::c_char,
     result: *mut *const CSlotList,
 ) -> SNIPS_RESULT {
-    wrap!(run_get_slots(client, input, intent, result))
+    wrap!(run_get_slots(client, input, intent, 0, result))
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_run_get_slots_with_alternatives(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    intent: *const libc::c_char,
+    slots_alternatives: libc::c_uint,
+    result: *mut *const CSlotList,
+) -> SNIPS_RESULT {
+    wrap!(run_get_slots(
+        client,
+        input,
+        intent,
+        slots_alternatives,
+        result
+    ))
 }
 
 #[no_mangle]
@@ -115,6 +135,7 @@ pub extern "C" fn snips_nlu_engine_run_parse_into_json(
         intents_whitelist,
         intents_blacklist,
         0 as libc::c_uint,
+        0 as libc::c_uint,
         result_json
     ))
 }
@@ -126,6 +147,7 @@ pub extern "C" fn snips_nlu_engine_run_parse_with_alternatives_into_json(
     intents_whitelist: *const CStringArray,
     intents_blacklist: *const CStringArray,
     intents_alternatives: libc::c_uint,
+    slots_alternatives: libc::c_uint,
     result_json: *mut *const libc::c_char,
 ) -> SNIPS_RESULT {
     wrap!(run_parse_with_alternatives_into_json(
@@ -134,6 +156,7 @@ pub extern "C" fn snips_nlu_engine_run_parse_with_alternatives_into_json(
         intents_whitelist,
         intents_blacklist,
         intents_alternatives,
+        slots_alternatives,
         result_json
     ))
 }
@@ -145,7 +168,30 @@ pub extern "C" fn snips_nlu_engine_run_get_slots_into_json(
     intent: *const libc::c_char,
     result_json: *mut *const libc::c_char,
 ) -> SNIPS_RESULT {
-    wrap!(run_get_slots_into_json(client, input, intent, result_json))
+    wrap!(run_get_slots_into_json(
+        client,
+        input,
+        intent,
+        0,
+        result_json
+    ))
+}
+
+#[no_mangle]
+pub extern "C" fn snips_nlu_engine_run_get_slots_with_alternatives_into_json(
+    client: *const CSnipsNluEngine,
+    input: *const libc::c_char,
+    intent: *const libc::c_char,
+    slots_alternatives: libc::c_uint,
+    result_json: *mut *const libc::c_char,
+) -> SNIPS_RESULT {
+    wrap!(run_get_slots_into_json(
+        client,
+        input,
+        intent,
+        slots_alternatives,
+        result_json
+    ))
 }
 
 #[no_mangle]
@@ -227,6 +273,7 @@ fn run_parse_with_alternatives(
     intents_whitelist: *const CStringArray,
     intents_blacklist: *const CStringArray,
     intents_alternatives: libc::c_uint,
+    slots_alternatives: libc::c_uint,
     result: *mut *const CIntentParserResult,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
@@ -248,6 +295,7 @@ fn run_parse_with_alternatives(
         opt_whitelist,
         opt_blacklist,
         intents_alternatives as usize,
+        slots_alternatives as usize,
     )?;
     let raw_pointer = CIntentParserResult::from(results).into_raw_pointer();
 
@@ -260,13 +308,15 @@ fn run_get_slots(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
     intent: *const libc::c_char,
+    slots_alternatives: libc::c_uint,
     result: *mut *const CSlotList,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
     let intent = create_rust_string_from!(intent);
     let nlu_engine = get_nlu_engine!(client);
 
-    let slots = nlu_engine.get_slots(&input, &intent)?;
+    let slots =
+        nlu_engine.get_slots_with_alternatives(&input, &intent, slots_alternatives as usize)?;
     let raw_pointer = CSlotList::from(slots).into_raw_pointer();
 
     unsafe { *result = raw_pointer };
@@ -296,6 +346,7 @@ fn run_parse_with_alternatives_into_json(
     intents_whitelist: *const CStringArray,
     intents_blacklist: *const CStringArray,
     intents_alternatives: libc::c_uint,
+    slots_alternatives: libc::c_uint,
     result_json: *mut *const libc::c_char,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
@@ -316,6 +367,7 @@ fn run_parse_with_alternatives_into_json(
         opt_whitelist,
         opt_blacklist,
         intents_alternatives as usize,
+        slots_alternatives as usize,
     )?;
 
     point_to_string(result_json, serde_json::to_string(&results)?)
@@ -325,13 +377,15 @@ fn run_get_slots_into_json(
     client: *const CSnipsNluEngine,
     input: *const libc::c_char,
     intent: *const libc::c_char,
+    slots_alternatives: libc::c_uint,
     result_json: *mut *const libc::c_char,
 ) -> Result<()> {
     let input = create_rust_string_from!(input);
     let intent = create_rust_string_from!(intent);
     let nlu_engine = get_nlu_engine!(client);
 
-    let slots = nlu_engine.get_slots(&input, &intent)?;
+    let slots =
+        nlu_engine.get_slots_with_alternatives(&input, &intent, slots_alternatives as usize)?;
     point_to_string(result_json, serde_json::to_string(&slots)?)
 }
 
