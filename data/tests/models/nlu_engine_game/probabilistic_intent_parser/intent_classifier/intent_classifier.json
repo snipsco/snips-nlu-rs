@@ -1,0 +1,65 @@
+{
+  "coeffs": [
+    [
+      -0.20149987419774504,
+      -0.4999326799959391,
+      -0.2072185982938113,
+      -0.20533716633716562,
+      -1.212997119952126,
+      -0.7430829768823239,
+      -0.10687891515378825,
+      -0.28544080700845964,
+      0.7737448377337215,
+      -1.212997119952126,
+      -0.7430829768823239,
+      -0.20533716633716562,
+      1.019183684420755,
+      -0.7550033666508472,
+      -0.7430829768823239,
+      -0.4433146539838388,
+      -0.437280810875116,
+      -0.20277376407358896,
+      -0.5550491008658663,
+      -0.7550033666508472,
+      -0.38138780663082483
+    ]
+  ],
+  "config": {
+    "data_augmentation_config": {
+      "add_builtin_entities_examples": false,
+      "max_unknown_words": null,
+      "min_utterances": 20,
+      "noise_factor": 5,
+      "unknown_word_prob": 0.0,
+      "unknown_words_replacement_string": null
+    },
+    "featurizer_config": {
+      "added_cooccurrence_feature_ratio": 0.0,
+      "cooccurrence_vectorizer_config": {
+        "filter_stop_words": true,
+        "keep_order": true,
+        "unit_name": "cooccurrence_vectorizer",
+        "unknown_words_replacement_string": null,
+        "window_size": null
+      },
+      "pvalue_threshold": 0.4,
+      "tfidf_vectorizer_config": {
+        "unit_name": "tfidf_vectorizer",
+        "use_stemming": false,
+        "word_clusters_name": null
+      },
+      "unit_name": "featurizer"
+    },
+    "noise_reweight_factor": 1,
+    "unit_name": "log_reg_intent_classifier"
+  },
+  "featurizer": "featurizer",
+  "intent_list": [
+    "PlayGame",
+    null
+  ],
+  "intercept": [
+    0.2646563858371308
+  ],
+  "t_": 2641.0
+}

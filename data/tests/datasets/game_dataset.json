@@ -1,0 +1,69 @@
+{
+  "entities": {
+    "game": {
+      "automatically_extensible": true,
+      "data": [
+        {
+          "synonyms": [
+            "space invader"
+          ],
+          "value": "Space Invader Limited Edition"
+        },
+        {
+          "synonyms": [
+            "invader attack"
+          ],
+          "value": "Invader Attack 3"
+        },
+        {
+          "synonyms": [
+            "invader war"
+          ],
+          "value": "Invader War Demo"
+        },
+        {
+          "synonyms": [
+            "star invader"
+          ],
+          "value": "Star Invader II"
+        }
+      ],
+      "matching_strictness": 0.5,
+      "use_synonyms": true
+    }
+  },
+  "intents": {
+    "PlayGame": {
+      "utterances": [
+        {
+          "data": [
+            {
+              "text": "I want to play to "
+            },
+            {
+              "entity": "game",
+              "slot_name": "game",
+              "text": "space invader"
+            }
+          ]
+        },
+        {
+          "data": [
+            {
+              "text": "please launch the "
+            },
+            {
+              "entity": "game",
+              "slot_name": "game",
+              "text": "invader attack"
+            },
+            {
+              "text": " game"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "language": "en"
+}
