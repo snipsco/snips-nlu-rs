@@ -23,16 +23,29 @@ fn main() {
                 .help("path to the trained nlu engine directory"),
         )
         .arg(
-            Arg::with_name("top_intents")
-                .long("top_intents")
-                .short("t")
-                .required(false)
-                .takes_value(false)
-                .help("option flag to use in order to parse with the `get_intents` API"),
+            Arg::with_name("intents_alternatives")
+                .short("i")
+                .long("--intents-alternatives")
+                .takes_value(true)
+                .help("number of alternative parsing results to return in the output"),
+        )
+        .arg(
+            Arg::with_name("slots_alternatives")
+                .short("s")
+                .long("--slots-alternatives")
+                .takes_value(true)
+                .help("number of alternative slot values to return along with each extracted slot"),
         )
         .get_matches();
     let engine_dir = matches.value_of("NLU_ENGINE_DIR").unwrap();
-    let top_intents = matches.is_present("top_intents");
+    let intents_alternatives = matches
+        .value_of("intents_alternatives")
+        .map(|v| v.to_string().parse::<usize>().unwrap())
+        .unwrap_or(0);
+    let slots_alternatives = matches
+        .value_of("slots_alternatives")
+        .map(|v| v.to_string().parse::<usize>().unwrap())
+        .unwrap_or(0);
 
     println!("\nLoading the nlu engine...");
     let engine = SnipsNluEngine::from_path(engine_dir).unwrap();
@@ -42,13 +55,16 @@ fn main() {
         io::stdout().flush().unwrap();
         let mut query = String::new();
         io::stdin().read_line(&mut query).unwrap();
-        let result_json = if top_intents {
-            let result = engine.get_intents(query.trim()).unwrap();
-            serde_json::to_string_pretty(&result).unwrap()
-        } else {
-            let result = engine.parse(query.trim(), None, None).unwrap();
-            serde_json::to_string_pretty(&result).unwrap()
-        };
+        let result = engine
+            .parse_with_alternatives(
+                query.trim(),
+                None,
+                None,
+                intents_alternatives,
+                slots_alternatives,
+            )
+            .unwrap();
+        let result_json = serde_json::to_string_pretty(&result).unwrap();
         println!("{}", result_json);
     }
 }

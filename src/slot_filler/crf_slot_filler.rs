@@ -192,7 +192,7 @@ mod tests {
         let trained_engine_path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
 
         let slot_filler_path = trained_engine_path
             .join("probabilistic_intent_parser")

@@ -183,7 +183,7 @@ impl TfidfVectorizer {
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
-            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true)?;
+            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true, 0)?;
 
         let builtin_entities_features: Vec<String> = builtin_entities
             .iter()
@@ -195,7 +195,7 @@ impl TfidfVectorizer {
         let custom_entities = self
             .shared_resources
             .custom_entity_parser
-            .extract_entities(&*normalized_tokens.join(" "), None)?;
+            .extract_entities(&*normalized_tokens.join(" "), None, 0)?;
 
         let custom_entities_features: Vec<String> = custom_entities
             .into_iter()
@@ -315,13 +315,13 @@ impl CooccurrenceVectorizer {
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
-            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true)?;
+            .extract_entities(utterance, Some(&self.builtin_entity_scope[..]), true, 0)?;
 
         // Extract custom entities on the raw utterance
         let custom_entities = self
             .shared_resources
             .custom_entity_parser
-            .extract_entities(utterance, None)?;
+            .extract_entities(utterance, None, 0)?;
 
         let matched_builtins = builtin_entities.into_iter().map(|entity| entity.into());
 
@@ -446,24 +446,28 @@ mod tests {
                 CustomEntity {
                     value: "hello".to_string(),
                     resolved_value: "hello".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 0..5,
                     entity_identifier: "greeting".to_string(),
                 },
                 CustomEntity {
                     value: "hello".to_string(),
                     resolved_value: "hello".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 0..5,
                     entity_identifier: "word".to_string(),
                 },
                 CustomEntity {
                     value: "bird".to_string(),
                     resolved_value: "bird".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 11..15,
                     entity_identifier: "animal".to_string(),
                 },
                 CustomEntity {
                     value: "bird".to_string(),
                     resolved_value: "bird".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 31..35,
                     entity_identifier: "animal".to_string(),
                 },
@@ -473,6 +477,7 @@ mod tests {
             "Hëllo this bïrd is a beautiful Bïrd with 22 wings".to_string(),
             vec![BuiltinEntity {
                 value: "22".to_string(),
+                alternatives: vec![],
                 range: 41..43,
                 entity: SlotValue::Number(NumberValue { value: 22.0 }),
                 entity_kind: BuiltinEntityKind::Number,
@@ -576,24 +581,28 @@ mod tests {
                     CustomEntity {
                         value: "hello".to_string(),
                         resolved_value: "hello".to_string(),
+                        alternative_resolved_values: vec![],
                         range: 0..5,
                         entity_identifier: "greeting".to_string(),
                     },
                     CustomEntity {
                         value: "hello".to_string(),
                         resolved_value: "hello".to_string(),
+                        alternative_resolved_values: vec![],
                         range: 0..5,
                         entity_identifier: "word".to_string(),
                     },
                     CustomEntity {
                         value: "bird".to_string(),
                         resolved_value: "bird".to_string(),
+                        alternative_resolved_values: vec![],
                         range: 11..15,
                         entity_identifier: "animal".to_string(),
                     },
                     CustomEntity {
                         value: "bird".to_string(),
                         resolved_value: "bird".to_string(),
+                        alternative_resolved_values: vec![],
                         range: 31..35,
                         entity_identifier: "animal".to_string(),
                     },
@@ -605,24 +614,28 @@ mod tests {
                     CustomEntity {
                         value: "hello".to_string(),
                         resolved_value: "hello".to_string(),
+                        alternative_resolved_values: vec![],
                         range: 0..5,
                         entity_identifier: "greeting".to_string(),
                     },
                     CustomEntity {
                         value: "hello".to_string(),
                         resolved_value: "hello".to_string(),
+                        alternative_resolved_values: vec![],
                         range: 0..5,
                         entity_identifier: "word".to_string(),
                     },
                     CustomEntity {
                         value: "bird".to_string(),
                         resolved_value: "bird".to_string(),
+                        alternative_resolved_values: vec![],
                         range: 11..15,
                         entity_identifier: "animal".to_string(),
                     },
                     CustomEntity {
                         value: "bird".to_string(),
                         resolved_value: "bird".to_string(),
+                        alternative_resolved_values: vec![],
                         range: 28..32,
                         entity_identifier: "animal".to_string(),
                     },
@@ -633,6 +646,7 @@ mod tests {
             "hello this bird is a beautiful bird with 22 wings".to_string(),
             vec![BuiltinEntity {
                 value: "22".to_string(),
+                alternatives: vec![],
                 range: 41..43,
                 entity: SlotValue::Number(NumberValue { value: 22.0 }),
                 entity_kind: BuiltinEntityKind::Number,

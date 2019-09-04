@@ -1,0 +1,41 @@
+{
+  "config": {
+    "ignore_stop_words": true,
+    "unit_name": "lookup_intent_parser"
+  },
+  "entity_scopes": [
+    {
+      "entity_scope": {
+        "builtin": [],
+        "custom": [
+          "game"
+        ]
+      },
+      "intent_group": [
+        "PlayGame"
+      ]
+    }
+  ],
+  "intents_names": [
+    "PlayGame"
+  ],
+  "language_code": "en",
+  "map": {
+    "483944904": [
+      0,
+      [
+        0
+      ]
+    ],
+    "1316274424": [
+      0,
+      [
+        0
+      ]
+    ]
+  },
+  "slots_names": [
+    "game"
+  ],
+  "stop_words_whitelist": {}
+}

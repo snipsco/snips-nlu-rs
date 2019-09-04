@@ -85,6 +85,7 @@ impl BuiltinEntityParser for MockedBuiltinEntityParser {
         sentence: &str,
         _filter_entity_kinds: Option<&[BuiltinEntityKind]>,
         _use_cache: bool,
+        _max_alternative_resolved_values: usize,
     ) -> Result<Vec<BuiltinEntity>> {
         Ok(self
             .mocked_outputs
@@ -112,6 +113,7 @@ impl CustomEntityParser for MockedCustomEntityParser {
         &self,
         sentence: &str,
         _filter_entity_kinds: Option<&[String]>,
+        _max_alternative_resolved_values: usize,
     ) -> Result<Vec<CustomEntity>> {
         Ok(self
             .mocked_outputs

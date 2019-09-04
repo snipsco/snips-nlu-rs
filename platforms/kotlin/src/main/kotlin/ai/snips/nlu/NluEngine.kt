@@ -95,13 +95,17 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     fun parse(input: String,
               intentsWhitelist: List<String>? = null,
-              intentsBlacklist: List<String>? = null): IntentParserResult =
+              intentsBlacklist: List<String>? = null,
+              intentsAlternatives: Int = 0,
+              slotsAlternatives: Int = 0): IntentParserResult =
             CIntentParserResult(PointerByReference().apply {
-                parseError(LIB.snips_nlu_engine_run_parse(
+                parseError(LIB.snips_nlu_engine_run_parse_with_alternatives(
                         client,
                         input.toPointer(),
                         intentsWhitelist?.let { CStringArray.fromStringList(it) },
                         intentsBlacklist?.let { CStringArray.fromStringList(it) },
+                        intentsAlternatives,
+                        slotsAlternatives,
                         this
                 ))
             }.value).let {
@@ -115,13 +119,17 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
 
     fun parseIntoJson(input: String,
                       intentsWhitelist: List<String>? = null,
-                      intentsBlacklist: List<String>? = null): String =
+                      intentsBlacklist: List<String>? = null,
+                      intentsAlternatives: Int = 0,
+                      slotsAlternatives: Int = 0): String =
             PointerByReference().apply {
-                parseError(LIB.snips_nlu_engine_run_parse_into_json(
+                parseError(LIB.snips_nlu_engine_run_parse_with_alternatives_into_json(
                         client,
                         input.toPointer(),
                         intentsWhitelist?.let { CStringArray.fromStringList(it) },
                         intentsBlacklist?.let { CStringArray.fromStringList(it) },
+                        intentsAlternatives,
+                        slotsAlternatives,
                         this
                 ))
             }.value.let {
@@ -130,12 +138,13 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 }
             }
 
-    fun getSlots(input: String, intent: String): List<Slot> =
+    fun getSlots(input: String, intent: String, slotsAlternatives: Int = 0): List<Slot> =
             CSlots(PointerByReference().apply {
-                parseError(LIB.snips_nlu_engine_run_get_slots(
+                parseError(LIB.snips_nlu_engine_run_get_slots_with_alternatives(
                         client,
                         input.toPointer(),
                         intent.toPointer(),
+                        slotsAlternatives,
                         this
                 ))
             }.value).let {
@@ -147,12 +156,13 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
                 }
             }
 
-    fun getSlotsIntoJson(input: String, intent: String): String =
+    fun getSlotsIntoJson(input: String, intent: String, slotsAlternatives: Int = 0): String =
             PointerByReference().apply {
-                parseError(LIB.snips_nlu_engine_run_get_slots_into_json(
+                parseError(LIB.snips_nlu_engine_run_get_slots_with_alternatives_into_json(
                         client,
                         input.toPointer(),
                         intent.toPointer(),
+                        slotsAlternatives,
                         this
                 ))
             }.value.let {
@@ -194,26 +204,32 @@ class NluEngine private constructor(clientBuilder: () -> Pointer) : Closeable {
         fun snips_nlu_engine_get_model_version(version: PointerByReference): Int
         fun snips_nlu_engine_create_from_dir(root_dir: Pointer, pointer: PointerByReference): Int
         fun snips_nlu_engine_create_from_zip(data: ByteArray, data_size: Int, pointer: PointerByReference): Int
-        fun snips_nlu_engine_run_parse(
+        fun snips_nlu_engine_run_parse_with_alternatives(
                 client: Pointer, input: Pointer,
                 intents_whitelist: CStringArray?,
                 intents_blacklist: CStringArray?,
+                intents_alternatives: Int,
+                slots_alternatives: Int,
                 result: PointerByReference): Int
-        fun snips_nlu_engine_run_parse_into_json(
+        fun snips_nlu_engine_run_parse_with_alternatives_into_json(
                 client: Pointer,
                 input: Pointer,
                 intents_whitelist: CStringArray?,
                 intents_blacklist: CStringArray?,
+                intents_alternatives: Int,
+                slots_alternatives: Int,
                 result: PointerByReference): Int
-        fun snips_nlu_engine_run_get_slots(
+        fun snips_nlu_engine_run_get_slots_with_alternatives(
                 client: Pointer,
                 input: Pointer,
                 intent: Pointer,
+                slots_alternatives: Int,
                 result: PointerByReference): Int
-        fun snips_nlu_engine_run_get_slots_into_json(
+        fun snips_nlu_engine_run_get_slots_with_alternatives_into_json(
                 client: Pointer,
                 input: Pointer,
                 intent: Pointer,
+                slots_alternatives: Int,
                 result: PointerByReference): Int
         fun snips_nlu_engine_run_get_intents(
                 client: Pointer,

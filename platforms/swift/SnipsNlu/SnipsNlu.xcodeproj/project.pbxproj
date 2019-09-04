@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7A92822320F65F8000DC3623 /* nlu_engine in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822220F65F8000DC3623 /* nlu_engine */; };
-		7A92822420F65F8000DC3623 /* nlu_engine in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822220F65F8000DC3623 /* nlu_engine */; };
-		7A92822620F65F9200DC3623 /* nlu_engine.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822520F65F9100DC3623 /* nlu_engine.zip */; };
-		7A92822720F65F9200DC3623 /* nlu_engine.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A92822520F65F9100DC3623 /* nlu_engine.zip */; };
+		7A8791CC23156255001CB80B /* nlu_engine_beverage in Resources */ = {isa = PBXBuildFile; fileRef = 7A8791CB23156255001CB80B /* nlu_engine_beverage */; };
+		7A8791CD23156255001CB80B /* nlu_engine_beverage in Resources */ = {isa = PBXBuildFile; fileRef = 7A8791CB23156255001CB80B /* nlu_engine_beverage */; };
+		7A8791D023156263001CB80B /* nlu_engine_beverage.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A8791CE23156263001CB80B /* nlu_engine_beverage.zip */; };
+		7A8791D123156263001CB80B /* nlu_engine_beverage.zip in Resources */ = {isa = PBXBuildFile; fileRef = 7A8791CE23156263001CB80B /* nlu_engine_beverage.zip */; };
+		7A8791D223156263001CB80B /* nlu_engine_game in Resources */ = {isa = PBXBuildFile; fileRef = 7A8791CF23156263001CB80B /* nlu_engine_game */; };
+		7A8791D323156263001CB80B /* nlu_engine_game in Resources */ = {isa = PBXBuildFile; fileRef = 7A8791CF23156263001CB80B /* nlu_engine_game */; };
 		F76280F81EFD0AB000A6D248 /* NluEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76280F71EFD0AB000A6D248 /* NluEngine.swift */; };
 		F76280F91EFD0AB000A6D248 /* NluEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76280F71EFD0AB000A6D248 /* NluEngine.swift */; };
 		F76504C81EFD086C007FF022 /* SnipsNlu.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F76504BE1EFD086C007FF022 /* SnipsNlu.framework */; };
@@ -41,9 +43,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		7A92822220F65F8000DC3623 /* nlu_engine */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nlu_engine; path = ../../../../data/tests/models/nlu_engine; sourceTree = "<group>"; };
-		7A92822520F65F9100DC3623 /* nlu_engine.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = nlu_engine.zip; path = ../../../../data/tests/models/nlu_engine.zip; sourceTree = "<group>"; };
-		F73454D721909AB8000C53DF /* Dependencies */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Dependencies; sourceTree = "<group>"; };
+		7A8791CB23156255001CB80B /* nlu_engine_beverage */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nlu_engine_beverage; path = ../../../../data/tests/models/nlu_engine_beverage; sourceTree = "<group>"; };
+		7A8791CE23156263001CB80B /* nlu_engine_beverage.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; name = nlu_engine_beverage.zip; path = ../../../../data/tests/models/nlu_engine_beverage.zip; sourceTree = "<group>"; };
+		7A8791CF23156263001CB80B /* nlu_engine_game */ = {isa = PBXFileReference; lastKnownFileType = folder; name = nlu_engine_game; path = ../../../../data/tests/models/nlu_engine_game; sourceTree = "<group>"; };
 		F76280F71EFD0AB000A6D248 /* NluEngine.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NluEngine.swift; sourceTree = "<group>"; };
 		F76504BE1EFD086C007FF022 /* SnipsNlu.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = SnipsNlu.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F76504C11EFD086C007FF022 /* SnipsNlu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SnipsNlu.h; sourceTree = "<group>"; };
@@ -98,7 +100,6 @@
 		F76504B41EFD086C007FF022 = {
 			isa = PBXGroup;
 			children = (
-				F73454D721909AB8000C53DF /* Dependencies */,
 				F76504C01EFD086C007FF022 /* SnipsNlu */,
 				F76504CB1EFD086C007FF022 /* SnipsNluTests */,
 				F76504BF1EFD086C007FF022 /* Products */,
@@ -140,8 +141,9 @@
 		F79B6F5D201644A200394C57 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				7A92822520F65F9100DC3623 /* nlu_engine.zip */,
-				7A92822220F65F8000DC3623 /* nlu_engine */,
+				7A8791CE23156263001CB80B /* nlu_engine_beverage.zip */,
+				7A8791CF23156263001CB80B /* nlu_engine_game */,
+				7A8791CB23156255001CB80B /* nlu_engine_beverage */,
 			);
 			name = Resources;
 			sourceTree = "<group>";
@@ -316,8 +318,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7A92822320F65F8000DC3623 /* nlu_engine in Resources */,
-				7A92822620F65F9200DC3623 /* nlu_engine.zip in Resources */,
+				7A8791D223156263001CB80B /* nlu_engine_game in Resources */,
+				7A8791D023156263001CB80B /* nlu_engine_beverage.zip in Resources */,
+				7A8791CC23156255001CB80B /* nlu_engine_beverage in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -332,8 +335,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7A92822420F65F8000DC3623 /* nlu_engine in Resources */,
-				7A92822720F65F9200DC3623 /* nlu_engine.zip in Resources */,
+				7A8791D323156263001CB80B /* nlu_engine_game in Resources */,
+				7A8791D123156263001CB80B /* nlu_engine_beverage.zip in Resources */,
+				7A8791CD23156255001CB80B /* nlu_engine_beverage in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

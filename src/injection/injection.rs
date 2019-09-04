@@ -548,6 +548,7 @@ mod tests {
         );
         let ground_true_slots = vec![Slot {
             raw_value: "thisisthebestalbum".to_string(),
+            alternatives: vec![],
             range: 32..50,
             entity: "snips/musicAlbum".to_string(),
             slot_name: "musicAlbum".to_string(),
@@ -565,6 +566,7 @@ mod tests {
         );
         let ground_true_slots = vec![Slot {
             raw_value: "funk".to_string(),
+            alternatives: vec![],
             range: 32..36,
             entity: "playlist".to_string(),
             slot_name: "playlist".to_string(),

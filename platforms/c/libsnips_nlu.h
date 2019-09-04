@@ -126,6 +126,18 @@ typedef enum {
    * Music Track type represented by a char *
    */
   SNIPS_SLOT_VALUE_TYPE_MUSICTRACK = 12,
+  /**
+   * City type represented by a char *
+   */
+  SNIPS_SLOT_VALUE_TYPE_CITY = 13,
+  /**
+   * Country type represented by a char *
+   */
+  SNIPS_SLOT_VALUE_TYPE_COUNTRY = 14,
+  /**
+   * Region type represented by a char *
+   */
+  SNIPS_SLOT_VALUE_TYPE_REGION = 15,
 } SNIPS_SLOT_VALUE_TYPE;
 
 typedef struct CSnipsNluEngine CSnipsNluEngine;
@@ -156,7 +168,7 @@ typedef struct {
    * Number of results in the list
    */
   int32_t size;
-} CIntentClassifierResultList;
+} CIntentClassifierResultArray;
 
 /**
  * A slot value
@@ -175,13 +187,31 @@ typedef struct {
 } CSlotValue;
 
 /**
+ * Wrapper around a list of SlotValue
+ */
+typedef struct {
+  /**
+   * Pointer to the first slot value of the list
+   */
+  const CSlotValue *slot_values;
+  /**
+   * Number of slot values in the list
+   */
+  int32_t size;
+} CSlotValueArray;
+
+/**
  * Struct describing a Slot
  */
 typedef struct {
   /**
    * The resolved value of the slot
    */
-  CSlotValue value;
+  const CSlotValue *value;
+  /**
+   * The alternative slot values
+   */
+  const CSlotValueArray *alternatives;
   /**
    * The raw value as it appears in the input text
    */
@@ -223,6 +253,34 @@ typedef struct {
 } CSlotList;
 
 /**
+ * Alternative intent parsing result
+ */
+typedef struct {
+  /**
+   * The result of intent classification
+   */
+  const CIntentClassifierResult *intent;
+  /**
+   * The slots extracted
+   */
+  const CSlotList *slots;
+} CIntentParserAlternative;
+
+/**
+ * Wrapper around a list of IntentParserAlternative
+ */
+typedef struct {
+  /**
+   * Pointer to the first result of the list
+   */
+  const CIntentParserAlternative *intent_parser_alternatives;
+  /**
+   * Number of results in the list
+   */
+  int32_t size;
+} CIntentParserAlternativeArray;
+
+/**
  * Result of intent parsing
  */
 typedef struct {
@@ -238,6 +296,10 @@ typedef struct {
    * The slots extracted
    */
   const CSlotList *slots;
+  /**
+   * Alternative parsings
+   */
+  const CIntentParserAlternativeArray *alternatives;
 } CIntentParserResult;
 
 /**
@@ -383,7 +445,7 @@ SNIPS_RESULT snips_nlu_engine_create_from_zip(const unsigned char *zip,
 
 SNIPS_RESULT snips_nlu_engine_destroy_client(CSnipsNluEngine *client);
 
-SNIPS_RESULT snips_nlu_engine_destroy_intent_classifier_results(CIntentClassifierResultList *result);
+SNIPS_RESULT snips_nlu_engine_destroy_intent_classifier_results(CIntentClassifierResultArray *result);
 
 SNIPS_RESULT snips_nlu_engine_destroy_result(CIntentParserResult *result);
 
@@ -401,7 +463,7 @@ SNIPS_RESULT snips_nlu_engine_get_model_version(const char **version);
 
 SNIPS_RESULT snips_nlu_engine_run_get_intents(const CSnipsNluEngine *client,
                                               const char *input,
-                                              const CIntentClassifierResultList **result);
+                                              const CIntentClassifierResultArray **result);
 
 SNIPS_RESULT snips_nlu_engine_run_get_intents_into_json(const CSnipsNluEngine *client,
                                                         const char *input,
@@ -417,6 +479,18 @@ SNIPS_RESULT snips_nlu_engine_run_get_slots_into_json(const CSnipsNluEngine *cli
                                                       const char *intent,
                                                       const char **result_json);
 
+SNIPS_RESULT snips_nlu_engine_run_get_slots_with_alternatives(const CSnipsNluEngine *client,
+                                                              const char *input,
+                                                              const char *intent,
+                                                              unsigned int slots_alternatives,
+                                                              const CSlotList **result);
+
+SNIPS_RESULT snips_nlu_engine_run_get_slots_with_alternatives_into_json(const CSnipsNluEngine *client,
+                                                                        const char *input,
+                                                                        const char *intent,
+                                                                        unsigned int slots_alternatives,
+                                                                        const char **result_json);
+
 SNIPS_RESULT snips_nlu_engine_run_parse(const CSnipsNluEngine *client,
                                         const char *input,
                                         const CStringArray *intents_whitelist,
@@ -428,5 +502,21 @@ SNIPS_RESULT snips_nlu_engine_run_parse_into_json(const CSnipsNluEngine *client,
                                                   const CStringArray *intents_whitelist,
                                                   const CStringArray *intents_blacklist,
                                                   const char **result_json);
+
+SNIPS_RESULT snips_nlu_engine_run_parse_with_alternatives(const CSnipsNluEngine *client,
+                                                          const char *input,
+                                                          const CStringArray *intents_whitelist,
+                                                          const CStringArray *intents_blacklist,
+                                                          unsigned int intents_alternatives,
+                                                          unsigned int slots_alternatives,
+                                                          const CIntentParserResult **result);
+
+SNIPS_RESULT snips_nlu_engine_run_parse_with_alternatives_into_json(const CSnipsNluEngine *client,
+                                                                    const char *input,
+                                                                    const CStringArray *intents_whitelist,
+                                                                    const CStringArray *intents_blacklist,
+                                                                    unsigned int intents_alternatives,
+                                                                    unsigned int slots_alternatives,
+                                                                    const char **result_json);
 
 #endif /* LIBSNIPS_NLU_H_ */

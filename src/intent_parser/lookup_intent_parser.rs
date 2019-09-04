@@ -267,14 +267,14 @@ impl LookupIntentParser {
         let builtin_entities = self
             .shared_resources
             .builtin_entity_parser
-            .extract_entities(input, Some(builtin_scope.as_ref()), true)?
+            .extract_entities(input, Some(builtin_scope.as_ref()), true, 0)?
             .into_iter()
             .map(|entity| entity.into());
         // get custom entities
         let custom_entities = self
             .shared_resources
             .custom_entity_parser
-            .extract_entities(input, Some(entity_scope.custom.as_ref()))?
+            .extract_entities(input, Some(entity_scope.custom.as_ref()), 0)?
             .into_iter()
             .map(|entity| entity.into());
 
@@ -433,7 +433,7 @@ mod tests {
         let trained_engine_path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
 
         let parser_path = trained_engine_path.join("lookup_intent_parser");
 
@@ -611,12 +611,14 @@ mod tests {
                     value: "one".to_string(),
                     range: 8..11,
                     entity: SlotValue::Number(NumberValue { value: 1. }),
+                    alternatives: vec![],
                     entity_kind: BuiltinEntityKind::Number,
                 },
                 BuiltinEntity {
                     value: "one".to_string(),
                     range: 17..20,
                     entity: SlotValue::Number(NumberValue { value: 1. }),
+                    alternatives: vec![],
                     entity_kind: BuiltinEntityKind::Number,
                 },
             ],
@@ -687,12 +689,14 @@ mod tests {
                 CustomEntity {
                     value: "daisy".to_string(),
                     resolved_value: "daisy".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 7..12,
                     entity_identifier: "name".to_string(),
                 },
                 CustomEntity {
                     value: "emily".to_string(),
                     resolved_value: "emily".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 16..21,
                     entity_identifier: "name".to_string(),
                 },
@@ -766,6 +770,7 @@ mod tests {
                 sentence: &str,
                 filter_entity_kinds: Option<&[BuiltinEntityKind]>,
                 _use_cache: bool,
+                _max_alternative_resolved_values: usize,
             ) -> Result<Vec<BuiltinEntity>> {
                 if sentence != "call tomorrow" {
                     return Ok(vec![]);
@@ -783,6 +788,7 @@ mod tests {
                                 precision: Precision::Exact,
                                 grain: Grain::Day,
                             }),
+                            alternatives: vec![],
                             entity_kind: BuiltinEntityKind::Datetime,
                         }]
                     } else {
@@ -799,6 +805,7 @@ mod tests {
                 &self,
                 sentence: &str,
                 filter_entity_kinds: Option<&[String]>,
+                _max_alternative_resolved_values: usize,
             ) -> Result<Vec<CustomEntity>> {
                 if sentence != "call tomorrow" {
                     return Ok(vec![]);
@@ -812,6 +819,7 @@ mod tests {
                             value: "call".to_string(),
                             range: 0..4,
                             resolved_value: "call".to_string(),
+                            alternative_resolved_values: vec![],
                             entity_identifier: "event".to_string(),
                         }]
                     } else {
@@ -883,6 +891,7 @@ mod tests {
                 sentence: &str,
                 filter_entity_kinds: Option<&[BuiltinEntityKind]>,
                 _use_cache: bool,
+                _max_alternative_resolved_values: usize,
             ) -> Result<Vec<BuiltinEntity>> {
                 if sentence != "call tomorrow" {
                     return Ok(vec![]);
@@ -900,6 +909,7 @@ mod tests {
                                 precision: Precision::Exact,
                                 grain: Grain::Day,
                             }),
+                            alternatives: vec![],
                             entity_kind: BuiltinEntityKind::Datetime,
                         }]
                     } else {
@@ -966,6 +976,7 @@ mod tests {
                         precision: Precision::Exact,
                         grain: Grain::Hour,
                     }),
+                    alternatives: vec![],
                     entity_kind: BuiltinEntityKind::Datetime,
                 },
                 BuiltinEntity {
@@ -976,6 +987,7 @@ mod tests {
                         precision: Precision::Exact,
                         grain: Grain::Day,
                     }),
+                    alternatives: vec![],
                     entity_kind: BuiltinEntityKind::Datetime,
                 },
             ],
@@ -987,12 +999,14 @@ mod tests {
                 CustomEntity {
                     value: "john".to_string(),
                     resolved_value: "John".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 13..17,
                     entity_identifier: "name".to_string(),
                 },
                 CustomEntity {
                     value: "snips".to_string(),
                     resolved_value: "Snips".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 21..26,
                     entity_identifier: "location".to_string(),
                 },
@@ -1075,6 +1089,7 @@ mod tests {
                 vec![CustomEntity {
                     value: "this".to_string(),
                     resolved_value: "this".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 7..11,
                     entity_identifier: "object".to_string(),
                 }],
@@ -1084,6 +1099,7 @@ mod tests {
                 vec![CustomEntity {
                     value: "that".to_string(),
                     resolved_value: "that".to_string(),
+                    alternative_resolved_values: vec![],
                     range: 7..11,
                     entity_identifier: "object".to_string(),
                 }],
@@ -1173,6 +1189,7 @@ mod tests {
                 &self,
                 sentence: &str,
                 filter_entity_kinds: Option<&[String]>,
+                _max_alternative_resolved_values: usize,
             ) -> Result<Vec<CustomEntity>> {
                 if sentence != "Hello John" {
                     return Ok(vec![]);
@@ -1187,6 +1204,7 @@ mod tests {
                         value: "Hello".to_string(),
                         range: 0..5,
                         resolved_value: "Hello".to_string(),
+                        alternative_resolved_values: vec![],
                         entity_identifier: "greeting".to_string(),
                     });
                 };
@@ -1198,6 +1216,7 @@ mod tests {
                         value: "John".to_string(),
                         range: 6..10,
                         resolved_value: "John".to_string(),
+                        alternative_resolved_values: vec![],
                         entity_identifier: "name".to_string(),
                     });
                 };
@@ -1266,6 +1285,7 @@ mod tests {
             vec![CustomEntity {
                 value: "John O’reilly".to_string(),
                 resolved_value: "John O’reilly".to_string(),
+                alternative_resolved_values: vec![],
                 range: 13..26,
                 entity_identifier: "name".to_string(),
             }],
@@ -1335,6 +1355,7 @@ mod tests {
             vec![CustomEntity {
                 value: "John".to_string(),
                 resolved_value: "John".to_string(),
+                alternative_resolved_values: vec![],
                 range: 6..10,
                 entity_identifier: "name".to_string(),
             }],

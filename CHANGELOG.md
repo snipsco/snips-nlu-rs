@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Added
+- Add new `parse_with_alternatives` API to `SnipsNluEngine` to get alternative intents and slot values [#148](https://github.com/snipsco/snips-nlu-rs/pull/148)
+
 ## [0.65.0] - 2019-07-11
 ### Changed
 - Bumped ontology to `0.65.0` [#143](https://github.com/snipsco/snips-nlu-rs/pull/143)
@@ -222,6 +226,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[Unreleased]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.0...HEAD
 [0.65.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.4...0.65.0
 [0.64.4]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.3...0.64.4
 [0.64.3]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.2...0.64.3

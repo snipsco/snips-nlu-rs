@@ -310,7 +310,7 @@ impl Feature for CustomEntityMatchFeature {
 
         Ok(self
             .custom_entity_parser
-            .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]))?
+            .extract_entities(&normalized_text, Some(&[self.entity_name.clone()]), 0)?
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &normalized_tokens[token_index].char_range))
             .map(|e| {
@@ -363,7 +363,7 @@ impl Feature for BuiltinEntityMatchFeature {
         let text = initial_string_from_tokens(tokens);
         Ok(self
             .builtin_entity_parser
-            .extract_entities(&text, Some(&[self.builtin_entity_kind]), true)?
+            .extract_entities(&text, Some(&[self.builtin_entity_kind]), true, 0)?
             .into_iter()
             .find(|e| ranges_overlap(&e.range, &tokens[token_index].char_range))
             .map(|e| {
@@ -712,6 +712,7 @@ mod tests {
             vec![CustomEntity {
                 value: "beautiful blue bird".to_string(),
                 resolved_value: "beautiful blue bird".to_string(),
+                alternative_resolved_values: vec![],
                 range: 12..31,
                 entity_identifier: entity_name.to_string(),
             }],
@@ -753,6 +754,7 @@ mod tests {
             vec![CustomEntity {
                 value: "blue bird".to_string(),
                 resolved_value: "blue bird".to_string(),
+                alternative_resolved_values: vec![],
                 range: 7..16,
                 entity_identifier: "bird_type".to_string(),
             }],
@@ -799,6 +801,7 @@ mod tests {
                     value: 21.0,
                     unit: None,
                 }),
+                alternatives: vec![],
                 entity_kind: BuiltinEntityKind::Temperature,
             }],
         )]);

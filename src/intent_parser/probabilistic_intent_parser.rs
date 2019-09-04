@@ -104,7 +104,7 @@ mod tests {
         let trained_engine_path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
         let parser_path = trained_engine_path.join("probabilistic_intent_parser");
         let resources = load_engine_shared_resources(trained_engine_path).unwrap();
 
@@ -132,7 +132,7 @@ mod tests {
         let trained_engine_path = Path::new("data")
             .join("tests")
             .join("models")
-            .join("nlu_engine");
+            .join("nlu_engine_beverage");
         let parser_path = trained_engine_path.join("probabilistic_intent_parser");
         let resources = load_engine_shared_resources(trained_engine_path).unwrap();
 
