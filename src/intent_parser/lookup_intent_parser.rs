@@ -1,27 +1,26 @@
-use std::collections::{HashMap, HashSet};
-use std::fs::File;
-use std::path::Path;
-use std::str::FromStr;
-use std::sync::Arc;
-
-use failure::ResultExt;
-use itertools::Itertools;
-use log::debug;
-use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language};
-use snips_nlu_utils::language::Language as NluUtilsLanguage;
-use snips_nlu_utils::string::normalize;
-use snips_nlu_utils::string::{hash_str_to_i32, substring_with_char_range, suffix_from_char_index};
-use snips_nlu_utils::token::tokenize_light;
-
 use crate::errors::*;
+use crate::intent_parser::InternalParsingResult;
 use crate::language::FromLanguage;
 use crate::models::LookupParserModel;
 use crate::resources::SharedResources;
 use crate::slot_utils::*;
 use crate::utils::{deduplicate_overlapping_entities, IntentName, MatchedEntity, SlotName};
+use crate::IntentParser;
 use crate::{EntityScope, GroupedEntityScope, InputHash, IntentId, SlotId};
-
-use super::{IntentParser, InternalParsingResult};
+use failure::ResultExt;
+use itertools::Itertools;
+use log::debug;
+use snips_nlu_ontology::{BuiltinEntityKind, IntentClassifierResult, Language};
+use snips_nlu_utils::language::Language as NluUtilsLanguage;
+use snips_nlu_utils::string::{
+    hash_str_to_i32, normalize, substring_with_char_range, suffix_from_char_index,
+};
+use snips_nlu_utils::token::tokenize_light;
+use std::collections::{HashMap, HashSet};
+use std::fs::File;
+use std::path::Path;
+use std::str::FromStr;
+use std::sync::Arc;
 
 /// HashMap based Intent Parser. The normalized/canonical form of an utterance
 /// serves as the key and the value is tuple of (intent_id, [vec_of_slots_ids])

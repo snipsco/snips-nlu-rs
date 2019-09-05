@@ -15,7 +15,7 @@ use crate::errors::*;
 use crate::models::nlu_engine::NluEngineModel;
 use crate::resources::gazetteer::{Gazetteer, HashSetGazetteer};
 use crate::resources::stemmer::{HashMapStemmer, Stemmer};
-use crate::resources::word_clusterer::{HashMapWordClusterer, WordClusterer};
+use crate::resources::word_clusterer::{HierarchicalWordClusterer, WordClusterer};
 use crate::resources::SharedResources;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -139,7 +139,7 @@ fn load_word_clusterers<P: AsRef<Path>>(
             );
             let word_clusters_reader = File::open(&clusters_path)
                 .with_context(|_| format!("Cannot open word clusters file {:?}", clusters_path))?;
-            let word_clusterer = HashMapWordClusterer::from_reader(word_clusters_reader)
+            let word_clusterer = HierarchicalWordClusterer::from_reader(word_clusters_reader)
                 .with_context(|_| format!("Cannot read word clusters file {:?}", clusters_path))?;
             word_clusterers.insert(clusters_name.to_string(), Arc::new(word_clusterer));
             info!("Word clusters '{}' loaded", clusters_name);
