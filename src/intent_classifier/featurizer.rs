@@ -429,7 +429,7 @@ mod tests {
         TfidfVectorizerConfiguration, TfidfVectorizerModel,
     };
     use crate::resources::stemmer::HashMapStemmer;
-    use crate::resources::word_clusterer::HierarchicalWordClusterer;
+    use crate::resources::word_clusterer::HashMapWordClusterer;
     use crate::resources::SharedResources;
     use crate::testutils::assert_epsilon_eq_array1;
     use crate::testutils::MockedBuiltinEntityParser;
@@ -778,17 +778,17 @@ mod tests {
         let language = Language::EN;
         let query_tokens = tokenize_light("I, love House, muSic", language);
         let clusters: &[u8] = r#"
-love	10
-house	101
+love	23
+house	10500
 "#
         .as_ref();
-        let word_clusterer = HierarchicalWordClusterer::from_reader(clusters).unwrap();
+        let word_clusterer = HashMapWordClusterer::from_reader(clusters).unwrap();
 
         // When
         let augmented_query = get_word_clusters(&query_tokens, Arc::new(word_clusterer));
 
         // Then
-        let expected_augmented_query = vec!["32768".to_string(), "40960".to_string()];
+        let expected_augmented_query = vec!["10500".to_string(), "23".to_string()];
 
         assert_eq!(augmented_query, expected_augmented_query)
     }

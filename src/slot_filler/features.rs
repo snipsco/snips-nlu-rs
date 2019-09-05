@@ -498,7 +498,7 @@ mod tests {
     use crate::entity_parser::custom_entity_parser::CustomEntity;
     use crate::resources::gazetteer::HashSetGazetteer;
     use crate::resources::stemmer::HashMapStemmer;
-    use crate::resources::word_clusterer::HierarchicalWordClusterer;
+    use crate::resources::word_clusterer::HashMapWordClusterer;
     use crate::testutils::{MockedBuiltinEntityParser, MockedCustomEntityParser};
 
     #[test]
@@ -835,10 +835,10 @@ mod tests {
         // Given
         let language = NluUtilsLanguage::EN;
         let clusters: &[u8] = r#"
-bird	00000000010101
+bird	42
 "#
         .as_ref();
-        let word_clusterer = HierarchicalWordClusterer::from_reader(clusters).unwrap();
+        let word_clusterer = HashMapWordClusterer::from_reader(clusters).unwrap();
         let tokens = tokenize("I love this bird", language);
         let feature = WordClusterFeature {
             cluster_name: "test_clusters".to_string(),
@@ -851,7 +851,7 @@ bird	00000000010101
             .collect();
 
         // Then
-        let expected_results = vec![None, None, None, Some("84".to_string())];
+        let expected_results = vec![None, None, None, Some("42".to_string())];
         assert_eq!(expected_results, results);
     }
 }
