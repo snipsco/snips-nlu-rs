@@ -26,7 +26,7 @@ use crate::utils::{extract_nlu_engine_zip_archive, EntityName, IterOps, SlotName
 
 pub struct SnipsNluEngine {
     dataset_metadata: DatasetMetadata,
-    intent_parsers: Vec<Box<IntentParser>>,
+    intent_parsers: Vec<Box<dyn IntentParser>>,
     shared_resources: Arc<SharedResources>,
 }
 
@@ -81,7 +81,7 @@ impl SnipsNluEngine {
         engine_dir: P,
         model: &NluEngineModel,
         shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<IntentParser>>> {
+    ) -> Result<Vec<Box<dyn IntentParser>>> {
         model
             .intent_parsers
             .iter()
@@ -444,7 +444,7 @@ fn extract_custom_slot(
     entity_name: EntityName,
     slot_name: SlotName,
     custom_entity: &Entity,
-    custom_entity_parser: Arc<CustomEntityParser>,
+    custom_entity_parser: Arc<dyn CustomEntityParser>,
     slot_alternatives: usize,
 ) -> Result<Option<Slot>> {
     let mut custom_entities = custom_entity_parser.extract_entities(
@@ -486,7 +486,7 @@ fn extract_builtin_slot(
     input: String,
     entity_name: EntityName,
     slot_name: SlotName,
-    builtin_entity_parser: Arc<BuiltinEntityParser>,
+    builtin_entity_parser: Arc<dyn BuiltinEntityParser>,
     slot_alternatives: usize,
 ) -> Result<Option<Slot>> {
     let builtin_entity_kind = BuiltinEntityKind::from_identifier(&entity_name)?;

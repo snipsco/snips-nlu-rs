@@ -25,11 +25,11 @@ pub fn epsilon_eq(a: f32, b: f32, epsilon: f32) -> bool {
 }
 
 pub struct SharedResourcesBuilder {
-    builtin_entity_parser: Arc<BuiltinEntityParser>,
-    custom_entity_parser: Arc<CustomEntityParser>,
-    gazetteers: HashMap<String, Arc<Gazetteer>>,
-    stemmer: Option<Arc<Stemmer>>,
-    word_clusterers: HashMap<String, Arc<WordClusterer>>,
+    builtin_entity_parser: Arc<dyn BuiltinEntityParser>,
+    custom_entity_parser: Arc<dyn CustomEntityParser>,
+    gazetteers: HashMap<String, Arc<dyn Gazetteer>>,
+    stemmer: Option<Arc<dyn Stemmer>>,
+    word_clusterers: HashMap<String, Arc<dyn WordClusterer>>,
     stop_words: HashSet<String>,
 }
 

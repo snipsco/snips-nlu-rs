@@ -65,7 +65,7 @@ pub fn build_intent_parser<P: AsRef<Path>>(
     metadata: ProcessingUnitMetadata,
     path: P,
     shared_resources: Arc<SharedResources>,
-) -> Result<Box<IntentParser>> {
+) -> Result<Box<dyn IntentParser>> {
     match metadata {
         ProcessingUnitMetadata::LookupIntentParser => {
             Ok(Box::new(LookupIntentParser::from_path(path, shared_resources)?) as _)
