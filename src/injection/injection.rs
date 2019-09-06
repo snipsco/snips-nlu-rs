@@ -382,7 +382,7 @@ fn stem_entity_value(
     entity_values: Vec<GazetteerEntityValue>,
     engine_info: &NluEngineInfo,
     custom_entity_parser_info: &CustomGazetteerParserInfo,
-    maybe_stemmer: Option<&Arc<Stemmer>>,
+    maybe_stemmer: Option<&Arc<dyn Stemmer>>,
 ) -> Result<Vec<GazetteerEntityValue>, NluInjectionError> {
     let stemmed_entity_values = match custom_entity_parser_info.parser_usage {
         CustomEntityParserUsage::WithoutStems => vec![],

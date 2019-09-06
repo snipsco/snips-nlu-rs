@@ -17,8 +17,8 @@ use super::{IntentClassifierResult, IntentParser, InternalParsingResult};
 use crate::slot_utils::InternalSlot;
 
 pub struct ProbabilisticIntentParser {
-    intent_classifier: Box<IntentClassifier>,
-    slot_fillers: HashMap<IntentName, Box<SlotFiller>>,
+    intent_classifier: Box<dyn IntentClassifier>,
+    slot_fillers: HashMap<IntentName, Box<dyn SlotFiller>>,
 }
 
 impl ProbabilisticIntentParser {

@@ -25,7 +25,7 @@ impl Feature for IsDigitFeature {
     fn build_features(
         _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         Ok(vec![Box::new(Self {})])
     }
 
@@ -46,7 +46,7 @@ impl Feature for LengthFeature {
     fn build_features(
         _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         Ok(vec![Box::new(Self {})])
     }
 
@@ -64,7 +64,7 @@ impl Feature for IsFirstFeature {
     fn build_features(
         _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         Ok(vec![Box::new(Self {})])
     }
 
@@ -83,7 +83,7 @@ impl Feature for IsLastFeature {
     fn build_features(
         _args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         Ok(vec![Box::new(Self {})])
     }
 
@@ -98,8 +98,8 @@ impl Feature for IsLastFeature {
 
 pub struct NgramFeature {
     ngram_size: usize,
-    opt_common_words_gazetteer: Option<Arc<Gazetteer>>,
-    opt_stemmer: Option<Arc<Stemmer>>,
+    opt_common_words_gazetteer: Option<Arc<dyn Gazetteer>>,
+    opt_stemmer: Option<Arc<dyn Stemmer>>,
 }
 
 impl Feature for NgramFeature {
@@ -110,7 +110,7 @@ impl Feature for NgramFeature {
     fn build_features(
         args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         let n = parse_as_u64(args, "n")? as usize;
         let common_words_gazetteer_name = parse_as_opt_string(args, "common_words_gazetteer_name")?;
         let opt_common_words_gazetteer = if let Some(gazetteer_name) = common_words_gazetteer_name {
@@ -188,7 +188,7 @@ impl Feature for ShapeNgramFeature {
     fn build_features(
         args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         let ngram_size = parse_as_u64(args, "n")? as usize;
         Ok(vec![Box::new(Self { ngram_size })])
     }
@@ -221,7 +221,7 @@ impl Feature for PrefixFeature {
     fn build_features(
         args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         let prefix_size = parse_as_u64(args, "prefix_size")? as usize;
         Ok(vec![Box::new(Self { prefix_size })])
     }
@@ -244,7 +244,7 @@ impl Feature for SuffixFeature {
     fn build_features(
         args: &HashMap<String, serde_json::Value>,
         _shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         let suffix_size = parse_as_u64(args, "suffix_size")? as usize;
         Ok(vec![Box::new(Self { suffix_size })])
     }
@@ -264,8 +264,8 @@ impl Feature for SuffixFeature {
 pub struct CustomEntityMatchFeature {
     entity_name: String,
     tagging_scheme: TaggingScheme,
-    opt_stemmer: Option<Arc<Stemmer>>,
-    custom_entity_parser: Arc<CustomEntityParser>,
+    opt_stemmer: Option<Arc<dyn Stemmer>>,
+    custom_entity_parser: Arc<dyn CustomEntityParser>,
 }
 
 impl Feature for CustomEntityMatchFeature {
@@ -276,7 +276,7 @@ impl Feature for CustomEntityMatchFeature {
     fn build_features(
         args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         let entities = parse_as_vec_string(args, "entities")?;
         let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
         let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
@@ -326,7 +326,7 @@ impl Feature for CustomEntityMatchFeature {
 pub struct BuiltinEntityMatchFeature {
     tagging_scheme: TaggingScheme,
     builtin_entity_kind: BuiltinEntityKind,
-    builtin_entity_parser: Arc<BuiltinEntityParser>,
+    builtin_entity_parser: Arc<dyn BuiltinEntityParser>,
 }
 
 impl Feature for BuiltinEntityMatchFeature {
@@ -341,7 +341,7 @@ impl Feature for BuiltinEntityMatchFeature {
     fn build_features(
         args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         let builtin_entity_labels = parse_as_vec_string(args, "entity_labels")?;
         let tagging_scheme_code = parse_as_u64(args, "tagging_scheme_code")? as u8;
         let tagging_scheme = TaggingScheme::from_u8(tagging_scheme_code)?;
@@ -378,7 +378,7 @@ impl Feature for BuiltinEntityMatchFeature {
 
 pub struct WordClusterFeature {
     cluster_name: String,
-    word_clusterer: Arc<WordClusterer>,
+    word_clusterer: Arc<dyn WordClusterer>,
 }
 
 impl Feature for WordClusterFeature {
@@ -389,7 +389,7 @@ impl Feature for WordClusterFeature {
     fn build_features(
         args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>> {
+    ) -> Result<Vec<Box<dyn Feature>>> {
         let cluster_name = parse_as_string(args, "cluster_name")?;
         let word_clusterer = shared_resources
             .word_clusterers
@@ -414,7 +414,7 @@ impl Feature for WordClusterFeature {
     }
 }
 
-fn transform_tokens(tokens: &[Token], stemmer: Option<Arc<Stemmer>>) -> Vec<Token> {
+fn transform_tokens(tokens: &[Token], stemmer: Option<Arc<dyn Stemmer>>) -> Vec<Token> {
     let mut current_char_index = 0;
     let mut current_byte_index = 0;
     tokens

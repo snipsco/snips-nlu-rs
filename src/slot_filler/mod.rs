@@ -30,7 +30,7 @@ pub trait SlotFiller: Send + Sync {
 pub fn build_slot_filler<P: AsRef<Path>>(
     path: P,
     shared_resources: Arc<SharedResources>,
-) -> Result<Box<SlotFiller>> {
+) -> Result<Box<dyn SlotFiller>> {
     let metadata_path = path.as_ref().join("metadata.json");
     let metadata_file = File::open(&metadata_path).with_context(|_| {
         format!(

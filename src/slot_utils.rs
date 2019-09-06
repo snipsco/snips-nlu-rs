@@ -19,7 +19,7 @@ pub struct InternalSlot {
 pub fn resolve_builtin_slot(
     internal_slot: InternalSlot,
     builtin_entities: &[BuiltinEntity],
-    builtin_entity_parser: Arc<BuiltinEntityParser>,
+    builtin_entity_parser: Arc<dyn BuiltinEntityParser>,
     slots_alternatives: usize,
 ) -> Result<Option<Slot>> {
     let entity_kind = BuiltinEntityKind::from_identifier(&internal_slot.entity)?;
@@ -43,7 +43,7 @@ pub fn resolve_custom_slot(
     internal_slot: InternalSlot,
     entity: &Entity,
     custom_entities: &[CustomEntity],
-    custom_entity_parser: Arc<CustomEntityParser>,
+    custom_entity_parser: Arc<dyn CustomEntityParser>,
     slots_alternatives: usize,
 ) -> Result<Option<Slot>> {
     let opt_matching_entity = match custom_entities.iter().find(|custom_entity| {

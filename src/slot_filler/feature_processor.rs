@@ -54,7 +54,7 @@ impl ProbabilisticFeatureProcessor {
 }
 
 struct FeatureOffsetter {
-    feature: Box<Feature>,
+    feature: Box<dyn Feature>,
     offsets: Vec<i32>,
 }
 
@@ -87,7 +87,7 @@ pub trait Feature: FeatureKindRepr + Send + Sync {
     fn build_features(
         args: &HashMap<String, serde_json::Value>,
         shared_resources: Arc<SharedResources>,
-    ) -> Result<Vec<Box<Feature>>>
+    ) -> Result<Vec<Box<dyn Feature>>>
     where
         Self: Sized;
     fn compute(&self, tokens: &[Token], token_index: usize) -> Result<Option<String>>;

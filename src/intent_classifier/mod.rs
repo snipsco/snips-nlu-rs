@@ -28,7 +28,7 @@ pub trait IntentClassifier: Send + Sync {
 pub fn build_intent_classifier<P: AsRef<Path>>(
     path: P,
     shared_resources: Arc<SharedResources>,
-) -> Result<Box<IntentClassifier>> {
+) -> Result<Box<dyn IntentClassifier>> {
     let metadata_path = path.as_ref().join("metadata.json");
     let metadata_file = File::open(&metadata_path).with_context(|_| {
         format!(

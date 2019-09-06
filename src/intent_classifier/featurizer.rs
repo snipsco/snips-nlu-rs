@@ -91,8 +91,8 @@ pub struct TfidfVectorizer {
     builtin_entity_scope: Vec<BuiltinEntityKind>,
     vocabulary: HashMap<String, usize>,
     idf_diag: Vec<f32>,
-    word_clusterer: Option<Arc<WordClusterer>>,
-    stemmer: Option<Arc<Stemmer>>,
+    word_clusterer: Option<Arc<dyn WordClusterer>>,
+    stemmer: Option<Arc<dyn Stemmer>>,
     language: NluUtilsLanguage,
     shared_resources: Arc<SharedResources>,
 }
@@ -394,7 +394,7 @@ fn get_custom_entity_feature_name(entity_name: &str, language: NluUtilsLanguage)
     format!("entityfeature{}", e)
 }
 
-fn get_word_clusters(query_tokens: &[String], word_clusterer: Arc<WordClusterer>) -> Vec<String> {
+fn get_word_clusters(query_tokens: &[String], word_clusterer: Arc<dyn WordClusterer>) -> Vec<String> {
     let tokens_ref = query_tokens.iter().map(|t| t.as_ref()).collect_vec();
     compute_all_ngrams(tokens_ref.as_ref(), tokens_ref.len())
         .into_iter()
@@ -403,7 +403,7 @@ fn get_word_clusters(query_tokens: &[String], word_clusterer: Arc<WordClusterer>
         .collect()
 }
 
-fn normalize_stem(tokens: &[String], opt_stemmer: Option<Arc<Stemmer>>) -> Vec<String> {
+fn normalize_stem(tokens: &[String], opt_stemmer: Option<Arc<dyn Stemmer>>) -> Vec<String> {
     opt_stemmer
         .map(|stemmer| tokens.iter().map(|t| stemmer.stem(&normalize(t))).collect())
         .unwrap_or_else(|| tokens.iter().map(|t| normalize(t)).collect())
