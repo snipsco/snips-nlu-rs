@@ -17,7 +17,7 @@ pub enum NluInjectionErrorKind {
 
 //  Boilerplate
 impl Fail for NluInjectionError {
-    fn cause(&self) -> Option<&Fail> {
+    fn cause(&self) -> Option<&dyn Fail> {
         self.inner.cause()
     }
 

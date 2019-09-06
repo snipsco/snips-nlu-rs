@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use failure::ResultExt;
 use log::info;
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use snips_nlu_ontology::Language;
 
 use crate::entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
@@ -79,7 +79,7 @@ pub fn load_engine_shared_resources<P: AsRef<Path>>(engine_dir: P) -> Result<Arc
 fn load_stemmer<P: AsRef<Path>>(
     resources_dir: &P,
     metadata: &ResourcesMetadata,
-) -> Result<Option<Arc<Stemmer>>> {
+) -> Result<Option<Arc<dyn Stemmer>>> {
     if let Some(stems) = metadata.stems.as_ref() {
         let stemming_directory = resources_dir.as_ref().join("stemming");
         let stems_path = stemming_directory.join(stems).with_extension("txt");
@@ -98,8 +98,8 @@ fn load_stemmer<P: AsRef<Path>>(
 fn load_gazetteers<P: AsRef<Path>>(
     resources_dir: &P,
     metadata: &ResourcesMetadata,
-) -> Result<HashMap<String, Arc<Gazetteer>>> {
-    let mut gazetteers: HashMap<String, Arc<Gazetteer>> = HashMap::new();
+) -> Result<HashMap<String, Arc<dyn Gazetteer>>> {
+    let mut gazetteers: HashMap<String, Arc<dyn Gazetteer>> = HashMap::new();
     if let Some(gazetteer_names) = metadata.gazetteers.as_ref() {
         let gazetteers_directory = resources_dir.as_ref().join("gazetteers");
         for gazetteer_name in gazetteer_names {
@@ -124,8 +124,8 @@ fn load_gazetteers<P: AsRef<Path>>(
 fn load_word_clusterers<P: AsRef<Path>>(
     resources_dir: &P,
     metadata: &ResourcesMetadata,
-) -> Result<HashMap<String, Arc<WordClusterer>>> {
-    let mut word_clusterers: HashMap<String, Arc<WordClusterer>> = HashMap::new();
+) -> Result<HashMap<String, Arc<dyn WordClusterer>>> {
+    let mut word_clusterers: HashMap<String, Arc<dyn WordClusterer>> = HashMap::new();
     if let Some(word_clusters) = metadata.word_clusters.as_ref() {
         let word_clusters_directory = resources_dir.as_ref().join("word_clusters");
         for clusters_name in word_clusters {

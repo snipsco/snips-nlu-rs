@@ -12,10 +12,10 @@ use self::word_clusterer::WordClusterer;
 use super::entity_parser::{BuiltinEntityParser, CustomEntityParser};
 
 pub struct SharedResources {
-    pub builtin_entity_parser: Arc<BuiltinEntityParser>,
-    pub custom_entity_parser: Arc<CustomEntityParser>,
-    pub gazetteers: HashMap<String, Arc<Gazetteer>>,
-    pub stemmer: Option<Arc<Stemmer>>,
-    pub word_clusterers: HashMap<String, Arc<WordClusterer>>,
+    pub builtin_entity_parser: Arc<dyn BuiltinEntityParser>,
+    pub custom_entity_parser: Arc<dyn CustomEntityParser>,
+    pub gazetteers: HashMap<String, Arc<dyn Gazetteer>>,
+    pub stemmer: Option<Arc<dyn Stemmer>>,
+    pub word_clusterers: HashMap<String, Arc<dyn WordClusterer>>,
     pub stop_words: HashSet<String>,
 }

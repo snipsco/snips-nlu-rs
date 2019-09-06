@@ -1,4 +1,4 @@
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Copy, Clone, PartialEq, Eq)]
 #[serde(tag = "unit_name")]
