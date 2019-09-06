@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use failure::ResultExt;
 use log::info;
-use serde_derive::Deserialize;
+use serde::Deserialize;
 use snips_nlu_ontology::Language;
 
 use crate::entity_parser::{CachingBuiltinEntityParser, CachingCustomEntityParser};
