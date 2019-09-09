@@ -11,8 +11,8 @@ pub trait WordClusterer: Send + Sync {
 }
 
 pub struct HashMapWordClusterer {
-    // This implementation allows to support i32 representation for word clusters
-    // in a backward compatible manner
+    /// This implementation allows to support both u16 and raw string representations for
+    /// word clusters
     values: Either<HashMap<i32, u16>, HashMap<i32, String>>,
 }
 
