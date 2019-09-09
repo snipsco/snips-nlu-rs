@@ -1,10 +1,8 @@
+use crate::errors::*;
+use snips_nlu_utils::string::{hash_str_to_i32, normalize};
 use std::collections::HashMap;
 use std::io::Read;
 use std::iter::FromIterator;
-
-use snips_nlu_utils::string::{hash_str_to_i32, normalize};
-
-use crate::errors::*;
 
 pub trait Stemmer: Send + Sync {
     fn stem(&self, value: &str) -> String;
@@ -16,7 +14,7 @@ pub struct HashMapStemmer {
 
 impl HashMapStemmer {
     pub fn from_reader<R: Read>(reader: R) -> Result<Self> {
-        let mut values = HashMap::<i32, String>::new();
+        let mut values = HashMap::new();
         let mut csv_reader = csv::ReaderBuilder::new()
             .delimiter(b',')
             .quoting(false)

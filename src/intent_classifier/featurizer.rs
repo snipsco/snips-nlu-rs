@@ -394,7 +394,10 @@ fn get_custom_entity_feature_name(entity_name: &str, language: NluUtilsLanguage)
     format!("entityfeature{}", e)
 }
 
-fn get_word_clusters(query_tokens: &[String], word_clusterer: Arc<dyn WordClusterer>) -> Vec<String> {
+fn get_word_clusters(
+    query_tokens: &[String],
+    word_clusterer: Arc<dyn WordClusterer>,
+) -> Vec<String> {
     let tokens_ref = query_tokens.iter().map(|t| t.as_ref()).collect_vec();
     compute_all_ngrams(tokens_ref.as_ref(), tokens_ref.len())
         .into_iter()
@@ -778,8 +781,8 @@ mod tests {
         let language = Language::EN;
         let query_tokens = tokenize_light("I, love House, muSic", language);
         let clusters: &[u8] = r#"
-love	23
-house	10500
+love	cluster_love
+house	cluster_house
 "#
         .as_ref();
         let word_clusterer = HashMapWordClusterer::from_reader(clusters).unwrap();
@@ -788,7 +791,8 @@ house	10500
         let augmented_query = get_word_clusters(&query_tokens, Arc::new(word_clusterer));
 
         // Then
-        let expected_augmented_query = vec!["10500".to_string(), "23".to_string()];
+        let expected_augmented_query =
+            vec!["cluster_house".to_string(), "cluster_love".to_string()];
 
         assert_eq!(augmented_query, expected_augmented_query)
     }

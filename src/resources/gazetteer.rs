@@ -15,7 +15,7 @@ pub struct HashSetGazetteer {
 impl HashSetGazetteer {
     pub fn from_reader<R: Read>(reader: R) -> Result<Self> {
         let reader = BufReader::new(reader);
-        let mut values = HashSet::<i32>::new();
+        let mut values = HashSet::new();
         for line in reader.lines() {
             let word = line?;
             if !word.is_empty() {

@@ -26,8 +26,8 @@ impl HashMapWordClusterer {
         // This flag is switched to false as soon as a record is found which cannot
         // be converted to a u16
         let mut u16_casting_ok = true;
-        let mut u16_values = HashMap::<i32, u16>::new();
-        let mut str_values = HashMap::<i32, String>::new();
+        let mut u16_values = HashMap::new();
+        let mut str_values = HashMap::new();
         for record in csv_reader.records() {
             let elements = record?;
             let hashed_key = hash_str_to_i32(elements[0].as_ref());
@@ -84,7 +84,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_hashmap_word_clusterer() {
+    fn test_hashmap_word_clusterer_with_non_u16_values() {
         // Given
         let clusters: &[u8] = r#"
 hello	42
@@ -99,9 +99,33 @@ world	123
         // Then
         assert!(clusterer.is_ok());
         let clusterer = clusterer.unwrap();
+        assert!(clusterer.values.is_right());
         assert_eq!(clusterer.get_cluster("hello"), Some("42".to_string()));
         assert_eq!(clusterer.get_cluster("world"), Some("123".to_string()));
         assert_eq!(clusterer.get_cluster("\"yolo"), Some("cluster_which_is_not_u16".to_string()));
+        assert_eq!(clusterer.get_cluster("unknown"), None);
+    }
+
+    #[test]
+    fn test_hashmap_word_clusterer_with_u16_values() {
+        // Given
+        let clusters: &[u8] = r#"
+hello	42
+world	123
+yolo	65500
+"#
+            .as_ref();
+
+        // When
+        let clusterer = HashMapWordClusterer::from_reader(clusters);
+
+        // Then
+        assert!(clusterer.is_ok());
+        let clusterer = clusterer.unwrap();
+        assert!(clusterer.values.is_left());
+        assert_eq!(clusterer.get_cluster("hello"), Some("42".to_string()));
+        assert_eq!(clusterer.get_cluster("world"), Some("123".to_string()));
+        assert_eq!(clusterer.get_cluster("yolo"), Some("65500".to_string()));
         assert_eq!(clusterer.get_cluster("unknown"), None);
     }
 }
