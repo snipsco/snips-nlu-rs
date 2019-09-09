@@ -1,25 +1,25 @@
+use crate::errors::*;
+use snips_nlu_utils::string::hash_str_to_i32;
 use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
 use std::iter::FromIterator;
-
-use crate::errors::*;
 
 pub trait Gazetteer: Send + Sync {
     fn contains(&self, value: &str) -> bool;
 }
 
 pub struct HashSetGazetteer {
-    values: HashSet<String>,
+    values: HashSet<i32>,
 }
 
 impl HashSetGazetteer {
     pub fn from_reader<R: Read>(reader: R) -> Result<Self> {
         let reader = BufReader::new(reader);
-        let mut values = HashSet::<String>::new();
+        let mut values = HashSet::<i32>::new();
         for line in reader.lines() {
             let word = line?;
             if !word.is_empty() {
-                values.insert(word);
+                values.insert(hash_str_to_i32(&*word));
             }
         }
         Ok(Self { values })
@@ -29,14 +29,17 @@ impl HashSetGazetteer {
 impl FromIterator<String> for HashSetGazetteer {
     fn from_iter<T: IntoIterator<Item = String>>(iter: T) -> Self {
         Self {
-            values: HashSet::from_iter(iter),
+            values: iter
+                .into_iter()
+                .map(|str_value| hash_str_to_i32(&*str_value))
+                .collect(),
         }
     }
 }
 
 impl Gazetteer for HashSetGazetteer {
     fn contains(&self, value: &str) -> bool {
-        self.values.contains(value)
+        self.values.contains(&hash_str_to_i32(value))
     }
 }
 
