@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased] - 2019-09-10
+### Fixed
+- Optimize memory footprint of resources [#151](https://github.com/snipsco/snips-nlu-rs/pull/151)
+
 ## [0.65.2] - 2019-09-06
 ### Fixed
 - Freeze chrono to 0.4.8 to fix issue with rustling-ontology [#149](https://github.com/snipsco/snips-nlu-rs/pull/149)
