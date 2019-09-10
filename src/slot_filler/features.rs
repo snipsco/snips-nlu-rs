@@ -834,9 +834,11 @@ mod tests {
     fn test_word_cluster_feature() {
         // Given
         let language = NluUtilsLanguage::EN;
-        let word_clusterer = HashMapWordClusterer::from_iter(
-            vec![("bird".to_string(), "010101".to_string())].into_iter(),
-        );
+        let clusters: &[u8] = r#"
+bird	42
+"#
+        .as_ref();
+        let word_clusterer = HashMapWordClusterer::from_reader(clusters).unwrap();
         let tokens = tokenize("I love this bird", language);
         let feature = WordClusterFeature {
             cluster_name: "test_clusters".to_string(),
@@ -849,7 +851,7 @@ mod tests {
             .collect();
 
         // Then
-        let expected_results = vec![None, None, None, Some("010101".to_string())];
+        let expected_results = vec![None, None, None, Some("42".to_string())];
         assert_eq!(expected_results, results);
     }
 }

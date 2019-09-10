@@ -1,17 +1,19 @@
+use crate::errors::*;
+use itertools::Either;
+use snips_nlu_ontology::Language;
+use snips_nlu_utils::string::hash_str_to_i32;
 use std::collections::HashMap;
 use std::io::Read;
-use std::iter::FromIterator;
-
-use snips_nlu_ontology::Language;
-
-use crate::errors::*;
+use std::str::FromStr;
 
 pub trait WordClusterer: Send + Sync {
     fn get_cluster(&self, word: &str) -> Option<String>;
 }
 
 pub struct HashMapWordClusterer {
-    values: HashMap<String, String>,
+    /// This implementation allows to support both u16 and raw string representations for
+    /// word clusters
+    values: Either<HashMap<i32, u16>, HashMap<i32, String>>,
 }
 
 impl HashMapWordClusterer {
@@ -21,27 +23,53 @@ impl HashMapWordClusterer {
             .quoting(false)
             .has_headers(false)
             .from_reader(reader);
-        let mut values = HashMap::<String, String>::new();
+        // This flag is switched to false as soon as a record is found which cannot
+        // be converted to a u16
+        let mut u16_casting_ok = true;
+        let mut u16_values = HashMap::new();
+        let mut str_values = HashMap::new();
         for record in csv_reader.records() {
             let elements = record?;
-            values.insert(elements[0].to_string(), elements[1].to_string());
+            let hashed_key = hash_str_to_i32(elements[0].as_ref());
+            // Casting into u16 is attempted only when all previous clusters were converted
+            // successfully
+            if u16_casting_ok {
+                match u16::from_str(elements[1].as_ref()) {
+                    Ok(u16_value) => {
+                        u16_values.insert(hashed_key, u16_value);
+                    }
+                    Err(_) => {
+                        // A word cluster cannot be converted into a u16, let's move all the
+                        // previously stored clusters into a raw string representation
+                        for (hash, value) in u16_values.iter() {
+                            str_values.insert(*hash, format!("{}", value));
+                        }
+                        str_values.insert(hashed_key, elements[1].to_string());
+                        u16_casting_ok = false;
+                        u16_values.clear();
+                    }
+                }
+            } else {
+                str_values.insert(hashed_key, elements[1].to_string());
+            }
         }
-
-        Ok(Self { values })
-    }
-}
-
-impl FromIterator<(String, String)> for HashMapWordClusterer {
-    fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
-        Self {
-            values: HashMap::from_iter(iter),
-        }
+        Ok(Self {
+            values: if u16_casting_ok {
+                Either::Left(u16_values)
+            } else {
+                Either::Right(str_values)
+            },
+        })
     }
 }
 
 impl WordClusterer for HashMapWordClusterer {
     fn get_cluster(&self, word: &str) -> Option<String> {
-        self.values.get(word).map(|v| v.to_string())
+        let hashed_key = hash_str_to_i32(word);
+        match &self.values {
+            Either::Left(u16_values) => u16_values.get(&hashed_key).map(|v| format!("{}", v)),
+            Either::Right(str_values) => str_values.get(&hashed_key).cloned(),
+        }
     }
 }
 
@@ -56,12 +84,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_hashmap_word_clusterer() {
+    fn test_hashmap_word_clusterer_with_non_u16_values() {
         // Given
         let clusters: &[u8] = r#"
-hello	1111111111111
-world	1111110111111
-"yolo	1111100111111
+hello	42
+world	123
+"yolo	cluster_which_is_not_u16
 "#
         .as_ref();
 
@@ -71,18 +99,33 @@ world	1111110111111
         // Then
         assert!(clusterer.is_ok());
         let clusterer = clusterer.unwrap();
-        assert_eq!(
-            clusterer.get_cluster("hello"),
-            Some("1111111111111".to_string())
-        );
-        assert_eq!(
-            clusterer.get_cluster("world"),
-            Some("1111110111111".to_string())
-        );
-        assert_eq!(
-            clusterer.get_cluster("\"yolo"),
-            Some("1111100111111".to_string())
-        );
+        assert!(clusterer.values.is_right());
+        assert_eq!(clusterer.get_cluster("hello"), Some("42".to_string()));
+        assert_eq!(clusterer.get_cluster("world"), Some("123".to_string()));
+        assert_eq!(clusterer.get_cluster("\"yolo"), Some("cluster_which_is_not_u16".to_string()));
+        assert_eq!(clusterer.get_cluster("unknown"), None);
+    }
+
+    #[test]
+    fn test_hashmap_word_clusterer_with_u16_values() {
+        // Given
+        let clusters: &[u8] = r#"
+hello	42
+world	123
+yolo	65500
+"#
+            .as_ref();
+
+        // When
+        let clusterer = HashMapWordClusterer::from_reader(clusters);
+
+        // Then
+        assert!(clusterer.is_ok());
+        let clusterer = clusterer.unwrap();
+        assert!(clusterer.values.is_left());
+        assert_eq!(clusterer.get_cluster("hello"), Some("42".to_string()));
+        assert_eq!(clusterer.get_cluster("world"), Some("123".to_string()));
+        assert_eq!(clusterer.get_cluster("yolo"), Some("65500".to_string()));
         assert_eq!(clusterer.get_cluster("unknown"), None);
     }
 }

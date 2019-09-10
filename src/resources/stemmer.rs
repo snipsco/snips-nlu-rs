@@ -1,22 +1,20 @@
+use crate::errors::*;
+use snips_nlu_utils::string::{hash_str_to_i32, normalize};
 use std::collections::HashMap;
 use std::io::Read;
 use std::iter::FromIterator;
-
-use snips_nlu_utils::string::normalize;
-
-use crate::errors::*;
 
 pub trait Stemmer: Send + Sync {
     fn stem(&self, value: &str) -> String;
 }
 
 pub struct HashMapStemmer {
-    values: HashMap<String, String>,
+    values: HashMap<i32, String>,
 }
 
 impl HashMapStemmer {
     pub fn from_reader<R: Read>(reader: R) -> Result<Self> {
-        let mut values = HashMap::<String, String>::new();
+        let mut values = HashMap::new();
         let mut csv_reader = csv::ReaderBuilder::new()
             .delimiter(b',')
             .quoting(false)
@@ -28,7 +26,7 @@ impl HashMapStemmer {
             let elements = record?;
             let stem = &elements[0];
             for value in elements.iter().skip(1) {
-                values.insert(value.to_string(), stem.to_string());
+                values.insert(hash_str_to_i32(value), stem.to_string());
             }
         }
         Ok(Self { values })
@@ -38,7 +36,10 @@ impl HashMapStemmer {
 impl FromIterator<(String, String)> for HashMapStemmer {
     fn from_iter<T: IntoIterator<Item = (String, String)>>(iter: T) -> Self {
         Self {
-            values: HashMap::from_iter(iter),
+            values: iter
+                .into_iter()
+                .map(|(str_key, str_value)| (hash_str_to_i32(&*str_key), str_value))
+                .collect(),
         }
     }
 }
@@ -46,7 +47,7 @@ impl FromIterator<(String, String)> for HashMapStemmer {
 impl Stemmer for HashMapStemmer {
     fn stem(&self, value: &str) -> String {
         self.values
-            .get(&*normalize(value))
+            .get(&hash_str_to_i32(&*normalize(value)))
             .map(|v| v.to_string())
             .unwrap_or_else(|| value.to_string())
     }
