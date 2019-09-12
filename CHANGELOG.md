@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased] - 2019-09-10
+## [0.65.3] - 2019-09-12
 ### Fixed
 - Optimize memory footprint of resources [#151](https://github.com/snipsco/snips-nlu-rs/pull/151)
 
@@ -237,6 +237,7 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.65.3]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.2...0.65.3
 [0.65.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.1...0.65.2
 [0.65.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.0...0.65.1
 [0.65.0]: https://github.com/snipsco/snips-nlu-rs/compare/0.64.4...0.65.0
