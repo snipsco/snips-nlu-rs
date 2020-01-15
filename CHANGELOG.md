@@ -1,7 +1,7 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [0.65.4] - 2020-01-15
 ### Changed
 - Bumped crfsuite to `0.3.2` [#155](https://github.com/snipsco/snips-nlu-rs/pull/155)
 
