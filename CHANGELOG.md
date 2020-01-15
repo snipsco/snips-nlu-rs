@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+### Changed
+- Bumped crfsuite to `0.3.2` [#155](https://github.com/snipsco/snips-nlu-rs/pull/155)
+
 ## [0.65.3] - 2019-09-12
 ### Fixed
 - Optimize memory footprint of resources [#151](https://github.com/snipsco/snips-nlu-rs/pull/151)
