@@ -7,8 +7,6 @@ if [[ -z ${TRAVIS_RUST_VERSION+w} ]]; then
 fi
 
 if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
-  sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg -target /
-
   if [[ ${PYTHON_TESTS} == true ]]; then
     # install pyenv
     git clone https://github.com/pyenv/pyenv $HOME/.pyenv
@@ -17,17 +15,18 @@ if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     PATH="$PYENV_ROOT/bin:$PATH"
     eval "$(pyenv init -)"
 
+    # CFLAGS stuff is needed because of https://github.com/pyenv/pyenv/issues/1219
     case "${TOXENV}" in
       "py27")
-        pyenv install 2.7.14
+        CFLAGS="-I$(xcrun --show-sdk-path)/usr/include" pyenv install 2.7.14
         pyenv global 2.7.14
         ;;
       "py36")
-        pyenv install 3.6.1
+        CFLAGS="-I$(xcrun --show-sdk-path)/usr/include" pyenv install 3.6.1
         pyenv global 3.6.1
         ;;
       "py37")
-        pyenv install 3.7.2
+        CFLAGS="-I$(xcrun --show-sdk-path)/usr/include" pyenv install 3.7.2
         pyenv global 3.7.2
         ;;
     esac

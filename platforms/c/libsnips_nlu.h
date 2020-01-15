@@ -1,4 +1,4 @@
-#define SNIPS_NLU_VERSION "0.65.3"
+#define SNIPS_NLU_VERSION "0.65.4"
 
 #ifndef LIBSNIPS_NLU_H_
 #define LIBSNIPS_NLU_H_
