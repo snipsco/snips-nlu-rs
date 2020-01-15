@@ -7,6 +7,7 @@ if [[ -z ${TRAVIS_RUST_VERSION+w} ]]; then
 fi
 
 if [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
+  xcode-select --install
   if [[ ${PYTHON_TESTS} == true ]]; then
     # install pyenv
     git clone https://github.com/pyenv/pyenv $HOME/.pyenv
