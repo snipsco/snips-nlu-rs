@@ -1,6 +1,6 @@
 [package]
 name = "snips-nlu-lib"
-version = "0.65.4"
+version = "0.65.5"
 authors = [
     "Adrien Ball <adrien.ball@snips.ai>",
     "Clement Doumouro <clement.doumouro@snips.ai>",
@@ -21,7 +21,7 @@ members = [
 crfsuite = { git = "https://github.com/snipsco/crfsuite-rs", tag = "0.3.2" }
 snips-nlu-ontology = { git = "https://github.com/snipsco/snips-nlu-ontology", tag = "0.67.1" }
 snips-nlu-utils = { git = "https://github.com/snipsco/snips-nlu-utils", tag = "0.9.1" }
-snips-nlu-parsers = { git = "https://github.com/snipsco/snips-nlu-parsers", tag = "0.4.2" }
+snips-nlu-parsers = { git = "https://github.com/snipsco/snips-nlu-parsers", tag = "0.4.3" }
 failure = "0.1"
 base64 = "0.10"
 itertools = { version = "0.8", default-features = false }

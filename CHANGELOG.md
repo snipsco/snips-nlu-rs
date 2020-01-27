@@ -1,6 +1,10 @@
 # Changelog
 All notable changes to this project will be documented in this file.
 
+## [0.65.5] - 2020-01-24
+### Changed
+- Bumped `snips-nlu-parsers` to `0.4.3` [#157](https://github.com/snipsco/snips-nlu-rs/pull/157)
+
 ## [0.65.4] - 2020-01-15
 ### Changed
 - Bumped crfsuite to `0.3.2` [#155](https://github.com/snipsco/snips-nlu-rs/pull/155)
@@ -241,6 +245,8 @@ being statically hardcoded, reducing the binary size by 31Mb.
 - Improve support for japanese
 - Rename python package to `snips_nlu_rust`
 
+[0.65.5]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.4...0.65.5
+[0.65.4]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.3...0.65.4
 [0.65.3]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.2...0.65.3
 [0.65.2]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.1...0.65.2
 [0.65.1]: https://github.com/snipsco/snips-nlu-rs/compare/0.65.0...0.65.1
